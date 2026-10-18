@@ -1,7 +1,7 @@
 {
   "name": "@mars/desktop",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "desktopName": "ai.marsai.desktop",
   "description": "MarsAI desktop shell",
   "homepage": "https://marsai.click",
