@@ -147,7 +147,10 @@ export function resolveModelDisplayName(modelID: string, reportedName?: string |
     return trimmedReportedName;
   }
   const normalized = `${modelID} ${reportedName ?? ""}`.trim().toLowerCase();
-  for (const [pattern, label] of FRIENDLY_MODEL_LABELS) {
+  // Longest pattern first, so "claude-opus-5-5" wins over its prefix
+  // "claude-opus-5" and the two never render the same label.
+  const fuzzy = [...FRIENDLY_MODEL_LABELS].sort((a, b) => b[0].length - a[0].length);
+  for (const [pattern, label] of fuzzy) {
     if (normalized.includes(pattern)) return label;
   }
   if (trimmedReportedName) return trimmedReportedName;

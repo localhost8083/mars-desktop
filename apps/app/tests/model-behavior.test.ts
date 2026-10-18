@@ -209,6 +209,12 @@ describe("model behavior options", () => {
     expect(resolveModelDisplayName("gpt-5.6-sol", "GPT-5.6 Sol")).toBe("GPT-5.6 Sol");
     expect(resolveModelDisplayName("gpt-5.6-terra", "GPT-5.6 Terra")).toBe("GPT-5.6 Terra");
     expect(resolveModelDisplayName("claude-sonnet-4", "Claude Sonnet 4")).toBe("Claude Sonnet 4");
+    // Versioned ids must never collapse onto their shorter prefix's label
+    // (marsai/claude-opus-5-5 vs marsai/claude-opus-5 both showed "Opus 5").
+    expect(resolveModelDisplayName("marsai/claude-opus-5-5")).toBe("Claude Opus 5.5");
+    expect(resolveModelDisplayName("marsai/claude-opus-5")).toBe("Claude Opus 5");
+    expect(resolveModelDisplayName("marsai/claude-opus-4-7")).toBe("Claude Opus 4.7");
+    expect(resolveModelDisplayName("marsai/claude-opus-4-8")).toBe("Claude Opus 4.8");
     expect(resolveModelProviderDisplayName("openai", "gpt-5.6-sol", "OpenAI", "GPT-5.6 Sol")).toBe("OpenAI");
     expect(resolveModelProviderIconId("openai", "gpt-5.6-sol", "GPT-5.6 Sol")).toBe("openai");
     expect(dedupeModelOptions([
@@ -221,17 +227,17 @@ describe("model behavior options", () => {
     ]);
   });
 
-  test("lists marsai.click models only, mainstream providers only behind the flag", () => {
+  test("lists MarsAI gateway models only; no direct provider is offered", () => {
     expect(isInternalModelProvider("mars")).toBe(true);
     expect(isInternalModelProvider("lpr_team")).toBe(true);
-    expect(isDirectModelProvider("openai")).toBe(true);
-    expect(isDirectModelProvider("anthropic")).toBe(true);
+    expect(isDirectModelProvider("openai")).toBe(false);
+    expect(isDirectModelProvider("anthropic")).toBe(false);
     expect(isSupportedModelProvider("mars")).toBe(true);
     expect(isSupportedModelProvider("lpr_team")).toBe(true);
     expect(isSupportedModelProvider("anthropic")).toBe(false);
     expect(isSupportedModelProvider("google")).toBe(false);
-    expect(isSupportedModelProvider("google", true)).toBe(true);
-    expect(isSupportedModelProvider("openrouter", true)).toBe(true);
+    expect(isSupportedModelProvider("google", true)).toBe(false);
+    expect(isSupportedModelProvider("openrouter", true)).toBe(false);
     expect(isSupportedModelProvider("opencode", true)).toBe(false);
     expect(isSupportedModelProvider("ollama", true)).toBe(false);
     expect(providerCatalogRank("mars")).toBeLessThan(providerCatalogRank("openai"));
@@ -292,8 +298,13 @@ describe("stored default model", () => {
     expect(items.get(MODEL_PREF_KEY)).toBe("mars/meta-muse-spark");
   });
 
-  test("still moves a retired marsai.click route to the default, Astra", () => {
-    const items = storeDefault("mars/z-ai/glm-5.2");
+  test("keeps valid slash routes and resets an invalid one to the default, Astra", () => {
+    // z-ai/glm-5.2 is a live catalog id (slash ids are canonical), so it stays.
+    const kept = storeDefault("mars/z-ai/glm-5.2");
+    expect(readStoredDefaultModel()).toEqual({ providerID: "mars", modelID: "z-ai/glm-5.2" });
+    expect(kept.get(MODEL_PREF_KEY)).toBe("mars/z-ai/glm-5.2");
+    // An id that cannot name a catalog model migrates to the default.
+    const items = storeDefault("mars/!!not-a-model!!");
     expect(readStoredDefaultModel()).toEqual(DEFAULT_MODEL);
     expect(DEFAULT_MODEL).toEqual({ providerID: "mars", modelID: "gpt-6-astra" });
     expect(items.get(MODEL_PREF_KEY)).toBe("mars/gpt-6-astra");
