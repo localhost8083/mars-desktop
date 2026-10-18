@@ -3,7 +3,7 @@
 ## Supported versions
 
 marsai.click is under active development. Fixes land on the latest release, published at
-https://github.com/mars-ai/mars-gui/releases/latest.
+https://github.com/localhost8083/mars-desktop/releases/latest.
 
 ## Reporting a vulnerability
 
