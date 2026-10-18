@@ -2,7 +2,7 @@
   "repo": "localhost8083/mars-desktop",
   "tag": "engine-1.18.32-r3",
   "version": "1.18.32",
-  "origin": "Deterministic single-binary tarballs repacked from the official sst/opencode v1.18.32 release assets (GNU tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --format=gnu, piped through gzip -n -9). Uploaded to a public pre-release of this repo that is never marked latest.",
+  "origin": "Deterministic single-binary tarballs repacked from the official sst/opencode v1.18.32 release assets (GNU tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --mode=0755 --format=gnu, piped through gzip -n -9). Uploaded to a public pre-release of this repo that is never marked latest.",
   "license": {
     "name": "LICENSE-opencode-MIT",
     "sha256": "625f0f619133f89bbbb2abe37369613dfa1885eba1e50d02170deb62bb42cb6b"
@@ -10,19 +10,19 @@
   "assets": {
     "aarch64-apple-darwin": {
       "name": "mars-engine-darwin-arm64-1.18.32.tar.gz",
-      "sha256": "3ad70765b3910104b4920c3962b03401b376966672fa6306d33a034cca0c80ac"
+      "sha256": "b30c73d96e59fa205354ea414356d7694ca46747e914a2e1a3be7fbeca1bd7a9"
     },
     "x86_64-apple-darwin": {
       "name": "mars-engine-darwin-x64-1.18.32.tar.gz",
-      "sha256": "13f5250676d374f45ac8e413b647a51170d16309fd6f1139ab4fcbb964f5418a"
+      "sha256": "a3a62962cbc74e81ae230d2babb44d32eb09eef3b9ab00cb2b039d9f5bafdb83"
     },
     "x86_64-unknown-linux-gnu": {
       "name": "mars-engine-linux-x64-1.18.32.tar.gz",
-      "sha256": "a735536325817112e615ee5ca7f057bd40b9c12bbe8be368a4c4a8f0e6dd2af0"
+      "sha256": "99122563a4fbe57cab26ba920e96af89ee3c9c8415bcb8d7d6f8d5e9ff099b97"
     },
     "aarch64-unknown-linux-gnu": {
       "name": "mars-engine-linux-arm64-1.18.32.tar.gz",
-      "sha256": "0a3444c723a9e04c1c8aee93d8255410630cf296057521b3c82cda68245ecb49"
+      "sha256": "50754092e4042550b844c9282ae46ba6282a27f280c874922b9b8058fcf7e30d"
     },
     "x86_64-pc-windows-msvc": {
       "name": "mars-engine-win32-x64-1.18.32.tar.gz",
@@ -30,7 +30,7 @@
     },
     "aarch64-pc-windows-msvc": {
       "name": "mars-engine-win32-arm64-1.18.32.tar.gz",
-      "sha256": "fe573e32437d351a1bab3453fea3404abcb8018c526df6418e047e51683d4eda"
+      "sha256": "7a6273bb21faeed31cb6aba98973eebc27d4fa80de602a935a190f72d67c0622"
     }
   }
 }

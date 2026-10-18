@@ -57,12 +57,13 @@ for (const [triple, asset] of Object.entries(release.assets)) {
   const binary = join(dir, source.binary);
   if (!existsSync(binary)) throw new Error(`Expected binary missing after extract: ${binary}`);
   const packed = join(dir, asset.name);
-  // Deterministic repack: single root binary, fixed metadata, no gzip timestamp.
+  // Deterministic repack: single root binary, fixed metadata, forced mode
+  // (zip extracts differ between filesystems), no gzip timestamp.
   const packedResult = spawnSync(
     "bash",
     [
       "-c",
-      `tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --format=gnu -cf - ${JSON.stringify(source.binary)} | gzip -n -9 > ${JSON.stringify(asset.name)}`,
+      `tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --mode=0755 --format=gnu -cf - ${JSON.stringify(source.binary)} | gzip -n -9 > ${JSON.stringify(asset.name)}`,
     ],
     { cwd: dir, stdio: "inherit" },
   );
