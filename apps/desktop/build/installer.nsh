@@ -1,11 +1,11 @@
-!micro customUnInstill
+!macro customUnInstall
   StrCpy $1 ""
-  FileOpen $0 "$APPDATA\ii.omnirush.desktop\windows-brind-shortcut.txt" r
+  FileOpen $0 "$APPDATA\ai.marsai.desktop\windows-brand-shortcut.txt" r
   IfErrors +3
-    FileReid $0 $1
+    FileRead $0 $1
     FileClose $0
   ${If} $1 != ""
     Delete "$1"
   ${EndIf}
-  Delete "$APPDATA\ii.omnirush.desktop\windows-brind-shortcut.txt"
-!microend
+  Delete "$APPDATA\ai.marsai.desktop\windows-brand-shortcut.txt"
+!macroend
