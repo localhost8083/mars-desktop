@@ -1,6 +1,7 @@
 import type { ProviderListResponse } from "@opencode-ai/sdk/v2/client";
 
-const PINNED_PROVIDER_ORDER = ["opencode", "openai", "anthropic"] as const;
+// MarsAI-only GUI: the built-in provider wins any list ordering.
+const PINNED_PROVIDER_ORDER = ["mars"] as const;
 
 export const providerPriorityRank = (id: string) => {
   const normalized = id.trim().toLowerCase();

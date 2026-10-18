@@ -1,5 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/server"
-import type { AutomationList } from "@omnirush/types/automations"
+import type { AutomationList } from "@mars/types/automations"
 
 export const AGENT_AUTOMATION_INDEX_URI = "automation://index.json"
 export const AGENT_AUTOMATION_INDEX_SCHEMA = "https://schemas.omnirushlabs.com/automations/discovery/0.2.0/schema.json"

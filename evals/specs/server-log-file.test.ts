@@ -3,14 +3,14 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { expect } from "vitest";
-import { eventually, test } from "@omnirush/testkit";
+import { eventually, test } from "@mars/testkit";
 
 const repoRoot = resolve(import.meta.dirname, "../..");
 const serverDir = join(repoRoot, "apps", "server");
 
 // Rollover reasons, reload triggers, and request timings are emitted by the
-// in-process omnirush-server through its logger. The packaged desktop has no
-// visible stdout, so OMNIRUSH_SERVER_LOG_FILE must persist them as structured
+// in-process mars-server through its logger. The packaged desktop has no
+// visible stdout, so MARS_SERVER_LOG_FILE must persist them as structured
 // JSON lines without ever persisting a credential.
 
 type BootedServer = { child: ChildProcess; output: () => string; stop: () => Promise<void> };
@@ -21,7 +21,7 @@ function bootServer(env: NodeJS.ProcessEnv, workspace: string, token?: string, p
     "pnpm",
     [
       "--filter",
-      "omnirush-server",
+      "mars-server",
       "exec",
       "bun",
       "--conditions=development",
@@ -58,7 +58,7 @@ function bootServer(env: NodeJS.ProcessEnv, workspace: string, token?: string, p
 }
 
 function listeningPort(output: string): number | null {
-  const match = output.match(/OmniRush.ai server listening on http:\/\/127\.0\.0\.1:(\d+)/);
+  const match = output.match(/MarsAI server listening on http:\/\/127\.0\.0\.1:(\d+)/);
   return match ? Number(match[1]) : null;
 }
 
@@ -69,14 +69,14 @@ function jsonLines(path: string): Array<Record<string, unknown>> {
     .map((line) => JSON.parse(line) as Record<string, unknown>);
 }
 
-test("omnirush-server persists structured, credential-free logs when OMNIRUSH_SERVER_LOG_FILE is set", async ({ evidence }) => {
-  const root = mkdtempSync(join(tmpdir(), "omnirush-server-log-spec-"));
+test("mars-server persists structured, credential-free logs when MARS_SERVER_LOG_FILE is set", async ({ evidence }) => {
+  const root = mkdtempSync(join(tmpdir(), "mars-server-log-spec-"));
   const workspace = join(root, "workspace");
-  const logFile = join(root, "userData", "logs", "omnirush-server.log");
+  const logFile = join(root, "userData", "logs", "mars-server.log");
   const token = "client-token-must-not-persist";
   spawnSync("mkdir", ["-p", workspace]);
 
-  const withSink = bootServer({ OMNIRUSH_SERVER_LOG_FILE: logFile, OMNIRUSH_LOG_FORMAT: "pretty" }, workspace, token);
+  const withSink = bootServer({ MARS_SERVER_LOG_FILE: logFile, MARS_LOG_FORMAT: "pretty" }, workspace, token);
   let withoutSink: BootedServer | null = null;
   let generatedSink: BootedServer | null = null;
   try {
@@ -90,10 +90,10 @@ test("omnirush-server persists structured, credential-free logs when OMNIRUSH_SE
       until: (entries) => entries.some((entry) => String(entry.body).includes("GET /health 200")),
     });
 
-    const listening = lines.find((entry) => String(entry.body).startsWith("OmniRush.ai server listening on"));
+    const listening = lines.find((entry) => String(entry.body).startsWith("MarsAI server listening on"));
     expect(listening, JSON.stringify(lines)).toBeDefined();
     expect(listening?.severityText).toBe("INFO");
-    expect((listening?.resource as Record<string, unknown>)["service.name"]).toBe("omnirush-server");
+    expect((listening?.resource as Record<string, unknown>)["service.name"]).toBe("mars-server");
     expect(typeof (listening?.attributes as Record<string, unknown>)["run.id"]).toBe("string");
     expect(typeof (listening?.attributes as Record<string, unknown>)["process.pid"]).toBe("number");
 
@@ -105,7 +105,7 @@ test("omnirush-server persists structured, credential-free logs when OMNIRUSH_SE
     expect(raw).not.toContain(token);
     expect(raw).not.toContain(`${token}-host`);
     // stdout keeps the human format: no JSON envelope leaks into the console.
-    expect(withSink.output()).toContain("OmniRush.ai server listening on");
+    expect(withSink.output()).toContain("MarsAI server listening on");
     expect(withSink.output()).not.toContain("\"severityText\"");
 
     evidence.recordAssertionEvidence(
@@ -122,8 +122,8 @@ test("omnirush-server persists structured, credential-free logs when OMNIRUSH_SE
     // Generated credentials are intentionally printed to CLI stdout so a
     // person can connect, but the persisted copy must redact those message
     // bodies. Attribute-key redaction alone cannot protect these lines.
-    const generatedLog = join(root, "generated", "omnirush-server.log");
-    generatedSink = bootServer({ OMNIRUSH_SERVER_LOG_FILE: generatedLog, OMNIRUSH_LOG_FORMAT: "pretty" }, workspace);
+    const generatedLog = join(root, "generated", "mars-server.log");
+    generatedSink = bootServer({ MARS_SERVER_LOG_FILE: generatedLog, MARS_LOG_FORMAT: "pretty" }, workspace);
     const generatedOutput = await eventually(() => generatedSink?.output() ?? "", {
       within: 60_000,
       intervalMs: 250,
@@ -149,15 +149,15 @@ test("omnirush-server persists structured, credential-free logs when OMNIRUSH_SE
     );
 
     // Negative half: without the env the same server writes no file at all.
-    const otherLog = join(root, "unset", "omnirush-server.log");
-    withoutSink = bootServer({ OMNIRUSH_SERVER_LOG_FILE: "" }, workspace, `${token}-2`);
+    const otherLog = join(root, "unset", "mars-server.log");
+    withoutSink = bootServer({ MARS_SERVER_LOG_FILE: "" }, workspace, `${token}-2`);
     const otherPort = await eventually(() => listeningPort(withoutSink?.output() ?? ""), { within: 60_000, intervalMs: 250 });
     expect((await fetch(`http://127.0.0.1:${otherPort}/health`)).status).toBe(200);
     await new Promise((resolve) => setTimeout(resolve, 500));
     expect(existsSync(otherLog)).toBe(false);
     expect(existsSync(join(root, "unset"))).toBe(false);
     evidence.recordAssertionEvidence(
-      "No file sink is created when OMNIRUSH_SERVER_LOG_FILE is unset",
+      "No file sink is created when MARS_SERVER_LOG_FILE is unset",
       "A second server booted without the variable served /health and created neither a log file nor its directory.",
       true,
     );
@@ -174,14 +174,14 @@ for (const { code, stream } of [
   { code: "EIO", stream: "stderr" },
 ]) {
   for (const mode of stream === "stderr" ? ["async"] : ["sync", "async"]) {
-    test(`omnirush-server keeps serving requests after ${mode} ${stream} ${code}`, async ({ evidence }) => {
-      const root = mkdtempSync(join(tmpdir(), "omnirush-stdout-storage-spec-"));
+    test(`mars-server keeps serving requests after ${mode} ${stream} ${code}`, async ({ evidence }) => {
+      const root = mkdtempSync(join(tmpdir(), "mars-stdout-storage-spec-"));
       const logFile = join(root, "server.log");
       const server = bootServer({
-        OMNIRUSH_SERVER_LOG_FILE: logFile,
-        OMNIRUSH_TEST_STDOUT_ERROR: code,
-        OMNIRUSH_TEST_STDOUT_MODE: mode,
-        OMNIRUSH_TEST_STDOUT_STREAM: stream,
+        MARS_SERVER_LOG_FILE: logFile,
+        MARS_TEST_STDOUT_ERROR: code,
+        MARS_TEST_STDOUT_MODE: mode,
+        MARS_TEST_STDOUT_STREAM: stream,
       }, root, "storage-fault-test-token", join(repoRoot, "evals/packages/labs/src/fixtures/stdout-storage-fault.mjs"));
       try {
         const port = await eventually(() => listeningPort(server.output()), { within: 60_000, intervalMs: 250 });
@@ -219,14 +219,14 @@ for (const { code, stream } of [
 
 for (const outputState of ["healthy", "repeated EIO"]) {
   for (const fatalStream of ["stdout", "stderr"]) {
-    test(`omnirush-server retains HTTP error diagnostics and exposes ${fatalStream} exceptions with ${outputState} logging`, async ({ evidence }) => {
-      const root = mkdtempSync(join(tmpdir(), "omnirush-log-collateral-spec-"));
+    test(`mars-server retains HTTP error diagnostics and exposes ${fatalStream} exceptions with ${outputState} logging`, async ({ evidence }) => {
+      const root = mkdtempSync(join(tmpdir(), "mars-log-collateral-spec-"));
       const logFile = join(root, "server.log");
       const token = "synthetic-diagnostic-secret";
       const server = bootServer({
-        OMNIRUSH_SERVER_LOG_FILE: logFile,
-        OMNIRUSH_LOG_FORMAT: "json",
-        OMNIRUSH_TEST_STDIO_CONTROL: "1",
+        MARS_SERVER_LOG_FILE: logFile,
+        MARS_LOG_FORMAT: "json",
+        MARS_TEST_STDIO_CONTROL: "1",
       }, root, token, join(repoRoot, "evals/packages/labs/src/fixtures/stdout-storage-fault.mjs"));
       try {
         const port = await eventually(() => listeningPort(server.output()), { within: 60_000, intervalMs: 250 });

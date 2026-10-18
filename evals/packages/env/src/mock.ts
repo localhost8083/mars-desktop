@@ -1,6 +1,6 @@
-import { allocateFreePort } from "@omnirush/cdp";
-import { startMockMcp } from "@omnirush/labs";
-import type { MockMcpHandle, StartMockMcpOptions } from "@omnirush/labs";
+import { allocateFreePort } from "@mars/cdp";
+import { startMockMcp } from "@mars/labs";
+import type { MockMcpHandle, StartMockMcpOptions } from "@mars/labs";
 import type { Place } from "./place.ts";
 
 export type MockHandle = MockMcpHandle;
@@ -37,8 +37,8 @@ function mockEnvKey(name: string): string {
 export function deriveMockEnv(name: string, url: string, mcpUrl: string): Record<string, string> {
   const key = mockEnvKey(name);
   return {
-    [`OMNIRUSH_EVAL_MOCK_${key}_URL`]: url,
-    [`OMNIRUSH_EVAL_MOCK_${key}_MCP_URL`]: mcpUrl,
+    [`MARS_EVAL_MOCK_${key}_URL`]: url,
+    [`MARS_EVAL_MOCK_${key}_MCP_URL`]: mcpUrl,
   };
 }
 

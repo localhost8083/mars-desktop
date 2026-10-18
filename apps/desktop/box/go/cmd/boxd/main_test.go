@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"omnirush.ai/box/proto"
+	"marsai.click/box/proto"
 )
 
 func startDaemon(t *testing.T) (config, string) {

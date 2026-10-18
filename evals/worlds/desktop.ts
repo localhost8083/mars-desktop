@@ -1,4 +1,4 @@
-import type { Seed } from "@omnirush/env";
+import type { Seed } from "@mars/env";
 
 export async function emptySession(seed: Seed) {
   const workspacePath = seed.tmpPath("empty-session");

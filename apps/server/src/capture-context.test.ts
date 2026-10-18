@@ -29,7 +29,7 @@ import * as uploader from "./session-uploader.js";
 // setup (#16), package-manager config (#17), shell aliases (#18), processes
 // and ports (#19), network hosts per tool call (#20), reused temp files
 // (#21) and on-the-fly tools (#22). Every item is scrubbed, `~` replaces
-// the home directory, and OMNIRUSH_CAPTURE_CONTEXT=0 turns it all off.
+// the home directory, and MARS_CAPTURE_CONTEXT=0 turns it all off.
 const hasZstd = typeof zlib.zstdDecompressSync === "function";
 
 /** The uploader's real CONFIG scrub. */
@@ -46,7 +46,7 @@ const AWS_SECRET = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
 const PASSWORD = "Hunter2-Sup3rS3cret!";
 
 function tmp(prefix) {
-  return fs.mkdtempSync(path.join(os.tmpdir(), `omnirush-ctx-${prefix}-`));
+  return fs.mkdtempSync(path.join(os.tmpdir(), `mars-ctx-${prefix}-`));
 }
 
 function write(root, files) {
@@ -119,13 +119,13 @@ test("privacy: the home directory and the account name become ~; URLs lose useri
   assert.ok(!privacy.isSecretKey("index-url"));
 });
 
-test("context switches: OMNIRUSH_CAPTURE_CONTEXT=0 turns everything off, OMNIRUSH_CAPTURE_NETWORK=0 only the network observer", () => {
+test("context switches: MARS_CAPTURE_CONTEXT=0 turns everything off, MARS_CAPTURE_NETWORK=0 only the network observer", () => {
   assert.equal(context.captureContextEnabled({}), true);
-  assert.equal(context.captureContextEnabled({ OMNIRUSH_CAPTURE_CONTEXT: "0" }), false);
-  assert.equal(context.captureContextEnabled({ OMNIRUSH_CAPTURE_CONTEXT: "off" }), false);
-  assert.equal(context.captureNetworkEnabled({ OMNIRUSH_CAPTURE_NETWORK: "0" }), false);
-  assert.equal(context.captureNetworkEnabled({ OMNIRUSH_CAPTURE_CONTEXT: "0" }), false);
-  const capture = new context.ContextCapture({ client: "cli", scrub: SCRUB, record: () => assert.fail("nothing is recorded"), env: { OMNIRUSH_CAPTURE_CONTEXT: "0" } });
+  assert.equal(context.captureContextEnabled({ MARS_CAPTURE_CONTEXT: "0" }), false);
+  assert.equal(context.captureContextEnabled({ MARS_CAPTURE_CONTEXT: "off" }), false);
+  assert.equal(context.captureNetworkEnabled({ MARS_CAPTURE_NETWORK: "0" }), false);
+  assert.equal(context.captureNetworkEnabled({ MARS_CAPTURE_CONTEXT: "0" }), false);
+  const capture = new context.ContextCapture({ client: "cli", scrub: SCRUB, record: () => assert.fail("nothing is recorded"), env: { MARS_CAPTURE_CONTEXT: "0" } });
   assert.equal(capture.enabled, false);
   capture.sessionStarted("s1-aaaaaaaa", tmp("off"));
   capture.turnStarted("s1-aaaaaaaa");
@@ -232,11 +232,11 @@ test.skipIf(process.platform !== "linux")("#19 snapshot: dev processes with scru
   }
 });
 
-// --- #19 in an OmniRush box ---------------------------------------------------------------
+// --- #19 in an Mars box ---------------------------------------------------------------
 
 /** What a box answers (a fake of the runner that runs commands inside it). */
 const BOX_PS = [
-  "    1     0 /opt/omnirush/boxd",
+  "    1     0 /opt/mars/boxd",
   "   40     1 /bin/bash -c npm run dev",
   `   41    40 node server.js --token=${GH_TOKEN}`,
   "   55     1 node -v",
@@ -270,7 +270,7 @@ test("#19 in a box: the box's processes and listening ports, through its runner;
   assert.equal(snapshot.phase, "turn_start");
   assert.equal(snapshot.turn, 2);
   assert.equal(snapshot.method, "box-ps+box-proc");
-  assert.deepEqual(snapshot.processes.map((entry) => entry.pid).sort(), [40, 41], "the helper and every OmniRush probe (OMNIRUSH_LEDGER_OFF=1) left out");
+  assert.deepEqual(snapshot.processes.map((entry) => entry.pid).sort(), [40, 41], "the helper and every Mars probe (MARS_LEDGER_OFF=1) left out");
   assert.ok(snapshot.processes.every((entry) => entry.scope === "session"));
   assert.ok(snapshot.processes.find((entry) => entry.pid === 41)!.command.includes("--token=[REDACTED]"));
   assert.equal(snapshot.processes.find((entry) => entry.pid === 41)!.cwd, "~/app/web", "the working folder, home as ~");
@@ -291,7 +291,7 @@ test("#19 in a box: the socket table parses tcp and tcp6 with their headers", ()
 });
 
 test("env_turn in a box: the box's OS, architecture and runtimes, not this machine's", async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omnirush-boxenv-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mars-boxenv-"));
   try {
     fs.writeFileSync(path.join(root, ".nvmrc"), "22\n");
     const box = boxRunner({
@@ -319,20 +319,20 @@ test("env_turn in a box: the box's OS, architecture and runtimes, not this machi
 /** A runner that really runs the command here, as boxd runs it in a box (sh, the probes' env). */
 const shellRunnerWith = (env: Record<string, string | undefined>): exec.Runner => async (file, args, options = {}) => {
   const { spawnSync } = await import("node:child_process");
-  const res = spawnSync(file, args, { cwd: options.cwd && fs.existsSync(options.cwd) ? options.cwd : undefined, timeout: options.timeoutMs ?? 5_000, encoding: "utf8", maxBuffer: options.maxBytes ?? 1 << 20, env: { ...process.env, ...env, OMNIRUSH_LEDGER_OFF: "1" } });
+  const res = spawnSync(file, args, { cwd: options.cwd && fs.existsSync(options.cwd) ? options.cwd : undefined, timeout: options.timeoutMs ?? 5_000, encoding: "utf8", maxBuffer: options.maxBytes ?? 1 << 20, env: { ...process.env, ...env, MARS_LEDGER_OFF: "1" } });
   if (res.error || res.status === null || (res.status >= 125 && res.status <= 127)) return null;
   return { code: res.status, stdout: res.stdout, stderr: res.stderr, truncated: false, timedOut: false };
 };
 const shellRunner = shellRunnerWith({});
 
 test.skipIf(process.platform === "win32")("env_turn in a box: the real which script exits 0 when some runtimes are missing", async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omnirush-boxsh-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mars-boxsh-"));
   try {
     const found = await installLog.envFingerprint({ root, pathValue: "", skipDir: null, env: {}, platform: "darwin", arch: "arm64", osVersion: null, privacy: privacy.currentPrivacy(), run: async () => null, box: shellRunner });
     assert.notEqual(found.arch, "unknown", "uname answered: the script's status is not its last missing command's");
     assert.ok(found.os_version);
     // The install log's wrappers on PATH are not the runtime.
-    const shims = path.join(root, ".omnirush", "pkglog", "bin-0123abcd");
+    const shims = path.join(root, ".mars", "pkglog", "bin-0123abcd");
     fs.mkdirSync(shims, { recursive: true });
     fs.writeFileSync(path.join(shims, "node"), "#!/bin/sh\nexec node \"$@\"\n", { mode: 0o755 });
     const wrapped: exec.Runner = (file, args, options) => shellRunnerWith({ PATH: `${shims}:${process.env.PATH}` })(file, args, options);
@@ -344,7 +344,7 @@ test.skipIf(process.platform === "win32")("env_turn in a box: the real which scr
 });
 
 test.skipIf(process.platform !== "linux")("#19 in a box: the real table and socket scripts (Linux /proc): a listening child with its folder, the probes left out", async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "omnirush-boxproc-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "mars-boxproc-"));
   const child = spawn(process.execPath, ["-e", "require('net').createServer().listen(0, '127.0.0.1', function () { console.log(this.address().port) })"], { cwd: dir, stdio: ["ignore", "pipe", "ignore"] });
   try {
     const port = Number(await new Promise<string>((resolve) => child.stdout.once("data", (chunk) => resolve(String(chunk).trim()))));
@@ -416,16 +416,16 @@ test("#7 services: docker containers with image digests, local databases by port
 test("#16 setup: skills/plugins with scrubbed texts, MCP servers with names only for env, secret args redacted, versions resolved", async () => {
   const home = tmp("home");
   const root = tmp("proj");
-  const bundled = write(tmp("bundled"), { "omnirush-build/SKILL.md": "---\nname: omnirush-build\nversion: 1.2.0\n---\nBuild.\n" });
+  const bundled = write(tmp("bundled"), { "mars-build/SKILL.md": "---\nname: mars-build\nversion: 1.2.0\n---\nBuild.\n" });
   write(home, {
     ".config/opencode/skills/deploy/SKILL.md": `---\nname: deploy\nversion: 0.3.1\n---\nexport GITHUB_TOKEN=${GH_TOKEN}\n`,
     ".config/opencode/skills/deploy/scripts/run.sh": `#!/bin/sh\ncurl -H "Authorization: Bearer ${NPM_TOKEN}" https://api.example.com\n`,
     ".config/opencode/skills/deploy/.env": `SECRET=${PASSWORD}\n`,
     ".config/opencode/plugin/notify.ts": `export const apiKey = "${GH_TOKEN}";\n`,
     ".config/opencode/opencode.json": JSON.stringify({
-      model: "omnirush/gpt",
+      model: "mars/gpt",
       plugin: ["opencode-wakatime@1.4.0", "opencode-other"],
-      agent: { build: { model: "omnirush/gpt", variant: "high", options: { reasoningEffort: "high", apiKey: GH_TOKEN } } },
+      agent: { build: { model: "mars/gpt", variant: "high", options: { reasoningEffort: "high", apiKey: GH_TOKEN } } },
       mcp: {
         github: { type: "local", command: ["npx", "-y", "@modelcontextprotocol/server-github@2025.4.8", "--token", GH_TOKEN], environment: { GITHUB_PERSONAL_ACCESS_TOKEN: GH_TOKEN } },
         remote: { type: "remote", url: `https://user:${PASSWORD}@mcp.example.com/sse?api_key=${NPM_TOKEN}`, headers: { Authorization: `Bearer ${NPM_TOKEN}` } },
@@ -439,17 +439,17 @@ test("#16 setup: skills/plugins with scrubbed texts, MCP servers with names only
   const { setup: result, files } = await setup.collectSetup({
     root,
     client: "cli",
-    appVersion: "omnirush-cli/2.0.9",
+    appVersion: "mars-cli/2.0.9",
     engineVersion: "1.18.32",
-    model: { provider_id: "omnirush", model_id: "gpt", variant: "high", agent: "build" },
+    model: { provider_id: "mars", model_id: "gpt", variant: "high", agent: "build" },
     bundledSkillDirs: [bundled],
     privacy: ctx,
     scrub: SCRUB,
     denied: (rel) => uploader.isUploadPathDenied(rel),
     env: { XDG_CONFIG_HOME: path.join(home, ".config") },
   });
-  assert.equal(result.app_version, "omnirush-cli/2.0.9");
-  assert.deepEqual(result.bundled_skills.map((s) => [s.name, s.version]), [["omnirush-build", "1.2.0"]]);
+  assert.equal(result.app_version, "mars-cli/2.0.9");
+  assert.deepEqual(result.bundled_skills.map((s) => [s.name, s.version]), [["mars-build", "1.2.0"]]);
   assert.equal(result.skills.length, 1);
   assert.equal(result.skills[0].name, "deploy");
   assert.equal(result.skills[0].version, "0.3.1");
@@ -776,8 +776,8 @@ test.skipIf(process.platform !== "linux")("#20 live (Linux /proc): a bash call t
 function traceEventsOf(envelopes) {
   const out = [];
   for (const envelope of envelopes) {
-    // Schema 2 carries the events in __omnirush__/trace.json (and mirrors them in `trace`).
-    const file = (envelope.files ?? []).find((entry) => entry.path === "__omnirush__/trace.json");
+    // Schema 2 carries the events in __mars__/trace.json (and mirrors them in `trace`).
+    const file = (envelope.files ?? []).find((entry) => entry.path === "__mars__/trace.json");
     out.push(...(file ? JSON.parse(file.content).events ?? [] : envelope.trace ?? []));
   }
   return out;
@@ -814,7 +814,7 @@ async function runSession(contextOptions) {
   return { events: traceEventsOf(envelopes), envelopes, touched };
 }
 
-test.skipIf(!hasZstd)("uploader: the session's trace carries the context events, scrubbed; OMNIRUSH_CAPTURE_CONTEXT=0 sends none", async () => {
+test.skipIf(!hasZstd)("uploader: the session's trace carries the context events, scrubbed; MARS_CAPTURE_CONTEXT=0 sends none", async () => {
   const { events } = await runSession({});
   const types = events.map((event) => event.type).filter((type) => type.startsWith("context."));
   assert.ok(types.includes("context.environment"), types.join(","));
@@ -829,7 +829,7 @@ test.skipIf(!hasZstd)("uploader: the session's trace carries the context events,
   assertNoSecrets(events);
   assert.ok(!JSON.stringify(events.filter((e) => e.type.startsWith("context."))).includes(os.homedir() + path.sep), "no home path in context events");
 
-  const off = await runSession({ env: { OMNIRUSH_CAPTURE_CONTEXT: "0" } });
+  const off = await runSession({ env: { MARS_CAPTURE_CONTEXT: "0" } });
   assert.deepEqual(off.events.filter((event) => event.type.startsWith("context.")), []);
   assert.ok(off.events.length > 0, "the rest of the trace is unchanged");
 });
@@ -924,7 +924,7 @@ test("Windows: a timed-out command's whole process tree is ended (taskkill /T /F
 test("#19 privacy: only the session's process tree and processes in its folders are named; other ports are port + base name", async () => {
   const project = tmp("proc-proj");
   const table = [
-    { pid: 100, ppid: 1, name: "node", command: "node /usr/lib/omnirush/bin.js" },
+    { pid: 100, ppid: 1, name: "node", command: "node /usr/lib/mars/bin.js" },
     { pid: 101, ppid: 100, name: "opencode", command: "opencode serve --port 4096" },
     { pid: 102, ppid: 101, name: "bash", command: `bash -c npm test --token=${GH_TOKEN}` },
     { pid: 103, ppid: 102, name: "node", command: "node server.js" },

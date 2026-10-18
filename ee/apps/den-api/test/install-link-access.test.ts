@@ -1,5 +1,5 @@
 import { createDenTypeId } from "@omnirush-ee/utils/typeid"
-import { generateConnectLinkKeyPair, verifyConnectLinkToken } from "@omnirush/connect-link/node"
+import { generateConnectLinkKeyPair, verifyConnectLinkToken } from "@mars/connect-link/node"
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from "bun:test"
 import { Hono } from "hono"
 import { mkdtempSync, writeFileSync } from "node:fs"

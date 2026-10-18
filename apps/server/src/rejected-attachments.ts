@@ -7,9 +7,9 @@
 // short text part: `[file could not be read: <name>]`. Which part was refused
 // is not named by the API, so the suspects of a refusal are the request's
 // attachments that no earlier accepted request carried (all of them when every
-// one was accepted before). The gateway broker (omnirush-gateway-broker.ts)
+// one was accepted before). The gateway broker (mars-gateway-broker.ts)
 // retries the failing request at once without the part. Kept in step with the
-// CLI's copy (omnirush-cli assets/extensions/omnirush/rejected-attachments.js).
+// CLI's copy (mars-cli assets/extensions/mars/rejected-attachments.js).
 //
 // Request shapes understood (anywhere in the JSON body):
 //   Responses API      { type: "input_file", filename, file_data | file_url | file_id }

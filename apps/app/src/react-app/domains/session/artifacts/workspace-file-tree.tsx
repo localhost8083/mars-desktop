@@ -4,7 +4,7 @@ import { FileTree, useFileTree, useFileTreeSearch } from "@pierre/trees/react";
 import { useQuery } from "@tanstack/react-query";
 import { RefreshCw, Search } from "lucide-react";
 
-import type { OmniRushServerClient, OmniRushWorkspaceCatalogEntry } from "@/app/lib/omnirush-server";
+import type { MarsServerClient, MarsWorkspaceCatalogEntry } from "@/app/lib/mars-server";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { cn } from "@/lib/utils";
@@ -24,15 +24,15 @@ const TREE_CSS = `
 export type WorkspaceFileAction = {
   id: string;
   label: string;
-  run: (entry: OmniRushWorkspaceCatalogEntry) => void;
+  run: (entry: MarsWorkspaceCatalogEntry) => void;
 };
 
 type WorkspaceFileTreeProps = {
-  client: OmniRushServerClient;
+  client: MarsServerClient;
   workspaceId: string;
   workspaceName: string;
   selectedPath: string;
-  onOpenFile: (entry: OmniRushWorkspaceCatalogEntry) => void;
+  onOpenFile: (entry: MarsWorkspaceCatalogEntry) => void;
   fileActions?: readonly WorkspaceFileAction[];
 };
 
@@ -42,7 +42,7 @@ type WorkspaceFileTreeProps = {
  * composition API expects a plain HTMLElement.
  */
 function buildFileContextMenu(
-  entry: OmniRushWorkspaceCatalogEntry,
+  entry: MarsWorkspaceCatalogEntry,
   actions: readonly WorkspaceFileAction[],
   close: () => void,
 ) {
@@ -64,7 +64,7 @@ function buildFileContextMenu(
   return menu;
 }
 
-function treePath(entry: OmniRushWorkspaceCatalogEntry) {
+function treePath(entry: MarsWorkspaceCatalogEntry) {
   return entry.kind === "dir" ? `${entry.path}/` : entry.path;
 }
 

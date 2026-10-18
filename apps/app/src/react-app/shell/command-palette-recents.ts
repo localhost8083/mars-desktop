@@ -1,4 +1,4 @@
-export const COMMAND_PALETTE_RECENTS_KEY = "omnirush.react.command-palette.recents";
+export const COMMAND_PALETTE_RECENTS_KEY = "mars.react.command-palette.recents";
 
 type PaletteRecentsStorage = Pick<Storage, "getItem" | "setItem">;
 

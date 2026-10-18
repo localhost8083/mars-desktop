@@ -13,13 +13,13 @@ export const BLANK_SLATE_PATH_ENV_KEYS = Object.freeze([
   "XDG_STATE_HOME",
   "APPDATA",
   "LOCALAPPDATA",
-  "OMNIRUSH_ELECTRON_USERDATA",
-  "OMNIRUSH_DESKTOP_BOOTSTRAP_PATH",
-  "OMNIRUSH_SERVER_CONFIG",
-  "OMNIRUSH_ENV_STORE",
-  "OMNIRUSH_TOKEN_STORE",
-  "OMNIRUSH_RUNTIME_DB",
-  "OMNIRUSH_DATA_DIR",
+  "MARS_ELECTRON_USERDATA",
+  "MARS_DESKTOP_BOOTSTRAP_PATH",
+  "MARS_SERVER_CONFIG",
+  "MARS_ENV_STORE",
+  "MARS_TOKEN_STORE",
+  "MARS_RUNTIME_DB",
+  "MARS_DATA_DIR",
   "OPENCODE_CONFIG_DIR",
   "OPENCODE_DB",
 ]);
@@ -43,10 +43,10 @@ export function prepareBlankSlateProfile({
   }
 
   const paths = pathApi(platform);
-  const rootPath = createTempRoot(paths.join(temporaryDirectory, "omnirush-test-profile-"));
+  const rootPath = createTempRoot(paths.join(temporaryDirectory, "mars-test-profile-"));
   const userDataPath = paths.join(rootPath, "electron", "user-data");
   const homePath = paths.join(rootPath, "home");
-  const omnirushConfigPath = paths.join(rootPath, "omnirush", "config");
+  const marsConfigPath = paths.join(rootPath, "mars", "config");
   const opencodeDataPath = paths.join(rootPath, "opencode", "data");
   const environment = {
     HOME: homePath,
@@ -57,13 +57,13 @@ export function prepareBlankSlateProfile({
     XDG_STATE_HOME: paths.join(rootPath, "xdg", "state"),
     APPDATA: paths.join(rootPath, "windows", "app-data", "roaming"),
     LOCALAPPDATA: paths.join(rootPath, "windows", "app-data", "local"),
-    OMNIRUSH_ELECTRON_USERDATA: userDataPath,
-    OMNIRUSH_DESKTOP_BOOTSTRAP_PATH: paths.join(omnirushConfigPath, "desktop-bootstrap.json"),
-    OMNIRUSH_SERVER_CONFIG: paths.join(omnirushConfigPath, "server.json"),
-    OMNIRUSH_ENV_STORE: paths.join(omnirushConfigPath, "env.json"),
-    OMNIRUSH_TOKEN_STORE: paths.join(omnirushConfigPath, "tokens.json"),
-    OMNIRUSH_RUNTIME_DB: paths.join(omnirushConfigPath, "runtime.sqlite"),
-    OMNIRUSH_DATA_DIR: paths.join(rootPath, "omnirush", "data"),
+    MARS_ELECTRON_USERDATA: userDataPath,
+    MARS_DESKTOP_BOOTSTRAP_PATH: paths.join(marsConfigPath, "desktop-bootstrap.json"),
+    MARS_SERVER_CONFIG: paths.join(marsConfigPath, "server.json"),
+    MARS_ENV_STORE: paths.join(marsConfigPath, "env.json"),
+    MARS_TOKEN_STORE: paths.join(marsConfigPath, "tokens.json"),
+    MARS_RUNTIME_DB: paths.join(marsConfigPath, "runtime.sqlite"),
+    MARS_DATA_DIR: paths.join(rootPath, "mars", "data"),
     OPENCODE_CONFIG_DIR: paths.join(rootPath, "opencode", "config"),
     OPENCODE_DB: paths.join(opencodeDataPath, "opencode.db"),
   };
@@ -77,8 +77,8 @@ export function prepareBlankSlateProfile({
     environment.XDG_STATE_HOME,
     environment.APPDATA,
     environment.LOCALAPPDATA,
-    omnirushConfigPath,
-    environment.OMNIRUSH_DATA_DIR,
+    marsConfigPath,
+    environment.MARS_DATA_DIR,
     environment.OPENCODE_CONFIG_DIR,
     opencodeDataPath,
   ]);

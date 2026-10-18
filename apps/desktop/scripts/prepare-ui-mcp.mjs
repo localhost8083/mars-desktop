@@ -1,6 +1,6 @@
-// Bundle the built-in UI-control MCP (packages/omnirush-ui-mcp) into one
+// Bundle the built-in UI-control MCP (packages/mars-ui-mcp) into one
 // self-contained ES module that electron-builder ships as an extra resource
-// (<resources>/omnirush-ui-mcp/index.mjs). The packaged app launches it with its
+// (<resources>/mars-ui-mcp/index.mjs). The packaged app launches it with its
 // own Electron binary in Node mode, so the bundle may import only Node
 // built-ins: every npm dependency is inlined here, at build time.
 //
@@ -16,8 +16,8 @@ const { verifyUiMcpBundleFile, UI_MCP_ENTRY } = createRequire(import.meta.url)("
 const scriptsDir = dirname(fileURLToPath(import.meta.url));
 const desktopRoot = resolve(scriptsDir, "..");
 const repoRoot = resolve(desktopRoot, "../..");
-const entry = resolve(repoRoot, "packages", "omnirush-ui-mcp", "index.mjs");
-const defaultOutdir = resolve(desktopRoot, ".electron-runtime", "omnirush-ui-mcp");
+const entry = resolve(repoRoot, "packages", "mars-ui-mcp", "index.mjs");
+const defaultOutdir = resolve(desktopRoot, ".electron-runtime", "mars-ui-mcp");
 
 function parseOutdir(argv) {
   const index = argv.indexOf("--outdir");

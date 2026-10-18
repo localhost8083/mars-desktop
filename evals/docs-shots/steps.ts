@@ -1,6 +1,6 @@
 import { setTimeout as delay } from "node:timers/promises";
-import { fill } from "@omnirush/behaviors";
-import type { Surface } from "@omnirush/cdp";
+import { fill } from "@mars/behaviors";
+import type { Surface } from "@mars/cdp";
 import { inPage } from "./inpage.ts";
 
 export type Step<T extends Surface = Surface> = (surface: T) => Promise<void>;

@@ -6,24 +6,24 @@
 import { useCallback, useEffect } from "react";
 import { create } from "zustand";
 
-import type { OmniRushRuntimeApprovals, OmniRushServerClient } from "@/app/lib/omnirush-server";
+import type { MarsRuntimeApprovals, MarsServerClient } from "@/app/lib/mars-server";
 import { reloadEngineWithDesktopFallback } from "@/react-app/shell/engine-reload-escalation";
 
-export type ApprovalsClient = Pick<OmniRushServerClient, "getRuntimeApprovals" | "setRuntimeApprovals" | "reloadEngine"> & {
+export type ApprovalsClient = Pick<MarsServerClient, "getRuntimeApprovals" | "setRuntimeApprovals" | "reloadEngine"> & {
   /** Keys the shared state; clients without one share a single entry. */
   baseUrl?: string;
 };
 
 export const FULL_PERMISSIONS_HELP = "Runs every command and edits files without asking. Organisation policies still apply.";
 
-/** Shown while OMNIRUSH_APPROVALS in the launch environment forces the mode. */
-export function approvalsEnvironmentHint(approvals: OmniRushRuntimeApprovals): string | null {
+/** Shown while MARS_APPROVALS in the launch environment forces the mode. */
+export function approvalsEnvironmentHint(approvals: MarsRuntimeApprovals): string | null {
   if (approvals.source !== "environment") return null;
-  return `Set by environment (OMNIRUSH_APPROVALS=${approvals.mode}); change it where the app is launched.`;
+  return `Set by environment (MARS_APPROVALS=${approvals.mode}); change it where the app is launched.`;
 }
 
 export type FullPermissionsOutcome = {
-  approvals: OmniRushRuntimeApprovals;
+  approvals: MarsRuntimeApprovals;
   status: string;
   /** "success" once the engine reloaded; "warning" when the setting is saved but the engine still needs a reload. */
   tone: "success" | "warning";
@@ -41,7 +41,7 @@ export async function applyFullPermissions(
   enabled: boolean,
 ): Promise<FullPermissionsOutcome> {
   const { mode, source, setting } = await client.setRuntimeApprovals(enabled ? "full" : "guarded");
-  const approvals: OmniRushRuntimeApprovals = { mode, source, setting };
+  const approvals: MarsRuntimeApprovals = { mode, source, setting };
   const label = mode === "full" ? "Full permissions on." : "Guarded mode.";
   if (!workspaceId) return { approvals, status: `${label} Reload the engine to apply it.`, tone: "warning" };
   try {
@@ -55,7 +55,7 @@ export async function applyFullPermissions(
 
 export type ApprovalModeEntry = {
   /** Null until the server has answered (or while the load keeps failing). */
-  approvals: OmniRushRuntimeApprovals | null;
+  approvals: MarsRuntimeApprovals | null;
   /** True while a change persists and the engine reloads. */
   busy: boolean;
   /** The last load or change result, or the error to act on. */
@@ -116,7 +116,7 @@ export function loadApprovalMode(client: ApprovalsClient): Promise<void> {
 }
 
 export type ApprovalModeChange = {
-  approvals: OmniRushRuntimeApprovals | null;
+  approvals: MarsRuntimeApprovals | null;
   status: string;
   tone: "success" | "warning" | "error";
 };

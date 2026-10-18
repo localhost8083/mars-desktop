@@ -8,10 +8,10 @@ import {
   liveSharedProductionStateEnv,
   removeOwnedSurfaceFiles,
   resolveInstalledProductionDesktopState,
-} from "@omnirush/hosts";
+} from "@mars/hosts";
 import {
   test,
-} from "@omnirush/testkit";
+} from "@mars/testkit";
 import { desktopProductionLive } from "../../worlds/desktop-prod-live.ts";
 
 test("live shared production desktop state requires consent and selects state without mutating it", async ({ evidence }) => {
@@ -27,13 +27,13 @@ test("live shared production desktop state requires consent and selects state wi
   );
   assert.equal(stateAcquisitions, 0);
 
-  const fixtureRoot = await mkdtemp(join(tmpdir(), "omnirush-prod-live-state-"));
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "mars-prod-live-state-"));
   try {
     const homeDir = join(fixtureRoot, "home");
-    const dataDir = join(homeDir, ".omnirush", "omnirush-server");
-    const configDir = join(homeDir, ".config", "omnirush");
+    const dataDir = join(homeDir, ".mars", "mars-server");
+    const configDir = join(homeDir, ".config", "mars");
     const opencodeConfigDir = join(homeDir, ".config", "opencode");
-    const userDataDir = join(homeDir, "Library", "Application Support", "ai.omnirush.desktop");
+    const userDataDir = join(homeDir, "Library", "Application Support", "ai.marsai.desktop");
     const opencodeDb = join(homeDir, "Library", "Application Support", "opencode", "opencode.db");
     await mkdir(dataDir, { recursive: true });
     await mkdir(configDir, { recursive: true });
@@ -45,9 +45,9 @@ test("live shared production desktop state requires consent and selects state wi
       join(configDir, "desktop-bootstrap.json"),
       join(configDir, "env.json"),
       join(configDir, "server.json"),
-      join(userDataDir, "omnirush-server-state.json"),
-      join(userDataDir, "omnirush-server-tokens.json"),
-      join(userDataDir, "omnirush-workspaces.json"),
+      join(userDataDir, "mars-server-state.json"),
+      join(userDataDir, "mars-server-tokens.json"),
+      join(userDataDir, "mars-workspaces.json"),
     ]) {
       await writeFile(path, "{}\n", "utf8");
     }
@@ -65,9 +65,9 @@ test("live shared production desktop state requires consent and selects state wi
       opencodeDb,
       opencodeConfigDir,
       serverConfigPath: join(configDir, "server.json"),
-      serverStatePath: join(userDataDir, "omnirush-server-state.json"),
-      serverTokenStorePath: join(userDataDir, "omnirush-server-tokens.json"),
-      workspaceStatePath: join(userDataDir, "omnirush-workspaces.json"),
+      serverStatePath: join(userDataDir, "mars-server-state.json"),
+      serverTokenStorePath: join(userDataDir, "mars-server-tokens.json"),
+      workspaceStatePath: join(userDataDir, "mars-workspaces.json"),
     });
 
     const isolatedProfile = join(fixtureRoot, "isolated-eval-profile");
@@ -76,25 +76,25 @@ test("live shared production desktop state requires consent and selects state wi
     const launchEnv = electronSurfaceEnv(
       profilePaths,
       {
-        appName: "OmniRush.ai Eval production-live",
-        appIdentifier: "ai.omnirush.desktop.eval.production-live",
+        appName: "MarsAI Eval production-live",
+        appIdentifier: "ai.marsai.desktop.eval.production-live",
         port: 31_001,
         cdpPort: 31_002,
       },
       liveSharedProductionStateEnv(resolved),
     );
-    assert.equal(launchEnv.OMNIRUSH_DATA_DIR, dataDir);
+    assert.equal(launchEnv.MARS_DATA_DIR, dataDir);
     assert.equal(launchEnv.OPENCODE_DB, opencodeDb);
-    assert.equal(launchEnv.OMNIRUSH_DESKTOP_WORKSPACE_STATE_PATH, join(userDataDir, "omnirush-workspaces.json"));
-    assert.equal(launchEnv.OMNIRUSH_SERVER_TOKEN_STORE_PATH, join(userDataDir, "omnirush-server-tokens.json"));
-    assert.equal(launchEnv.OMNIRUSH_SERVER_STATE_PATH, join(userDataDir, "omnirush-server-state.json"));
-    assert.equal(launchEnv.OMNIRUSH_ENV_STORE, join(configDir, "env.json"));
-    assert.equal(launchEnv.OMNIRUSH_SERVER_CONFIG, join(configDir, "server.json"));
-    assert.equal(launchEnv.OMNIRUSH_DEV_SHARED_STATE, "1");
-    assert.equal(launchEnv.OMNIRUSH_ELECTRON_USERDATA, profilePaths.userDataDir);
-    assert.notEqual(launchEnv.OMNIRUSH_ELECTRON_USERDATA, dataDir);
-    assert.equal(launchEnv.OMNIRUSH_ELECTRON_APP_IDENTIFIER, "ai.omnirush.desktop.eval.production-live");
-    assert.equal(launchEnv.OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT, "31002");
+    assert.equal(launchEnv.MARS_DESKTOP_WORKSPACE_STATE_PATH, join(userDataDir, "mars-workspaces.json"));
+    assert.equal(launchEnv.MARS_SERVER_TOKEN_STORE_PATH, join(userDataDir, "mars-server-tokens.json"));
+    assert.equal(launchEnv.MARS_SERVER_STATE_PATH, join(userDataDir, "mars-server-state.json"));
+    assert.equal(launchEnv.MARS_ENV_STORE, join(configDir, "env.json"));
+    assert.equal(launchEnv.MARS_SERVER_CONFIG, join(configDir, "server.json"));
+    assert.equal(launchEnv.MARS_DEV_SHARED_STATE, "1");
+    assert.equal(launchEnv.MARS_ELECTRON_USERDATA, profilePaths.userDataDir);
+    assert.notEqual(launchEnv.MARS_ELECTRON_USERDATA, dataDir);
+    assert.equal(launchEnv.MARS_ELECTRON_APP_IDENTIFIER, "ai.marsai.desktop.eval.production-live");
+    assert.equal(launchEnv.MARS_ELECTRON_REMOTE_DEBUG_PORT, "31002");
 
     await removeOwnedSurfaceFiles({
       name: "production-live",
@@ -117,7 +117,7 @@ test("live shared production desktop state requires consent and selects state wi
     );
     evidence.recordAssertionEvidence(
       "Dev Electron points at installed production stores from an isolated profile",
-      "The launch environment selected production OmniRush.ai, OpenCode, workspace, config, and token paths while retaining an isolated Electron userData directory.",
+      "The launch environment selected production MarsAI, OpenCode, workspace, config, and token paths while retaining an isolated Electron userData directory.",
       true,
     );
     evidence.recordAssertionEvidence(

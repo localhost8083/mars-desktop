@@ -6,7 +6,7 @@ import {
   CONNECT_LINK_VERSION,
   connectLinkClaimsSchema,
   type ConnectLinkClaims,
-} from "@omnirush/connect-link"
+} from "@mars/connect-link"
 import { and, eq, gt, isNull, lt } from "@omnirush-ee/den-db/drizzle"
 import { DesktopConnectGrantTable, InstallLinkTable } from "@omnirush-ee/den-db/schema"
 import { db } from "./db.js"

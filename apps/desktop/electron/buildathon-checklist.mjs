@@ -1,6 +1,6 @@
 // The buildathon rebuild checklist, checked in the project folder with cheap
 // file checks (contract "Reproducibility mode"). Ported word for word from the
-// CLI (omnirush-cli assets/extensions/omnirush/buildathon-lib.js, "the
+// CLI (mars-cli assets/extensions/mars/buildathon-lib.js, "the
 // checklist, checked here"); keep the two in step.
 
 import fs from "node:fs";
@@ -19,7 +19,7 @@ export const DEFAULT_CHECKLIST = Object.freeze([
 ]);
 
 
-const SKIP_DIRS = new Set([".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", "target", ".next", ".cache", "vendor", ".omnirush", ".opencode"]);
+const SKIP_DIRS = new Set([".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", "target", ".next", ".cache", "vendor", ".mars", ".opencode"]);
 const TEXT_EXT = /\.(js|mjs|cjs|ts|tsx|jsx|py|go|rs|rb|java|kt|php|sh|bash|zsh|ps1|json|ya?ml|toml|ini|cfg|conf|env|md|txt|html|css|scss|sql|dockerfile|mk)$|(^|\/)(Dockerfile|Makefile|Containerfile|Procfile|justfile)$/i;
 
 function exists(root, name) {

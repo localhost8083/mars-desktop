@@ -18,7 +18,7 @@ function workspaceDirectoryCandidates(workspace) {
     .filter(Boolean);
 }
 
-export function selectOmniRushWorkspaceForConnection(list, directory) {
+export function selectMarsWorkspaceForConnection(list, directory) {
   const items = Array.isArray(list?.items)
     ? list.items
     : Array.isArray(list?.workspaces)
@@ -35,10 +35,10 @@ export function selectOmniRushWorkspaceForConnection(list, directory) {
   return (activeId ? items.find((item) => trim(item?.id) === activeId) : null) ?? items[0] ?? null;
 }
 
-export function omnirushWorkspaceDisplayName(workspace) {
+export function marsWorkspaceDisplayName(workspace) {
   return (
     trim(workspace?.displayName) ||
-    trim(workspace?.omnirushWorkspaceName) ||
+    trim(workspace?.marsWorkspaceName) ||
     trim(workspace?.name) ||
     trim(workspace?.id) ||
     null

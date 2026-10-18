@@ -1,24 +1,24 @@
 services:
-  omnirush-host:
+  mars-host:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         # Keep this in sync with apps/server/package.json if you want a pinned release.
-        OMNIRUSH_SERVER_VERSION: 0.18.4
+        MARS_SERVER_VERSION: 0.18.4
         OPENCODE_VERSION: 1.17.11
     ports:
       - "8787:8787"
     environment:
       # Set these explicitly for stable sharing.
-      # OMNIRUSH_TOKEN: "..."
-      # OMNIRUSH_HOST_TOKEN: "..."
-      # Optional: OMNIRUSH_APPROVAL_MODE: "auto"
-      # Optional: OMNIRUSH_APPROVAL_TIMEOUT_MS: "30000"
+      # MARS_TOKEN: "..."
+      # MARS_HOST_TOKEN: "..."
+      # Optional: MARS_APPROVAL_MODE: "auto"
+      # Optional: MARS_APPROVAL_TIMEOUT_MS: "30000"
       # Historical path retained so existing ./data volumes keep working.
       # Only a directory name; the orchestrator CLI itself is gone.
-      OMNIRUSH_DATA_DIR: /data/omnirush-orchestrator
-      OMNIRUSH_SIDECAR_DIR: /data/sidecars
+      MARS_DATA_DIR: /data/mars-orchestrator
+      MARS_SIDECAR_DIR: /data/sidecars
     volumes:
       # Mount an existing project/workspace here.
       - ./workspace:/workspace

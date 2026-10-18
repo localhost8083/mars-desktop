@@ -2,7 +2,7 @@ import { createHmac } from "node:crypto"
 import {
   CONNECT_DIAGNOSTIC_PHASES,
   type StoredConnectDiagnosticIncident,
-} from "@omnirush/types/den/connect-diagnostics"
+} from "@mars/types/den/connect-diagnostics"
 import { diagnosticsConfig } from "./config"
 
 export type ConnectionIncidentFilters = {

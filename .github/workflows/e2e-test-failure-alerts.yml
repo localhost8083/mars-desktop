@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   notify:
-    if: github.repository == 'omnirush-ai/omnirush-gui' && github.event.workflow_run.event == 'schedule'
+    if: github.repository == 'mars-ai/mars-gui' && github.event.workflow_run.event == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

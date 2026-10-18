@@ -13,7 +13,7 @@ import {
 const allowedUrlPrefixes = ["https://worker.example.test"];
 
 async function withWorkspace(run) {
-  const base = await mkdtemp(path.join(os.tmpdir(), "omnirush-binary-transfer-"));
+  const base = await mkdtemp(path.join(os.tmpdir(), "mars-binary-transfer-"));
   const root = path.join(base, "root");
   const stagingDir = path.join(base, "staging");
   await mkdir(root, { recursive: true });

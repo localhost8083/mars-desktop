@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { workflowArtifactSnapshotSchema } from "@omnirush/types/workflows"
+import { workflowArtifactSnapshotSchema } from "@mars/types/workflows"
 import {
   artifactDigest,
   artifactFreshness,

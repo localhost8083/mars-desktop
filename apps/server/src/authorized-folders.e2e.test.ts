@@ -16,8 +16,8 @@ const CLIENT_TOKEN = "owt_authorized_folders_client";
 const HOST_TOKEN = "owt_authorized_folders_host";
 const stops: Array<() => void | Promise<void>> = [];
 const roots: string[] = [];
-const priorDataDir = process.env.OMNIRUSH_DATA_DIR;
-const priorTokenStore = process.env.OMNIRUSH_TOKEN_STORE;
+const priorDataDir = process.env.MARS_DATA_DIR;
+const priorTokenStore = process.env.MARS_TOKEN_STORE;
 
 type AuthorizedFoldersBody = {
   folders: string[];
@@ -36,7 +36,7 @@ function clientAuth(token = CLIENT_TOKEN) {
 }
 
 function hostAuth() {
-  return { "x-omnirush-host-token": HOST_TOKEN, "content-type": "application/json" };
+  return { "x-mars-host-token": HOST_TOKEN, "content-type": "application/json" };
 }
 
 async function createTempRoot(prefix: string) {
@@ -46,10 +46,10 @@ async function createTempRoot(prefix: string) {
 }
 
 async function createWorkspaceRoot() {
-  return createTempRoot("omnirush-authorized-folders-");
+  return createTempRoot("mars-authorized-folders-");
 }
 
-async function startOmniRushServer(workspaceRoot: string, options?: { readOnly?: boolean }) {
+async function startMarsServer(workspaceRoot: string, options?: { readOnly?: boolean }) {
   const config: ServerConfig = {
     host: "127.0.0.1",
     port: 0,
@@ -79,9 +79,9 @@ function readExternalDirectory(raw: string): Record<string, unknown> {
 }
 
 beforeEach(async () => {
-  const envRoot = await createTempRoot("omnirush-authorized-folders-env-");
-  process.env.OMNIRUSH_DATA_DIR = join(envRoot, "data");
-  process.env.OMNIRUSH_TOKEN_STORE = join(envRoot, "tokens.json");
+  const envRoot = await createTempRoot("mars-authorized-folders-env-");
+  process.env.MARS_DATA_DIR = join(envRoot, "data");
+  process.env.MARS_TOKEN_STORE = join(envRoot, "tokens.json");
 });
 
 afterEach(async () => {
@@ -92,14 +92,14 @@ afterEach(async () => {
     await rm(roots.pop()!, { recursive: true, force: true });
   }
   if (priorDataDir === undefined) {
-    delete process.env.OMNIRUSH_DATA_DIR;
+    delete process.env.MARS_DATA_DIR;
   } else {
-    process.env.OMNIRUSH_DATA_DIR = priorDataDir;
+    process.env.MARS_DATA_DIR = priorDataDir;
   }
   if (priorTokenStore === undefined) {
-    delete process.env.OMNIRUSH_TOKEN_STORE;
+    delete process.env.MARS_TOKEN_STORE;
   } else {
-    process.env.OMNIRUSH_TOKEN_STORE = priorTokenStore;
+    process.env.MARS_TOKEN_STORE = priorTokenStore;
   }
 });
 
@@ -120,7 +120,7 @@ describe("authorized folders routes", () => {
         },
       },
     }, null, 2) + "\n", "utf8");
-    const { base, config } = await startOmniRushServer(root);
+    const { base, config } = await startMarsServer(root);
 
     const response = await fetch(`${base}/workspace/ws_1/authorized-folders`, { headers: clientAuth() });
     expect(response.status).toBe(200);
@@ -146,7 +146,7 @@ describe("authorized folders routes", () => {
         },
       },
     }, null, 2) + "\n", "utf8");
-    const { base, config } = await startOmniRushServer(root);
+    const { base, config } = await startMarsServer(root);
 
     const response = await fetch(`${base}/workspace/ws_1/authorized-folders`, {
       method: "PUT",
@@ -182,7 +182,7 @@ describe("authorized folders routes", () => {
 
   test("requires client auth, collaborator scope, and writable server", async () => {
     const root = await createWorkspaceRoot();
-    const { base } = await startOmniRushServer(root);
+    const { base } = await startMarsServer(root);
 
     const unauthenticated = await fetch(`${base}/workspace/ws_1/authorized-folders`);
     expect(unauthenticated.status).toBe(401);
@@ -205,7 +205,7 @@ describe("authorized folders routes", () => {
     expect(viewerWrite.status).toBe(403);
 
     const readOnlyRoot = await createWorkspaceRoot();
-    const readOnly = await startOmniRushServer(readOnlyRoot, { readOnly: true });
+    const readOnly = await startMarsServer(readOnlyRoot, { readOnly: true });
     const readOnlyWrite = await fetch(`${readOnly.base}/workspace/ws_1/authorized-folders`, {
       method: "PUT",
       headers: clientAuth(),

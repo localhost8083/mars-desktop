@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { createOpenLogsFolderHandler, resolveDesktopLogsDir } from "./logs-folder.mjs";
 
-const USER_DATA = path.resolve("/tmp/omnirush-test-user-data");
+const USER_DATA = path.resolve("/tmp/mars-test-user-data");
 const trustedEvent = { trusted: true };
 
 function harness(overrides = {}) {

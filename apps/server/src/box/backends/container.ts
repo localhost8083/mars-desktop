@@ -1,4 +1,4 @@
-// Ported from the CLI (omnirush-cli src/box/backends/container.js,
+// Ported from the CLI (mars-cli src/box/backends/container.js,
 // feat/local-box-backends); keep the two in step. Desktop differences:
 // types; the container-name prefix (containerName's env).
 //
@@ -119,9 +119,9 @@ async function publishedPort(runtime: BoxRuntime, name: string, run: RunCommand)
 
 /** Resource limits a new box gets (a VM runtime has its own; only the process cap then). */
 export function resourceArgs({ runtime, env = process.env, cpus = os.cpus().length, memory = os.totalmem() }: { runtime: BoxRuntime; env?: Env; cpus?: number; memory?: number }): string[] {
-  const args = ["--pids-limit", String(Number(env.OMNIRUSH_BOX_PIDS) || 4096)];
-  const askedCpus = Number(env.OMNIRUSH_BOX_CPUS);
-  const askedMem = String(env.OMNIRUSH_BOX_MEMORY || "").trim();
+  const args = ["--pids-limit", String(Number(env.MARS_BOX_PIDS) || 4096)];
+  const askedCpus = Number(env.MARS_BOX_CPUS);
+  const askedMem = String(env.MARS_BOX_MEMORY || "").trim();
   if (askedCpus > 0) args.push("--cpus", String(askedCpus));
   else if (!runtime.vm) args.push("--cpus", String(Math.max(1, Math.min(8, cpus - 1))));
   if (askedMem) args.push("--memory", askedMem);
@@ -140,14 +140,14 @@ export function commandUser(runtime: BoxRuntime, { platform = process.platform, 
 
 /**
  * Create a box container (not started): the project folder at `croot`, the
- * launcher's run folder at /run/omnirush, the package-manager wrappers (when
+ * launcher's run folder at /run/mars, the package-manager wrappers (when
  * there are) read-only, boxd published on this machine's loopback only.
  * Nothing else of this machine goes in: no home folder, no credentials, no
  * docker socket.
  */
 export function createArgs({ name, key, root, croot, image, runtime, run: runFolder, shims, pkglog = null, token, user, env = process.env, platform = process.platform }: { name: string; key: string; root: string; croot: string; image: string; runtime: BoxRuntime; run: string; shims: string | null; pkglog?: BoxInstallLog | null; token: string; user: { uid: number; gid: number }; env?: Env; platform?: NodeJS.Platform }): string[] {
   return [
-    "create", "--name", name, "--hostname", "omnirush-box", "--init",
+    "create", "--name", name, "--hostname", "mars-box", "--init",
     "--label", `${LABEL}=1`, "--label", `${LABEL}.key=${key}`, "--label", `${LABEL}.root=${root}`, "--label", `${LABEL}.version=1`,
     "--mount", `type=bind,source=${source(runtime, root)},target=${croot}`,
     "--mount", `type=bind,source=${source(runtime, runFolder)},target=${RUN_DIR}`,
@@ -165,7 +165,7 @@ export function createArgs({ name, key, root, croot, image, runtime, run: runFol
     // Docker on Linux has no host.docker.internal by itself (Docker Desktop and Podman do): services on this machine.
     ...(runtime.name === "docker" && platform === "linux" && runtime.flavor !== "desktop" ? ["--add-host", "host.docker.internal:host-gateway"] : []),
     ...(user.uid === 0 ? ["--security-opt", "no-new-privileges"] : []),
-    "--entrypoint", "/opt/omnirush/bin/boxd",
+    "--entrypoint", "/opt/mars/bin/boxd",
     image,
   ];
 }
@@ -205,7 +205,7 @@ async function open(ctx: OpenContext): Promise<Opened> {
     const user = commandUser(runtime, { platform });
     const made = await rt(runtime, run)(createArgs({ name, key, root, croot, image: image.pull, runtime, run: runFolder, shims, pkglog, token: newToken(), user, env, platform }), { timeoutMs: 120_000 });
     if (made.code !== 0) return { ok: false, error: `could not create the sandbox: ${firstLine(made.stderr)}` };
-    const copied = await rt(runtime, run)(["cp", "-", `${name}:/`], { timeoutMs: 60_000, input: singleFileTar("opt/omnirush/bin/boxd", readFileSync(boxd)) });
+    const copied = await rt(runtime, run)(["cp", "-", `${name}:/`], { timeoutMs: 60_000, input: singleFileTar("opt/mars/bin/boxd", readFileSync(boxd)) });
     if (copied.code !== 0) {
       await rt(runtime, run)(["rm", "-f", name], { timeoutMs: 30_000 });
       return { ok: false, error: `could not copy the sandbox helper in: ${firstLine(copied.stderr)}` };
@@ -271,13 +271,13 @@ export const containerDriver: BoxDriver = {
     const res = await rt(runtime, run)(["rm", "-f", containerName(key, env)], { timeoutMs: 60_000 });
     return { removed: res.code === 0 };
   },
-  /** Box images that no box uses and that are not the current pins (`omnirush-ai/box-*` only; never a prune). */
+  /** Box images that no box uses and that are not the current pins (`mars-ai/box-*` only; never a prune). */
   async gcImages(runtime, { run = runCommand, current, used }) {
     const removed = [];
     const images = await rt(runtime, run)(["images", "--format", "{{.Repository}}:{{.Tag}} {{.ID}}"], { timeoutMs: 30_000 });
     for (const line of images.stdout.split("\n")) {
       const [ref, id] = line.trim().split(/\s+/);
-      if (!ref || !/(^|\/)omnirush-ai\/box-[a-z]+:/.test(ref) || current.has(ref) || used.has(ref) || (id && used.has(id))) continue;
+      if (!ref || !/(^|\/)mars-ai\/box-[a-z]+:/.test(ref) || current.has(ref) || used.has(ref) || (id && used.has(id))) continue;
       const res = await rt(runtime, run)(["rmi", ref], { timeoutMs: 60_000 });
       if (res.code === 0) removed.push({ kind: "image", name: ref, reason: "not current" });
     }

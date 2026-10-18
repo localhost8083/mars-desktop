@@ -12,8 +12,8 @@ const electronHelperDir = resolve(desktopRoot, "resources", "helpers");
 const electronRoot = resolve(desktopRoot, "electron");
 const packagedServerRoot = resolve(desktopRoot, "server");
 const packagedRuntimeRoot = resolve(desktopRoot, ".electron-runtime", "node_modules");
-const packagedUiMcpRoot = resolve(desktopRoot, ".electron-runtime", "omnirush-ui-mcp");
-const sentryBuildConfigPath = resolve(desktopRoot, ".electron-runtime", "omnirush-sentry.json");
+const packagedUiMcpRoot = resolve(desktopRoot, ".electron-runtime", "mars-ui-mcp");
+const sentryBuildConfigPath = resolve(desktopRoot, ".electron-runtime", "mars-sentry.json");
 
 const pnpmCmd = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const nodeCmd = process.execPath;
@@ -35,8 +35,8 @@ function run(command, args, cwd, env) {
 }
 
 function writeSentryBuildConfig() {
-  const dsn = process.env.OMNIRUSH_DESKTOP_SENTRY_DSN?.trim() ?? "";
-  const tracesSampleRateRaw = process.env.OMNIRUSH_DESKTOP_SENTRY_TRACES_SAMPLE_RATE?.trim() ?? "";
+  const dsn = process.env.MARS_DESKTOP_SENTRY_DSN?.trim() ?? "";
+  const tracesSampleRateRaw = process.env.MARS_DESKTOP_SENTRY_TRACES_SAMPLE_RATE?.trim() ?? "";
   const tracesSampleRate = tracesSampleRateRaw ? Number(tracesSampleRateRaw) : 0.01;
   const config = {
     dsn: dsn || null,
@@ -57,17 +57,17 @@ writeSentryBuildConfig();
 // Build the server TS → JS so Electron can import it in-process
 // CI already compiles this exact checkout in the required build job.
 if (!process.argv.includes("--server-built")) {
-  run(pnpmCmd, ["--filter", "omnirush-server", "build"], repoRoot);
+  run(pnpmCmd, ["--filter", "mars-server", "build"], repoRoot);
 }
-// automation-runner.mjs imports @omnirush/headless-threads through its
+// automation-runner.mjs imports @mars/headless-threads through its
 // published "default" export (dist/index.js); build it so plain-node
 // consumers resolve it in packaged layouts.
-run(pnpmCmd, ["--filter", "@omnirush/headless-threads", "build"], repoRoot);
-// OMNIRUSH_ELECTRON_BUILD tells Vite to emit relative asset paths so
+run(pnpmCmd, ["--filter", "@mars/headless-threads", "build"], repoRoot);
+// MARS_ELECTRON_BUILD tells Vite to emit relative asset paths so
 // index.html resolves /assets/* correctly when loaded via file:// from
 // inside the packaged .app bundle.
-run(pnpmCmd, ["--filter", "@omnirush/app", "build"], repoRoot, {
-  OMNIRUSH_ELECTRON_BUILD: "1",
+run(pnpmCmd, ["--filter", "@mars/app", "build"], repoRoot, {
+  MARS_ELECTRON_BUILD: "1",
 });
 // Relocate repository constants for every compiled server module, including v2.
 const serverDistDir = resolve(repoRoot, "apps", "server", "dist");

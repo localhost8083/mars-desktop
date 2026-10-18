@@ -4,8 +4,8 @@ import net from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect } from "vitest";
-import { test } from "@omnirush/testkit";
-import { startEgressLab } from "@omnirush/labs";
+import { test } from "@mars/testkit";
+import { startEgressLab } from "@mars/labs";
 import { resolveSystemCaEnv } from "../../apps/desktop/electron/runtime.mjs";
 
 // The classic corporate misconfig: a private-CA HTTPS server that serves its
@@ -62,7 +62,7 @@ async function fetchLabInChild(url: string, env: NodeJS.ProcessEnv): Promise<Chi
 // Exactly the record the enterprise sign-in gate stamps after a successful
 // grant exchange (enterprise-activation-gate.tsx, exchangeConfirmedGrant).
 async function writeSignInStampedBootstrap(denBaseUrl: string): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "omnirush-enterprise-activation-"));
+  const dir = await mkdtemp(join(tmpdir(), "mars-enterprise-activation-"));
   const bootstrapPath = join(dir, "desktop-bootstrap.json");
   const stamped = {
     baseUrl: denBaseUrl,
@@ -87,7 +87,7 @@ async function resolveCaEnvFromActivationRecord(options: {
   parentEnv: NodeJS.ProcessEnv;
   tlsConnectImpl?: (connectOptions: { host: string; port: number }) => never;
 }): Promise<RepairAttempt> {
-  const userDataDir = await mkdtemp(join(tmpdir(), "omnirush-chain-repair-spec-"));
+  const userDataDir = await mkdtemp(join(tmpdir(), "mars-chain-repair-spec-"));
   const logs: string[] = [];
   const caEnv: NodeJS.ProcessEnv = await resolveSystemCaEnv({
     tlsModule: { getCACertificates: () => [] },
@@ -170,12 +170,12 @@ test("enterprise TLS chain repair unlocks exactly the sign-in-stamped activation
     true,
   );
 
-  // Claim 3 — kill switch: with OMNIRUSH_DISABLE_CHAIN_REPAIR=1 the same
+  // Claim 3 — kill switch: with MARS_DISABLE_CHAIN_REPAIR=1 the same
   // stamped record must not repair anything and the fetch fails again.
   const disabled = await resolveCaEnvFromActivationRecord({
     bootstrapPath,
     rootPem: lab.rootPem,
-    parentEnv: { OMNIRUSH_DISABLE_CHAIN_REPAIR: "1" },
+    parentEnv: { MARS_DISABLE_CHAIN_REPAIR: "1" },
   });
   expect(disabled.logs.some((line) => /chain repair disabled/.test(line))).toBe(true);
   expect(disabled.logs.some((line) => /chain repaired/.test(line))).toBe(false);
@@ -185,7 +185,7 @@ test("enterprise TLS chain repair unlocks exactly the sign-in-stamped activation
   expect(killSwitched.output).toMatch(chainErrorPattern);
   evidence.recordAssertionEvidence(
     "The kill switch keeps the broken chain broken",
-    `With OMNIRUSH_DISABLE_CHAIN_REPAIR=1 and the same activation record, the runtime logged "chain repair disabled", never logged "chain repaired", and the child fetch failed again with ${chainErrorPattern.exec(killSwitched.output)?.[0] ?? "a chain error"}; the exported bundle carried the root only.`,
+    `With MARS_DISABLE_CHAIN_REPAIR=1 and the same activation record, the runtime logged "chain repair disabled", never logged "chain repaired", and the child fetch failed again with ${chainErrorPattern.exec(killSwitched.output)?.[0] ?? "a chain error"}; the exported bundle carried the root only.`,
     true,
   );
 

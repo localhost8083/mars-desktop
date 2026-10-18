@@ -1,7 +1,7 @@
 import { expect } from "vitest";
-import { denFetch, freshSession } from "@omnirush/behaviors";
-import type { DenSession } from "@omnirush/behaviors";
-import { inviteMember, server, test } from "@omnirush/testkit";
+import { denFetch, freshSession } from "@mars/behaviors";
+import type { DenSession } from "@mars/behaviors";
+import { inviteMember, server, test } from "@mars/testkit";
 
 const title = "a workspace super-admin can register SAML SSO without an internal authorization error";
 
@@ -28,7 +28,7 @@ async function organizationId(admin: DenSession, organizationName: string): Prom
 
 async function memberIdByEmail(admin: DenSession, orgId: string, email: string): Promise<string> {
   const result = await denFetch(admin, "/v1/org", {
-    headers: { ...auth(admin), "x-omnirush-org-id": orgId },
+    headers: { ...auth(admin), "x-mars-org-id": orgId },
   });
   const members = isRecord(result.body) && Array.isArray(result.body.members)
     ? result.body.members.filter(isRecord)
@@ -44,11 +44,11 @@ async function memberIdByEmail(admin: DenSession, orgId: string, email: string):
 test(title, { timeout: 300_000 }, async ({ evidence, place }) => {
   const runId = `${Date.now().toString(36)}${process.pid.toString(36)}`;
   const organizationName = `Super-admin SSO ${runId}`;
-  const password = "OmniRushEval123!";
+  const password = "MarsEval123!";
 
   await using den = await server({ place, org: { name: organizationName, members: {} } });
   const superAdmin = await inviteMember(den, "superAdmin", {
-    email: `sso-super-admin.${runId}@omnirush.test`,
+    email: `sso-super-admin.${runId}@mars.test`,
     name: "SSO Super Admin",
     password,
   });
@@ -73,7 +73,7 @@ test(title, { timeout: 300_000 }, async ({ evidence, place }) => {
     headers: {
       authorization: `Bearer ${superAdmin.token}`,
       cookie: memberCookie,
-      "x-omnirush-org-id": orgId,
+      "x-mars-org-id": orgId,
     },
     body: samlBody,
   });
@@ -82,7 +82,7 @@ test(title, { timeout: 300_000 }, async ({ evidence, place }) => {
   const owner = await freshSession(den.admin);
   const promoted = await denFetch(owner, `/v1/members/${encodeURIComponent(memberId)}/role`, {
     method: "POST",
-    headers: { ...auth(owner), "x-omnirush-org-id": orgId },
+    headers: { ...auth(owner), "x-mars-org-id": orgId },
     body: JSON.stringify({ role: "super-admin" }),
   });
   expect(promoted.response.status, promoted.text).toBe(200);
@@ -99,7 +99,7 @@ test(title, { timeout: 300_000 }, async ({ evidence, place }) => {
     headers: {
       authorization: `Bearer ${superAdmin.token}`,
       cookie: sessionCookie,
-      "x-omnirush-org-id": orgId,
+      "x-mars-org-id": orgId,
     },
     body: samlBody,
   });

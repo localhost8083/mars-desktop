@@ -86,12 +86,12 @@ describe("session error resilience", () => {
   test("does not diagnose a generic database failure as a full disk", () => {
     const presentation = presentOpencodeSessionError("effect/sql/SqlError: Failed to execute statement\n at runLoop (/$bunfs/root/chunk.js:25:2045)")
     expect(presentation.kind).toBe("database-error")
-    expect(presentation.title).toBe("omnirush.ai couldn’t access its saved data")
+    expect(presentation.title).toBe("marsai.click couldn’t access its saved data")
     expect(presentation.description).toContain("check the available disk space")
     expect(presentation.description).not.toContain("has run out")
   })
 
-  test("classifies an omnirush.ai abort and retains its diagnostic payload", () => {
+  test("classifies an marsai.click abort and retains its diagnostic payload", () => {
     const presentation = presentOpencodeSessionError({
       name: "MessageAbortedError",
       data: {
@@ -140,7 +140,7 @@ describe("session error resilience", () => {
     const syncInput = {
       workspaceId: "workspace-1",
       baseUrl: "http://127.0.0.1:1234",
-      omnirushToken: "token",
+      marsToken: "token",
     }
     const cleanup = __createWorkspaceSessionSyncForTest(syncInput)
     const release = trackWorkspaceSessionSync(syncInput, "session-1")
@@ -295,16 +295,16 @@ describe("session error resilience", () => {
     const error = {
       name: "APIError",
       data: {
-        message: "omnirush.ai: you have no tokens left. Link Discord or connect GitHub in the console to earn tokens every day: https://omnirush.ai/console/account",
+        message: "marsai.click: you have no tokens left. Link Discord or connect GitHub in the console to earn tokens every day: https://marsai.click/console/account",
         statusCode: 429,
         isRetryable: false,
       },
     }
     const presentation = presentOpencodeSessionError(error)
     expect(presentation.title).toBe(
-      "omnirush.ai: you have no tokens left. Link Discord or connect GitHub in the console to earn tokens every day.",
+      "marsai.click: you have no tokens left. Link Discord or connect GitHub in the console to earn tokens every day.",
     )
-    expect(presentation.action).toEqual({ label: "Open console", link: "https://omnirush.ai/console/account" })
+    expect(presentation.action).toEqual({ label: "Open console", link: "https://marsai.click/console/account" })
     // It survives the reload: the synthetic message keeps the button.
     expect(sessionErrorPresentationFromUIMessage(createSessionErrorUIMessage("turn", presentation))?.action)
       .toEqual(presentation.action)
@@ -312,15 +312,15 @@ describe("session error resilience", () => {
     const html = renderErrorTranscriptWithResume(error)
     expect(html).toContain('data-testid="session-error-action"')
     expect(html).toContain(">Open console<")
-    expect(html).not.toContain("https://omnirush.ai/console/account")
+    expect(html).not.toContain("https://marsai.click/console/account")
     expect(html).not.toContain('data-testid="session-error-resume"')
 
     // A spent day or week is words only.
     const day = presentOpencodeSessionError({
       name: "APIError",
-      data: { message: "omnirush.ai: today's tokens are used up. They refill at 5:30 AM (in 3 h).", statusCode: 429 },
+      data: { message: "marsai.click: today's tokens are used up. They refill at 5:30 AM (in 3 h).", statusCode: 429 },
     })
-    expect(day.title).toBe("omnirush.ai: today's tokens are used up. They refill at 5:30 AM (in 3 h).")
+    expect(day.title).toBe("marsai.click: today's tokens are used up. They refill at 5:30 AM (in 3 h).")
     expect(day.action).toBeUndefined()
     expect(renderErrorTranscriptWithResume({ name: "APIError", data: { message: day.title } })).not.toContain("session-error-action")
   })
@@ -418,7 +418,7 @@ describe("session error resilience", () => {
           reason: "free_tier_limit",
           provider: "opencode",
           title: "Free limit reached",
-          message: "Subscribe to omnirush.ai Go for reliable access to the best open-source models, starting at $5/month.",
+          message: "Subscribe to marsai.click Go for reliable access to the best open-source models, starting at $5/month.",
           label: "subscribe",
           link: "https://opencode.ai/go",
         },
@@ -427,7 +427,7 @@ describe("session error resilience", () => {
       expect(container.textContent).toContain("The free starter model is busy right now")
       expect(container.textContent).toContain("Connect a model provider")
       expect(container.textContent).not.toContain("subscribe to Go")
-      expect(container.textContent).not.toContain("omnirush.ai Go")
+      expect(container.textContent).not.toContain("marsai.click Go")
       expect(container.textContent).not.toContain("$5/month")
       const connectButton = Array.from(container.querySelectorAll("button")).find(
         (button) => button.textContent === "Connect a model provider",

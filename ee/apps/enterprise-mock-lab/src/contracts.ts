@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { oauthRedirectUriSchema, scenarioCredentialContinuitySchema } from "@omnirush/enterprise-mcp-mock-server"
+import { oauthRedirectUriSchema, scenarioCredentialContinuitySchema } from "@mars/enterprise-mcp-mock-server"
 
 const redirectUrisInputSchema = z.preprocess(
   (value) => typeof value === "string"

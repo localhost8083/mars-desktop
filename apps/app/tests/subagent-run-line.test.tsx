@@ -15,7 +15,7 @@ function taskPart(state: "input-streaming" | "output-available", childSessionId?
     subagent_type: "executor-deep",
   };
 
-  const callProviderMetadata = childSessionId ? { omnirush: { childSessionId } } : undefined;
+  const callProviderMetadata = childSessionId ? { mars: { childSessionId } } : undefined;
 
   return state === "output-available"
     ? {
@@ -114,14 +114,14 @@ describe("SubagentRunLine", () => {
 
   test("a finished task names the sub-agent's model, and a fallback to the main model", () => {
     const part = taskPart("output-available", "ses_child");
-    part.callProviderMetadata = { omnirush: { childSessionId: "ses_child", subagentModel: "gpt-6-sol" } };
+    part.callProviderMetadata = { mars: { childSessionId: "ses_child", subagentModel: "gpt-6-sol" } };
     const html = render(part);
     expect(html).toContain('data-subagent-model="gpt-6-sol"');
     expect(html).toContain("GPT 6 Sol");
 
     const fellBack = taskPart("output-available", "ses_child");
     fellBack.callProviderMetadata = {
-      omnirush: { childSessionId: "ses_child", subagentModel: "gpt-6-astra", subagentModelFallback: { requested: "meta-muse-spark", used: "gpt-6-astra", reason: "refused" } },
+      mars: { childSessionId: "ses_child", subagentModel: "gpt-6-astra", subagentModelFallback: { requested: "meta-muse-spark", used: "gpt-6-astra", reason: "refused" } },
     };
     const fallbackHtml = render(fellBack);
     expect(fallbackHtml).toContain('data-subagent-model-fallback="meta-muse-spark"');
@@ -129,7 +129,7 @@ describe("SubagentRunLine", () => {
 
     // While the task runs nothing is claimed: the engine's start-time model is only a guess.
     const running = taskPart("input-streaming", "ses_child");
-    running.callProviderMetadata = { omnirush: { childSessionId: "ses_child", subagentModel: "gpt-6-sol" } };
+    running.callProviderMetadata = { mars: { childSessionId: "ses_child", subagentModel: "gpt-6-sol" } };
     expect(render(running)).not.toContain("data-subagent-model");
   });
 });

@@ -1,7 +1,7 @@
-import { test as evidenceTest } from "@omnirush/test-evidence/vitest";
-import { SkipError, resolvePlace } from "@omnirush/env";
+import { test as evidenceTest } from "@mars/test-evidence/vitest";
+import { SkipError, resolvePlace } from "@mars/env";
 import { setBriefTestRegistrar } from "./brief-internal.ts";
-import type { TestEvidenceRecorder } from "@omnirush/test-evidence";
+import type { TestEvidenceRecorder } from "@mars/test-evidence";
 
 export const fixtureTest = evidenceTest.extend<{ place: ReturnType<typeof resolvePlace> }>({
   place: [async ({}, use) => {

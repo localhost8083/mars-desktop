@@ -74,7 +74,7 @@ export function createWorldView(options: {
   spinnerMs?: number;
 }): WorldView {
   const now = options.now ?? Date.now;
-  const configuredHeartbeat = Number(process.env.OMNIRUSH_WORLD_HEARTBEAT_MS);
+  const configuredHeartbeat = Number(process.env.MARS_WORLD_HEARTBEAT_MS);
   const heartbeatMs = options.heartbeatMs
     ?? (Number.isFinite(configuredHeartbeat) && configuredHeartbeat > 0 ? configuredHeartbeat : 20_000);
   const spinnerMs = options.spinnerMs ?? 100;

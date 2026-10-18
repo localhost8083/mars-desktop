@@ -22,7 +22,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const desktopDir = path.resolve(here, "..", "..");
 const repoDir = path.resolve(desktopDir, "..", "..");
 const outDir = path.join(desktopDir, "dist-electron", "system-ca");
-const workDir = path.join(os.tmpdir(), "omnirush-system-ca-check");
+const workDir = path.join(os.tmpdir(), "mars-system-ca-check");
 const compareIndex = process.argv.indexOf("--compare-ref");
 const compareRef = compareIndex >= 0 ? process.argv[compareIndex + 1] : "origin/main";
 const opensslCandidates = [process.env.OPENSSL_BIN, "C:\\Program Files\\Git\\usr\\bin\\openssl.exe", "C:\\Program Files\\Git\\mingw64\\bin\\openssl.exe"].filter(Boolean);
@@ -59,7 +59,7 @@ try {
   log("compare ref unavailable:", error.message);
 }
 
-// 2. Root + leaf for omnirush.ai.
+// 2. Root + leaf for marsai.click.
 execFileSync(process.execPath, [path.join(here, "intercept-proxy.mjs"), "--dir", caDir, "--certs-only"], { stdio: "inherit", env: { ...process.env, OPENSSL_BIN: openssl } });
 const rootCer = path.join(caDir, "root.cer");
 const rootPem = path.join(caDir, "root.pem");
@@ -70,10 +70,10 @@ const sudo = (...args) => execFileSync("sudo", ["-n", ...args], { stdio: "inheri
 // 3. Hosts file -> proxy on 127.0.0.1:443.
 if (isWindows) {
   const hostsFile = path.join(process.env.SystemRoot || "C:\\Windows", "System32", "drivers", "etc", "hosts");
-  appendFileSync(hostsFile, "\r\n127.0.0.1 omnirush.ai\r\n");
+  appendFileSync(hostsFile, "\r\n127.0.0.1 marsai.click\r\n");
   spawnSync("ipconfig", ["/flushdns"], { stdio: "ignore" });
 } else {
-  sudo("sh", "-c", "printf '\\n127.0.0.1 omnirush.ai\\n' >> /etc/hosts");
+  sudo("sh", "-c", "printf '\\n127.0.0.1 marsai.click\\n' >> /etc/hosts");
   if (process.platform === "darwin") {
     spawnSync("sudo", ["-n", "dscacheutil", "-flushcache"], { stdio: "ignore" });
     spawnSync("sudo", ["-n", "killall", "-HUP", "mDNSResponder"], { stdio: "ignore" });
@@ -99,7 +99,7 @@ function smoke(label, electronDir, extraEnv = {}) {
     : [electronBin, [path.join(here, "smoke.mjs")]];
   const result = spawnSync(command, args, {
     cwd: desktopDir,
-    env: { ...cleanEnv, ...extraEnv, SMOKE_URL: "https://omnirush.ai/", SMOKE_ROOT_PEM: rootPem, SMOKE_ELECTRON_DIR: electronDir, SMOKE_OUT: out },
+    env: { ...cleanEnv, ...extraEnv, SMOKE_URL: "https://marsai.click/", SMOKE_ROOT_PEM: rootPem, SMOKE_ELECTRON_DIR: electronDir, SMOKE_OUT: out },
     encoding: "utf8",
     timeout: 180_000,
   });
@@ -123,7 +123,7 @@ function runScenario(store, extraEnv = {}) {
 function berEncodedRoot() {
   const dir = path.join(workDir, "ber");
   mkdirSync(dir, { recursive: true });
-  execFileSync(openssl, ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", "ber.key", "-out", "ber-src.pem", "-subj", "/CN=OmniRush.ai Test BER-encoded Root", "-days", "3"], { cwd: dir, stdio: "ignore" });
+  execFileSync(openssl, ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", "ber.key", "-out", "ber-src.pem", "-subj", "/CN=MarsAI Test BER-encoded Root", "-days", "3"], { cwd: dir, stdio: "ignore" });
   const der = Buffer.from(readFileSync(path.join(dir, "ber-src.pem"), "utf8").replace(/-----[^-]+-----|\s+/g, ""), "base64");
   const version = der.indexOf(Buffer.from([0xa0, 0x03, 0x02, 0x01, 0x02]));
   if (version < 0) throw new Error("unexpected certificate layout");
@@ -179,7 +179,7 @@ try {
   scenarios.systemKeychain = runScenario("system-keychain");
 } else {
   // 4. The distribution store (/etc/ssl), which Node reads as the system store.
-  sudo("cp", rootPem, "/usr/local/share/ca-certificates/omnirush-test-intercept.crt");
+  sudo("cp", rootPem, "/usr/local/share/ca-certificates/mars-test-intercept.crt");
   sudo("update-ca-certificates");
   scenarios.distributionStore = runScenario("distribution-store");
 }

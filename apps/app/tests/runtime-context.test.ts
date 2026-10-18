@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
 import {
-  readOmniRushRuntimeFacts,
-  renderOmniRushRuntimeContext,
+  readMarsRuntimeFacts,
+  renderMarsRuntimeContext,
 } from "../src/react-app/domains/session/sync/runtime-context";
 
 // 2026-09-02T02:38:00Z: already September 2 in UTC, still the evening of
@@ -10,9 +10,9 @@ import {
 // UTC-dated files when an agent assumes the host clock is the person's.
 const LATE_EVENING_PACIFIC = new Date("2026-09-02T02:38:00Z");
 
-describe("readOmniRushRuntimeFacts", () => {
+describe("readMarsRuntimeFacts", () => {
   test("reports the person's calendar date and offset for the supplied zone, not the host's", () => {
-    const facts = readOmniRushRuntimeFacts({
+    const facts = readMarsRuntimeFacts({
       now: LATE_EVENING_PACIFIC,
       timeZone: "America/Los_Angeles",
       locale: "en-US",
@@ -28,7 +28,7 @@ describe("readOmniRushRuntimeFacts", () => {
   });
 
   test("the same instant is the next day east of UTC", () => {
-    const facts = readOmniRushRuntimeFacts({
+    const facts = readMarsRuntimeFacts({
       now: LATE_EVENING_PACIFIC,
       timeZone: "Europe/Berlin",
       locale: "de-DE",
@@ -40,20 +40,20 @@ describe("readOmniRushRuntimeFacts", () => {
   });
 
   test("handles half-hour offsets and standard time", () => {
-    expect(readOmniRushRuntimeFacts({ now: LATE_EVENING_PACIFIC, timeZone: "Asia/Kolkata", locale: "en-IN" }).utcOffset).toBe("UTC+05:30");
-    expect(readOmniRushRuntimeFacts({ now: new Date("2026-01-15T12:00:00Z"), timeZone: "America/Los_Angeles", locale: "en-US" }).utcOffset).toBe("UTC-08:00");
-    expect(readOmniRushRuntimeFacts({ now: LATE_EVENING_PACIFIC, timeZone: "UTC", locale: "en-US" }).utcOffset).toBe("UTC+00:00");
+    expect(readMarsRuntimeFacts({ now: LATE_EVENING_PACIFIC, timeZone: "Asia/Kolkata", locale: "en-IN" }).utcOffset).toBe("UTC+05:30");
+    expect(readMarsRuntimeFacts({ now: new Date("2026-01-15T12:00:00Z"), timeZone: "America/Los_Angeles", locale: "en-US" }).utcOffset).toBe("UTC-08:00");
+    expect(readMarsRuntimeFacts({ now: LATE_EVENING_PACIFIC, timeZone: "UTC", locale: "en-US" }).utcOffset).toBe("UTC+00:00");
   });
 
   test("falls back to UTC for an unknown zone instead of failing the send", () => {
-    const facts = readOmniRushRuntimeFacts({ now: LATE_EVENING_PACIFIC, timeZone: "Mars/Olympus_Mons", locale: "en-US" });
+    const facts = readMarsRuntimeFacts({ now: LATE_EVENING_PACIFIC, timeZone: "Mars/Olympus_Mons", locale: "en-US" });
 
     expect(facts.timeZone).toBe("UTC");
     expect(facts.localDate).toBe("2026-09-02");
   });
 
   test("detects the zone and locale from the runtime when none are supplied", () => {
-    const facts = readOmniRushRuntimeFacts({ now: LATE_EVENING_PACIFIC });
+    const facts = readMarsRuntimeFacts({ now: LATE_EVENING_PACIFIC });
 
     expect(facts.timeZone).toBe(Intl.DateTimeFormat().resolvedOptions().timeZone);
     expect(facts.locale.length).toBeGreaterThan(0);
@@ -61,9 +61,9 @@ describe("readOmniRushRuntimeFacts", () => {
   });
 });
 
-describe("renderOmniRushRuntimeContext", () => {
+describe("renderMarsRuntimeContext", () => {
   test("renders stable facts and the relative-date rule, never the wall-clock time", () => {
-    const context = renderOmniRushRuntimeContext(readOmniRushRuntimeFacts({
+    const context = renderMarsRuntimeContext(readMarsRuntimeFacts({
       now: LATE_EVENING_PACIFIC,
       timeZone: "America/Los_Angeles",
       locale: "en-US",

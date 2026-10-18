@@ -1,7 +1,7 @@
 # Native MCP Apps
 
-OmniRush.ai supports MCP Apps delivered by standard MCP servers connected through
-OmniRush.ai Connect. A server advertises the stable
+MarsAI supports MCP Apps delivered by standard MCP servers connected through
+MarsAI Connect. A server advertises the stable
 `io.modelcontextprotocol/ui` extension, a tool binds an exact UI resource with
 `_meta.ui.resourceUri`, the host reads that resource with `resources/read`, and
 tool inputs and results move over the standard MCP Apps bridge.
@@ -17,11 +17,11 @@ resource loading or a standalone URL-App installation path.
 ## Standard MCP server path
 
 Connect continues to own server configuration, authentication, access grants,
-per-member credentials, and tool policy. The OmniRush.ai Cloud control server
+per-member credentials, and tool policy. The MarsAI Cloud control server
 publishes a member-scoped resource at:
 
 ```text
-omnirush://connect/mcp-servers/index.json
+mars://connect/mcp-servers/index.json
 ```
 
 The signed-in Desktop session mints a separate short-lived App-host credential
@@ -31,7 +31,7 @@ OpenCode. It reads the index with that credential and advertises the
 `mcp-app-host-v1` client capability. Den returns a non-empty provider index only
 when the server-verified scope, client capability, and both rollout gates are
 present. A normal model or legacy MCP token cannot unlock the index by spoofing
-an audience or capability header. Desktop never writes `omnirush-connect-*`
+an audience or capability header. Desktop never writes `mars-connect-*`
 entries to the OpenCode runtime or any model-visible MCP registry. A connection
 is proxied at:
 
@@ -41,7 +41,7 @@ is proxied at:
 
 Current Desktop clients never register these provider descriptors in OpenCode;
 the model discovers and invokes ordinary provider operations only through the
-central `omnirush-cloud` `search_capabilities` and `execute_capability` tools.
+central `mars-cloud` `search_capabilities` and `execute_capability` tools.
 For stale published clients that still retain an old per-connection entry, the
 proxy exposes only a compatibility pair named `search_capabilities` and
 `execute_capability`. It never returns the provider catalog, MCP App launch
@@ -66,7 +66,7 @@ The app-host view preserves:
 - one server identity per Connect connection, preserving the same-server
   tool-call boundary.
 
-OmniRush.ai access grants, disabled-tool policy, and approval rules still apply at
+MarsAI access grants, disabled-tool policy, and approval rules still apply at
 the proxy boundary. The App-host credential authorizes only this bounded proxy
 surface; it is not a provider credential and grants no direct cross-server
 access.
@@ -77,14 +77,14 @@ Native MCP Apps are enabled for every deployment and organization. The former
 deployment gate (`DEN_REMOTE_MCP_APPS_ENABLED`) and the per-organization
 **Native MCP Apps (preview)** capability were removed once the feature
 stabilized; stale stored organization overrides are ignored. App launch
-metadata (`kind: mcp_app`, `mcpApp.resourceUri`, `omnirush/mcpApp` meta) is an
+metadata (`kind: mcp_app`, `mcpApp.resourceUri`, `mars/mcpApp` meta) is an
 opaque binding published on every bounded search/execute result; clients that
 do not host Apps ignore it and keep the normal tool result. The private
 App-host index and per-connection provider proxy remain gated on the
 client-advertised App-host capability header, so older Desktop clients keep
 their bounded search/execute surface. Reconciliation also removes and
 disconnects stale
-`omnirush-connect-*` OpenCode entries while preserving user-authored MCPs and
+`mars-connect-*` OpenCode entries while preserving user-authored MCPs and
 all durable Connect records.
 
 The provider proxy advertises `listChanged: false` because the current
@@ -105,7 +105,7 @@ change. In the current product:
   standalone-App launch tool;
 - capability search returns no standalone URL-App matches;
 - model and App-host catalogs contain no standalone URL-App tools;
-- no `ui://omnirush/library-apps/...` resources are registered;
+- no `ui://mars/library-apps/...` resources are registered;
 - member server indexes and launch metadata contain no standalone URL Apps;
 - REST calls under `/v1/remote-mcp-apps` are not registered and are therefore
   unavailable.

@@ -1,4 +1,4 @@
-name: Setup OmniRush.ai tests
+name: Setup MarsAI tests
 description: Install the pinned runtimes, engine, and both workspaces
 runs:
   using: composite
@@ -13,7 +13,7 @@ runs:
       with:
         version: 11.4.0
 
-    # The engine is OmniRush.ai's build of opencode 1.18.32, on this repo's
+    # The engine is MarsAI's build of opencode 1.18.32, on this repo's
     # public engine pre-release (sha256-pinned in
     # apps/desktop/scripts/engine-release.json).
     - name: Install OpenCode CLI

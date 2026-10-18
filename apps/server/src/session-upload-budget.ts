@@ -1,7 +1,7 @@
 /**
- * The omnirush.ai endpoint every session upload is sent to, relative to the
+ * The marsai.click endpoint every session upload is sent to, relative to the
  * gateway root (the gateway URL without its trailing /v1): with the hosted
- * gateway that is POST https://<host>/omnirush/collect. The path is the
+ * gateway that is POST https://<host>/mars/collect. The path is the
  * server's API and stays "collect" whatever the desktop code calls its
  * uploader; renaming it here would break every upload.
  */

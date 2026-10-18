@@ -9,7 +9,7 @@ import type { ServerConfig, WorkspaceInfo } from "./types.js";
 import { ensureWorkspaceFiles } from "./workspace-init.js";
 
 async function withWorkspace(fn: (root: string) => Promise<void>) {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-reload-watcher-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-reload-watcher-"));
   try {
     await fn(root);
   } finally {

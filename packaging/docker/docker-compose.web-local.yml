@@ -1,7 +1,7 @@
 services:
   mysql:
     image: mysql:8.4
-    container_name: omnirush-web-local-mysql
+    container_name: mars-web-local-mysql
     ports:
       - "3306:3306"
     environment:
@@ -14,11 +14,11 @@ services:
       retries: 30
       start_period: 10s
     volumes:
-      - omnirush-web-local-mysql-data:/var/lib/mysql
+      - mars-web-local-mysql-data:/var/lib/mysql
 
   redis:
     image: redis:7.4-alpine@sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2
-    container_name: omnirush-web-local-redis
+    container_name: mars-web-local-redis
     ports:
       - "127.0.0.1:6379:6379"
     healthcheck:
@@ -29,4 +29,4 @@ services:
       start_period: 5s
 
 volumes:
-  omnirush-web-local-mysql-data:
+  mars-web-local-mysql-data:

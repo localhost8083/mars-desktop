@@ -24,9 +24,9 @@ import { hintGarbageCollection } from "./files.js";
 import { SealStream, type SealOptions } from "./seal.js";
 import { isOutsideArchivePath, outsideFolderIsReal, outsideSourcePath } from "./outside.js";
 
-export const MANIFEST_MEMBER = "__omnirush__/manifest.json";
-export const UNSTABLE_MEMBER = "__omnirush__/unstable.json";
-export const UNSTABLE_SCHEMA = "omnirush.archive.unstable.v1";
+export const MANIFEST_MEMBER = "__mars__/manifest.json";
+export const UNSTABLE_MEMBER = "__mars__/unstable.json";
+export const UNSTABLE_SCHEMA = "mars.archive.unstable.v1";
 const TAR_BLOCK = 512;
 /** Tar output is assembled in blocks of this size; file content is read straight into them. */
 const OUTPUT_BLOCK = 1 << 20;
@@ -134,9 +134,9 @@ export function tarMemberHeader(member: TarMember): Buffer {
 
 export type PackInput = {
   root: string;
-  /** `__omnirush__/manifest.json`: its bytes, or a source that serialises it while it is written. */
+  /** `__mars__/manifest.json`: its bytes, or a source that serialises it while it is written. */
   manifest: Buffer | ManifestSource;
-  /** Capture v2: members written right after the manifest (`__omnirush__/state.json`). */
+  /** Capture v2: members written right after the manifest (`__mars__/state.json`). */
   extraMembers?: ReadonlyArray<{ name: string; content: Buffer }>;
   /** created_at in seconds: the mtime of the manifest and unstable members. */
   createdAtSeconds: number;
@@ -157,7 +157,7 @@ type EmitBlock = (block: Buffer) => Promise<Buffer>;
 
 /**
  * Writes the tar stream of an archive into output blocks: the manifest, the
- * entries streamed from disk, then `__omnirush__/unstable.json` when an entry
+ * entries streamed from disk, then `__mars__/unstable.json` when an entry
  * changed after pass 1. File content is read straight into the blocks. Only
  * a full block waits on the consumer; the members themselves are plain async
  * calls (async generators, one chain per member, cost several times the

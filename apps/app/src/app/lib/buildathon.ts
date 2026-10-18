@@ -7,36 +7,36 @@
 import { create } from "zustand";
 
 import type {
-  OmniRushBuildathonAnnouncement,
-  OmniRushBuildathonAnswer,
-  OmniRushBuildathonEvent,
-  OmniRushBuildathonPromo,
-  OmniRushBuildathonSession,
-  OmniRushBuildathonStatus,
-  OmniRushBuildathonTagResult,
-  OmniRushBuildathonTrack,
-} from "@omnirush/types/desktop-ipc";
+  MarsBuildathonAnnouncement,
+  MarsBuildathonAnswer,
+  MarsBuildathonEvent,
+  MarsBuildathonPromo,
+  MarsBuildathonSession,
+  MarsBuildathonStatus,
+  MarsBuildathonTagResult,
+  MarsBuildathonTrack,
+} from "@mars/types/desktop-ipc";
 
-export type BuildathonStatus = OmniRushBuildathonStatus;
-export type BuildathonEvent = OmniRushBuildathonEvent;
-export type BuildathonSession = OmniRushBuildathonSession;
-export type BuildathonTrack = OmniRushBuildathonTrack;
-export type BuildathonPromo = OmniRushBuildathonPromo;
-export type BuildathonAnnouncement = OmniRushBuildathonAnnouncement;
-export type BuildathonAnswer = OmniRushBuildathonAnswer;
+export type BuildathonStatus = MarsBuildathonStatus;
+export type BuildathonEvent = MarsBuildathonEvent;
+export type BuildathonSession = MarsBuildathonSession;
+export type BuildathonTrack = MarsBuildathonTrack;
+export type BuildathonPromo = MarsBuildathonPromo;
+export type BuildathonAnnouncement = MarsBuildathonAnnouncement;
+export type BuildathonAnswer = MarsBuildathonAnswer;
 
 export const BUILDATHON_REFRESH_MS = 10 * 60_000;
 /** After the join page opens: re-read every 30 s (and on focus) for 10 minutes. */
 export const JOIN_WATCH_REFRESH_MS = 30_000;
 export const JOIN_WATCH_MS = 10 * 60_000;
-export const ONLY_TOOL_RULE = "OmniRush must be the only generative AI tool you use.";
-export const BUILDATHON_TRACKS_STORAGE_KEY = "omnirush.buildathon.tracks.v1";
-export const BUILDATHON_TAGGED_STORAGE_KEY = "omnirush.buildathon.tagged.v1";
-export const BUILDATHON_REMINDERS_STORAGE_KEY = "omnirush.buildathon.reminders.v1";
+export const ONLY_TOOL_RULE = "Mars must be the only generative AI tool you use.";
+export const BUILDATHON_TRACKS_STORAGE_KEY = "mars.buildathon.tracks.v1";
+export const BUILDATHON_TAGGED_STORAGE_KEY = "mars.buildathon.tagged.v1";
+export const BUILDATHON_REMINDERS_STORAGE_KEY = "mars.buildathon.reminders.v1";
 /** Promo ids: `dismissed` (banner closed, or the card's close), `card` (the one-time home card was shown). */
-export const BUILDATHON_PROMO_STORAGE_KEY = "omnirush.buildathon.promo.v1";
+export const BUILDATHON_PROMO_STORAGE_KEY = "mars.buildathon.promo.v1";
 /** Announcement ids: `notified` (toast + notification shown), `read` (seen in My Buildathon). */
-export const BUILDATHON_ANNOUNCEMENTS_STORAGE_KEY = "omnirush.buildathon.announcements.v1";
+export const BUILDATHON_ANNOUNCEMENTS_STORAGE_KEY = "mars.buildathon.announcements.v1";
 /** At most this many announcements pop up one by one; the rest are one summary toast. */
 export const ANNOUNCEMENT_TOAST_LIMIT = 3;
 const MAX_IDS_REMEMBERED = 200;
@@ -521,10 +521,10 @@ export function setProjectTrack(path: string | null | undefined, track: string |
  */
 export async function tagSessions(
   pending: Array<{ sessionId: string; track: string; project?: string | null }>,
-  tag: (input: { sessionId: string; track: string; project?: string | null }) => Promise<OmniRushBuildathonTagResult>,
+  tag: (input: { sessionId: string; track: string; project?: string | null }) => Promise<MarsBuildathonTagResult>,
 ): Promise<void> {
   for (const entry of pending) {
-    let result: OmniRushBuildathonTagResult = "retry";
+    let result: MarsBuildathonTagResult = "retry";
     try {
       result = await tag(entry);
     } catch {

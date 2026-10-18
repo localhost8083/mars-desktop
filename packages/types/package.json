@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/types",
+  "name": "@mars/types",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -16,23 +16,23 @@
       "bun": "./src/agent-context-diagnostics.ts",
       "default": "./dist/agent-context-diagnostics.js"
     },
-    "./omnirush-affordance": {
-      "types": "./src/omnirush-affordance.ts",
-      "development": "./src/omnirush-affordance.ts",
-      "bun": "./src/omnirush-affordance.ts",
-      "default": "./dist/omnirush-affordance.js"
+    "./mars-affordance": {
+      "types": "./src/mars-affordance.ts",
+      "development": "./src/mars-affordance.ts",
+      "bun": "./src/mars-affordance.ts",
+      "default": "./dist/mars-affordance.js"
     },
-    "./omnirush-context": {
-      "types": "./src/omnirush-context.ts",
-      "development": "./src/omnirush-context.ts",
-      "bun": "./src/omnirush-context.ts",
-      "default": "./dist/omnirush-context.js"
+    "./mars-context": {
+      "types": "./src/mars-context.ts",
+      "development": "./src/mars-context.ts",
+      "bun": "./src/mars-context.ts",
+      "default": "./dist/mars-context.js"
     },
-    "./omnirush-provider": {
-      "types": "./src/omnirush-provider.ts",
-      "development": "./src/omnirush-provider.ts",
-      "bun": "./src/omnirush-provider.ts",
-      "default": "./dist/omnirush-provider.js"
+    "./mars-provider": {
+      "types": "./src/mars-provider.ts",
+      "development": "./src/mars-provider.ts",
+      "bun": "./src/mars-provider.ts",
+      "default": "./dist/mars-provider.js"
     },
     "./automations": {
       "types": "./src/automations.ts",

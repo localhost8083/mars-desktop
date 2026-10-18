@@ -1,4 +1,4 @@
-import type { DesktopConfig, DesktopExecutionPolicy, DesktopPolicyKey } from "@omnirush/types/den/desktop-policies";
+import type { DesktopConfig, DesktopExecutionPolicy, DesktopPolicyKey } from "@mars/types/den/desktop-policies";
 import { z } from "zod";
 import type { ApprovalMode } from "./approval-mode.js";
 import { gitWorkflowPermissionRules } from "./git-command-policy.js";
@@ -7,7 +7,7 @@ export const managedPolicyActionSchema = z.enum([
   "sync", "shell", "terminal", "saved_command", "file_write", "engine_config", "browser_external",
   "model", "webfetch", "websearch", "browser", "extensions", "settings", "provider", "workspace",
   // The engine is about to record a commit in a repository; the server
-  // defaults the identity from the omnirush.ai account or refuses clearly.
+  // defaults the identity from the marsai.click account or refuses clearly.
   "git_identity",
 ]);
 export type ManagedPolicyAction = z.infer<typeof managedPolicyActionSchema>;
@@ -125,7 +125,7 @@ export function policyDenial(policy: DesktopConfig, action: ManagedPolicyAction,
   }
   // Native fetch follows redirects inside the engine. Until it exposes a
   // per-hop hook, approved-site browsing must use the intercepted browser.
-  if ((action === "webfetch" || action === "websearch") && execution?.browserOrigins !== undefined) return "Use OmniRush.ai's built-in browser to open approved websites.";
+  if ((action === "webfetch" || action === "websearch") && execution?.browserOrigins !== undefined) return "Use MarsAI's built-in browser to open approved websites.";
   if (action === "browser" || action === "webfetch") {
     if (action === "browser" && policy.allowBuiltInExtensions === false) return "Built-in extensions are disabled by your organization.";
     const url = typeof input.url === "string" ? input.url : "";
@@ -154,7 +154,7 @@ export function policyRequestActions(method: string, path: string): ManagedPolic
   if (/^\/workspaces\/(local|remote)$/.test(path)) actions.push("workspace");
   if (/^\/runtime-config\/providers$/.test(path)) actions.push("provider");
   if (/^\/runtime-config\/(?:approvals|best-practices)$/.test(path)) actions.push("settings");
-  if (path === "/omnirush/subagent-model") actions.push("settings");
+  if (path === "/mars/subagent-model") actions.push("settings");
   if (/^\/workspace\/[^/]+\/(?:cloud-plugins|claude-plugins|plugins|skills|commands|mcp)(?:\/|$)/.test(path)
     && !/\/mcp\/[^/]+\/(?:auth|managed\/connect)$/.test(path)) actions.push("extensions");
   if (/^\/workspace\/[^/]+\/(?:config|opencode-config|runtime-config|permissions|authorized-folders|box)(?:\/|$)/.test(path)) actions.push("settings");

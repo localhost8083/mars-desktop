@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { modelReasoningSummary, REPLY, SUMMARY } from "../worlds/model-reasoning-summary.ts";
 
 const test = spec.world(modelReasoningSummary, { needs: { commands: ["bun"] }, timeout: 240_000 });
@@ -14,7 +14,7 @@ test("Astra and Sol deliver requested reasoning summaries through the desktop br
       if (!record(session) || typeof session.id !== "string") throw new Error("Missing session id");
       const before = world.requests.length;
       const result = await world.engine("POST", `/session/${session.id}/message`, {
-        model: { providerID: "omnirush", modelID }, variant: "high",
+        model: { providerID: "mars", modelID }, variant: "high",
         parts: [{ type: "text", text: "Compute 17 plus 25." }],
       });
       expect(record(result) && record(result.info) && result.info.error).toBeUndefined();
@@ -29,7 +29,7 @@ test("Astra and Sol deliver requested reasoning summaries through the desktop br
       expect(requests).toHaveLength(1);
       expect(requests[0]).toMatchObject({ path: "/v1/responses", body: { model: modelID, reasoning: { effort: "high", summary: "auto" } },
         headers: { authorization: "Bearer summary-witness-access" } });
-      expect(requests[0]?.headers["x-omnirush-reasoning-effort"]).toBeUndefined();
+      expect(requests[0]?.headers["x-mars-reasoning-effort"]).toBeUndefined();
       const persisted = await world.engine("GET", `/session/${session.id}/message`);
       if (!Array.isArray(persisted)) throw new Error("Missing persisted messages");
       const assistant = persisted.filter(record).find((message) => record(message.info) && message.info.role === "assistant");
@@ -57,8 +57,8 @@ test("Astra and Sol deliver requested reasoning summaries through the desktop br
   await step("a subagent fallback requests the destination Astra summary", async () => {
     const before = world.requests.length;
     expect((await world.gateway({ model: "unavailable-model", input: "fallback" }, "responses", {
-      "x-omnirush-subagent-fallback-model": "gpt-6-astra",
-      "x-omnirush-subagent-fallback-effort": "max",
+      "x-mars-subagent-fallback-model": "gpt-6-astra",
+      "x-mars-subagent-fallback-effort": "max",
     })).status).toBe(200);
     expect(world.requests.slice(before).map((request) => request.body)).toEqual([
       { model: "unavailable-model", input: "fallback" },

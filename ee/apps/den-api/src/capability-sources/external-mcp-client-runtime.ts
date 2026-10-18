@@ -44,7 +44,7 @@ const enterpriseMcpClient: ExternalMcpClientRuntime = {
   inspectExternalMcpToolCall: inspectWithEnterpriseClient,
 }
 
-export const externalMcpClientRuntimeName = "@omnirush/enterprise-mcp-client"
+export const externalMcpClientRuntimeName = "@mars/enterprise-mcp-client"
 
 export const {
   connectExternalMcp,

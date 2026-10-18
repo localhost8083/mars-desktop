@@ -8,7 +8,7 @@ import {
   OrganizationTable,
 } from "@omnirush-ee/den-db/schema"
 import { createDenTypeId } from "@omnirush-ee/utils/typeid"
-import { ManagedModelsPolicyError } from "@omnirush/types/den/managed-models-policy"
+import { ManagedModelsPolicyError } from "@mars/types/den/managed-models-policy"
 import { db } from "./db.js"
 import { env } from "./env.js"
 import type { DenOrgMode } from "./env.js"

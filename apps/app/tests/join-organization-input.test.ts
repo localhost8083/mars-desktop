@@ -31,20 +31,20 @@ describe("join organization input classification", () => {
     expect(parseInviteLinkInput("https://den.acme.test/join-org")).toBeNull();
     expect(parseInviteLinkInput("https://den.acme.test/join-org?invite=")).toBeNull();
     expect(parseInviteLinkInput("https://den.acme.test/install?token=abc")).toBeNull();
-    expect(parseInviteLinkInput("omnirush://den-auth?grant=abcdefghijkl")).toBeNull();
+    expect(parseInviteLinkInput("mars://den-auth?grant=abcdefghijkl")).toBeNull();
     expect(parseInviteLinkInput("not a url")).toBeNull();
   });
 
   test("recognizes plain server URLs but never raw grants or deep links", () => {
-    expect(parseServerUrlInput(" https://omnirush.acme.test/ ")).toEqual({
-      url: "https://omnirush.acme.test",
-      host: "omnirush.acme.test",
+    expect(parseServerUrlInput(" https://mars.acme.test/ ")).toEqual({
+      url: "https://mars.acme.test",
+      host: "mars.acme.test",
     });
     expect(parseServerUrlInput("http://localhost:3005")).toEqual({
       url: "http://localhost:3005",
       host: "localhost:3005",
     });
-    expect(parseServerUrlInput("omnirush://den-auth?grant=abcdefghijkl")).toBeNull();
+    expect(parseServerUrlInput("mars://den-auth?grant=abcdefghijkl")).toBeNull();
     expect(parseServerUrlInput("den.acme.test")).toBeNull();
     expect(parseServerUrlInput("raw-sign-in-grant-value")).toBeNull();
   });

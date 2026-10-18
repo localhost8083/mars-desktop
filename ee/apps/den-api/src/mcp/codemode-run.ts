@@ -1,4 +1,4 @@
-import { CodeMode } from "@omnirush/codemode"
+import { CodeMode } from "@mars/codemode"
 import { Effect } from "effect"
 import type { CodemodeToolTree } from "./codemode-tools.js"
 

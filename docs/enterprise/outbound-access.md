@@ -1,4 +1,4 @@
-# Outbound network access for OmniRush.ai
+# Outbound network access for MarsAI
 
 Status: maintainer pointer
 

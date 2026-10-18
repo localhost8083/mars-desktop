@@ -13,7 +13,7 @@ import {
 export type BootPhaseId =
   | "idle"
   | "bootstrapping-workspaces"
-  | "starting-omnirush-server"
+  | "starting-mars-server"
   | "starting-engine"
   | "activating-workspace"
   | "ready"
@@ -48,7 +48,7 @@ const DEFAULT_STATE: BootStateSnapshot = {
 const PHASE_MESSAGES: Record<BootPhaseId, string> = {
   idle: "",
   "bootstrapping-workspaces": "Loading your workspaces",
-  "starting-omnirush-server": "Starting the omnirush.ai server",
+  "starting-mars-server": "Starting the marsai.click server",
   "starting-engine": "Preparing workspace",
   "activating-workspace": "Activating your workspace",
   ready: "Ready",

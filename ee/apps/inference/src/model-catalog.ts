@@ -1,4 +1,4 @@
-import { INFERENCE_MODEL_ALIASES } from "@omnirush/types/den/inference"
+import { INFERENCE_MODEL_ALIASES } from "@mars/types/den/inference"
 
 const OMNIRUSH_PROVIDER_ID = "omnirush"
 

@@ -1,15 +1,15 @@
-// Ported from the CLI (omnirush-cli src/box/backends/bwrap.js,
+// Ported from the CLI (mars-cli src/box/backends/bwrap.js,
 // feat/local-box-backends); keep the two in step. Desktop differences: types;
-// the one-time admin step (`sudo omnirush sandbox enable`) is the CLI's, so
+// the one-time admin step (`sudo mars sandbox enable`) is the CLI's, so
 // the AppArmor reason names the CLI; boxrun missing from the sidecars is a
 // reason, not a path.
 //
-// The bubblewrap backend (Linux; also what runs inside the OmniRush WSL
+// The bubblewrap backend (Linux; also what runs inside the Mars WSL
 // distro): no daemon, no root, nothing to install where unprivileged user
 // namespaces work. `boxrun` (box/go/cmd/boxrun) pulls the pinned image and
-// unpacks it (~/.omnirush/box/bwrap/store), and runs each project's box as
+// unpacks it (~/.mars/box/bwrap/store), and runs each project's box as
 // that root filesystem under a per-project overlay upper layer
-// (~/.omnirush/box/bwrap/boxes/<key>), in its own user, mount, PID, IPC and
+// (~/.mars/box/bwrap/boxes/<key>), in its own user, mount, PID, IPC and
 // UTS namespaces, on the host's network. The upper layer stays on disk, so
 // installs survive restarts; boxd is the same helper the containers run.
 //
@@ -31,9 +31,9 @@ export { parseOut } from "./shared.js";
 
 type Env = NodeJS.ProcessEnv;
 
-/** Where `sudo omnirush sandbox enable` (the CLI) puts OmniRush's bwrap (root-owned, profiled). */
-export const ENABLED_BWRAP = "/usr/local/lib/omnirush/bwrap";
-export const APPARMOR_PROFILE = "/etc/apparmor.d/omnirush-bwrap";
+/** Where `sudo mars sandbox enable` (the CLI) puts Mars's bwrap (root-owned, profiled). */
+export const ENABLED_BWRAP = "/usr/local/lib/mars/bwrap";
+export const APPARMOR_PROFILE = "/etc/apparmor.d/mars-bwrap";
 /** boxd exits (and the box with it) after this long with no request. */
 export const IDLE_MINUTES = 120;
 
@@ -56,12 +56,12 @@ export function boxrunPath({ env = process.env, arch = process.arch }: { env?: E
 }
 
 /**
- * The bwrap to use, best first: OMNIRUSH_BOX_BWRAP, the profiled copy
- * `sandbox enable` installed, the one shipped with OmniRush (static, for
+ * The bwrap to use, best first: MARS_BOX_BWRAP, the profiled copy
+ * `sandbox enable` installed, the one shipped with Mars (static, for
  * systems without bubblewrap). Null: boxrun looks for the system's.
  */
 export function bwrapPath({ env = process.env, arch = process.arch, exists = existsSync }: { env?: Env; arch?: string; exists?: (file: string) => boolean } = {}): string | null {
-  const asked = String(env.OMNIRUSH_BOX_BWRAP || "").trim();
+  const asked = String(env.MARS_BOX_BWRAP || "").trim();
   if (asked) return asked;
   if (exists(ENABLED_BWRAP)) return ENABLED_BWRAP;
   const shipped = helperPath("bwrap", { goos: "linux", goarch: GOARCH[arch] || "amd64", env });
@@ -73,13 +73,13 @@ export function explainProbe(out: Record<string, unknown> | null): string {
   const reason = str(out?.reason) || "bubblewrap could not start";
   switch (out?.code) {
     case "apparmor":
-      return `${reason}; one-time admin fix: \`sudo omnirush sandbox enable\` (OmniRush CLI)`;
+      return `${reason}; one-time admin fix: \`sudo mars sandbox enable\` (Mars CLI)`;
     case "no_bwrap":
       return `${reason} (\`sudo apt install bubblewrap\` or your system's package)`;
     case "userns_off":
       return `${reason}; an admin can allow them, or use Podman or Docker`;
     case "container":
-      return `${reason}; run OmniRush on the host, or give this container a Docker or Podman engine`;
+      return `${reason}; run Mars on the host, or give this container a Docker or Podman engine`;
     default:
       return reason;
   }
@@ -180,10 +180,10 @@ async function open(ctx: OpenContext): Promise<Opened> {
   const boxd = helperPath("boxd", { goos: "linux", goarch: GOARCH[meta.arch] || runtime.arch || "amd64", env });
   if (!boxd) return { ok: false, error: "the sandbox helper boxd is missing from this install" };
   const portFile = path.join(runFolder, "boxd.port");
-  const idle = Number(env.OMNIRUSH_BOX_IDLE_MIN) > 0 ? Number(env.OMNIRUSH_BOX_IDLE_MIN) : IDLE_MINUTES;
+  const idle = Number(env.MARS_BOX_IDLE_MIN) > 0 ? Number(env.MARS_BOX_IDLE_MIN) : IDLE_MINUTES;
   const args = upArgs({ box: boxDir(home, key), store: storeDir(home), image: meta.image, boxd, portFile, root, croot, runFolder, shims, pkglog, token: meta.token, bwrap: runtime.bwrap ?? null, idleMinutes: idle });
-  // OMNIRUSH_BOX_OVERLAY=fuse: fuse-overlayfs only (a kernel without overlayfs in user namespaces, or a test of one).
-  if (String(env.OMNIRUSH_BOX_OVERLAY || "").toLowerCase() === "fuse") args.push("--overlay", "fuse");
+  // MARS_BOX_OVERLAY=fuse: fuse-overlayfs only (a kernel without overlayfs in user namespaces, or a test of one).
+  if (String(env.MARS_BOX_OVERLAY || "").toLowerCase() === "fuse") args.push("--overlay", "fuse");
   const res = await run(runtime.bin, args, { timeoutMs: 45_000, env: { PATH: env.PATH || "/usr/bin:/bin", USER: env.USER || "" } });
   const out = parseOut(res.stdout);
   const port = num(out?.port);
@@ -253,7 +253,7 @@ export const bwrapDriver: BoxDriver = {
     for (const id of ids) {
       const img = readJson<{ ref?: string }>(path.join(dir, id, "image.json"));
       if (!img || usedIds.has(id) || used.has(String(img.ref)) || currentPlain.has(plain(img.ref))) continue;
-      if (!/(^|\/)omnirush-ai\/box-[a-z]+:/.test(String(img.ref))) continue;
+      if (!/(^|\/)mars-ai\/box-[a-z]+:/.test(String(img.ref))) continue;
       const res = await run(runtime.bin, ["rmimage", ...storeArgs(home), "--id", id], { timeoutMs: 120_000 });
       if (parseOut(res.stdout)?.ok) removed.push({ kind: "image", name: String(img.ref), reason: "not current" });
     }
@@ -269,18 +269,18 @@ export const bwrapDriver: BoxDriver = {
   execCommand: (_runtime, { key, home }) => boxshExec({ key, home }),
 };
 
-/** The AppArmor profile `sudo omnirush sandbox enable` (the CLI) installs for OmniRush's own bwrap copy. */
+/** The AppArmor profile `sudo mars sandbox enable` (the CLI) installs for Mars's own bwrap copy. */
 export function apparmorProfile(bwrap = ENABLED_BWRAP): string {
-  return `# OmniRush sandbox: lets OmniRush's own bubblewrap copy (root-owned) create
+  return `# Mars sandbox: lets Mars's own bubblewrap copy (root-owned) create
 # user namespaces on systems that restrict them (Ubuntu 23.10+). Written by
-# \`sudo omnirush sandbox enable\`; \`sudo omnirush sandbox enable --undo\` removes it.
+# \`sudo mars sandbox enable\`; \`sudo mars sandbox enable --undo\` removes it.
 abi <abi/4.0>,
 include <tunables/global>
 
-profile omnirush-bwrap ${bwrap} flags=(unconfined) {
+profile mars-bwrap ${bwrap} flags=(unconfined) {
   userns,
 
-  include if exists <local/omnirush-bwrap>
+  include if exists <local/mars-bwrap>
 }
 `;
 }

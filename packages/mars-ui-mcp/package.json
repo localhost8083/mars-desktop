@@ -1,0 +1,28 @@
+{
+  "name": "mars-ui-mcp",
+  "version": "0.2.0",
+  "private": true,
+  "description": "MCP server for MarsAI app context and semantic UI control",
+  "author": "MarsAI <info@marsai.click>",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "mars-ui-mcp": "index.mjs"
+  },
+  "files": [
+    "index.mjs"
+  ],
+  "scripts": {
+    "check": "node --check index.mjs",
+    "test": "node --check index.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mars-ai/mars-gui.git",
+    "directory": "packages/mars-ui-mcp"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.25.76"
+  }
+}

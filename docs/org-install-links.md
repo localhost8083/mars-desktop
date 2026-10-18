@@ -9,8 +9,8 @@ Related: `ee/apps/den-api/src/install-links.ts`, `ee/apps/den-api/src/routes/org
 
 An organization install link opens a three-step Den page:
 
-1. Download and run the standard OmniRush.ai installer.
-2. Return to Den and click **Open OmniRush.ai**.
+1. Download and run the standard MarsAI installer.
+2. Return to Den and click **Open MarsAI**.
 3. Confirm the exact organization and server in the app, then complete normal
    organization sign-in.
 
@@ -56,11 +56,11 @@ flag.
 ## Public origins
 
 Set `DEN_BASE_URL` to the externally reachable Den web origin, for example
-`https://omnirush.example.com`. Den derives Better Auth, CORS/trusted origins,
+`https://mars.example.com`. Den derives Better Auth, CORS/trusted origins,
 web-app hosts, API defaults, and MCP resource defaults from that one value. Set
 `DEN_API_PUBLIC_URL` only as a compatibility override when you publish a separate
 Den API origin or an externally reachable proxy path, such as
-`https://omnirush.example.com/api/den`. If you publish a separate Den API origin,
+`https://mars.example.com/api/den`. If you publish a separate Den API origin,
 the install-link exchange and external MCP clients must be able to reach it.
 
 Invitation acceptance links use the first non-wildcard trusted origin. In the
@@ -80,17 +80,17 @@ one of these paths:
 
 | Deployment | Download behavior | Required client access |
 |---|---|---|
-| Internet-connected | Immediate `302` to the exact standard asset under `OMNIRUSH_INSTALLER_RELEASE_REPO` and `OMNIRUSH_INSTALLER_RELEASE_TAG`. The organization token is not forwarded. | Den web/API, `github.com`, `release-assets.githubusercontent.com`, and `objects.githubusercontent.com` for legacy or rollback paths. |
-| Semi-air-gapped | Stream the matching standard installer from `OMNIRUSH_INSTALLER_ARTIFACTS_DIR`. There is no ZIP or in-memory whole-file buffer. | Den web/API only. |
+| Internet-connected | Immediate `302` to the exact standard asset under `MARS_INSTALLER_RELEASE_REPO` and `MARS_INSTALLER_RELEASE_TAG`. The organization token is not forwarded. | Den web/API, `github.com`, `release-assets.githubusercontent.com`, and `objects.githubusercontent.com` for legacy or rollback paths. |
+| Semi-air-gapped | Stream the matching standard installer from `MARS_INSTALLER_ARTIFACTS_DIR`. There is no ZIP or in-memory whole-file buffer. | Den web/API only. |
 | Fully internal installer delivery | Same mounted-artifact path, with Den web/API and the installer artifact available entirely inside the isolated network. This describes installer bytes only, not full product isolation. | Internal Den web/API only. |
 
 The standard filenames use the release tag without a leading `v`:
 
-- `omnirush-mac-arm64-<version>.dmg`
-- `omnirush-mac-x64-<version>.dmg`
-- `omnirush-win-x64-<version>.exe`
-- `omnirush-linux-x86_64-<version>.AppImage`
-- `omnirush-linux-arm64-<version>.AppImage`
+- `mars-mac-arm64-<version>.dmg`
+- `mars-mac-x64-<version>.dmg`
+- `mars-win-x64-<version>.exe`
+- `mars-linux-x86_64-<version>.AppImage`
+- `mars-linux-arm64-<version>.AppImage`
 
 There is no first-request GitHub download inside Den, artifact lookup API call,
 ZIP creation, per-pod cold cache, or different repeated-download path. Every
@@ -101,7 +101,7 @@ read-only PVC on every replica.
 ## Default connection handoff (no key)
 
 `DEN_CONNECT_LINK_MODE=exchange` is the default. When the user clicks **Open
-OmniRush.ai**, Den mints a fresh five-minute bearer code and stores only its
+MarsAI**, Den mints a fresh five-minute bearer code and stores only its
 SHA-256 hash. The app:
 
 1. posts the code back to the exact HTTPS API origin carried in the deep link
@@ -158,25 +158,25 @@ Customer-facing guidance for this path is published at
 
 Managed deployments can skip the deep-link handoff by deploying a standard
 binary — typically the enterprise distribution
-(`omnirush-enterprise-<os>-<arch>-<version>.<ext>`, published on the
+(`mars-enterprise-<os>-<arch>-<version>.<ext>`, published on the
 `enterprise` release channel), or the public installer — and writing
 `desktop-bootstrap.json` directly:
 
 | OS | Canonical path |
 |---|---|
-| Windows | `%LOCALAPPDATA%\omnirush\desktop-bootstrap.json` (`%XDG_CONFIG_HOME%\omnirush\desktop-bootstrap.json` wins if set) |
-| macOS/Linux | `$XDG_CONFIG_HOME/omnirush/desktop-bootstrap.json`, falling back to `~/.config/omnirush/desktop-bootstrap.json` |
+| Windows | `%LOCALAPPDATA%\mars\desktop-bootstrap.json` (`%XDG_CONFIG_HOME%\mars\desktop-bootstrap.json` wins if set) |
+| macOS/Linux | `$XDG_CONFIG_HOME/mars/desktop-bootstrap.json`, falling back to `~/.config/mars/desktop-bootstrap.json` |
 
 ```json
 {
-  "baseUrl": "https://omnirush.example.com",
-  "apiBaseUrl": "https://api.omnirush.example.com",
+  "baseUrl": "https://mars.example.com",
+  "apiBaseUrl": "https://api.mars.example.com",
   "requireSignin": true,
   "writtenAt": "2026-07-14T12:00:00.000Z"
 }
 ```
 
-Current builds still read the older `~/.config/omnirush` path for
+Current builds still read the older `~/.config/mars` path for
 compatibility. When both files exist, the valid configuration with the newest
 `writtenAt` wins.
 
@@ -201,7 +201,7 @@ compatibility. When both files exist, the valid configuration with the newest
 | Download redirects to GitHub | Expected for internet-connected deployments. Allow `github.com` and its release-asset redirect/CDN host on the user's network. |
 | Download returns `404` | The install token is invalid, expired, or revoked. Ask an org member for the current install page link. |
 | Mounted download fails | Verify the filename exactly matches the configured release tag and every Den replica mounts the same readable PVC path. |
-| **Open OmniRush.ai** cannot prepare a connection | Verify the browser can reach Den API and `DEN_API_PUBLIC_URL` is the correct public HTTPS origin. |
-| The app refuses an expired or used link | Return to the same Den install page and click **Open OmniRush.ai** again to mint a fresh code. |
+| **Open MarsAI** cannot prepare a connection | Verify the browser can reach Den API and `DEN_API_PUBLIC_URL` is the correct public HTTPS origin. |
+| The app refuses an expired or used link | Return to the same Den install page and click **Open MarsAI** again to mint a fresh code. |
 | Signed mode reports an unknown key | Return to `exchange` mode, or ship a desktop build containing the matching public key before re-enabling `signed`. |
 | Install links point at the wrong web host | Correct `BETTER_AUTH_URL` and `DEN_BETTER_AUTH_TRUSTED_ORIGINS`, then restart Den. |

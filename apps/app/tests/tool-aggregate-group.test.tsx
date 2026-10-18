@@ -288,8 +288,8 @@ describe("tool aggregate long details", () => {
     });
     const command = [
       "pnpm world up dev-headless --detach -- --replace",
-      "pnpm --filter @omnirush/app test",
-      "pnpm --filter @omnirush/app typecheck",
+      "pnpm --filter @mars/app test",
+      "pnpm --filter @mars/app typecheck",
       "pnpm world down dev-headless",
     ].join("\n");
     const clipboardWrites: string[] = [];

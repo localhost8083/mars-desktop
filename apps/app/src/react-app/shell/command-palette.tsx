@@ -347,7 +347,7 @@ export function CommandPalette(props: CommandPaletteProps) {
       group: ACTIONS_GROUP,
       action: () => {
         props.onClose();
-        openUrl("https://github.com/omnirush-ai/omnirush-gui#readme");
+        openUrl("https://github.com/mars-ai/mars-gui#readme");
       },
     },
     {
@@ -458,7 +458,7 @@ export function CommandPalette(props: CommandPaletteProps) {
       : []),
     ...(shellConfig.cloudSignin ? [{
       id: "cloud.sign_in",
-      title: "Sign in to omnirush.ai Cloud",
+      title: "Sign in to marsai.click Cloud",
       keywords: ["login", "account", "organization", "org", "den", "cloud"],
       group: ACTIONS_GROUP,
       action: () => {

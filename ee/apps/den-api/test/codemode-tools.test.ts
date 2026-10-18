@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from "bun:test"
-import { Tool } from "@omnirush/codemode"
+import { Tool } from "@mars/codemode"
 import { Effect } from "effect"
 import { Hono } from "hono"
 import { buildMcpCatalog } from "../src/mcp/catalog.js"

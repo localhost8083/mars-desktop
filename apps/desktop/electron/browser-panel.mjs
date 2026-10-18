@@ -10,7 +10,7 @@ import {
   backgroundTabEmulationCommands,
   createBrowserTabRegistry,
   foregroundTabEmulationCommands,
-} from "@omnirush/browser-tabs";
+} from "@mars/browser-tabs";
 import { runDetachedTask } from "./process-resilience.mjs";
 import { listInstalledBrowsers } from "./installed-browsers.mjs";
 import { BrowserTaskError, createBrowserTaskHost } from "./browser-task.mjs";
@@ -18,7 +18,7 @@ import { createWebMcpBroker } from "./webmcp-host.mjs";
 import { createWebMcpFramePolicy } from "./webmcp-policy.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const BROWSER_SESSION_PARTITION = "persist:omnirush-browser";
+const BROWSER_SESSION_PARTITION = "persist:mars-browser";
 const BROWSER_DEFAULT_URL = "about:blank";
 // URL a user-initiated new tab (the "+" button / opening the browser panel)
 // lands on. The agent's programmatic path keeps BROWSER_DEFAULT_URL.
@@ -458,7 +458,7 @@ export function createBrowserPanel({ getWindow, remoteDebugPort, onDeepLink, che
     if (!view || !mainWindow) return;
     const restoreFocus = !view.webContents.isDestroyed() && view.webContents.isFocused?.();
     view.setVisible?.(false);
-    if (!view.webContents.isDestroyed()) view.webContents.send("omnirush:menu-overlay:hide");
+    if (!view.webContents.isDestroyed()) view.webContents.send("mars:menu-overlay:hide");
     try {
       if (mainWindow.contentView.children.includes(view)) {
         mainWindow.contentView.removeChildView(view);
@@ -520,7 +520,7 @@ export function createBrowserPanel({ getWindow, remoteDebugPort, onDeepLink, che
     const browsers = await listInstalledBrowsers();
     if (showSerial !== menuOverlayShowSerial) return;
     const items = [
-      { id: "open-builtin", label: "Open in OmniRush.ai" },
+      { id: "open-builtin", label: "Open in MarsAI" },
       { id: "open-external", label: "Open in Default Browser" },
       ...browsers.map(({ id, name }) => ({ id: `browser:${id}`, label: `Open in ${name}` })),
       { id: "copy-url", label: "Copy Link Address", separatorBefore: true },
@@ -548,7 +548,7 @@ export function createBrowserPanel({ getWindow, remoteDebugPort, onDeepLink, che
     if (!ready) {
       console.warn("[menu-overlay] renderer did not signal readiness before show");
     }
-    view.webContents.send("omnirush:menu-overlay:show", {
+    view.webContents.send("mars:menu-overlay:show", {
       id: request.id,
       source: request.source,
       items: request.items,
@@ -614,7 +614,7 @@ export function createBrowserPanel({ getWindow, remoteDebugPort, onDeepLink, che
     const raw = String(input ?? "").trim();
     const envMatch = raw.match(/^env:([A-Za-z0-9_]+)$/i);
     if (!envMatch) return raw;
-    const key = `OMNIRUSH_BROWSER_PROXY_${envMatch[1].toUpperCase()}`;
+    const key = `MARS_BROWSER_PROXY_${envMatch[1].toUpperCase()}`;
     const value = String(process.env[key] ?? "").trim();
     if (!value) throw new Error(`No proxy configured: set the ${key} environment variable to a proxy URL.`);
     return value;
@@ -656,7 +656,7 @@ export function createBrowserPanel({ getWindow, remoteDebugPort, onDeepLink, che
       && window()?.contentView.children.includes(tab.view) === true && tab.view.getVisible();
   }
   function confirmBrowserAction({ tabId, title, message, detail, signal, approveLabel = "Allow once", waitForVisible = false }) {
-    if (process.env.OMNIRUSH_DEV_MODE === "1" && process.env.OMNIRUSH_BROWSER_AUTO_APPROVE === "1") return Promise.resolve(true);
+    if (process.env.MARS_DEV_MODE === "1" && process.env.MARS_BROWSER_AUTO_APPROVE === "1") return Promise.resolve(true);
     const tab = getBrowserTab(tabId);
     const owner = registry.ownerOf(tabId);
     if (!tab || (!waitForVisible && !browserTabVisible(tabId)) || signal?.aborted) return Promise.resolve(false);
@@ -781,9 +781,9 @@ export function createBrowserPanel({ getWindow, remoteDebugPort, onDeepLink, che
     // Check synchronously before creating a WebContentsView, including pending
     // opens, popups, transcript links and the tab-strip button.
     if (browserTabs.size >= MAX_BROWSER_TABS) {
-      throw new BrowserTaskError("tab_limit", `OmniRush.ai has ${MAX_BROWSER_TABS} browser tabs open. Close an unused browser tab in any conversation, then try again.`);
+      throw new BrowserTaskError("tab_limit", `MarsAI has ${MAX_BROWSER_TABS} browser tabs open. Close an unused browser tab in any conversation, then try again.`);
     }
-    if (!restoreTabId && registry.size() >= 100) throw new Error("OmniRush.ai has 100 saved browser tabs. Close an unused tab, then try again.");
+    if (!restoreTabId && registry.size() >= 100) throw new Error("MarsAI has 100 saved browser tabs. Close an unused tab, then try again.");
     installBrowserSessionHooks();
     ensureWebMcpFramePolicy();
     const tabId = restoreTabId ?? createBrowserTabId();
@@ -855,9 +855,9 @@ export function createBrowserPanel({ getWindow, remoteDebugPort, onDeepLink, che
       // data: loads are internal plumbing (CDP target-marker pages), not
       // user-visible navigations — don't surface the panel for them.
       if (target === "about:blank" || target.startsWith("data:")) return;
-      // Intercept omnirush:// deep links (e.g. den-auth handoff grants) so
+      // Intercept mars:// deep links (e.g. den-auth handoff grants) so
       // in-app browser auth works without the system protocol handler.
-      if (target.startsWith("omnirush://") || target.startsWith("omnirush-dev://")) {
+      if (target.startsWith("mars://") || target.startsWith("mars-dev://")) {
         if (typeof onDeepLink === "function") {
           onDeepLink([target]);
         }
@@ -891,7 +891,7 @@ export function createBrowserPanel({ getWindow, remoteDebugPort, onDeepLink, che
         registry.select(tabId);
         sendBrowserState();
       }
-      sendToRenderer("omnirush:browser:panel-opened", { ownerSessionId: registry.ownerOf(tabId) });
+      sendToRenderer("mars:browser:panel-opened", { ownerSessionId: registry.ownerOf(tabId) });
     });
     view.webContents.on("did-navigate", () => sendBrowserState());
     view.webContents.on("did-navigate-in-page", () => sendBrowserState());
@@ -925,7 +925,7 @@ export function createBrowserPanel({ getWindow, remoteDebugPort, onDeepLink, che
       // Explicit opens select their page in the owner's unified panel. Later
       // navigations may keep that panel open, but must not displace an artifact
       // the user selected while a page was loading or refreshing itself.
-      sendToRenderer("omnirush:browser:panel-opened", {
+      sendToRenderer("mars:browser:panel-opened", {
         ownerSessionId: registry.ownerOf(tabId),
         tab: browserTabToPanelTab(tabId, tab),
       });
@@ -975,7 +975,7 @@ export function createBrowserPanel({ getWindow, remoteDebugPort, onDeepLink, che
   // page for the agent driving it: lay out at a real viewport, accept typing as
   // a focused page, and paint so CDP screenshots work. Park it in a never-shown
   // window: detached views stop painting, and every child of the main window's
-  // contentView paints above OmniRush.ai, regardless of its child index or bounds.
+  // contentView paints above MarsAI, regardless of its child index or bounds.
   // Moving the same view preserves the document and CDP target.
   function enterBackgroundMode(tab) {
     // A task's blank consent tab has no document to paint or observe. Attaching
@@ -1176,7 +1176,7 @@ export function createBrowserPanel({ getWindow, remoteDebugPort, onDeepLink, che
       }
     }
     if (removed && !removed.ownerHasTabs) {
-      sendToRenderer("omnirush:browser:panel-closed", { ownerSessionId: removed.tab.ownerSessionId });
+      sendToRenderer("mars:browser:panel-closed", { ownerSessionId: removed.tab.ownerSessionId });
     }
     try {
       if (tab && !tab.view.webContents.isDestroyed()) tab.view.webContents.close({ waitForBeforeUnload: false });
@@ -1319,7 +1319,7 @@ export function createBrowserPanel({ getWindow, remoteDebugPort, onDeepLink, che
   }
 
   function sendBrowserState() {
-    sendToRenderer("omnirush:browser:state", browserStatePayload());
+    sendToRenderer("mars:browser:state", browserStatePayload());
   }
 
   /**
@@ -1389,45 +1389,45 @@ export function createBrowserPanel({ getWindow, remoteDebugPort, onDeepLink, che
       if (tabId && registry.ownerOf(tabId) !== registry.visibleSessionId()) throw new Error("Select this conversation first.");
       taskHost.manualNavigation(tabId);
     }
-    ipcMain.handle("omnirush:browser:show", (_event, bounds, sessionId) => (
+    ipcMain.handle("mars:browser:show", (_event, bounds, sessionId) => (
       attachBrowserView(bounds, sessionId === undefined ? {} : { sessionId: normalizeSessionId(sessionId) })
     ));
-    ipcMain.handle("omnirush:browser:hide", () => hideBrowserView());
-    ipcMain.handle("omnirush:browser:setVisibleSession", (_event, sessionId) => setVisibleSession(normalizeSessionId(sessionId)));
-    ipcMain.handle("omnirush:browser:openUrl", (_event, url, provider, options) => (
+    ipcMain.handle("mars:browser:hide", () => hideBrowserView());
+    ipcMain.handle("mars:browser:setVisibleSession", (_event, sessionId) => setVisibleSession(normalizeSessionId(sessionId)));
+    ipcMain.handle("mars:browser:openUrl", (_event, url, provider, options) => (
       openBrowserUrlForAutomation(url, provider, {
         ownerSessionId: normalizeSessionId(options && typeof options === "object" ? options.sessionId : null),
       })
     ));
-    ipcMain.handle("omnirush:browser:navigate", (event, url) => {
+    ipcMain.handle("mars:browser:navigate", (event, url) => {
       authorizeManualNavigation(event);
       getActiveWebContents(); // Reject navigation while suspension is pending.
       const view = getActiveBrowserView()
         ?? createBrowserTab("about:blank", { select: true, ownerSessionId: registry.visibleSessionId() }).view;
       runDetachedTask("navigate browser tab", () => view.webContents.loadURL(normalizeBrowserUrl(url)));
     });
-    ipcMain.handle("omnirush:browser:back", (event) => {
+    ipcMain.handle("mars:browser:back", (event) => {
       authorizeManualNavigation(event);
       const webContents = getActiveWebContents();
       if (webContents?.canGoBack()) webContents.goBack();
     });
-    ipcMain.handle("omnirush:browser:forward", (event) => {
+    ipcMain.handle("mars:browser:forward", (event) => {
       authorizeManualNavigation(event);
       const webContents = getActiveWebContents();
       if (webContents?.canGoForward()) webContents.goForward();
     });
-    ipcMain.handle("omnirush:browser:reload", (event) => {
+    ipcMain.handle("mars:browser:reload", (event) => {
       authorizeManualNavigation(event);
       getActiveWebContents()?.reload();
     });
-    ipcMain.handle("omnirush:browser:bounds", (_event, bounds) => {
+    ipcMain.handle("mars:browser:bounds", (_event, bounds) => {
       lastBrowserBounds = bounds;
       const view = getActiveBrowserView();
       if (view && browserViewVisible && bounds.width > 0 && bounds.height > 0) {
         view.setBounds(scaleRendererBounds(bounds));
       }
     });
-    ipcMain.handle("omnirush:browser:state", () => ({
+    ipcMain.handle("mars:browser:state", () => ({
       ...browserStatePayload(),
       nativeViews: browserNativeViews(),
       tabLimit: MAX_BROWSER_TABS,
@@ -1435,19 +1435,19 @@ export function createBrowserPanel({ getWindow, remoteDebugPort, onDeepLink, che
       backgroundWindowVisible: Boolean(backgroundWindow && !backgroundWindow.isDestroyed() && backgroundWindow.isVisible()),
       visibleWindowCount: BrowserWindow.getAllWindows().filter((host) => host.isVisible()).length,
     }));
-    ipcMain.handle("omnirush:browser:createTab", (_event, url, sessionId) => {
+    ipcMain.handle("mars:browser:createTab", (_event, url, sessionId) => {
       const target = typeof url === "string" && url.trim() ? url : BROWSER_NEW_TAB_URL;
       const ownerSessionId = sessionId === undefined ? registry.visibleSessionId() : normalizeSessionId(sessionId);
       const tab = createBrowserTab(target, { select: true, ownerSessionId });
       return { tabId: tab.tabId };
     });
-    ipcMain.handle("omnirush:browser:closeTab", (_event, tabId) => closeBrowserTab(tabId == null ? undefined : String(tabId)));
-    ipcMain.handle("omnirush:browser:suspendTab", (_event, tabId) => suspendBrowserTab(tabId));
-    ipcMain.handle("omnirush:browser:restoreTab", async (_event, tabId, sessionId) => {
+    ipcMain.handle("mars:browser:closeTab", (_event, tabId) => closeBrowserTab(tabId == null ? undefined : String(tabId)));
+    ipcMain.handle("mars:browser:suspendTab", (_event, tabId) => suspendBrowserTab(tabId));
+    ipcMain.handle("mars:browser:restoreTab", async (_event, tabId, sessionId) => {
       requireTabOwner(tabId, sessionId);
       return (await restoreBrowserTab(tabId, true)).handle;
     });
-    ipcMain.handle("omnirush:browser:releaseTab", (_event, tabId, sessionId) => {
+    ipcMain.handle("mars:browser:releaseTab", (_event, tabId, sessionId) => {
       requireTabOwner(tabId, sessionId);
       const tab = browserTabs.get(tabId);
       if (tab?.operation || tab?.suspending) throw new Error("Browser tab is busy.");
@@ -1455,72 +1455,72 @@ export function createBrowserPanel({ getWindow, remoteDebugPort, onDeepLink, che
       sendBrowserState();
       return { tabId, released: true };
     });
-    ipcMain.handle("omnirush:browser:closeAllTabs", () => closeAllBrowserTabs());
-    ipcMain.handle("omnirush:browser:closeSessionTabs", (_event, sessionId) => closeSessionBrowserTabs(sessionId));
-    ipcMain.handle("omnirush:browser:selectTab", async (_event, tabId) => {
+    ipcMain.handle("mars:browser:closeAllTabs", () => closeAllBrowserTabs());
+    ipcMain.handle("mars:browser:closeSessionTabs", (_event, sessionId) => closeSessionBrowserTabs(sessionId));
+    ipcMain.handle("mars:browser:selectTab", async (_event, tabId) => {
       const id = String(tabId ?? "");
       if (!browserTabs.has(id) && suspendedTabs.has(id)) await restoreBrowserTab(id);
       const tab = selectBrowserTab(id);
       resetViewportEmulation(tab.view);
       return tab.tabId;
     });
-    ipcMain.handle("omnirush:browser:reorderTabs", (_event, tabIds) => reorderBrowserTabs(tabIds));
-    ipcMain.handle("omnirush:browser:listTabs", () => listBrowserTabs());
-    ipcMain.handle("omnirush:browser:webmcpListTools", (_event, args) => taskHost.request({ sessionId: registry.visibleSessionId(), operation: "site_tools", args }));
-    ipcMain.handle("omnirush:browser:webmcpExecuteTool", (_event, args) => taskHost.request({ sessionId: registry.visibleSessionId(), operation: "site_tool", args }));
-    ipcMain.handle("omnirush:browser:approve", (event, tabId, approvalId, allowed) => {
+    ipcMain.handle("mars:browser:reorderTabs", (_event, tabIds) => reorderBrowserTabs(tabIds));
+    ipcMain.handle("mars:browser:listTabs", () => listBrowserTabs());
+    ipcMain.handle("mars:browser:webmcpListTools", (_event, args) => taskHost.request({ sessionId: registry.visibleSessionId(), operation: "site_tools", args }));
+    ipcMain.handle("mars:browser:webmcpExecuteTool", (_event, args) => taskHost.request({ sessionId: registry.visibleSessionId(), operation: "site_tool", args }));
+    ipcMain.handle("mars:browser:approve", (event, tabId, approvalId, allowed) => {
       if (event.sender !== window()?.webContents || event.senderFrame !== window()?.webContents.mainFrame || registry.ownerOf(tabId) !== registry.visibleSessionId()) return false;
       const pending = approvals.get(tabId);
       if (!pending || pending.id !== approvalId) return false;
       pending.finish(allowed === true); return true;
     });
-    ipcMain.handle("omnirush:browser:taskControl", (event, tabId, action) => {
+    ipcMain.handle("mars:browser:taskControl", (event, tabId, action) => {
       if (event.sender !== window()?.webContents || event.senderFrame !== window()?.webContents.mainFrame || !getBrowserTab(tabId) || registry.ownerOf(tabId) !== registry.visibleSessionId()) throw new Error("Select this conversation first.");
       if (action === "resume") taskHost.resume(tabId);
       else if (action === "pause") taskHost.pause(tabId);
       else throw new Error("Unsupported browser control.");
     });
-    ipcMain.handle("omnirush:webmcp:frame-policy", (event) => {
+    ipcMain.handle("mars:webmcp:frame-policy", (event) => {
       const tab = [...browserTabs.values()].find((candidate) => candidate.view.webContents === event.sender);
       if (!tab || !event.senderFrame) {
         return { allowed: false, originKeyed: false, reason: "unknown_browser_frame" };
       }
       return ensureWebMcpFramePolicy().checkFrame(event.senderFrame);
     });
-    ipcMain.handle("omnirush:browser:setProxy", (_event, proxy) => setBrowserProxy(proxy));
-    ipcMain.handle("omnirush:browser:getProxy", () => browserProxyState());
-    ipcMain.handle("omnirush:browser:setControlEnabled", (event, enabled) => {
+    ipcMain.handle("mars:browser:setProxy", (_event, proxy) => setBrowserProxy(proxy));
+    ipcMain.handle("mars:browser:getProxy", () => browserProxyState());
+    ipcMain.handle("mars:browser:setControlEnabled", (event, enabled) => {
       if (event.sender !== window()?.webContents || event.senderFrame !== window()?.webContents.mainFrame) return false;
       browserControlEnabled = enabled === true;
       if (!browserControlEnabled) for (const tab of browserTabs.values()) taskHost.pause(tab.tabId, "Browser control disabled");
       return browserControlEnabled;
     });
-    ipcMain.handle("omnirush:browser:tabContextMenu", (_event, tabId, point) => showBrowserTabContextMenu(tabId, point));
-    ipcMain.on("omnirush:browser:linkContextMenu", (event, payload) => {
+    ipcMain.handle("mars:browser:tabContextMenu", (_event, tabId, point) => showBrowserTabContextMenu(tabId, point));
+    ipcMain.on("mars:browser:linkContextMenu", (event, payload) => {
       const mainContents = window()?.webContents;
       if (event.sender !== mainContents || event.senderFrame !== mainContents?.mainFrame) return;
       if (!payload || typeof payload !== "object") return;
       runDetachedTask("show link context menu", () => showLinkContextMenu(payload));
     });
-    ipcMain.handle("omnirush:browser:destroy", () => destroyBrowserView());
-    ipcMain.on("omnirush:menu-overlay:ready", (event) => {
+    ipcMain.handle("mars:browser:destroy", () => destroyBrowserView());
+    ipcMain.on("mars:menu-overlay:ready", (event) => {
       if (event.sender !== menuOverlayView?.webContents) return;
       markMenuOverlayReady(menuOverlayView);
     });
-    ipcMain.on("omnirush:menu-overlay:choose", (event, payload) => {
+    ipcMain.on("mars:menu-overlay:choose", (event, payload) => {
       if (event.sender !== menuOverlayView?.webContents) return;
       handleMenuOverlayChoice(payload);
     });
-    ipcMain.on("omnirush:menu-overlay:close", (event, payload) => {
+    ipcMain.on("mars:menu-overlay:close", (event, payload) => {
       if (event.sender !== menuOverlayView?.webContents) return;
       if (payload?.requestId && payload.requestId !== menuOverlayRequest?.id) return;
       hideMenuOverlay();
     });
-    ipcMain.on("omnirush:menu-overlay:dismiss", (event) => {
+    ipcMain.on("mars:menu-overlay:dismiss", (event) => {
       if (event.sender === menuOverlayView?.webContents) return;
       hideMenuOverlay();
     });
-    ipcMain.on("omnirush:webmcp:tools-changed", (event) => {
+    ipcMain.on("mars:webmcp:tools-changed", (event) => {
       const tab = [...browserTabs.values()].find((candidate) => candidate.view.webContents === event.sender);
       if (!tab) return;
       invalidateWebMcpTab(tab);

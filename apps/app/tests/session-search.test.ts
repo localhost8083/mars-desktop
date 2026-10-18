@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { OmniRushSessionMessage } from "../src/app/lib/omnirush-server";
+import type { MarsSessionMessage } from "../src/app/lib/mars-server";
 import {
   createSessionSearcher,
   type SearchableSession,
@@ -32,7 +32,7 @@ function textMessage(id: string, role: "user" | "assistant", text: string) {
         messageID: id,
       },
     ],
-  } satisfies OmniRushSessionMessage;
+  } satisfies MarsSessionMessage;
 }
 
 describe("session search", () => {

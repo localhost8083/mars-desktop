@@ -1,4 +1,4 @@
-export * from "@omnirush/types/automations"
+export * from "@mars/types/automations"
 export * from "./contracts.js"
 export * from "./engine.js"
 export * from "./ports.js"

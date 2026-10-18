@@ -1,12 +1,12 @@
-import type { OmniRushServerClient } from "@/app/lib/omnirush-server";
+import type { MarsServerClient } from "@/app/lib/mars-server";
 import type { ModelRef } from "@/app/types";
 
 export type QueuedSendContext = {
   workspaceId: string;
   workspaceRoot: string;
   opencodeBaseUrl: string;
-  omnirushToken: string;
-  client: OmniRushServerClient;
+  marsToken: string;
+  client: MarsServerClient;
   agent: string | null;
   variant: string | null;
   model: ModelRef | null;

@@ -1,6 +1,6 @@
 # Publishes one box version (apps/desktop/box/VERSION): the sandbox images
-# ghcr.io/omnirush-ai/box-{base,go,rust,java,ruby}:<version> for linux/amd64 and
-# linux/arm64, and the OmniRush WSL image (omnirush-wsl-<version>-<arch>.tar.gz) on the
+# ghcr.io/mars-ai/box-{base,go,rust,java,ruby}:<version> for linux/amd64 and
+# linux/arm64, and the Mars WSL image (mars-wsl-<version>-<arch>.tar.gz) on the
 # `box-<version>` release of this repository, with box-pins.json beside it.
 #
 # Published from this public repository with GITHUB_TOKEN, the packages are public and
@@ -55,7 +55,7 @@ jobs:
           if ! gh release view "box-$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release create "box-$VERSION" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest=false \
               --title "Sandbox images $VERSION" \
-              --notes "Sandbox images for box version $VERSION: the OmniRush WSL image for Windows, and box-pins.json with the pinned image digests. The Linux images are ghcr.io/omnirush-ai/box-{base,go,rust,java,ruby}:$VERSION."
+              --notes "Sandbox images for box version $VERSION: the Mars WSL image for Windows, and box-pins.json with the pinned image digests. The Linux images are ghcr.io/mars-ai/box-{base,go,rust,java,ruby}:$VERSION."
           fi
 
   images:
@@ -83,17 +83,17 @@ jobs:
           base_digest=""
           echo '{}' > digests.json
           for stack in base go rust java ruby; do
-            ref="ghcr.io/omnirush-ai/box-$stack:$VERSION"
+            ref="ghcr.io/mars-ai/box-$stack:$VERSION"
             if [ "$stack" = base ]; then src=$base_src; else src=$(printf '%s %s' "$(tree_hash "$BOX_DIR/images/$stack")" "$base_src" | sha256sum | cut -c1-64); fi
             if docker buildx imagetools inspect "$ref" >/dev/null 2>&1; then
               digest=$(docker buildx imagetools inspect "$ref" --format '{{json .Manifest}}' | jq -r .digest)
-              label=$(docker buildx imagetools inspect "$ref" --format '{{json .Image}}' | jq -r '."linux/amd64".config.Labels["ai.omnirush.box.source"] // empty')
+              label=$(docker buildx imagetools inspect "$ref" --format '{{json .Image}}' | jq -r '."linux/amd64".config.Labels["ai.mars.box.source"] // empty')
               if [ "$label" = "$src" ]; then echo "box-$stack:$VERSION exists with these sources: reused"
               elif [ -z "$label" ] && [ "$ADOPT" = true ]; then echo "::warning::box-$stack:$VERSION has no source hash: adopted as published"
               else echo "::error::box-$stack:$VERSION exists with other sources: bump $BOX_DIR/VERSION"; exit 1; fi
             else
               args=(--platform linux/amd64,linux/arm64 --provenance=false --push -t "$ref" --metadata-file "$stack.meta.json"
-                    --label "org.opencontainers.image.source=$SOURCE" --label "ai.omnirush.box.source=$src")
+                    --label "org.opencontainers.image.source=$SOURCE" --label "ai.mars.box.source=$src")
               [ "$stack" = base ] || args+=(--build-arg "BASE=ghcr.io/omnirush-ai/box-base@$base_digest")
               docker buildx build "${args[@]}" "$BOX_DIR/images/$stack"
               digest=$(jq -r '."containerimage.digest"' "$stack.meta.json")
@@ -111,15 +111,15 @@ jobs:
             const ACCEPT = "application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.manifest.v1+json";
             const images = {};
             for (const stack of ["base", "go", "rust", "java", "ruby"]) {
-              const repo = `omnirush-ai/box-${stack}`;
+              const repo = `mars-ai/box-${stack}`;
               const { token } = await (await fetch(`https://ghcr.io/token?scope=repository:${repo}:pull`)).json();
               const get = async (ref) => (await fetch(`https://ghcr.io/v2/${repo}/manifests/${ref}`, { headers: { Authorization: `Bearer ${token}`, Accept: ACCEPT } })).json();
               const index = await get(digests[stack]);
               const amd64 = index.manifests.find((m) => m.platform?.architecture === "amd64");
               const bytes = (await get(amd64.digest)).layers.reduce((n, l) => n + l.size, 0);
-              images[stack] = { ref: `ghcr.io/omnirush-ai/box-${stack}:${version}`, digest: digests[stack], approx_mb: Math.round(bytes / 1e7) * 10 };
+              images[stack] = { ref: `ghcr.io/mars-ai/box-${stack}:${version}`, digest: digests[stack], approx_mb: Math.round(bytes / 1e7) * 10 };
             }
-            writeFileSync("images.json", JSON.stringify({ version, registry: "ghcr.io/omnirush-ai", images }));'
+            writeFileSync("images.json", JSON.stringify({ version, registry: "ghcr.io/mars-ai", images }));'
           cat images.json
       - uses: actions/upload-artifact@v4
         with:
@@ -150,7 +150,7 @@ jobs:
       - name: Build or reuse the WSL image
         run: |
           set -euo pipefail
-          tag="box-$VERSION"; name="omnirush-wsl-$VERSION-$ARCH"
+          tag="box-$VERSION"; name="mars-wsl-$VERSION-$ARCH"
           src=$( (cd "$BOX_DIR/wsl" && find . -type f -print0 | sort -z | xargs -0 sha256sum) | sha256sum | cut -c1-64)
           mkdir -p dist
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' | grep -qx "$name.tar.gz"; then
@@ -193,7 +193,7 @@ jobs:
           base=$(sed -n 's/^FROM \(debian:[^ ]*\).*/\1/p' "$BOX_DIR/wsl/Dockerfile" | head -1)
           jq -n --slurpfile images parts/images.json --slurpfile a parts/wsl-amd64.json --slurpfile b parts/wsl-arm64.json \
             --arg version "$VERSION" --arg base "$base" \
-            '{images: $images[0], wsl: {version: $version, distro: "OmniRushBox", base: $base, assets: {amd64: $a[0], arm64: $b[0]}}}' > box-pins.json
+            '{images: $images[0], wsl: {version: $version, distro: "MarsBox", base: $base, assets: {amd64: $a[0], arm64: $b[0]}}}' > box-pins.json
           gh release upload "box-$VERSION" --repo "$GITHUB_REPOSITORY" --clobber box-pins.json
       - name: Check the pins and show them
         run: |

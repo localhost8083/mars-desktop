@@ -8,12 +8,12 @@ import {
 } from "../../../app/lib/den";
 import { recordInspectorEvent } from "../../../app/lib/app-inspector";
 import {
-  OmniRushServerError,
-  type OmniRushCloudMcpFailure,
-  type OmniRushCloudMcpHealth,
-  type OmniRushCloudMcpProviderModelContext,
-  type OmniRushServerClient,
-} from "../../../app/lib/omnirush-server";
+  MarsServerError,
+  type MarsCloudMcpFailure,
+  type MarsCloudMcpHealth,
+  type MarsCloudMcpProviderModelContext,
+  type MarsServerClient,
+} from "../../../app/lib/mars-server";
 import { unwrap } from "../../../app/lib/opencode";
 import type { Client, McpServerEntry, McpStatusMap } from "../../../app/types";
 import { attemptSilentMcpReauth } from "./mcp-silent-reauth";
@@ -23,7 +23,7 @@ import {
   readCloudMcpUserState,
 } from "./cloud-mcp-user-state";
 import {
-  runOmniRushCloudMcpReconciler,
+  runMarsCloudMcpReconciler,
   type CloudMcpClient,
 } from "./cloud-mcp-reconciler";
 
@@ -32,12 +32,12 @@ export const SESSION_MCP_MAINTENANCE_TIMEOUT_MS = 2 * 60 * 1000;
 export const CLOUD_MCP_REFRESH_MARGIN_MS = 24 * 60 * 60 * 1000;
 export const CLOUD_MCP_MAINTENANCE_RETRY_DELAYS_MS = [1_000, 3_000];
 
-type CloudMcpMaintenanceClient = CloudMcpClient & Pick<OmniRushServerClient, "listMcp">;
+type CloudMcpMaintenanceClient = CloudMcpClient & Pick<MarsServerClient, "listMcp">;
 
 const maintenanceInFlight = new Map<string, symbol>();
 
 export type CloudMcpMaintenanceIssue = Pick<
-  OmniRushCloudMcpFailure,
+  MarsCloudMcpFailure,
   "code" | "stage" | "retryable" | "recommendedAction" | "message"
 >;
 
@@ -45,7 +45,7 @@ export type CloudMcpBackgroundSyncResult =
   | {
       outcome: "ready";
       status: "synced" | "unchanged";
-      health: OmniRushCloudMcpHealth;
+      health: MarsCloudMcpHealth;
     }
   | {
       outcome: "skipped";
@@ -57,7 +57,7 @@ export type CloudMcpBackgroundSyncResult =
       outcome: "failed";
       status: "failed";
       issue: CloudMcpMaintenanceIssue;
-      health: OmniRushCloudMcpHealth | null;
+      health: MarsCloudMcpHealth | null;
     };
 
 export type SessionCloudMcpMaintenanceState = {
@@ -84,12 +84,12 @@ function genericCloudMcpMaintenanceIssue(input?: {
     stage: "engine_delivery",
     retryable: input?.retryable ?? true,
     recommendedAction: "Retry, then open Settings → Connect if the problem continues.",
-    message: input?.message ?? "omnirush.ai could not verify connected service tools for this workspace.",
+    message: input?.message ?? "marsai.click could not verify connected service tools for this workspace.",
   };
 }
 
 function failedCloudMcpBackgroundSync(input: {
-  health: OmniRushCloudMcpHealth | null;
+  health: MarsCloudMcpHealth | null;
   issue?: CloudMcpMaintenanceIssue;
   code?: string;
   message?: string;
@@ -103,12 +103,12 @@ function failedCloudMcpBackgroundSync(input: {
 }
 
 export function getSessionMcpMaintenanceTargetKey(input: {
-  client: Pick<OmniRushServerClient, "baseUrl">;
+  client: Pick<MarsServerClient, "baseUrl">;
   cloudSignedIn: boolean;
   denBaseUrl?: string | null;
   orgId?: string | null;
   workspaceId: string;
-  providerModel?: OmniRushCloudMcpProviderModelContext;
+  providerModel?: MarsCloudMcpProviderModelContext;
 }): string {
   return JSON.stringify([
     input.denBaseUrl?.trim().replace(/\/+$/, "") ?? "",
@@ -179,7 +179,7 @@ export async function syncCloudControlMcpInBackground(input: {
   now?: number;
   settings?: DenSettings;
   mintToken?: () => Promise<DenMcpToken | null>;
-  providerModel?: OmniRushCloudMcpProviderModelContext;
+  providerModel?: MarsCloudMcpProviderModelContext;
 }): Promise<CloudMcpBackgroundSyncResult> {
   const workspaceId = input.workspaceId.trim();
   const settings = input.settings ?? readDenSettings();
@@ -205,7 +205,7 @@ export async function syncCloudControlMcpInBackground(input: {
   try {
     listed = await input.client.listMcp(workspaceId);
   } catch (error) {
-    if (error instanceof OmniRushServerError) {
+    if (error instanceof MarsServerError) {
       return failedCloudMcpBackgroundSync({ health: null, code: error.code, message: error.message });
     }
     throw error;
@@ -225,7 +225,7 @@ export async function syncCloudControlMcpInBackground(input: {
   }
   const configuredUrl = typeof configured?.config.url === "string" ? configured.config.url : null;
 
-  const result = await runOmniRushCloudMcpReconciler({
+  const result = await runMarsCloudMcpReconciler({
     mode: "repair",
     client: input.client,
     context: {
@@ -277,7 +277,7 @@ export async function syncCloudControlMcpInBackground(input: {
       return failedCloudMcpBackgroundSync({
         health: result.health,
         code: "cloud_mcp_token_mint_failed",
-        message: "omnirush.ai could not refresh Cloud authentication for connected service tools.",
+        message: "marsai.click could not refresh Cloud authentication for connected service tools.",
       });
     }
   }
@@ -349,12 +349,12 @@ export async function healWorkspaceMcpInBackground(input: {
 export function useSessionMcpMaintenance(input: {
   enabled?: boolean;
   cloudSignedIn: boolean;
-  client: OmniRushServerClient | null;
+  client: MarsServerClient | null;
   workspaceId: string | null;
   opencodeClient: Client | null;
   directory: string;
   engineReloadBusy?: boolean;
-  providerModel?: OmniRushCloudMcpProviderModelContext;
+  providerModel?: MarsCloudMcpProviderModelContext;
 }): SessionCloudMcpMaintenanceState {
   const [cloudMcpState, setCloudMcpState] = useState<SessionCloudMcpMaintenanceState>(
     IDLE_CLOUD_MCP_MAINTENANCE_STATE,

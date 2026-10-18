@@ -39,7 +39,7 @@ export type ShellConfig = {
 /* ------------------------------------------------------------------ */
 
 export const DEFAULT_SHELL_CONFIG: ShellConfig = {
-  appName: "omnirush.ai",
+  appName: "marsai.click",
   statusBar: true,
   sidebar: true,
   docsButton: true,
@@ -57,7 +57,7 @@ export const DEFAULT_SHELL_CONFIG: ShellConfig = {
 /*  Persistence                                                        */
 /* ------------------------------------------------------------------ */
 
-const STORAGE_KEY = "omnirush.shell-config";
+const STORAGE_KEY = "mars.shell-config";
 
 function effectiveShellConfig(config: ShellConfig): ShellConfig {
   if (isDesktopRuntime() && readDesktopDistributionInfo().flavor === "public") {

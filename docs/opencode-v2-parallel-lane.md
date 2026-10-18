@@ -11,7 +11,7 @@ clients in `packages/protocol`, SQLite storage, and one shared daemon serving
 many directories (v2 `packages/protocol/src/api.ts:151-191`,
 `packages/core/src/location-services.ts:25-44`).
 
-The key property for OmniRush.ai is that providers become usable at runtime with
+The key property for MarsAI is that providers become usable at runtime with
 no process restart and no instance reload.
 The proof is `evals/specs/opencode-v2-provider-hot-inject.test.ts` in this PR,
 using pinned binary `0.0.0-beta-18707`.
@@ -26,7 +26,7 @@ This PR adds a parallel prototype lane in
 
 It also ships the testing surface: an experimental Settings feature flag
 ("OpenCode v2 engine preview", Settings > Advanced, default off) backed by
-`apps/server/src/engine-v2-preview.ts`. When enabled, omnirush-server runs the
+`apps/server/src/engine-v2-preview.ts`. When enabled, mars-server runs the
 v2 engine as a parallel sidecar and hot-mirrors every provider change from the
 runtime provider store into it with no reload, while the app keeps using the
 v1 engine. Live status (`GET /experimental/engine-v2-preview/status`) reports
@@ -42,7 +42,7 @@ Every provider add follows this path:
 2. The server persists a runtime SQLite row in
    `apps/server/src/runtime-opencode-config-store.ts`.
 3. The server materializes an `OPENCODE_CONFIG` file
-   (`apps/server/src/omnirush-runtime-config.ts:186-204`).
+   (`apps/server/src/mars-runtime-config.ts:186-204`).
 4. The server invokes `reloadOpencodeEngine`
    (`apps/server/src/server.ts:4063-4080`).
 5. The reload either disposes the engine in place
@@ -69,9 +69,9 @@ eliminates those costs for provider changes
 
 | Area | Current v1 integration |
 | --- | --- |
-| Engine binary | OmniRush.ai uses the anomalyco/opencode fork pinned in `constants.json` as `"opencodeVersion": "v1.18.32"`; desktop sidecar preparation downloads it in `apps/desktop/scripts/prepare-sidecar.mjs:35-48`. |
+| Engine binary | MarsAI uses the anomalyco/opencode fork pinned in `constants.json` as `"opencodeVersion": "v1.18.32"`; desktop sidecar preparation downloads it in `apps/desktop/scripts/prepare-sidecar.mjs:35-48`. |
 | Spawn | `apps/server/src/managed-opencode.ts:147-234` runs `opencode serve --hostname --port --cors '*'`, supplies `OPENCODE_SERVER_USERNAME` and `OPENCODE_SERVER_PASSWORD`, waits for stdout `opencode server listening on <url>`, and sets `OPENCODE_CONFIG` to the runtime configuration file. |
-| Desktop boot | `apps/desktop/electron/main.mjs:1385-1445` enters `apps/desktop/electron/runtime.mjs:1882-2028` through `startOmniRushServerInner`, then starts the in-process server at `apps/server/src/embedded.ts:190-281`, which owns the child engine. |
+| Desktop boot | `apps/desktop/electron/main.mjs:1385-1445` enters `apps/desktop/electron/runtime.mjs:1882-2028` through `startMarsServerInner`, then starts the in-process server at `apps/server/src/embedded.ts:190-281`, which owns the child engine. |
 | Server client | The engine client factory is `apps/server/src/server.ts:1246-1280`. |
 | Raw proxy | The raw engine proxy begins at `apps/server/src/server.ts:1302+` and mounts at `:986` and `:1038`. |
 | Dispose | The dispose URL builder is `apps/server/src/server.ts:3930-3942`. |
@@ -161,7 +161,7 @@ Provider API keys live in the `credential` table, not `auth.json`
 The TUI and desktop use that file for single-daemon discovery
 (v2 `packages/cli/src/services/service-registration.ts:13-70`).
 
-The OmniRush.ai lane instead owns an isolated child in
+The MarsAI lane instead owns an isolated child in
 `apps/server/src/managed-opencode-v2.ts` and does not use service discovery.
 
 ## Providers on v2: why no reload is needed
@@ -225,8 +225,8 @@ V2 offers three runtime injection mechanisms:
    cataloged provider; live credential resolution picks it up on the next
    request (v2 `packages/core/src/credential/sql.ts:5-14`,
    `packages/core/src/model-resolver.ts:274-303`).
-2. OmniRush.ai can atomically write managed provider configuration into the
-   always-watched `OPENCODE_CONFIG_DIR`; this lets OmniRush.ai own both key
+2. MarsAI can atomically write managed provider configuration into the
+   always-watched `OPENCODE_CONFIG_DIR`; this lets MarsAI own both key
    material and configuration materialization, and is the mechanism used by
    `evals/specs/opencode-v2-provider-hot-inject.test.ts`
    (v2 `packages/cli/src/server-process.ts:83-128`,
@@ -245,7 +245,7 @@ Provider configuration and credentials are not in that set
 ## Proof (this PR)
 
 Any named e2e spec can exercise the v2 chat lane with
-`OMNIRUSH_EVAL_ENGINE=v2 pnpm evals:e2e <slug> [--daytona]`; the harness starts
+`MARS_EVAL_ENGINE=v2 pnpm evals:e2e <slug> [--daytona]`; the harness starts
 the app with chat routed through the OpenCode v2 sidecar, while an unset value
 or `v1` preserves the existing lane. The resulting evidence header records the
 engine used by the run.
@@ -289,15 +289,15 @@ The pure v1-to-v2 provider mapping is unit-covered in
 The end-to-end completion round trip is deliberately proven in the app-less
 spec, not the e2e spec, so the e2e run needs no witness endpoint.
 
-## How a full OmniRush.ai-on-v2 lane would work (design)
+## How a full MarsAI-on-v2 lane would work (design)
 
 ### 1. Spawn and handshake
 
 Keep `apps/server/src/managed-opencode-v2.ts` as a sibling of the current
 manager at `apps/server/src/managed-opencode.ts:147-248`.
 Select the manager per workspace with an engine-lane flag.
-Provide an `OMNIRUSH_OPENCODE_BIN`-style override named
-`OMNIRUSH_OPENCODE2_BIN` for the v2 binary.
+Provide an `MARS_OPENCODE_BIN`-style override named
+`MARS_OPENCODE2_BIN` for the v2 binary.
 
 The adapter starts the v2 command and uses Basic auth plus health readiness
 (v2 `packages/cli/src/server-process.ts:68-80`,
@@ -327,12 +327,12 @@ Place a v2 adapter behind the four existing touchpoints:
 
 ### 4. Configuration materialization
 
-Keep `apps/server/src/runtime-opencode-config-store.ts` as the OmniRush.ai source
+Keep `apps/server/src/runtime-opencode-config-store.ts` as the MarsAI source
 of truth.
 Render a v2 dialect using the `providers` key and v2 schema into
 `OPENCODE_CONFIG_DIR/opencode.json`, following the existing
-`buildOmniRushRuntimeConfigObjectFromSnapshot` materialization style at
-`apps/server/src/omnirush-runtime-config.ts:102-143`.
+`buildMarsRuntimeConfigObjectFromSnapshot` materialization style at
+`apps/server/src/mars-runtime-config.ts:102-143`.
 
 After that write, do not call reload.
 The v2 watcher rebuilds the integration and catalog
@@ -348,7 +348,7 @@ atomic using a temporary file and rename, matching
 ### 5. Renderer
 
 Point `createClient` at `apps/app/src/app/lib/opencode.ts:272` to a v2 client
-adapter or to the omnirush-server proxy when the workspace selects v2.
+adapter or to the mars-server proxy when the workspace selects v2.
 Keep the v1 SDK types in place for the v1 lane
 (`apps/app/src/app/lib/opencode.ts:272-328`).
 
@@ -391,7 +391,7 @@ That is the proposed continuity path for sessions and credentials.
   credentials (v2 `packages/server/src/process.ts:54-55`,
   `packages/cli/src/server-process.ts:68-80`;
   v1 `apps/server/src/managed-opencode.ts:147-234`).
-- The v2 single-daemon model differs from OmniRush.ai's current per-workspace
+- The v2 single-daemon model differs from MarsAI's current per-workspace
   engine assumption. Location scoping covers directory isolation
   (v2 `packages/server/src/location.ts:69-79`), but `EngineInfo` IPC shapes must
   be versioned (`packages/types/src/desktop-ipc.ts:36-52,88-114`).
@@ -414,7 +414,7 @@ server seams (`apps/server/src/server.ts:1246-1280`,
 ### Embed `@opencode-ai/sdk` v2 in-process
 
 Rejected for this lane.
-The v2 implementation has Bun-flavored runtime dependencies, while OmniRush.ai's
+The v2 implementation has Bun-flavored runtime dependencies, while MarsAI's
 embedded server runs in Electron's Node environment.
 The subprocess approach matches the existing managed-engine boundary at
 `apps/server/src/managed-opencode.ts:147-234` and preserves process isolation.

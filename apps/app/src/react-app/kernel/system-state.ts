@@ -3,9 +3,9 @@ import { useCallback, useMemo, useState } from "react";
 import type {
   ReloadReason,
   ReloadTrigger,
-  ResetOmniRushMode,
+  ResetMarsMode,
 } from "../../app/types";
-import { relaunchDesktopApp, resetOmniRushState } from "../../app/lib/desktop";
+import { relaunchDesktopApp, resetMarsState } from "../../app/lib/desktop";
 import {
   addOpencodeCacheHint,
   isDesktopRuntime,
@@ -24,7 +24,7 @@ export type ReloadState = {
 
 export type ResetState = {
   resetModalOpen: boolean;
-  resetModalMode: ResetOmniRushMode;
+  resetModalMode: ResetMarsMode;
   resetModalText: string;
   resetModalBusy: boolean;
 };
@@ -37,14 +37,14 @@ export type SystemStateControls = {
   reloadWorkspaceEngine: () => Promise<void>;
   canReloadWorkspaceEngine: boolean;
   reset: ResetState;
-  openResetModal: (mode: ResetOmniRushMode) => void;
+  openResetModal: (mode: ResetMarsMode) => void;
   closeResetModal: () => void;
   setResetModalText: (value: string) => void;
   confirmReset: () => Promise<void>;
   setError: (message: string | null) => void;
 };
 
-function clearOmniRushLocalStorage(mode: ResetOmniRushMode) {
+function clearMarsLocalStorage(mode: ResetMarsMode) {
   if (typeof window === "undefined") return;
   try {
     if (mode === "all") {
@@ -53,9 +53,9 @@ function clearOmniRushLocalStorage(mode: ResetOmniRushMode) {
     }
     const keys = Object.keys(window.localStorage);
     for (const key of keys) {
-      if (/omnirush/.test(key)) window.localStorage.removeItem(key);
+      if (/mars/.test(key)) window.localStorage.removeItem(key);
     }
-    window.localStorage.removeItem("omnirush_mode_pref");
+    window.localStorage.removeItem("mars_mode_pref");
   } catch {
     // ignore
   }
@@ -83,7 +83,7 @@ export function useSystemState(
 
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [resetModalMode, setResetModalMode] =
-    useState<ResetOmniRushMode>("onboarding");
+    useState<ResetMarsMode>("onboarding");
   const [resetModalText, setResetModalText] = useState("");
   const [resetModalBusy, setResetModalBusy] = useState(false);
 
@@ -172,7 +172,7 @@ export function useSystemState(
   }, [clearReloadRequired, options, reloadBusy]);
 
   const openResetModal = useCallback(
-    (mode: ResetOmniRushMode) => {
+    (mode: ResetMarsMode) => {
       if (options.hasActiveRuns()) {
         options.setError(t("system.stop_active_runs_before_reset"));
         return;
@@ -203,9 +203,9 @@ export function useSystemState(
 
     try {
       if (isDesktopRuntime()) {
-        await resetOmniRushState(resetModalMode);
+        await resetMarsState(resetModalMode);
       }
-      clearOmniRushLocalStorage(resetModalMode);
+      clearMarsLocalStorage(resetModalMode);
       if (isDesktopRuntime()) {
         await relaunchDesktopApp();
       } else {

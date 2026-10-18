@@ -1,4 +1,4 @@
-# OmniRush.ai Individual Contributor License Agreement
+# MarsAI Individual Contributor License Agreement
 
 You accept and agree to the following terms and conditions for Your present
 and future Contributions submitted to Different AI, Inc. Except for the
@@ -40,7 +40,7 @@ in and to Your Contributions.
    derivative works of, publicly display, publicly perform, sublicense, and
    distribute Your Contributions and such derivative works. For clarity, this
    includes the right to distribute Your Contributions under the licenses
-   applicable to the Work — including the OmniRush.ai EE License's scheduled
+   applicable to the Work — including the MarsAI EE License's scheduled
    conversion of each released version to the MIT license — and under such
    other license terms as Different AI, Inc. applies to the Work.
 

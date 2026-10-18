@@ -32,7 +32,7 @@ concurrency:
 jobs:
   publish-daytona-snapshot:
     name: Build and Push Dev Daytona Snapshot
-    if: github.repository == 'omnirush-ai/omnirush-gui'
+    if: github.repository == 'mars-ai/mars-gui'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Check channel
@@ -69,7 +69,7 @@ jobs:
           set -euo pipefail
 
           short_sha="$(git rev-parse --short=7 HEAD)"
-          snapshot_name="${DAYTONA_SNAPSHOT_NAME_BASE:-omnirush}-dev-${short_sha}"
+          snapshot_name="${DAYTONA_SNAPSHOT_NAME_BASE:-mars}-dev-${short_sha}"
           snapshot_region="${DEFAULT_SNAPSHOT_REGION:-}"
           {
             echo "snapshot_name=$snapshot_name"
@@ -157,7 +157,7 @@ jobs:
           daytona login --api-key "$DAYTONA_API_KEY"
 
           echo "Publishing Daytona snapshot: ${DAYTONA_SNAPSHOT_NAME}"
-          ./scripts/create-daytona-omnirush-snapshot.sh "${DAYTONA_SNAPSHOT_NAME}"
+          ./scripts/create-daytona-mars-snapshot.sh "${DAYTONA_SNAPSHOT_NAME}"
 
       - name: Checkout snapshot pin automation
         if: steps.channel.outputs.enabled == 'true' && vars.DAYTONA_CLOUD_ENV_GROUP_ID != ''
@@ -282,7 +282,7 @@ jobs:
 
           result="$(node scripts/prune-daytona-dev-snapshots.mjs \
             ${DAYTONA_API_URL:+--api-url "$DAYTONA_API_URL"} \
-            --name-base "${DAYTONA_SNAPSHOT_NAME_BASE:-omnirush}" \
+            --name-base "${DAYTONA_SNAPSHOT_NAME_BASE:-mars}" \
             --keep "$DAYTONA_SNAPSHOT_NAME" \
             --keep "$current_pin" \
             --keep-count 5)"
@@ -298,7 +298,7 @@ jobs:
           release_result="$(node scripts/prune-daytona-dev-snapshots.mjs \
             ${DAYTONA_API_URL:+--api-url "$DAYTONA_API_URL"} \
             --channel release \
-            --name-base "${DAYTONA_SNAPSHOT_NAME_BASE:-omnirush}" \
+            --name-base "${DAYTONA_SNAPSHOT_NAME_BASE:-mars}" \
             --keep "$current_pin" \
             --keep-count 20)"
           echo "$release_result"

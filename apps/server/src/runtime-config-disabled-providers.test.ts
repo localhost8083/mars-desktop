@@ -25,12 +25,12 @@ function clientAuth() {
 }
 
 async function createTempRoot() {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-runtime-disabled-providers-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-runtime-disabled-providers-"));
   roots.push(root);
   return root;
 }
 
-async function startOmniRushServer(workspaceRoot: string) {
+async function startMarsServer(workspaceRoot: string) {
   const config: ServerConfig = {
     host: "127.0.0.1",
     port: 0,
@@ -64,7 +64,7 @@ afterEach(async () => {
 describe("runtime-config disabled providers route", () => {
   test("writes disabled providers into the runtime store", async () => {
     const root = await createTempRoot();
-    const { base, config } = await startOmniRushServer(root);
+    const { base, config } = await startMarsServer(root);
 
     const response = await fetch(`${base}/workspace/ws_1/runtime-config/disabled-providers`, {
       method: "POST",
@@ -82,7 +82,7 @@ describe("runtime-config disabled providers route", () => {
 
   test("preserves other runtime keys while updating disabled providers", async () => {
     const root = await createTempRoot();
-    const { base, config } = await startOmniRushServer(root);
+    const { base, config } = await startMarsServer(root);
     await writeRuntimeOpencodeConfig(config, "ws_1", () => ({
       mcp: { notion: { type: "remote", url: "https://notion.example/mcp" } },
       provider: { local: { npm: "@ai-sdk/openai-compatible" } },
@@ -103,7 +103,7 @@ describe("runtime-config disabled providers route", () => {
 
   test("rejects invalid payloads", async () => {
     const root = await createTempRoot();
-    const { base } = await startOmniRushServer(root);
+    const { base } = await startMarsServer(root);
 
     const response = await fetch(`${base}/workspace/ws_1/runtime-config/disabled-providers`, {
       method: "POST",

@@ -86,7 +86,7 @@ export async function createPortableComputerUseHost({ profile, capture, preview 
       if (message.method === "notifications/initialized") return;
       let result;
       try {
-        if (message.method === "initialize") result = { protocolVersion: "2025-11-25", capabilities: { tools: {} }, serverInfo: { name: "omnirush-computer-use", version: "0.1.0" }, instructions: "Use only the approved app window. Foreground control pauses on person input. Only the person can approve or Continue. Observe after every action; never retry partial input automatically. For Blender background work prefer its Python CLI or an app connector." };
+        if (message.method === "initialize") result = { protocolVersion: "2025-11-25", capabilities: { tools: {} }, serverInfo: { name: "mars-computer-use", version: "0.1.0" }, instructions: "Use only the approved app window. Foreground control pauses on person input. Only the person can approve or Continue. Observe after every action; never retry partial input automatically. For Blender background work prefer its Python CLI or an app connector." };
         else if (message.method === "ping") result = {};
         else if (message.method === "tools/list") result = { tools };
         else {
@@ -220,7 +220,7 @@ export async function createPortableComputerUseHost({ profile, capture, preview 
   const expiry = setInterval(() => { for (const entry of connections.values()) { const value = entry.session; if (!value) continue; if (Date.now() >= value.expiresAt) void stop(entry); else if (value.phase === "working" && Date.now() - value.lastOperation > 120_000) pause(entry, "Paused after two minutes without work. Choose Continue when ready."); } update(); }, 1000);
   const host = {
     discoveryPath, state, availability,
-    pause(connectionId) { const entry = connections.get(connectionId); if (entry) pause(entry, "You took over. Choose Continue in OmniRush.ai when ready."); },
+    pause(connectionId) { const entry = connections.get(connectionId); if (entry) pause(entry, "You took over. Choose Continue in MarsAI when ready."); },
     async apps() { if (!availability.supported) return { ok: false, apps: [] }; const windows = await native.call("list"); return { ok: true, apps: [...new Set(windows.map((w) => w.appName))] }; },
     async action(input) {
       const entry = connections.get(input?.connectionId), value = entry?.session;

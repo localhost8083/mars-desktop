@@ -9,15 +9,15 @@ import { cn } from "@/lib/utils";
 
 import {
   desktopNotificationShow,
-  omnirushBuildathon,
-  omnirushBuildathonChecklist,
-  omnirushBuildathonLink,
-  omnirushBuildathonSessions,
-  omnirushBuildathonTagSession,
+  marsBuildathon,
+  marsBuildathonChecklist,
+  marsBuildathonLink,
+  marsBuildathonSessions,
+  marsBuildathonTagSession,
   openDesktopUrl,
 } from "../../../app/lib/desktop";
-import { createOmniRushServerClient } from "../../../app/lib/omnirush-server";
-import { resolveOmniRushConnection } from "../../shell/omnirush-connection";
+import { createMarsServerClient } from "../../../app/lib/mars-server";
+import { resolveMarsConnection } from "../../shell/mars-connection";
 import {
   BUILDATHON_REFRESH_MS,
   JOIN_WATCH_REFRESH_MS,
@@ -56,7 +56,7 @@ import {
   type BuildathonTrack,
 } from "../../../app/lib/buildathon";
 
-const readStatus = () => omnirushBuildathon();
+const readStatus = () => marsBuildathon();
 
 /** The server clock, re-read every `intervalMs`. */
 function useServerNow(intervalMs: number): number {
@@ -258,7 +258,7 @@ function LinkCodeForm() {
     setBusy(true);
     setMessage(null);
     try {
-      const result = await omnirushBuildathonLink({ code });
+      const result = await marsBuildathonLink({ code });
       if (result.ok) {
         useBuildathonStore.getState().setStatus(result.status);
         setCode("");
@@ -326,7 +326,7 @@ function ChecklistSection(props: { status: BuildathonStatus }) {
     if (!path) return;
     let live = true;
     setChecks(undefined);
-    void omnirushBuildathonChecklist({ path, checklist }).catch(() => null).then((result) => {
+    void marsBuildathonChecklist({ path, checklist }).catch(() => null).then((result) => {
       if (live) setChecks(result ?? null);
     });
     return () => {
@@ -463,7 +463,7 @@ export function BuildathonPanel(props: { status: BuildathonStatus; onClose: () =
 
   useEffect(() => {
     let live = true;
-    void omnirushBuildathonSessions().catch(() => null).then((list) => {
+    void marsBuildathonSessions().catch(() => null).then((list) => {
       if (live) setSessions(list ?? null);
     });
     return () => {
@@ -689,7 +689,7 @@ export function BuildathonLayer() {
     if (!status) return;
     const pending = sessionsToTag(projects, status.event, readProjectTracks(), readTaggedSessions());
     if (!pending.length) return;
-    void tagSessions(pending, (input) => omnirushBuildathonTagSession(input));
+    void tagSessions(pending, (input) => marsBuildathonTagSession(input));
   }, [status, projects, tracksVersion]);
 
   // The local server gets the buildathon projects and the event's `repro` block: their chats get
@@ -700,9 +700,9 @@ export function BuildathonLayer() {
     let live = true;
     let timer: number | undefined;
     void syncBuildathonServer(status, async (body) => {
-      const connection = await resolveOmniRushConnection();
+      const connection = await resolveMarsConnection();
       if (!connection.normalizedBaseUrl || !(connection.resolvedToken || connection.resolvedHostToken)) throw new Error("server not ready");
-      await createOmniRushServerClient({
+      await createMarsServerClient({
         baseUrl: connection.normalizedBaseUrl,
         token: connection.resolvedToken || undefined,
         hostToken: connection.resolvedHostToken || undefined,

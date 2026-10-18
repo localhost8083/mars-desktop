@@ -1,4 +1,4 @@
-import type { Surface } from "@omnirush/cdp";
+import type { Surface } from "@mars/cdp";
 import { control } from "./desktop.ts";
 
 const FIRST_CREATE_TIMEOUT_MS = 60_000;

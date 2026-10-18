@@ -1,6 +1,6 @@
-import type { BrowserEvaluation, EvaluateOptions } from "@omnirush/cdp";
-import { browserScript } from "@omnirush/cdp";
-import { typeWithCadence, typingPlan } from "@omnirush/behaviors";
+import type { BrowserEvaluation, EvaluateOptions } from "@mars/cdp";
+import { browserScript } from "@mars/cdp";
+import { typeWithCadence, typingPlan } from "@mars/behaviors";
 import {
   control,
   createNativeConnector,
@@ -14,7 +14,7 @@ import {
   renameSessionAndWait,
   signInDesktopAs,
   waitUntilInteractive,
-} from "@omnirush/behaviors";
+} from "@mars/behaviors";
 import {
   callFunctionOnSurface,
   addInitScript,
@@ -32,8 +32,8 @@ import {
   setViewport,
   typeText,
   waitForLocated,
-} from "@omnirush/cdp";
-import type { Located, Surface, Target } from "@omnirush/cdp";
+} from "@mars/cdp";
+import type { Located, Surface, Target } from "@mars/cdp";
 import {
   app as startApp,
   faultProxy as startFaultProxy,
@@ -42,11 +42,11 @@ import {
   requestBrowserTask,
   readBrowserFixtureState,
   setBrowserFixtureDiscovery,
-} from "@omnirush/env";
-import type { Den, Place } from "@omnirush/env";
-import { chrome, desktop } from "@omnirush/hosts";
-import { expectVisualEvidence } from "@omnirush/test-evidence/vitest";
-import { screenshot, validate } from "@omnirush/test-evidence";
+} from "@mars/env";
+import type { Den, Place } from "@mars/env";
+import { chrome, desktop } from "@mars/hosts";
+import { expectVisualEvidence } from "@mars/test-evidence/vitest";
+import { screenshot, validate } from "@mars/test-evidence";
 import type {
   StepRecord,
   StepRecordInput,
@@ -55,7 +55,7 @@ import type {
   TraceChannel,
   TraceEntry,
   TraceEntryInput,
-} from "@omnirush/test-evidence";
+} from "@mars/test-evidence";
 import { eventually } from "../eventually.ts";
 import { denLink as startDenLink } from "../link.ts";
 import { readConnectState } from "../state.ts";
@@ -224,7 +224,7 @@ async function waitForControlAction(surface: Surface, action: string, timeoutMs 
   await waitForControlRail(surface, action, Math.max(1, deadline - Date.now()));
   while (Date.now() < deadline) {
     try {
-      const actions = await evalIn(surface, () => (window.__omnirushControl?.listActions?.() ?? null), {
+      const actions = await evalIn(surface, () => (window.__marsControl?.listActions?.() ?? null), {
         timeoutMs: Math.min(2_000, Math.max(1, deadline - Date.now())),
       });
       if (Array.isArray(actions) && actions.some((entry) => isRecord(entry) && entry.id === action && entry.disabled !== true)) return;
@@ -423,7 +423,7 @@ export class SeedChannel implements Seed {
     this.#runtime = runtime;
   }
 
-  den(options: Omit<import("@omnirush/env").ServerOptions, "place"> = {}): Promise<Den> {
+  den(options: Omit<import("@mars/env").ServerOptions, "place"> = {}): Promise<Den> {
     return this.#runtime.call("seed", "den", `den(${this.#runtime.place.kind})`, null, async () => {
       const den = await server({ ...options, place: this.#runtime.place });
       return this.#runtime.stack.use(den);
@@ -462,7 +462,7 @@ export class SeedChannel implements Seed {
         host: this.#runtime.place.host(),
         profileDir: options.profileDir,
         env: options.model
-          ? { ...options.env, OMNIRUSH_EVAL_MODEL: options.model }
+          ? { ...options.env, MARS_EVAL_MODEL: options.model }
           : options.env,
       }));
       if (options.workspacePath) await this.workspace(app, options.workspacePath);
@@ -487,7 +487,7 @@ export class SeedChannel implements Seed {
         const denOrigin = new URL(options.den.ref.webUrl).origin;
         // Seed before hydration: a running anonymous page can otherwise clear the token.
         await using initialSession = await addInitScript(web.client, browserScript((origin, token) => {
-          if (location.origin === origin) localStorage.setItem("omnirush:web:auth-token", token);
+          if (location.origin === origin) localStorage.setItem("mars:web:auth-token", token);
         }, [denOrigin, session.token]));
         await navigate(web.client, new URL(options.startPath ?? "/", options.den.ref.webUrl).toString());
         await eventually(() => evaluateOnSurface(web, browserScript((origin) =>
@@ -501,11 +501,11 @@ export class SeedChannel implements Seed {
     });
   }
 
-  workspace(app: Surface, path = `/tmp/omnirush-spec-${Date.now()}`, options: { create?: boolean } = {}) {
+  workspace(app: Surface, path = `/tmp/mars-spec-${Date.now()}`, options: { create?: boolean } = {}) {
     return this.#runtime.call("seed", "workspace", `workspace(${path})`, app, async () => {
-      const result = await import("@omnirush/behaviors").then(({ createAndSelectWorkspace }) => createAndSelectWorkspace(app, { path, ...options }));
+      const result = await import("@mars/behaviors").then(({ createAndSelectWorkspace }) => createAndSelectWorkspace(app, { path, ...options }));
       await eventually(() => callFunctionOnSurface(app, (workspaceId) => {
-        const workspace = window.__omnirush?.slice?.("route")?.workspaces?.find(item => item.id === workspaceId);
+        const workspace = window.__mars?.slice?.("route")?.workspaces?.find(item => item.id === workspaceId);
         return workspace ? { exists: true, loading: workspace.loading } : { exists: false };
       }, [result.workspaceId]), {
         within: 60000, intervalMs: 250, label: `workspace ${result.workspaceId} initial session load`,
@@ -541,11 +541,11 @@ export class SeedChannel implements Seed {
     });
   }
 
-  signIn(app: Surface, member: import("@omnirush/behaviors").DenSession, identity: string) {
+  signIn(app: Surface, member: import("@mars/behaviors").DenSession, identity: string) {
     return this.#runtime.call("seed", "signIn", `signIn(${identity})`, app, () => signInDesktopAs(app, member, member));
   }
 
-  api(session: import("@omnirush/behaviors").DenSession, path: string, init: RequestInit = {}) {
+  api(session: import("@mars/behaviors").DenSession, path: string, init: RequestInit = {}) {
     const method = init.method?.toUpperCase() ?? "GET";
     return this.#runtime.call("seed", "api", `[seed] api ${method} ${path}`, null, () => {
       const headers = new Headers(init.headers);
@@ -554,11 +554,11 @@ export class SeedChannel implements Seed {
     });
   }
 
-  orgConnection(admin: import("@omnirush/behaviors").DenSession, input: import("./types.ts").OrgConnectionInput) {
+  orgConnection(admin: import("@mars/behaviors").DenSession, input: import("./types.ts").OrgConnectionInput) {
     return this.#runtime.call("seed", "orgConnection", `orgConnection(${JSON.stringify(input.name)})`, null, () => createOrgConnection(admin, input));
   }
 
-  nativeConnector(admin: import("@omnirush/behaviors").DenSession, input: import("@omnirush/behaviors").NativeConnectorInput) {
+  nativeConnector(admin: import("@mars/behaviors").DenSession, input: import("@mars/behaviors").NativeConnectorInput) {
     return this.#runtime.call("seed", "nativeConnector", `nativeConnector(${JSON.stringify(input.name)})`, null, () => createNativeConnector(admin, input));
   }
 
@@ -576,7 +576,7 @@ export class SeedChannel implements Seed {
     });
   }
 
-  denLink(den: Den, options: import("@omnirush/env").SeedDenLinkOptions = {}) {
+  denLink(den: Den, options: import("@mars/env").SeedDenLinkOptions = {}) {
     return this.#runtime.call("seed", "denLink", `denLink(${options.client ?? "public-preview"})`, null, async () => {
       const link = await startDenLink(den.ref, options);
       return this.#runtime.stack.use(link);
@@ -586,7 +586,7 @@ export class SeedChannel implements Seed {
   tmpPath(label: string): string {
     this.#runtime.checkOrder("seed", "tmpPath");
     return this.#runtime.adapters.seed?.tmpPath?.(label)
-      ?? `/tmp/omnirush-${label.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`;
+      ?? `/tmp/mars-${label.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`;
   }
 
   composerText(app: Surface, text: string) {
@@ -770,7 +770,7 @@ export class AgentChannel implements Agent {
     return new AgentChannel(this.#runtime, surface);
   }
 
-  browserTask(input: import("@omnirush/behaviors").BrowserTaskInput) {
+  browserTask(input: import("@mars/behaviors").BrowserTaskInput) {
     const surface = requireSurface(this.#surface);
     return this.#runtime.call("agent", "browserTask", `browserTask(${input.operation}, session=${input.sessionId}, tab=${input.args?.tabId ?? "owned"})`, surface,
       () => requestBrowserTask(surface, input));
@@ -789,7 +789,7 @@ export class AgentChannel implements Agent {
     const surface = requireSurface(this.#surface);
     return this.#runtime.call("agent", "browserRequest", `browserRequest(${input.method ?? "GET"} ${input.url})`, surface, async () => {
       const handle = await callFunctionOnSurface(surface, async () => {
-        const browser = window.__OMNIRUSH_ELECTRON__.browser;
+        const browser = window.__MARS_ELECTRON__.browser;
         const state = await browser.getState();
         const tab = state.tabs.find(tab => tab.id === state.activeTabId);
         if (!tab?.ownerSessionId || !tab.url?.startsWith('http')) throw new Error('Select an owned website tab first');
@@ -819,7 +819,7 @@ export class AgentChannel implements Agent {
       if (!path.startsWith("/") || path.startsWith("//") || /[\\\s]/.test(path)) throw new Error("A root-relative server path is required.");
       const value = await callFunctionOnSurface(surface, async (path, encodedInput) => {
         const input = JSON.parse(encodedInput);
-        const info = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("omnirushServerInfo");
+        const info = await window.__MARS_ELECTRON__?.invokeDesktop?.("marsServerInfo");
         if (!info?.running || !info.baseUrl) return { status: 0, body: { error: "local_server_unavailable" } };
         const response = await fetch(String(info.baseUrl).replace(/\/+$/, "") + path, {
           method: input.method,
@@ -865,7 +865,7 @@ export class AgentChannel implements Agent {
     const surface = requireSurface(this.#surface);
     return this.#runtime.call("agent", "actions", "listActions", surface, async () => {
       await waitForControlRail(surface, "listActions");
-      return evaluateOnSurface(surface, () => (window.__omnirushControl.listActions()));
+      return evaluateOnSurface(surface, () => (window.__marsControl.listActions()));
     });
   }
 }
@@ -971,7 +971,7 @@ export class ProbeChannel implements Probe {
     return this.#runtime.call("probe", "connectState", "connectState", app, () => readConnectState(app));
   }
 
-  api(session: import("@omnirush/behaviors").DenSession, path: string, init: RequestInit = {}) {
+  api(session: import("@mars/behaviors").DenSession, path: string, init: RequestInit = {}) {
     const method = init.method?.toUpperCase() ?? "GET";
     return this.#runtime.call("probe", "api", `api(GET ${path})`, null, () => {
       if (method !== "GET") throw new Error(`probe.api is read-only; ${method} is not allowed.`);
@@ -988,7 +988,7 @@ export class ProbeChannel implements Probe {
         throw new Error("probe.desktopApi requires a root-relative server path.");
       }
       const value = await callFunctionOnSurface(surface, async (path) => {
-        const info = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("omnirushServerInfo");
+        const info = await window.__MARS_ELECTRON__?.invokeDesktop?.("marsServerInfo");
         if (!info?.running || !info.baseUrl) return { status: 0, body: { error: "local_server_unavailable" } };
         const response = await fetch(String(info.baseUrl).replace(/\/+$/, "") + path, {
           method: "GET",
@@ -1008,7 +1008,7 @@ export class ProbeChannel implements Probe {
     });
   }
 
-  toolCalls(mock: import("@omnirush/env").MockHandle, options: Parameters<import("@omnirush/env").MockHandle["toolCalls"]>[0] = {}) {
+  toolCalls(mock: import("@mars/env").MockHandle, options: Parameters<import("@mars/env").MockHandle["toolCalls"]>[0] = {}) {
     return this.#runtime.call("probe", "toolCalls", `toolCalls(${options.name ?? "any"})`, null, () => mock.toolCalls(options));
   }
 

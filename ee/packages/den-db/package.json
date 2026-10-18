@@ -85,7 +85,7 @@
     "benchmark:admin-scale:mysql": "node --import tsx scripts/admin-scale-benchmark.ts"
   },
   "dependencies": {
-    "@omnirush/types": "workspace:*",
+    "@mars/types": "workspace:*",
     "@omnirush-ee/utils": "workspace:*",
     "@planetscale/database": "^1.19.0",
     "drizzle-orm": "^0.45.2",

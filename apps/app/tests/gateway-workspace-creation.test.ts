@@ -18,8 +18,8 @@ function installWindow(options: {
       addEventListener: () => undefined,
       removeEventListener: () => undefined,
       location: { origin: options.origin },
-      __OMNIRUSH_GATEWAY__: options.gateway ? { version: 1 } : undefined,
-      __OMNIRUSH_ELECTRON__: options.electronInfo
+      __MARS_GATEWAY__: options.gateway ? { version: 1 } : undefined,
+      __MARS_ELECTRON__: options.electronInfo
         ? {
             invokeDesktop: async () => ({
               running: true,
@@ -41,7 +41,7 @@ afterEach(() => {
 
 describe("workspace creation policy", () => {
   test("disables workspace creation in gateway runtime", () => {
-    installWindow({ origin: "https://web.omnirush.example.com", gateway: true });
+    installWindow({ origin: "https://web.mars.example.com", gateway: true });
     expect(canCreateWorkspaces()).toBe(false);
   });
 

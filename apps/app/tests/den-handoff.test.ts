@@ -59,7 +59,7 @@ function stubWindow(extra?: Record<string, unknown>): StubbedWindow {
       localStorage: memoryStorage(),
       sessionStorage: memoryStorage(),
       dispatchEvent(event: Event) {
-        if (event.type === "omnirush-den-session-updated") {
+        if (event.type === "mars-den-session-updated") {
           const detail = (event as CustomEvent<{ status?: string; message?: string | null }>).detail;
           sessionEvents.push({
             status: detail?.status,
@@ -104,15 +104,15 @@ function stubExchangeResponse(payload: Record<string, unknown>): RecordedRequest
 const exchangeUser = { id: "user_invited", email: "invited@example.com", name: "Invited Member" };
 
 function seedSignedInAt(baseUrl: string, token: string, org?: { id: string; slug: string; name: string }) {
-  window.localStorage.setItem("omnirush.den.baseUrl", baseUrl);
-  window.localStorage.setItem("omnirush.den.authToken", token);
+  window.localStorage.setItem("mars.den.baseUrl", baseUrl);
+  window.localStorage.setItem("mars.den.authToken", token);
   // Dev's origin-coherence invariant stores the issuing origin next to the
   // token (denOriginComparisonKey form; equal to the origin for these URLs).
-  window.localStorage.setItem("omnirush.den.sessionOrigin", baseUrl);
+  window.localStorage.setItem("mars.den.sessionOrigin", baseUrl);
   if (org) {
-    window.localStorage.setItem("omnirush.den.activeOrgId", org.id);
-    window.localStorage.setItem("omnirush.den.activeOrgSlug", org.slug);
-    window.localStorage.setItem("omnirush.den.activeOrgName", org.name);
+    window.localStorage.setItem("mars.den.activeOrgId", org.id);
+    window.localStorage.setItem("mars.den.activeOrgSlug", org.slug);
+    window.localStorage.setItem("mars.den.activeOrgName", org.name);
   }
 }
 
@@ -143,12 +143,12 @@ describe("exchangeHandoffAndSignIn", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error(result.error);
-    expect(window.localStorage.getItem("omnirush.den.activeOrgId")).toBe("org_invited");
-    expect(window.localStorage.getItem("omnirush.den.activeOrgSlug")).toBe("invited-org");
-    expect(window.localStorage.getItem("omnirush.den.activeOrgName")).toBe("Invited Org");
-    expect(window.localStorage.getItem("omnirush.den.sessionOrigin")).toBe("https://den.test");
+    expect(window.localStorage.getItem("mars.den.activeOrgId")).toBe("org_invited");
+    expect(window.localStorage.getItem("mars.den.activeOrgSlug")).toBe("invited-org");
+    expect(window.localStorage.getItem("mars.den.activeOrgName")).toBe("Invited Org");
+    expect(window.localStorage.getItem("mars.den.sessionOrigin")).toBe("https://den.test");
     expect(result.exchange.connectEnabled).toBe(false);
-    expect(window.localStorage.getItem("omnirush.den.desktopConfig:https://den.test::org_invited"))
+    expect(window.localStorage.getItem("mars.den.desktopConfig:https://den.test::org_invited"))
       .toBe(JSON.stringify({ connectEnabled: false }));
   });
 
@@ -166,8 +166,8 @@ describe("exchangeHandoffAndSignIn", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(window.localStorage.getItem("omnirush.den.activeOrgId")).toBe("org_bootstrap");
-    expect(window.localStorage.getItem("omnirush.den.desktopConfig:https://den.test::org_bootstrap")).toBeNull();
+    expect(window.localStorage.getItem("mars.den.activeOrgId")).toBe("org_bootstrap");
+    expect(window.localStorage.getItem("mars.den.desktopConfig:https://den.test::org_bootstrap")).toBeNull();
   });
 
   test("a same-origin handoff without an exchange org preserves the stored organization", async () => {
@@ -183,11 +183,11 @@ describe("exchangeHandoffAndSignIn", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error(result.error);
-    expect(window.localStorage.getItem("omnirush.den.activeOrgId")).toBe("org_stored");
-    expect(window.localStorage.getItem("omnirush.den.activeOrgSlug")).toBe("stored-org");
-    expect(window.localStorage.getItem("omnirush.den.activeOrgName")).toBe("Stored Org");
+    expect(window.localStorage.getItem("mars.den.activeOrgId")).toBe("org_stored");
+    expect(window.localStorage.getItem("mars.den.activeOrgSlug")).toBe("stored-org");
+    expect(window.localStorage.getItem("mars.den.activeOrgName")).toBe("Stored Org");
     expect(result.exchange.connectEnabled).toBeNull();
-    expect(window.localStorage.getItem("omnirush.den.desktopConfig:https://den.test::org_stored"))
+    expect(window.localStorage.getItem("mars.den.desktopConfig:https://den.test::org_stored"))
       .toBeNull();
   });
 
@@ -203,13 +203,13 @@ describe("exchangeHandoffAndSignIn", () => {
 
     expect(result.ok).toBe(true);
     // Origin, token, and enrollment marker all switched together…
-    expect(window.localStorage.getItem("omnirush.den.baseUrl")).toBe("https://den-b.test");
-    expect(window.localStorage.getItem("omnirush.den.authToken")).toBe("tok_b");
-    expect(window.localStorage.getItem("omnirush.den.sessionOrigin")).toBe("https://den-b.test");
+    expect(window.localStorage.getItem("mars.den.baseUrl")).toBe("https://den-b.test");
+    expect(window.localStorage.getItem("mars.den.authToken")).toBe("tok_b");
+    expect(window.localStorage.getItem("mars.den.sessionOrigin")).toBe("https://den-b.test");
     // …and A's organization did not leak into B.
-    expect(window.localStorage.getItem("omnirush.den.activeOrgId")).toBeNull();
-    expect(window.localStorage.getItem("omnirush.den.activeOrgSlug")).toBeNull();
-    expect(window.localStorage.getItem("omnirush.den.activeOrgName")).toBeNull();
+    expect(window.localStorage.getItem("mars.den.activeOrgId")).toBeNull();
+    expect(window.localStorage.getItem("mars.den.activeOrgSlug")).toBeNull();
+    expect(window.localStorage.getItem("mars.den.activeOrgName")).toBeNull();
   });
 
   test("a cross-origin handoff commits origin, token, and organization together", async () => {
@@ -227,10 +227,10 @@ describe("exchangeHandoffAndSignIn", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(window.localStorage.getItem("omnirush.den.baseUrl")).toBe("https://den-b.test");
-    expect(window.localStorage.getItem("omnirush.den.authToken")).toBe("tok_b");
-    expect(window.localStorage.getItem("omnirush.den.activeOrgId")).toBe("org_b");
-    expect(window.localStorage.getItem("omnirush.den.sessionOrigin")).toBe("https://den-b.test");
+    expect(window.localStorage.getItem("mars.den.baseUrl")).toBe("https://den-b.test");
+    expect(window.localStorage.getItem("mars.den.authToken")).toBe("tok_b");
+    expect(window.localStorage.getItem("mars.den.activeOrgId")).toBe("org_b");
+    expect(window.localStorage.getItem("mars.den.sessionOrigin")).toBe("https://den-b.test");
     // The grant went to the destination origin only — never to A. A
     // non-hosted destination has no derivable API sibling, so the exchange
     // stays on the destination's own same-origin API proxy.
@@ -255,8 +255,8 @@ describe("exchangeHandoffAndSignIn", () => {
 
     expect(result.ok).toBe(true);
     // Token persists, but no organization is committed…
-    expect(window.localStorage.getItem("omnirush.den.authToken")).toBe("tok_handoff");
-    expect(window.localStorage.getItem("omnirush.den.activeOrgId")).toBeNull();
+    expect(window.localStorage.getItem("mars.den.authToken")).toBe("tok_handoff");
+    expect(window.localStorage.getItem("mars.den.activeOrgId")).toBeNull();
     // …and the chooser sees the pending state with the exchange org suggested.
     expect(readOrgSelectionPending()).toEqual({
       pending: true,
@@ -276,7 +276,7 @@ describe("exchangeHandoffAndSignIn", () => {
     const result = await exchangeHandoffAndSignIn("grant_test", { baseUrl: "https://den.test" });
 
     expect(result.ok).toBe(true);
-    expect(window.localStorage.getItem("omnirush.den.activeOrgId")).toBeNull();
+    expect(window.localStorage.getItem("mars.den.activeOrgId")).toBeNull();
     expect(readOrgSelectionPending().pending).toBe(true);
     // The marker is consumed: a later remote handoff is not reclassified.
     expect(hasActiveDesktopSignInIntent()).toBe(false);
@@ -298,7 +298,7 @@ describe("exchangeHandoffAndSignIn", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(window.localStorage.getItem("omnirush.den.activeOrgId")).toBe("org_invite");
+    expect(window.localStorage.getItem("mars.den.activeOrgId")).toBe("org_invite");
     expect(readOrgSelectionPending().pending).toBe(false);
   });
 
@@ -317,7 +317,7 @@ describe("exchangeHandoffAndSignIn", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(window.localStorage.getItem("omnirush.den.activeOrgId")).toBe("org_remote");
+    expect(window.localStorage.getItem("mars.den.activeOrgId")).toBe("org_remote");
     expect(readOrgSelectionPending()).toEqual({ pending: false, suggestion: null });
   });
 
@@ -334,11 +334,11 @@ describe("exchangeHandoffAndSignIn", () => {
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected failure");
     expect(result.grantConsumed).toBe(false);
-    expect(window.localStorage.getItem("omnirush.den.baseUrl")).toBe("https://den-a.test");
-    expect(window.localStorage.getItem("omnirush.den.authToken")).toBe("tok_a");
-    expect(window.localStorage.getItem("omnirush.den.activeOrgId")).toBe("org_a");
-    expect(window.localStorage.getItem("omnirush.den.sessionOrigin")).toBe("https://den-a.test");
-    expect(window.sessionStorage.getItem("omnirush.den.handoffAutoContinueAt")).toBeNull();
+    expect(window.localStorage.getItem("mars.den.baseUrl")).toBe("https://den-a.test");
+    expect(window.localStorage.getItem("mars.den.authToken")).toBe("tok_a");
+    expect(window.localStorage.getItem("mars.den.activeOrgId")).toBe("org_a");
+    expect(window.localStorage.getItem("mars.den.sessionOrigin")).toBe("https://den-a.test");
+    expect(window.sessionStorage.getItem("mars.den.handoffAutoContinueAt")).toBeNull();
     expect(sessionEvents.map((event) => event.status)).toEqual(["error"]);
   });
 
@@ -358,7 +358,7 @@ describe("exchangeHandoffAndSignIn", () => {
     for (const request of requests) {
       expect(new URL(request.url).hostname).toBe("den-b.test");
     }
-    expect(window.localStorage.getItem("omnirush.den.baseUrl")).toBe("https://den-b.test");
+    expect(window.localStorage.getItem("mars.den.baseUrl")).toBe("https://den-b.test");
   });
 
   test("a late result from an older handoff attempt cannot replace a newer enrollment", async () => {
@@ -410,10 +410,10 @@ describe("exchangeHandoffAndSignIn", () => {
     if (oldResult.ok) throw new Error("expected stale failure");
     expect(oldResult.stale).toBe(true);
     // The newer enrollment stands, complete and unmixed.
-    expect(window.localStorage.getItem("omnirush.den.baseUrl")).toBe("https://den-new.test");
-    expect(window.localStorage.getItem("omnirush.den.authToken")).toBe("tok_new");
-    expect(window.localStorage.getItem("omnirush.den.activeOrgId")).toBe("org_new");
-    expect(window.localStorage.getItem("omnirush.den.sessionOrigin")).toBe("https://den-new.test");
+    expect(window.localStorage.getItem("mars.den.baseUrl")).toBe("https://den-new.test");
+    expect(window.localStorage.getItem("mars.den.authToken")).toBe("tok_new");
+    expect(window.localStorage.getItem("mars.den.activeOrgId")).toBe("org_new");
+    expect(window.localStorage.getItem("mars.den.sessionOrigin")).toBe("https://den-new.test");
   });
 
   test("concurrent handoffs to two destinations cannot cross origins, tokens, or organizations", async () => {
@@ -461,10 +461,10 @@ describe("exchangeHandoffAndSignIn", () => {
     expect(resultB.stale).toBe(true);
 
     // Every persisted field belongs to C — no mixing with B or A.
-    expect(window.localStorage.getItem("omnirush.den.baseUrl")).toBe("https://den-c.test");
-    expect(window.localStorage.getItem("omnirush.den.authToken")).toBe("tok_c");
-    expect(window.localStorage.getItem("omnirush.den.activeOrgId")).toBe("org_c");
-    expect(window.localStorage.getItem("omnirush.den.sessionOrigin")).toBe("https://den-c.test");
+    expect(window.localStorage.getItem("mars.den.baseUrl")).toBe("https://den-c.test");
+    expect(window.localStorage.getItem("mars.den.authToken")).toBe("tok_c");
+    expect(window.localStorage.getItem("mars.den.activeOrgId")).toBe("org_c");
+    expect(window.localStorage.getItem("mars.den.sessionOrigin")).toBe("https://den-c.test");
   });
 });
 
@@ -486,7 +486,7 @@ describe("exchangeHandoffAndSignIn on desktop (durable bootstrap commit)", () =>
     };
     const stubbed = stubWindow({
       location: { origin: "http://localhost:5173" },
-      __OMNIRUSH_ELECTRON__: {
+      __MARS_ELECTRON__: {
         meta: { desktopBootstrap: { ...input.bootstrap } },
         invokeDesktop: async (command: string, ...args: unknown[]) => {
           if (command === "getDesktopBootstrapConfig") {
@@ -553,11 +553,11 @@ describe("exchangeHandoffAndSignIn on desktop (durable bootstrap commit)", () =>
         }),
       });
       await initializeDenBootstrapConfig();
-      window.localStorage.setItem("omnirush.den.authToken", "tok_a");
-      window.localStorage.setItem("omnirush.den.sessionOrigin", "https://den-a.test");
-      window.localStorage.setItem("omnirush.den.activeOrgId", "org_a");
-      window.localStorage.setItem("omnirush.den.activeOrgSlug", "org-a");
-      window.localStorage.setItem("omnirush.den.activeOrgName", "Org A");
+      window.localStorage.setItem("mars.den.authToken", "tok_a");
+      window.localStorage.setItem("mars.den.sessionOrigin", "https://den-a.test");
+      window.localStorage.setItem("mars.den.activeOrgId", "org_a");
+      window.localStorage.setItem("mars.den.activeOrgSlug", "org-a");
+      window.localStorage.setItem("mars.den.activeOrgName", "Org A");
 
       const result = await exchangeHandoffAndSignIn("grant_b_secret", {
         baseUrl: "https://den-b.test",
@@ -577,8 +577,8 @@ describe("exchangeHandoffAndSignIn on desktop (durable bootstrap commit)", () =>
       expect(settings.authToken).toBe("tok_a");
       expect(settings.activeOrgId).toBe("org_a");
       // No B credential became visible and no B success state was published.
-      expect(window.localStorage.getItem("omnirush.den.authToken")).toBe("tok_a");
-      expect(window.sessionStorage.getItem("omnirush.den.handoffAutoContinueAt")).toBeNull();
+      expect(window.localStorage.getItem("mars.den.authToken")).toBe("tok_a");
+      expect(window.sessionStorage.getItem("mars.den.handoffAutoContinueAt")).toBeNull();
       expect(sessionEvents.map((event) => event.status)).toEqual(["error"]);
       // The exchange spoke only to B — the failed handoff sent nothing to A.
       // (Runtime-config probes are credential-free GETs and are excluded.)
@@ -615,14 +615,14 @@ describe("exchangeHandoffAndSignIn on desktop (durable bootstrap commit)", () =>
       }),
     });
     await initializeDenBootstrapConfig();
-    window.localStorage.setItem("omnirush.den.authToken", "tok_a");
-    window.localStorage.setItem("omnirush.den.sessionOrigin", "https://den-a.test");
-    window.localStorage.setItem("omnirush.den.activeOrgId", "org_a");
+    window.localStorage.setItem("mars.den.authToken", "tok_a");
+    window.localStorage.setItem("mars.den.sessionOrigin", "https://den-a.test");
+    window.localStorage.setItem("mars.den.activeOrgId", "org_a");
 
     // The shell "persists" a different origin than the transaction asked for
     // (a tampered or corrupted write). The first divergent write is detected;
     // the rollback write is allowed through so the previous state is restored.
-    const bridge = window.__OMNIRUSH_ELECTRON__ as unknown as {
+    const bridge = window.__MARS_ELECTRON__ as unknown as {
       invokeDesktop: (command: string, ...args: unknown[]) => Promise<unknown>;
     };
     const originalInvoke = bridge.invokeDesktop;
@@ -669,9 +669,9 @@ describe("exchangeHandoffAndSignIn on desktop (durable bootstrap commit)", () =>
       }),
     });
     await initializeDenBootstrapConfig();
-    window.localStorage.setItem("omnirush.den.authToken", "tok_a");
-    window.localStorage.setItem("omnirush.den.sessionOrigin", "https://den-a.test");
-    window.localStorage.setItem("omnirush.den.activeOrgId", "org_a");
+    window.localStorage.setItem("mars.den.authToken", "tok_a");
+    window.localStorage.setItem("mars.den.sessionOrigin", "https://den-a.test");
+    window.localStorage.setItem("mars.den.activeOrgId", "org_a");
 
     const result = await exchangeHandoffAndSignIn("grant_b", {
       baseUrl: "https://den-b.test",
@@ -690,7 +690,7 @@ describe("exchangeHandoffAndSignIn on desktop (durable bootstrap commit)", () =>
     expect(settings.baseUrl).toBe("https://den-b.test");
     expect(settings.authToken).toBe("tok_b");
     expect(settings.activeOrgId).toBe("org_b");
-    expect(window.localStorage.getItem("omnirush.den.sessionOrigin")).toBe("https://den-b.test");
+    expect(window.localStorage.getItem("mars.den.sessionOrigin")).toBe("https://den-b.test");
   });
 
   test("a session enrolled against another origin is never exposed to the active control plane", async () => {
@@ -701,9 +701,9 @@ describe("exchangeHandoffAndSignIn on desktop (durable bootstrap commit)", () =>
       exchange: () => ({ status: 500 }),
     });
     await initializeDenBootstrapConfig();
-    window.localStorage.setItem("omnirush.den.authToken", "tok_a");
-    window.localStorage.setItem("omnirush.den.sessionOrigin", "https://den-a.test");
-    window.localStorage.setItem("omnirush.den.activeOrgId", "org_a");
+    window.localStorage.setItem("mars.den.authToken", "tok_a");
+    window.localStorage.setItem("mars.den.sessionOrigin", "https://den-a.test");
+    window.localStorage.setItem("mars.den.activeOrgId", "org_a");
 
     const settings = readDenSettings();
     // Never a hybrid: at B, A's credential and organization are absent.
@@ -718,9 +718,9 @@ describe("exchangeHandoffAndSignIn on desktop (durable bootstrap commit)", () =>
       exchange: () => ({ status: 500 }),
     });
     await initializeDenBootstrapConfig();
-    window.localStorage.setItem("omnirush.den.authToken", "tok_b");
-    window.localStorage.setItem("omnirush.den.sessionOrigin", "https://den-b.test");
-    window.localStorage.setItem("omnirush.den.activeOrgId", "org_b");
+    window.localStorage.setItem("mars.den.authToken", "tok_b");
+    window.localStorage.setItem("mars.den.sessionOrigin", "https://den-b.test");
+    window.localStorage.setItem("mars.den.activeOrgId", "org_b");
 
     const settings = readDenSettings();
     expect(settings.baseUrl).toBe("https://den-b.test");

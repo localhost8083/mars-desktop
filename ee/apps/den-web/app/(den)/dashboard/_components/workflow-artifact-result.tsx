@@ -1,6 +1,6 @@
 "use client";
 
-import type { ArtifactFreshness, WorkflowArtifactSnapshot } from "@omnirush/types/workflows";
+import type { ArtifactFreshness, WorkflowArtifactSnapshot } from "@mars/types/workflows";
 import { DenChip } from "../../_components/ui/chip";
 import { DenNotice } from "../../_components/ui/notice";
 import { WorkflowFriendlyValue } from "./workflow-friendly-value";

@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { emptySession } from "../worlds/desktop.ts";
 
 const test = spec.world(emptySession);
@@ -12,7 +12,7 @@ test("workspace run mode is opt-in, confirms Keep going, and preserves policy wh
   const mount = `/workspace/${encodeURIComponent(world.workspace.workspaceId)}`;
   const trigger = { testId: "workspace-run-mode-trigger" };
   const flag = { testId: "workspace-run-mode-flag", label: "Show workspace run mode" };
-  const confirmation = { text: "Let OmniRush.ai keep going?" };
+  const confirmation = { text: "Let MarsAI keep going?" };
   const footer = { text: "Applies to every chat in this workspace. Specific workspace rules still apply." };
 
   const read = async (path: string) => {
@@ -24,10 +24,10 @@ test("workspace run mode is opt-in, confirms Keep going, and preserves policy wh
   // updatedAt includes runtime reattachment on reload, not just permission
   // edits. Compare configuration values rather than that unrelated clock.
   const readConfig = async () => {
-    const { opencode, omnirush } = await read("config");
-    return { opencode, omnirush };
+    const { opencode, mars } = await read("config");
+    return { opencode, mars };
   };
-  const flagEnabled = () => probe.storage("omnirush.preferences", (value) => (
+  const flagEnabled = () => probe.storage("mars.preferences", (value) => (
     isRecord(value) && isRecord(value.featureFlags) && value.featureFlags.workspaceRunMode === true
   ));
   const modeIs = async (mode: "default" | "approve" | "run-everything", catchAll: "ask" | "allow" | null) => {

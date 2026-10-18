@@ -9,7 +9,7 @@ import {
   EnterpriseMcpOAuthContractError,
   selectRecoverableAuthorizationServerIssuer,
   validateMcpAuthorizationResponseIssuer,
-} from "@omnirush/enterprise-mcp-client"
+} from "@mars/enterprise-mcp-client"
 import { and, desc, eq, inArray, isNull } from "@omnirush-ee/den-db/drizzle"
 import {
   ConnectedAccountTable,

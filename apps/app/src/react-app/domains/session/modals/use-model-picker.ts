@@ -10,7 +10,6 @@ import { useCheckDesktopRestriction } from "@/react-app/domains/cloud/desktop-co
 import { isCloudManagedProviderKey } from "@/react-app/domains/connections/provider-auth/cloud-provider-config";
 import { filterEntitledModelOptions } from "@/react-app/domains/connections/provider-auth/provider-policy";
 import {
-  filterCloudManagedModelOptions,
   mergeModelOptions,
 } from "@/react-app/domains/connections/provider-auth/assigned-model-options";
 import {
@@ -21,7 +20,7 @@ import {
   openModelPickerEvent,
   pendingModelPickerProviderIdsKey,
 } from "@/react-app/shell/new-providers-listener";
-import { resolveModelDisplayName, resolveModelProviderDisplayName, resolveOmniRushModelGroup } from "@/app/utils";
+import { resolveModelDisplayName, resolveModelProviderDisplayName, resolveMarsModelGroup } from "@/app/utils";
 import { isSupportedModelProvider } from "@/app/lib/provider-catalog";
 
 export type UseModelPickerInput = {
@@ -122,7 +121,7 @@ export function useModelPicker(input: UseModelPickerInput) {
     // (2) providers passed via the openModelPickerEvent from the toast.
     let seenIds: Set<string>;
     try {
-      const raw = window.localStorage.getItem("omnirush.seenProviderIds");
+      const raw = window.localStorage.getItem("mars.seenProviderIds");
       seenIds = new Set(raw ? JSON.parse(raw) : []);
     } catch {
       seenIds = new Set();
@@ -136,7 +135,7 @@ export function useModelPicker(input: UseModelPickerInput) {
       for (const id of modelIds) {
         const model = provider.models[id];
         const summary = getModelBehaviorSummary(provider.id, model, null, provider.name);
-        const group = resolveOmniRushModelGroup(provider.id, model.family);
+        const group = resolveMarsModelGroup(provider.id, model.family);
         next.push({
           providerID: provider.id,
           modelID: id,
@@ -154,11 +153,14 @@ export function useModelPicker(input: UseModelPickerInput) {
         });
       }
     }
-    return filterCloudManagedModelOptions(
-      mergeModelOptions(next, fallbackOptions).filter((option) =>
-        isSupportedModelProvider(option.providerID)),
-      cloudProvidersEnabled,
-    );
+    const merged = mergeModelOptions(next, fallbackOptions).filter((option) =>
+      isSupportedModelProvider(option.providerID));
+    // The embedded `mars` gateway serves API-key users with no Den session,
+    // so only cloud-imported (lpr_*) providers gate on sign-in here.
+    return merged.filter((option) =>
+      cloudProvidersEnabled
+      || option.providerID.trim().toLowerCase() === "mars"
+      || !isCloudManagedProviderKey(option.providerID));
   }, [cloudProvidersEnabled, fallbackOptions, providerListQuery.data, recentProviderIds]);
 
   // Apply organization restrictions after the product-level provider allowlist.

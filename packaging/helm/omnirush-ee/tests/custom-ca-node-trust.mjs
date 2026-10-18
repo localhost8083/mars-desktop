@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const tmp = mkdtempSync(join(tmpdir(), "omnirush-custom-ca-"));
+const tmp = mkdtempSync(join(tmpdir(), "mars-custom-ca-"));
 const caKey = join(tmp, "ca.key");
 const caCert = join(tmp, "ca.crt");
 const serverKey = join(tmp, "server.key");
@@ -37,7 +37,7 @@ https.get(process.argv[1], (response) => {
   response.setEncoding("utf8");
   response.on("data", (chunk) => { body += chunk; });
   response.on("end", () => {
-    if (response.statusCode === 200 && body === "omnirush-custom-ca-ok") {
+    if (response.statusCode === 200 && body === "mars-custom-ca-ok") {
       console.log(body);
       process.exit(0);
     }
@@ -107,7 +107,7 @@ IP.1 = 127.0.0.1
 `,
   );
 
-  runOpenSsl(["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1", "-subj", "/CN=OmniRush.ai Test CA", "-keyout", caKey, "-out", caCert]);
+  runOpenSsl(["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1", "-subj", "/CN=MarsAI Test CA", "-keyout", caKey, "-out", caCert]);
   runOpenSsl(["req", "-newkey", "rsa:2048", "-nodes", "-keyout", serverKey, "-out", serverCsr, "-config", opensslConfig]);
   runOpenSsl(["x509", "-req", "-in", serverCsr, "-CA", caCert, "-CAkey", caKey, "-CAcreateserial", "-out", serverCert, "-days", "1", "-extensions", "v3_req", "-extfile", opensslConfig]);
 
@@ -117,7 +117,7 @@ IP.1 = 127.0.0.1
       cert: readFileSync(serverCert),
     },
     (_request, response) => {
-      response.end("omnirush-custom-ca-ok");
+      response.end("mars-custom-ca-ok");
     },
   );
 

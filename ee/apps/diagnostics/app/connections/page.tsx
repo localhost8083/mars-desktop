@@ -1,4 +1,4 @@
-import type { StoredConnectDiagnosticIncident } from "@omnirush/types/den/connect-diagnostics"
+import type { StoredConnectDiagnosticIncident } from "@mars/types/den/connect-diagnostics"
 import {
   connectionIncidentFilters,
   filterConnectionIncidents,

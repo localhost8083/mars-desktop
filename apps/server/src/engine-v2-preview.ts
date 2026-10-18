@@ -26,7 +26,7 @@ import type { ServerConfig } from "./types.js";
 
 const OPENCODE_V2_VERSION = constants.opencodeV2Version;
 const PREVIEW_STATE_FILE = "engine-v2-preview.json";
-const UNSET_API_KEY = "omnirush-engine-v2-preview-unset";
+const UNSET_API_KEY = "mars-engine-v2-preview-unset";
 // A cold sidecar can return HTTP 503 while its model catalog initializes for 17–20 seconds.
 const CATALOG_MIRROR_TIMEOUT_MS = 60_000;
 
@@ -74,7 +74,7 @@ export function resolveInitialEngineV2PreviewState(
   env: NodeJS.ProcessEnv,
   persisted: EngineV2PreviewState,
 ): EngineV2PreviewState {
-  const override = env.OMNIRUSH_ENGINE_V2_PREVIEW;
+  const override = env.MARS_ENGINE_V2_PREVIEW;
   if (override === "1" || override === "chat") return { enabled: true, chatRouting: true };
   if (override === "sidecar") return { enabled: true, chatRouting: false };
   return persisted;
@@ -131,7 +131,7 @@ function exec(file: string, args: string[], options: { cwd?: string; timeout?: n
 }
 
 async function resolveBinary(config: ServerConfig): Promise<ResolvedBinary> {
-  const override = process.env.OMNIRUSH_OPENCODE2_BIN?.trim();
+  const override = process.env.MARS_OPENCODE2_BIN?.trim();
   if (override) return { bin: override, source: "env" };
 
   let pathError = "not found";
@@ -147,7 +147,7 @@ async function resolveBinary(config: ServerConfig): Promise<ResolvedBinary> {
     return { bin: binary, source: "cache" };
   } catch (error) {
     throw new Error(
-      `Unable to resolve OmniRush v2 (${pathError}; verified download: ${errorMessage(error)}). Configure a working runtime binary override in advanced settings.`,
+      `Unable to resolve Mars v2 (${pathError}; verified download: ${errorMessage(error)}). Configure a working runtime binary override in advanced settings.`,
     );
   }
 }
@@ -330,7 +330,7 @@ export function createEngineV2Preview(options: { config: ServerConfig; env?: Pic
     const pending = (async () => {
       if (previous) await previous.catch(() => undefined);
       const active = sidecar;
-      if (!active) throw new Error("OmniRush v2 is not running");
+      if (!active) throw new Error("Mars v2 is not running");
       if (mcpCleaned.has(directory)) return;
 
       // The v2 daemon can discover MCPs from project/global files without a
@@ -338,7 +338,7 @@ export function createEngineV2Preview(options: { config: ServerConfig; env?: Pic
       // this is intentionally removal-only because MCP is globally disabled.
       const current = await active.fetchJson("/api/mcp", { directory, timeoutMs: 10_000 });
       if (current.status !== 200 || !isRecord(current.json) || !Array.isArray(current.json.data)) {
-        throw new Error("OmniRush v2 MCP status is unavailable");
+        throw new Error("Mars v2 MCP status is unavailable");
       }
       const entries = current.json.data;
       const names = entries.flatMap((entry) => (
@@ -350,7 +350,7 @@ export function createEngineV2Preview(options: { config: ServerConfig; env?: Pic
         const result = await active.fetchJson(`/api/mcp/${encodeURIComponent(name)}`, {
           method: "DELETE", directory, timeoutMs: 15_000,
         });
-        if (result.status !== 204 && result.status !== 404) throw new Error(`OmniRush v2 MCP removal failed (${result.status})`);
+        if (result.status !== 204 && result.status !== 404) throw new Error(`Mars v2 MCP removal failed (${result.status})`);
       }));
       mcpCleaned.add(directory);
     })();
@@ -458,7 +458,7 @@ export function createEngineV2Preview(options: { config: ServerConfig; env?: Pic
     const managed = await createManagedOpencodeV2Server({
       bin: resolved.bin,
       rootDir,
-      env: { ...opencodeModelsEnv, OMNIRUSH_SERVER_URL: `http://127.0.0.1:${config.port}`, OMNIRUSH_POLICY_TOKEN: managedDesktopPolicy(config).evaluationToken },
+      env: { ...opencodeModelsEnv, MARS_SERVER_URL: `http://127.0.0.1:${config.port}`, MARS_POLICY_TOKEN: managedDesktopPolicy(config).evaluationToken },
       permissions: async () => executionRules((await readGlobalRuntimeOpencodeConfig(config)).managedPolicy?.execution),
     });
     sidecar = managed;
@@ -474,7 +474,7 @@ export function createEngineV2Preview(options: { config: ServerConfig; env?: Pic
       const unsubscribeConfig = onRuntimeOpencodeConfigWrite((_writeConfig, workspaceId) => {
         const global = isEngineGlobalRuntimeConfigId(workspaceId);
         if (global) scheduleMirror();
-        // Connections installed through OmniRush.ai also update already-open
+        // Connections installed through MarsAI also update already-open
         // locations while a conversation is active. Request admission joins
         // the same serialized reconciliation rather than racing it.
         for (const [directory, id] of mcpWorkspaces) {
@@ -559,7 +559,7 @@ export function createEngineV2Preview(options: { config: ServerConfig; env?: Pic
   async function ensureWorkspaceReady(directory: string): Promise<void> {
     if (mirrorInFlight) await mirrorInFlight;
     const active = sidecar;
-    if (!active) throw new Error("OmniRush v2 is not running");
+    if (!active) throw new Error("Mars v2 is not running");
     const existing = workspaceReadiness.get(directory);
     if (existing) return existing;
     // V2 discovers configuration asynchronously for each new location. Its
@@ -575,7 +575,7 @@ export function createEngineV2Preview(options: { config: ServerConfig; env?: Pic
         )) return;
         await new Promise((resolve) => setTimeout(resolve, 100));
       } while (Date.now() < deadline);
-      throw new Error("OmniRush v2 workspace provider configuration did not become ready");
+      throw new Error("Mars v2 workspace provider configuration did not become ready");
     })();
     workspaceReadiness.set(directory, pending);
     try { await pending; } catch (error) {

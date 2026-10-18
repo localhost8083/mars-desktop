@@ -17,18 +17,18 @@ async function writeBootstrapConfig(targetPath, config) {
 }
 
 async function withIsolatedBootstrapStore(callback) {
-  const root = await mkdtemp(path.join(tmpdir(), "omnirush-bootstrap-store-"));
+  const root = await mkdtemp(path.join(tmpdir(), "mars-bootstrap-store-"));
   const home = path.join(root, "home");
   const xdg = path.join(root, "xdg");
   const previousHome = process.env.HOME;
   const previousXdg = process.env.XDG_CONFIG_HOME;
-  const previousOverride = process.env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH;
-  const previousDevMode = process.env.OMNIRUSH_DEV_MODE;
+  const previousOverride = process.env.MARS_DESKTOP_BOOTSTRAP_PATH;
+  const previousDevMode = process.env.MARS_DEV_MODE;
 
   process.env.HOME = home;
   process.env.XDG_CONFIG_HOME = xdg;
-  delete process.env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH;
-  delete process.env.OMNIRUSH_DEV_MODE;
+  delete process.env.MARS_DESKTOP_BOOTSTRAP_PATH;
+  delete process.env.MARS_DEV_MODE;
 
   try {
     const module = await import(`./workspace-store.mjs?bootstrap-test=${Date.now()}-${Math.random()}`);
@@ -43,21 +43,21 @@ async function withIsolatedBootstrapStore(callback) {
     return await callback({
       store,
       createStore,
-      canonicalPath: path.join(xdg, "omnirush", "desktop-bootstrap.json"),
-      legacyPath: path.join(home, ".config", "omnirush", "desktop-bootstrap.json"),
+      canonicalPath: path.join(xdg, "mars", "desktop-bootstrap.json"),
+      legacyPath: path.join(home, ".config", "mars", "desktop-bootstrap.json"),
       root,
       userDataPath: path.join(root, "userData"),
     });
   } finally {
     restoreEnv("HOME", previousHome);
     restoreEnv("XDG_CONFIG_HOME", previousXdg);
-    restoreEnv("OMNIRUSH_DESKTOP_BOOTSTRAP_PATH", previousOverride);
-    restoreEnv("OMNIRUSH_DEV_MODE", previousDevMode);
+    restoreEnv("MARS_DESKTOP_BOOTSTRAP_PATH", previousOverride);
+    restoreEnv("MARS_DEV_MODE", previousDevMode);
   }
 }
 
 test("recovers missing desktop workspace state from token store paths", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "omnirush-workspace-store-"));
+  const root = await mkdtemp(path.join(tmpdir(), "mars-workspace-store-"));
   const userData = path.join(root, "userData");
   const oldWorkspace = path.join(root, "old-workspace");
   await mkdir(oldWorkspace, { recursive: true });
@@ -65,7 +65,7 @@ test("recovers missing desktop workspace state from token store paths", async ()
   await mkdir(userData, { recursive: true });
 
   await writeFile(
-    path.join(userData, "omnirush-server-tokens.json"),
+    path.join(userData, "mars-server-tokens.json"),
     JSON.stringify({
       version: 1,
       workspaces: {
@@ -77,8 +77,8 @@ test("recovers missing desktop workspace state from token store paths", async ()
     "utf8",
   );
 
-  const previous = process.env.OMNIRUSH_SERVER_CONFIG;
-  process.env.OMNIRUSH_SERVER_CONFIG = path.join(root, "missing-server.json");
+  const previous = process.env.MARS_SERVER_CONFIG;
+  process.env.MARS_SERVER_CONFIG = path.join(root, "missing-server.json");
   try {
     const store = createWorkspaceStore({
       app: { getPath: (name) => name === "userData" ? userData : root },
@@ -96,20 +96,20 @@ test("recovers missing desktop workspace state from token store paths", async ()
     await store.bootstrapFirstLaunchWorkspace();
     assert.deepEqual((await store.readWorkspaceState()).workspaces, state.workspaces);
 
-    const persisted = JSON.parse(await readFile(path.join(userData, "omnirush-workspaces.json"), "utf8"));
+    const persisted = JSON.parse(await readFile(path.join(userData, "mars-workspaces.json"), "utf8"));
     assert.equal(persisted.workspaces.length, 1);
     assert.equal(persisted.selectedWorkspaceId, state.workspaces[0].id);
   } finally {
-    if (previous === undefined) delete process.env.OMNIRUSH_SERVER_CONFIG;
-    else process.env.OMNIRUSH_SERVER_CONFIG = previous;
+    if (previous === undefined) delete process.env.MARS_SERVER_CONFIG;
+    else process.env.MARS_SERVER_CONFIG = previous;
   }
 });
 
 test("reads live shared workspace state from the explicit production path", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "omnirush-workspace-store-shared-"));
+  const root = await mkdtemp(path.join(tmpdir(), "mars-workspace-store-shared-"));
   const isolatedUserData = path.join(root, "isolated-userData");
   const workspace = path.join(root, "production-workspace");
-  const sharedState = path.join(root, "production-userData", "omnirush-workspaces.json");
+  const sharedState = path.join(root, "production-userData", "mars-workspaces.json");
   await mkdir(isolatedUserData, { recursive: true });
   await mkdir(workspace, { recursive: true });
   await mkdir(path.dirname(sharedState), { recursive: true });
@@ -120,10 +120,10 @@ test("reads live shared workspace state from the explicit production path", asyn
     workspaces: [{ id: "ws_production", name: "Production", path: workspace, workspaceType: "local" }],
   }), "utf8");
 
-  const previousStatePath = process.env.OMNIRUSH_DESKTOP_WORKSPACE_STATE_PATH;
-  const previousRecovery = process.env.OMNIRUSH_DESKTOP_DISABLE_WORKSPACE_RECOVERY;
-  process.env.OMNIRUSH_DESKTOP_WORKSPACE_STATE_PATH = sharedState;
-  process.env.OMNIRUSH_DESKTOP_DISABLE_WORKSPACE_RECOVERY = "1";
+  const previousStatePath = process.env.MARS_DESKTOP_WORKSPACE_STATE_PATH;
+  const previousRecovery = process.env.MARS_DESKTOP_DISABLE_WORKSPACE_RECOVERY;
+  process.env.MARS_DESKTOP_WORKSPACE_STATE_PATH = sharedState;
+  process.env.MARS_DESKTOP_DISABLE_WORKSPACE_RECOVERY = "1";
   try {
     const store = createWorkspaceStore({
       app: { getPath: (name) => name === "userData" ? isolatedUserData : root },
@@ -135,33 +135,33 @@ test("reads live shared workspace state from the explicit production path", asyn
     assert.equal(state.selectedId, "ws_production");
     assert.equal(state.workspaces.length, 1);
     assert.equal(state.workspaces[0].path, workspace);
-    await assert.rejects(readFile(path.join(isolatedUserData, "omnirush-workspaces.json"), "utf8"));
+    await assert.rejects(readFile(path.join(isolatedUserData, "mars-workspaces.json"), "utf8"));
   } finally {
-    restoreEnv("OMNIRUSH_DESKTOP_WORKSPACE_STATE_PATH", previousStatePath);
-    restoreEnv("OMNIRUSH_DESKTOP_DISABLE_WORKSPACE_RECOVERY", previousRecovery);
+    restoreEnv("MARS_DESKTOP_WORKSPACE_STATE_PATH", previousStatePath);
+    restoreEnv("MARS_DESKTOP_DISABLE_WORKSPACE_RECOVERY", previousRecovery);
   }
 });
 
 test("keeps persisted empty desktop workspace state authoritative", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "omnirush-workspace-store-"));
+  const root = await mkdtemp(path.join(tmpdir(), "mars-workspace-store-"));
   const userData = path.join(root, "userData");
   const oldWorkspace = path.join(root, "old-workspace");
   await mkdir(oldWorkspace, { recursive: true });
   await mkdir(userData, { recursive: true });
 
   await writeFile(
-    path.join(userData, "omnirush-workspaces.json"),
+    path.join(userData, "mars-workspaces.json"),
     JSON.stringify({ selectedId: "", activeId: null, watchedId: null, workspaces: [] }),
     "utf8",
   );
   await writeFile(
-    path.join(userData, "omnirush-server-tokens.json"),
+    path.join(userData, "mars-server-tokens.json"),
     JSON.stringify({ version: 1, workspaces: { [oldWorkspace]: { updatedAt: 2 } } }),
     "utf8",
   );
 
-  const previous = process.env.OMNIRUSH_SERVER_CONFIG;
-  process.env.OMNIRUSH_SERVER_CONFIG = path.join(root, "missing-server.json");
+  const previous = process.env.MARS_SERVER_CONFIG;
+  process.env.MARS_SERVER_CONFIG = path.join(root, "missing-server.json");
   try {
     const store = createWorkspaceStore({
       app: { getPath: (name) => name === "userData" ? userData : root },
@@ -176,12 +176,12 @@ test("keeps persisted empty desktop workspace state authoritative", async () => 
     await store.bootstrapFirstLaunchWorkspace();
     assert.deepEqual((await store.readWorkspaceState()).workspaces, []);
   } finally {
-    restoreEnv("OMNIRUSH_SERVER_CONFIG", previous);
+    restoreEnv("MARS_SERVER_CONFIG", previous);
   }
 });
 
 test("prefers server config workspaces when desktop state is missing", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "omnirush-workspace-store-"));
+  const root = await mkdtemp(path.join(tmpdir(), "mars-workspace-store-"));
   const userData = path.join(root, "userData");
   const oldWorkspace = path.join(root, "server-workspace");
   const serverConfig = path.join(root, "server.json");
@@ -195,13 +195,13 @@ test("prefers server config workspaces when desktop state is missing", async () 
     "utf8",
   );
   await writeFile(
-    path.join(userData, "omnirush-server-tokens.json"),
+    path.join(userData, "mars-server-tokens.json"),
     JSON.stringify({ version: 1, workspaces: { [path.join(root, "other")]: { updatedAt: 9 } } }),
     "utf8",
   );
 
-  const previous = process.env.OMNIRUSH_SERVER_CONFIG;
-  process.env.OMNIRUSH_SERVER_CONFIG = serverConfig;
+  const previous = process.env.MARS_SERVER_CONFIG;
+  process.env.MARS_SERVER_CONFIG = serverConfig;
   try {
     const store = createWorkspaceStore({
       app: { getPath: (name) => name === "userData" ? userData : root },
@@ -215,18 +215,18 @@ test("prefers server config workspaces when desktop state is missing", async () 
     assert.equal(state.workspaces[0].path, oldWorkspaceReal);
     assert.equal(state.workspaces[0].name, "From Server");
   } finally {
-    if (previous === undefined) delete process.env.OMNIRUSH_SERVER_CONFIG;
-    else process.env.OMNIRUSH_SERVER_CONFIG = previous;
+    if (previous === undefined) delete process.env.MARS_SERVER_CONFIG;
+    else process.env.MARS_SERVER_CONFIG = previous;
   }
 });
 
 test("first-launch bootstrap creates and selects the chat folder, but ordinary reads do not", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "omnirush-workspace-store-"));
+  const root = await mkdtemp(path.join(tmpdir(), "mars-workspace-store-"));
   const userData = path.join(root, "userData");
-  const previousDevMode = process.env.OMNIRUSH_DEV_MODE;
-  const previousServerConfig = process.env.OMNIRUSH_SERVER_CONFIG;
-  process.env.OMNIRUSH_DEV_MODE = "1";
-  process.env.OMNIRUSH_SERVER_CONFIG = path.join(root, "missing-server.json");
+  const previousDevMode = process.env.MARS_DEV_MODE;
+  const previousServerConfig = process.env.MARS_SERVER_CONFIG;
+  process.env.MARS_DEV_MODE = "1";
+  process.env.MARS_SERVER_CONFIG = path.join(root, "missing-server.json");
   try {
     const store = createWorkspaceStore({
       app: { getPath: (name) => name === "userData" ? userData : root },
@@ -237,47 +237,47 @@ test("first-launch bootstrap creates and selects the chat folder, but ordinary r
 
     const state = await store.readWorkspaceState();
     assert.equal(state.workspaces.length, 0);
-    await assert.rejects(readFile(path.join(userData, "omnirush-dev-data", "home", "omnirush.ai", ".opencode", "omnirush.json"), "utf8"));
+    await assert.rejects(readFile(path.join(userData, "mars-dev-data", "home", "marsai.click", ".opencode", "mars.json"), "utf8"));
 
     await store.bootstrapFirstLaunchWorkspace();
     const created = await store.readWorkspaceState();
-    const folder = path.join(userData, "omnirush-dev-data", "home", "omnirush.ai");
+    const folder = path.join(userData, "mars-dev-data", "home", "marsai.click");
     assert.equal(created.workspaces.length, 1);
     assert.equal(created.workspaces[0].path, folder);
     assert.equal(created.workspaces[0].workspaceType, "local");
     assert.equal(created.selectedId, created.workspaces[0].id);
     assert.equal(created.watchedId, created.selectedId);
     assert.equal(created.activeId, created.selectedId);
-    const config = await store.readWorkspaceOmniRushConfig(folder);
+    const config = await store.readWorkspaceMarsConfig(folder);
     assert.deepEqual(config.authorizedRoots, [folder]);
     assert.equal(config.workspace.preset, "starter");
     await store.bootstrapFirstLaunchWorkspace();
     assert.deepEqual(await store.readWorkspaceState(), created);
   } finally {
-    restoreEnv("OMNIRUSH_DEV_MODE", previousDevMode);
-    restoreEnv("OMNIRUSH_SERVER_CONFIG", previousServerConfig);
+    restoreEnv("MARS_DEV_MODE", previousDevMode);
+    restoreEnv("MARS_SERVER_CONFIG", previousServerConfig);
   }
 });
 
 test("first-launch bootstrap preserves existing folders and their model configuration", async () => {
   await withIsolatedBootstrapStore(async ({ store, root }) => {
-    const folder = path.join(root, "home", "omnirush.ai");
+    const folder = path.join(root, "home", "marsai.click");
     const config = { version: 1, authorizedRoots: [folder], workspace: { name: "Existing chat" } };
-    await store.writeWorkspaceOmniRushConfig(folder, config);
+    await store.writeWorkspaceMarsConfig(folder, config);
     const modelConfigPath = path.join(folder, "opencode.json");
     const modelConfig = JSON.stringify({ model: "existing-provider/existing-model" });
     await writeFile(modelConfigPath, modelConfig, "utf8");
 
     await store.bootstrapFirstLaunchWorkspace();
     assert.equal((await store.readWorkspaceState()).workspaces[0].path, await realpath(folder));
-    assert.deepEqual(await store.readWorkspaceOmniRushConfig(folder), config);
+    assert.deepEqual(await store.readWorkspaceMarsConfig(folder), config);
     assert.equal(await readFile(modelConfigPath, "utf8"), modelConfig);
   });
 });
 
 test("a blocked default folder reports the error and allows a different authorized workspace", async () => {
   await withIsolatedBootstrapStore(async ({ store, root }) => {
-    const folder = path.join(root, "home", "omnirush.ai");
+    const folder = path.join(root, "home", "marsai.click");
     await mkdir(path.dirname(folder), { recursive: true });
     await writeFile(folder, "keep this file", "utf8");
 
@@ -291,7 +291,7 @@ test("a blocked default folder reports the error and allows a different authoriz
     const created = await store.createWorkspace({ folderPath: alternate });
     assert.equal(created.workspaces.length, 1);
     assert.equal(created.selectedId, created.workspaces[0].id);
-    assert.deepEqual((await store.readWorkspaceOmniRushConfig(alternate)).authorizedRoots, [alternate]);
+    assert.deepEqual((await store.readWorkspaceMarsConfig(alternate)).authorizedRoots, [alternate]);
   });
 });
 
@@ -299,7 +299,7 @@ test("a non-writable default folder reports a recoverable permission error", {
   skip: process.platform === "win32" || process.getuid?.() === 0,
 }, async () => {
   await withIsolatedBootstrapStore(async ({ store, root }) => {
-    const folder = path.join(root, "home", "omnirush.ai");
+    const folder = path.join(root, "home", "marsai.click");
     await mkdir(folder, { recursive: true });
     await chmod(folder, 0o500);
     try {
@@ -321,8 +321,8 @@ test("first-launch bootstrap does not hide workspace registry failures", async (
   });
 });
 
-test("normalizes recovered remote OmniRush.ai entries before persisting", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "omnirush-workspace-store-"));
+test("normalizes recovered remote MarsAI entries before persisting", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "mars-workspace-store-"));
   const userData = path.join(root, "userData");
   const serverConfig = path.join(root, "server.json");
   await mkdir(userData, { recursive: true });
@@ -335,14 +335,14 @@ test("normalizes recovered remote OmniRush.ai entries before persisting", async 
           id: "legacy_one",
           path: "/workspace",
           workspaceType: "remote",
-          remoteType: "omnirush",
+          remoteType: "mars",
           baseUrl: "https://worker.example.com/workspace/ws_remote",
         },
         {
           id: "legacy_two",
           path: "/workspace",
           workspaceType: "remote",
-          remoteType: "omnirush",
+          remoteType: "mars",
           baseUrl: "https://worker.example.com/w/ws_remote",
         },
       ],
@@ -350,8 +350,8 @@ test("normalizes recovered remote OmniRush.ai entries before persisting", async 
     "utf8",
   );
 
-  const previous = process.env.OMNIRUSH_SERVER_CONFIG;
-  process.env.OMNIRUSH_SERVER_CONFIG = serverConfig;
+  const previous = process.env.MARS_SERVER_CONFIG;
+  process.env.MARS_SERVER_CONFIG = serverConfig;
   try {
     const store = createWorkspaceStore({
       app: { getPath: (name) => name === "userData" ? userData : root },
@@ -364,16 +364,16 @@ test("normalizes recovered remote OmniRush.ai entries before persisting", async 
     assert.equal(state.workspaces.length, 1);
     assert.equal(state.workspaces[0].id, "rem_ws_remote");
     assert.equal(state.workspaces[0].baseUrl, "https://worker.example.com");
-    assert.equal(state.workspaces[0].omnirushWorkspaceId, "ws_remote");
+    assert.equal(state.workspaces[0].marsWorkspaceId, "ws_remote");
     assert.equal(state.selectedId, "rem_ws_remote");
   } finally {
-    if (previous === undefined) delete process.env.OMNIRUSH_SERVER_CONFIG;
-    else process.env.OMNIRUSH_SERVER_CONFIG = previous;
+    if (previous === undefined) delete process.env.MARS_SERVER_CONFIG;
+    else process.env.MARS_SERVER_CONFIG = previous;
   }
 });
 
 test("forgetting a local workspace removes its recovery token", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "omnirush-workspace-store-"));
+  const root = await mkdtemp(path.join(tmpdir(), "mars-workspace-store-"));
   const userData = path.join(root, "userData");
   const forgottenWorkspace = path.join(root, "forgotten-workspace");
   const retainedWorkspace = path.join(root, "retained-workspace");
@@ -382,7 +382,7 @@ test("forgetting a local workspace removes its recovery token", async () => {
   await mkdir(userData, { recursive: true });
 
   await writeFile(
-    path.join(userData, "omnirush-workspaces.json"),
+    path.join(userData, "mars-workspaces.json"),
     JSON.stringify({
       selectedId: "ws_forgotten",
       activeId: "ws_forgotten",
@@ -395,7 +395,7 @@ test("forgetting a local workspace removes its recovery token", async () => {
     "utf8",
   );
   await writeFile(
-    path.join(userData, "omnirush-server-tokens.json"),
+    path.join(userData, "mars-server-tokens.json"),
     JSON.stringify({
       version: 1,
       workspaces: {
@@ -419,17 +419,17 @@ test("forgetting a local workspace removes its recovery token", async () => {
   assert.equal(state.activeId, null);
   assert.equal(state.watchedId, null);
 
-  const tokens = JSON.parse(await readFile(path.join(userData, "omnirush-server-tokens.json"), "utf8"));
+  const tokens = JSON.parse(await readFile(path.join(userData, "mars-server-tokens.json"), "utf8"));
   assert.deepEqual(Object.keys(tokens.workspaces), [retainedWorkspace]);
   assert.equal(tokens.workspaces[retainedWorkspace].token, "retained");
 });
 
 test("a removal overlapping another workspace change is never undone by it", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "omnirush-workspace-store-"));
+  const root = await mkdtemp(path.join(tmpdir(), "mars-workspace-store-"));
   const userData = path.join(root, "userData");
   await mkdir(userData, { recursive: true });
   const workspaces = ["alpha", "beta", "gamma"].map((name) => ({ id: `ws_${name}`, path: path.join(root, name), workspaceType: "local" }));
-  await writeFile(path.join(userData, "omnirush-workspaces.json"), JSON.stringify({ selectedId: "ws_alpha", workspaces }), "utf8");
+  await writeFile(path.join(userData, "mars-workspaces.json"), JSON.stringify({ selectedId: "ws_alpha", workspaces }), "utf8");
   const store = createWorkspaceStore({
     app: { getPath: (name) => name === "userData" ? userData : root },
     defaultDenBaseUrl: "https://example.test",
@@ -444,7 +444,7 @@ test("a removal overlapping another workspace change is never undone by it", asy
     store.setRuntimeActiveWorkspace("ws_beta"),
   ]);
 
-  const saved = JSON.parse(await readFile(path.join(userData, "omnirush-workspaces.json"), "utf8"));
+  const saved = JSON.parse(await readFile(path.join(userData, "mars-workspaces.json"), "utf8"));
   assert.deepEqual(saved.workspaces.map((workspace) => workspace.id), ["ws_alpha", "ws_beta"]);
   assert.equal(saved.selectedId, "ws_beta");
 });
@@ -497,13 +497,13 @@ test("desktop bootstrap migrates a newer legacy writtenAt to canonical", async (
 test("explicit desktop bootstrap path never inherits legacy activation state", async () => {
   await withIsolatedBootstrapStore(async ({ store, legacyPath, root }) => {
     const explicitPath = path.join(root, "isolated", "desktop-bootstrap.json");
-    process.env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH = explicitPath;
+    process.env.MARS_DESKTOP_BOOTSTRAP_PATH = explicitPath;
     await writeBootstrapConfig(legacyPath, {
-      baseUrl: "https://app.omnirushlabs.com",
+      baseUrl: "https://app.marslabs.com",
       requireSignin: true,
       enterpriseActivation: {
         activatedAt: "2026-07-27T13:30:23.342Z",
-        denBaseUrl: "https://app.omnirushlabs.com/api/den",
+        denBaseUrl: "https://app.marslabs.com/api/den",
       },
     });
 
@@ -517,7 +517,7 @@ test("explicit desktop bootstrap path never inherits legacy activation state", a
 test("explicit desktop bootstrap path still reads its configured bootstrap", async () => {
   await withIsolatedBootstrapStore(async ({ store, root }) => {
     const explicitPath = path.join(root, "isolated", "desktop-bootstrap.json");
-    process.env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH = explicitPath;
+    process.env.MARS_DESKTOP_BOOTSTRAP_PATH = explicitPath;
     await writeBootstrapConfig(explicitPath, {
       baseUrl: "https://enterprise.example.com",
       requireSignin: true,
@@ -533,53 +533,53 @@ test("explicit desktop bootstrap path still reads its configured bootstrap", asy
 test("desktop bootstrap prefers an older legacy organization config over a newer canonical retired hosted default", async () => {
   await withIsolatedBootstrapStore(async ({ store, canonicalPath, legacyPath }) => {
     await writeBootstrapConfig(canonicalPath, {
-      baseUrl: "https://app.omnirushlabs.com/api/den/",
+      baseUrl: "https://app.marslabs.com/api/den/",
       apiBaseUrl: "https://api.unrelated.example",
       requireSignin: false,
       writtenAt: "2026-07-10T13:00:00.000Z",
     });
     await writeBootstrapConfig(legacyPath, {
-      baseUrl: "https://omnirush.organization.internal.example",
+      baseUrl: "https://mars.organization.internal.example",
       apiBaseUrl: "https://api.organization.internal.example",
       requireSignin: true,
       writtenAt: "2026-07-09T12:00:00.000Z",
     });
 
     const config = await store.getDesktopBootstrapConfig();
-    assert.equal(config.baseUrl, "https://omnirush.organization.internal.example");
+    assert.equal(config.baseUrl, "https://mars.organization.internal.example");
     assert.equal(config.fromFile, true);
     const migrated = JSON.parse(await readFile(canonicalPath, "utf8"));
-    assert.equal(migrated.baseUrl, "https://omnirush.organization.internal.example");
+    assert.equal(migrated.baseUrl, "https://mars.organization.internal.example");
   });
 });
 
 test("desktop bootstrap keeps an older canonical organization config over a newer legacy retired hosted default", async () => {
   await withIsolatedBootstrapStore(async ({ store, canonicalPath, legacyPath }) => {
     await writeBootstrapConfig(canonicalPath, {
-      baseUrl: "https://omnirush.organization.internal.example",
+      baseUrl: "https://mars.organization.internal.example",
       apiBaseUrl: "https://api.organization.internal.example",
       requireSignin: true,
       writtenAt: "2026-07-09T12:00:00.000Z",
     });
     await writeBootstrapConfig(legacyPath, {
-      baseUrl: "https://api.omnirushlabs.com/v1/",
+      baseUrl: "https://api.marslabs.com/v1/",
       apiBaseUrl: "https://api.unrelated.example",
       requireSignin: false,
       writtenAt: "2026-07-10T13:00:00.000Z",
     });
 
     const config = await store.getDesktopBootstrapConfig();
-    assert.equal(config.baseUrl, "https://omnirush.organization.internal.example");
+    assert.equal(config.baseUrl, "https://mars.organization.internal.example");
     assert.equal(config.fromFile, true);
     const persisted = JSON.parse(await readFile(canonicalPath, "utf8"));
-    assert.equal(persisted.baseUrl, "https://omnirush.organization.internal.example");
+    assert.equal(persisted.baseUrl, "https://mars.organization.internal.example");
   });
 });
 
 test("a bootstrap that points at the retired hosted control plane is rejected on read and write", async () => {
   await withIsolatedBootstrapStore(async ({ store, canonicalPath }) => {
     await writeBootstrapConfig(canonicalPath, {
-      baseUrl: "https://app.omnirushlabs.com",
+      baseUrl: "https://app.marslabs.com",
       requireSignin: false,
       writtenAt: "2026-07-10T13:00:00.000Z",
     });
@@ -588,14 +588,14 @@ test("a bootstrap that points at the retired hosted control plane is rejected on
     assert.equal(config.fromFile, false);
     assert.equal(config.baseUrl, store.readDesktopBootstrapConfigSync().baseUrl);
     await assert.rejects(
-      store.setDesktopBootstrapConfig({ baseUrl: "https://api.app.omnirushlabs.com", requireSignin: false }),
+      store.setDesktopBootstrapConfig({ baseUrl: "https://api.app.marslabs.com", requireSignin: false }),
       /retired hosted control plane/,
     );
     await assert.rejects(
-      store.setDesktopBootstrapConfig({ baseUrl: "https://den.example.com", apiBaseUrl: "https://api.omnirushlabs.com", requireSignin: false }),
+      store.setDesktopBootstrapConfig({ baseUrl: "https://den.example.com", apiBaseUrl: "https://api.marslabs.com", requireSignin: false }),
       /retired hosted control plane/,
     );
-    for (const foreign of ["https://app.omnirush.software", "https://api.omnirush.software/v1"]) {
+    for (const foreign of ["https://app.mars.software", "https://api.mars.software/v1"]) {
       await assert.rejects(
         store.setDesktopBootstrapConfig({ baseUrl: foreign, requireSignin: false }),
         /retired hosted control plane/,
@@ -750,7 +750,7 @@ test("an omitted requireActivation is never materialized into the shared bootstr
 
 test("clearDesktopBootstrapConfig removes bootstrap files without deleting workspace state", async () => {
   await withIsolatedBootstrapStore(async ({ store, canonicalPath, legacyPath, userDataPath }) => {
-    const workspaceStatePath = path.join(userDataPath, "omnirush-workspaces.json");
+    const workspaceStatePath = path.join(userDataPath, "mars-workspaces.json");
     await writeBootstrapConfig(canonicalPath, {
       baseUrl: "https://canonical.example.com",
       requireSignin: false,

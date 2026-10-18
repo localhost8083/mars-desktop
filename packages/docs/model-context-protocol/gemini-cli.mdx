@@ -1,14 +1,14 @@
 ---
-title: "OmniRush.ai MCP for Gemini CLI"
+title: "MarsAI MCP for Gemini CLI"
 sidebarTitle: "Gemini CLI"
-description: "Gemini CLI MCP setup for OmniRush.ai Connect, with OAuth access to your org's Gmail, Calendar, Drive, shared connections, skills, and Cloud resources."
+description: "Gemini CLI MCP setup for MarsAI Connect, with OAuth access to your org's Gmail, Calendar, Drive, shared connections, skills, and Cloud resources."
 ---
 
-The OmniRush.ai MCP server ([OmniRush.ai Connect](/cloud/run-in-the-cloud/cloud-mcp))
-enables Gemini CLI to use the OmniRush.ai capabilities your organization has made
+The MarsAI MCP server ([MarsAI Connect](/cloud/run-in-the-cloud/cloud-mcp))
+enables Gemini CLI to use the MarsAI capabilities your organization has made
 available to you: Gmail read/search, Calendar list/create, Drive search/read,
 Gmail draft creation, shared MCP connections such as Notion, Linear, Slack,
-Stripe, Exa, and Context7, shared skills, and OmniRush.ai Cloud resources like
+Stripe, Exa, and Context7, shared skills, and MarsAI Cloud resources like
 skills, plugins, Collections, workers, members, roles, teams, and LLM
 providers. The server exposes only `search_capabilities` and
 `execute_capability`, so Gemini CLI searches what you can access and runs exact
@@ -17,20 +17,20 @@ capability names instead of loading hundreds of tool definitions into context.
 ## Server URL
 
 ```text
-https://api.omnirush.example.com/mcp/agent
+https://api.mars.example.com/mcp/agent
 ```
 
-omnirush.ai does not run a hosted Den, so there is no public endpoint: use the
+marsai.click does not run a hosted Den, so there is no public endpoint: use the
 `/mcp/agent` URL on the API origin of your [self-hosted Den](/start-here/self-host)
-(`api.omnirush.example.com` above is a placeholder). OAuth sign-in uses your
+(`api.mars.example.com` above is a placeholder). OAuth sign-in uses your
 account on that Den, and the organization you pick is pinned into the token.
 
 ## Setup
 
-1. Add OmniRush.ai Connect as a remote HTTP MCP server:
+1. Add MarsAI Connect as a remote HTTP MCP server:
 
    ```sh
-   gemini mcp add --transport http omnirush https://api.omnirush.example.com/mcp/agent
+   gemini mcp add --transport http mars https://api.mars.example.com/mcp/agent
    ```
 
 2. Start Gemini CLI:
@@ -39,21 +39,21 @@ account on that Den, and the organization you pick is pinned into the token.
    gemini
    ```
 
-3. Authenticate OmniRush.ai inside Gemini:
+3. Authenticate MarsAI inside Gemini:
 
    ```text
-   /mcp auth omnirush
+   /mcp auth mars
    ```
 
 4. Finish the browser sign-in and choose your organization.
 
 ## Switch organizations
 
-Remove the stored MCP auth token for `omnirush`, then run `/mcp auth omnirush`
+Remove the stored MCP auth token for `mars`, then run `/mcp auth mars`
 again and choose the organization you want during browser sign-in.
 
 <Note>
-This is a setup guide. These steps match OmniRush.ai Connect's OAuth profile:
+This is a setup guide. These steps match MarsAI Connect's OAuth profile:
 HTTPS or HTTP loopback callbacks, PKCE S256, and dynamic client registration
 fallback. Gemini CLI is listed as setup only because native proof is not
 complete. See the
@@ -63,7 +63,7 @@ table.
 
 ## What you can ask
 
-- "Which OmniRush.ai organization am I connected to?"
+- "Which MarsAI organization am I connected to?"
 - "Add omar@example.com to my organization."
 - "Search my org's capabilities for calendar tools, then list tomorrow's events."
 - "Create a skill that writes weekly status reports and share it with my whole organization."

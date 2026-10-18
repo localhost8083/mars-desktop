@@ -4,7 +4,7 @@ const { spawnSync } = require("node:child_process");
 const asar = require("@electron/asar");
 const { verifyBundledUiMcp } = require("./ui-mcp-bundle.cjs");
 
-const computerUseHelperAppName = "OmniRush.ai Computer Use.app";
+const computerUseHelperAppName = "MarsAI Computer Use.app";
 
 const sidecarBases = [
   "opencode",
@@ -62,7 +62,7 @@ function resolveResourcesDir(context) {
   return path.join(context.appOutDir, "resources");
 }
 
-// The UI-control extension launches <resources>/omnirush-ui-mcp/index.mjs with
+// The UI-control extension launches <resources>/mars-ui-mcp/index.mjs with
 // the app's own binary; a package without it must not ship.
 function verifyUiControlMcpBundle(context) {
   const resourcesDir = resolveResourcesDir(context);
@@ -125,7 +125,7 @@ function signComputerUseHelper(context) {
     throw new Error(`Missing Computer Use helper app at ${helperPath}`);
   }
 
-  const identity = process.env.OMNIRUSH_COMPUTER_USE_CODESIGN_IDENTITY
+  const identity = process.env.MARS_COMPUTER_USE_CODESIGN_IDENTITY
     || process.env.CSC_NAME
     || process.env.APPLE_CODESIGN_IDENTITY
     || "-";

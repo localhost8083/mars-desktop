@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import type { OmniRushSessionSnapshot } from "../src/app/lib/omnirush-server";
+import type { MarsSessionSnapshot } from "../src/app/lib/mars-server";
 
 import { normalizeWorkspaceAuditEntries } from "../src/react-app/domains/audit/normalize-workspace-audit";
 import { createAuditTrailExport, projectSessionAudit, serializeAuditTrailExport } from "../src/react-app/domains/audit/project-session-audit";
 import { redactAuditValue } from "../src/react-app/domains/audit/redact-audit-value";
 
 function snapshot(messages: unknown[], status: unknown = { type: "idle" }) {
-  return { session: { id: "ses_1" }, messages, todos: [], status } as unknown as OmniRushSessionSnapshot;
+  return { session: { id: "ses_1" }, messages, todos: [], status } as unknown as MarsSessionSnapshot;
 }
 
 describe("audit trail projection", () => {

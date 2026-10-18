@@ -1,6 +1,6 @@
 // Local UI-control HTTP bridge: a loopback server exposing the legacy
 // /snapshot, /actions and /execute routes plus the semantic /context, /query
-// and /command surface. Dispatched to the renderer's window.__omnirushControl.
+// and /command surface. Dispatched to the renderer's window.__marsControl.
 // Extracted from main.mjs; state and lifecycle live in this factory
 // (createRuntimeManager pattern).
 import { randomBytes } from "node:crypto";
@@ -64,7 +64,7 @@ export function createUiControlServer({
     return JSON.stringify(JSON.stringify(value ?? {}));
   }
 
-  async function evaluateOmniRushControl(expression) {
+  async function evaluateMarsControl(expression) {
     const win = await getWindow();
     // Commands mutate renderer state directly and do not require the desktop
     // window to become active. Foreground activation must be an explicit
@@ -72,55 +72,55 @@ export function createUiControlServer({
     return win.webContents.executeJavaScript(expression, true);
   }
 
-  async function runOmniRushControlCommand(command, args = {}) {
+  async function runMarsControlCommand(command, args = {}) {
     const argsJsonLiteral = jsonForJavaScript(args);
     if (command === "snapshot") {
-      return evaluateOmniRushControl(`(async () => {
-        const control = window.__omnirushControl;
-        if (!control) return { ok: false, error: "OmniRush.ai control surface is not available yet." };
+      return evaluateMarsControl(`(async () => {
+        const control = window.__marsControl;
+        if (!control) return { ok: false, error: "MarsAI control surface is not available yet." };
         control.setEnabled?.(true);
         return { ok: true, ...control.snapshot() };
       })()`);
     }
     if (command === "actions") {
-      return evaluateOmniRushControl(`(async () => {
-        const control = window.__omnirushControl;
-        if (!control) return { ok: false, error: "OmniRush.ai control surface is not available yet." };
+      return evaluateMarsControl(`(async () => {
+        const control = window.__marsControl;
+        if (!control) return { ok: false, error: "MarsAI control surface is not available yet." };
         control.setEnabled?.(true);
         return { ok: true, actions: control.listActions() };
       })()`);
     }
     if (command === "context") {
-      return evaluateOmniRushControl(`(async () => {
-        const control = window.__omnirushControl;
-        if (!control) return { ok: false, error: "OmniRush.ai control surface is not available yet." };
+      return evaluateMarsControl(`(async () => {
+        const control = window.__marsControl;
+        if (!control) return { ok: false, error: "MarsAI control surface is not available yet." };
         return { ok: true, context: control.context() };
       })()`);
     }
     if (command === "query" || command === "command") {
-      return evaluateOmniRushControl(`(async () => {
-        const control = window.__omnirushControl;
+      return evaluateMarsControl(`(async () => {
+        const control = window.__marsControl;
         const input = JSON.parse(${argsJsonLiteral});
-        if (!control) return { ok: false, error: "OmniRush.ai control surface is not available yet." };
+        if (!control) return { ok: false, error: "MarsAI control surface is not available yet." };
         if (!input || typeof input.id !== "string" || !input.id.trim()) {
-          return { ok: false, error: "Missing OmniRush.ai affordance id." };
+          return { ok: false, error: "Missing MarsAI affordance id." };
         }
         return control[${JSON.stringify(command)}](input);
       })()`);
     }
     if (command === "execute") {
-      return evaluateOmniRushControl(`(async () => {
-        const control = window.__omnirushControl;
+      return evaluateMarsControl(`(async () => {
+        const control = window.__marsControl;
         const input = JSON.parse(${argsJsonLiteral});
-        if (!control) return { ok: false, error: "OmniRush.ai control surface is not available yet." };
+        if (!control) return { ok: false, error: "MarsAI control surface is not available yet." };
         if (!input || typeof input.actionId !== "string" || !input.actionId.trim()) {
-          return { ok: false, error: "Missing OmniRush.ai actionId." };
+          return { ok: false, error: "Missing MarsAI actionId." };
         }
         control.setEnabled?.(true);
         return control.execute(input.actionId, input.args ?? {});
       })()`);
     }
-    return { ok: false, error: `Unknown OmniRush.ai control command: ${command}` };
+    return { ok: false, error: `Unknown MarsAI control command: ${command}` };
   }
 
   async function start() {
@@ -137,27 +137,27 @@ export function createUiControlServer({
           return;
         }
         if (request.method === "GET" && url.pathname === "/snapshot") {
-          sendJsonResponse(response, 200, await runOmniRushControlCommand("snapshot"));
+          sendJsonResponse(response, 200, await runMarsControlCommand("snapshot"));
           return;
         }
         if (request.method === "GET" && url.pathname === "/actions") {
-          sendJsonResponse(response, 200, await runOmniRushControlCommand("actions"));
+          sendJsonResponse(response, 200, await runMarsControlCommand("actions"));
           return;
         }
         if (request.method === "GET" && url.pathname === "/context") {
-          sendJsonResponse(response, 200, await runOmniRushControlCommand("context"));
+          sendJsonResponse(response, 200, await runMarsControlCommand("context"));
           return;
         }
         if (request.method === "POST" && url.pathname === "/query") {
-          sendJsonResponse(response, 200, await runOmniRushControlCommand("query", await readJsonRequestBody(request)));
+          sendJsonResponse(response, 200, await runMarsControlCommand("query", await readJsonRequestBody(request)));
           return;
         }
         if (request.method === "POST" && url.pathname === "/command") {
-          sendJsonResponse(response, 200, await runOmniRushControlCommand("command", await readJsonRequestBody(request)));
+          sendJsonResponse(response, 200, await runMarsControlCommand("command", await readJsonRequestBody(request)));
           return;
         }
         if (request.method === "POST" && url.pathname === "/execute") {
-          sendJsonResponse(response, 200, await runOmniRushControlCommand("execute", await readJsonRequestBody(request)));
+          sendJsonResponse(response, 200, await runMarsControlCommand("execute", await readJsonRequestBody(request)));
           return;
         }
         if (request.method === "POST" && url.pathname === "/browser/task") {
@@ -197,7 +197,7 @@ export function createUiControlServer({
       } catch (error) {
         if (/^\/(?:browser|webmcp)(?:\/|$)/.test(request.url ?? "")) console.error("[ui-control] request failed");
         else console.error("[ui-control] request failed", error);
-        sendJsonResponse(response, 500, { ok: false, error: "OmniRush.ai UI control request failed." });
+        sendJsonResponse(response, 500, { ok: false, error: "MarsAI UI control request failed." });
       }
     });
     await new Promise((resolve, reject) => {
@@ -206,15 +206,15 @@ export function createUiControlServer({
     });
     const address = uiControlServer.address();
     const port = typeof address === "object" && address ? address.port : null;
-    if (!port) throw new Error("Could not start OmniRush.ai UI control bridge.");
-    uiControlDiscoveryPath = path.join(app.getPath("userData"), "omnirush-ui-control.json");
+    if (!port) throw new Error("Could not start MarsAI UI control bridge.");
+    uiControlDiscoveryPath = path.join(app.getPath("userData"), "mars-ui-control.json");
     await writeFile(
       uiControlDiscoveryPath,
       `${JSON.stringify({ version: 2, app: appName, identifier: appIdentifier, platform: process.platform, baseUrl: `http://127.0.0.1:${port}`, token: uiControlToken }, null, 2)}\n`,
       "utf8",
     );
     // Make the discovery path available to child processes (server → managed OpenCode → plugin).
-    process.env.OMNIRUSH_UI_CONTROL_DISCOVERY = uiControlDiscoveryPath;
+    process.env.MARS_UI_CONTROL_DISCOVERY = uiControlDiscoveryPath;
   }
 
   async function stop() {

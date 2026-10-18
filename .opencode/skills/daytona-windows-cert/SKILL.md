@@ -1,20 +1,20 @@
 ---
 name: daytona-windows-cert
-description: "test on Windows, enterprise CA, corporate certificate, GPO cert, TLS fetch failed, Windows sandbox, daytona windows, self-hosted cert. Use when validating OmniRush.ai Windows enterprise TLS/OS-trust fixes in a Daytona Windows sandbox."
+description: "test on Windows, enterprise CA, corporate certificate, GPO cert, TLS fetch failed, Windows sandbox, daytona windows, self-hosted cert. Use when validating MarsAI Windows enterprise TLS/OS-trust fixes in a Daytona Windows sandbox."
 ---
 
 # Skill: Daytona Windows Enterprise Certificate Test
 
-Run the verified Windows repro for OmniRush.ai enterprise TLS behavior: install a
+Run the verified Windows repro for MarsAI enterprise TLS behavior: install a
 fake corporate CA into the Windows machine store, serve healthy and broken HTTPS
 control planes, install a Windows build, and prove the desktop app and spawned
 runtimes use the operating system trust path.
 
 Use this as the Windows companion to the `daytona` skill. For executable
 end-to-end or PR verdict evidence, use an app-driving `.e2e.test.ts` test with
-`@omnirush/testkit`; custom VNC screenshots are supplementary. Reuse the repo
-support assets instead of copying their logic: `scripts/support/setup-omnirush-tls-repro.ps1`,
-`scripts/support/omnirush-doctor.ps1`, and `docs/support/enterprise-network-doctor.md`.
+`@mars/testkit`; custom VNC screenshots are supplementary. Reuse the repo
+support assets instead of copying their logic: `scripts/support/setup-mars-tls-repro.ps1`,
+`scripts/support/mars-doctor.ps1`, and `docs/support/enterprise-network-doctor.md`.
 
 ## When to use
 
@@ -22,7 +22,7 @@ support assets instead of copying their logic: `scripts/support/setup-omnirush-t
 - User is validating an enterprise CA, corporate certificate, GPO cert, or
   self-hosted cert path on Windows.
 - User reports `TLS fetch failed`, `fetch failed`, or a certificate-specific
-  failure when connecting OmniRush.ai to a self-hosted control plane.
+  failure when connecting MarsAI to a self-hosted control plane.
 - User needs to prove the Windows app uses OS trust and spawned runtimes receive
   the OS trust bundle via `NODE_EXTRA_CA_CERTS`.
 
@@ -36,9 +36,9 @@ brew link --overwrite daytona
 daytona version
 ```
 
-- `gh` must be authenticated to `omnirush-ai/omnirush-gui` and able to create/delete
+- `gh` must be authenticated to `mars-ai/mars-gui` and able to create/delete
   temporary public prereleases.
-- Have a Windows OmniRush.ai build or installer ready. Keep secrets and customer
+- Have a Windows MarsAI build or installer ready. Keep secrets and customer
   materials out of the temporary release asset.
 
 ## 1. Create the Windows sandbox
@@ -92,7 +92,7 @@ Do not inspect app UI state, userData, or installed app settings through SYSTEM
 profile paths.
 
 Human GUI access is: Daytona Dashboard -> sandbox -> ⋮ menu -> **VNC** ->
-Connect. Use `exec` for setup and logs; use VNC to drive the installed OmniRush.ai
+Connect. Use `exec` for setup and logs; use VNC to drive the installed MarsAI
 app and observe the user-visible result.
 
 ## 3. Get the app build in
@@ -106,27 +106,27 @@ the app build plus the support scripts from this repo so the VM reuses the
 checked-in harness:
 
 ```bash
-TAG="omnirush-win-cert-repro-$(date +%Y%m%d%H%M%S)"
+TAG="mars-win-cert-repro-$(date +%Y%m%d%H%M%S)"
 ZIP="/tmp/${TAG}.zip"
-# Put your Windows app build under /tmp/omnirush-win-cert-upload/omnirush/app
-# and include scripts/support/setup-omnirush-tls-repro.ps1 plus
-# scripts/support/omnirush-doctor.ps1 under omnirush/scripts/support/.
+# Put your Windows app build under /tmp/mars-win-cert-upload/mars/app
+# and include scripts/support/setup-mars-tls-repro.ps1 plus
+# scripts/support/mars-doctor.ps1 under mars/scripts/support/.
 # Include .opencode/skills/daytona-windows-cert/scripts/ca-probe.js as
-# omnirush/ca-probe.js.
-ditto -c -k --keepParent /tmp/omnirush-win-cert-upload/omnirush "$ZIP"
-gh release create "$TAG" "$ZIP" --repo omnirush-ai/omnirush-gui --prerelease
+# mars/ca-probe.js.
+ditto -c -k --keepParent /tmp/mars-win-cert-upload/mars "$ZIP"
+gh release create "$TAG" "$ZIP" --repo mars-ai/mars-gui --prerelease
 ```
 
 The release command shape from the verified session was:
 
 ```bash
-gh release create <tag> <zip> --repo omnirush-ai/omnirush-gui --prerelease
+gh release create <tag> <zip> --repo mars-ai/mars-gui --prerelease
 ```
 
 Download and extract inside Windows:
 
 ```bash
-DOWNLOAD_URL="https://github.com/omnirush-ai/omnirush-gui/releases/download/${TAG}/$(basename "$ZIP")"
+DOWNLOAD_URL="https://github.com/mars-ai/mars-gui/releases/download/${TAG}/$(basename "$ZIP")"
 daytona exec "$SANDBOX_ID" -- cmd /c 'mkdir C:\ow 2>NUL'
 daytona exec "$SANDBOX_ID" -- cmd /c "curl.exe -L -o C:\ow\app.zip $DOWNLOAD_URL"
 daytona exec "$SANDBOX_ID" -- cmd /c 'tar -xf C:\ow\app.zip -C C:\ow'
@@ -143,19 +143,19 @@ If the zip only contains the app, fetch the support scripts from the same branch
 instead of rewriting them:
 
 ```bash
-daytona exec "$SANDBOX_ID" -- cmd /c 'mkdir C:\ow\omnirush\scripts\support 2>NUL'
-daytona exec "$SANDBOX_ID" -- cmd /c 'curl.exe -L -o C:\ow\omnirush\scripts\support\setup-omnirush-tls-repro.ps1 https://raw.githubusercontent.com/omnirush-ai/omnirush-gui/main/scripts/support/setup-omnirush-tls-repro.ps1'
-daytona exec "$SANDBOX_ID" -- cmd /c 'curl.exe -L -o C:\ow\omnirush\scripts\support\omnirush-doctor.ps1 https://raw.githubusercontent.com/omnirush-ai/omnirush-gui/main/scripts/support/omnirush-doctor.ps1'
+daytona exec "$SANDBOX_ID" -- cmd /c 'mkdir C:\ow\mars\scripts\support 2>NUL'
+daytona exec "$SANDBOX_ID" -- cmd /c 'curl.exe -L -o C:\ow\mars\scripts\support\setup-mars-tls-repro.ps1 https://raw.githubusercontent.com/mars-ai/mars-gui/main/scripts/support/setup-mars-tls-repro.ps1'
+daytona exec "$SANDBOX_ID" -- cmd /c 'curl.exe -L -o C:\ow\mars\scripts\support\mars-doctor.ps1 https://raw.githubusercontent.com/mars-ai/mars-gui/main/scripts/support/mars-doctor.ps1'
 ```
 
 ## 4. Stand up the enterprise-TLS repro
 
-`scripts/support/setup-omnirush-tls-repro.ps1` creates a fake corporate root and
+`scripts/support/setup-mars-tls-repro.ps1` creates a fake corporate root and
 intermediate, trusts the root in `Cert:\LocalMachine\Root`, maps
-`poc.omnirush.test` to localhost, and serves:
+`poc.mars.test` to localhost, and serves:
 
-- `https://poc.omnirush.test:8443` — healthy chain.
-- `https://poc.omnirush.test:9443` — broken chain with the intermediate removed.
+- `https://poc.mars.test:8443` — healthy chain.
+- `https://poc.mars.test:9443` — broken chain with the intermediate removed.
 
 Do not run the listeners only inside a one-off `daytona exec`; the PowerShell
 listeners die when that exec session closes. Persist them with a scheduled task
@@ -166,17 +166,17 @@ ENCODED=$(python3 - <<'PY'
 import base64
 script = r'''
 $ErrorActionPreference = "Stop"
-$repo = "C:\ow\omnirush"
-$cmdPath = "C:\ow\start-omnirush-tls-repro.cmd"
+$repo = "C:\ow\mars"
+$cmdPath = "C:\ow\start-mars-tls-repro.cmd"
 $cmd = @"
 @echo off
 cd /d "$repo"
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\support\setup-omnirush-tls-repro.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\support\setup-mars-tls-repro.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -Command "while (`$true) { Start-Sleep -Seconds 3600 }"
 "@
 Set-Content -LiteralPath $cmdPath -Value $cmd -Encoding ASCII
-schtasks /create /f /sc onstart /ru SYSTEM /tn OmniRushTlsRepro /tr $cmdPath
-schtasks /run /tn OmniRushTlsRepro
+schtasks /create /f /sc onstart /ru SYSTEM /tn MarsTlsRepro /tr $cmdPath
+schtasks /run /tn MarsTlsRepro
 '''
 print(base64.b64encode(script.encode("utf-16le")).decode())
 PY
@@ -193,7 +193,7 @@ daytona exec "$SANDBOX_ID" -- cmd /c 'netstat -ano | findstr :8443'
 Optional diagnostic output from the checked-in doctor script:
 
 ```bash
-daytona exec "$SANDBOX_ID" -- powershell -NoProfile -ExecutionPolicy Bypass -File 'C:\ow\omnirush\scripts\support\omnirush-doctor.ps1' -WebUrl https://poc.omnirush.test:8443 -ApiUrl https://poc.omnirush.test:9443 -ExpectedIssuerMatch "OmniRush.ai TLS Repro"
+daytona exec "$SANDBOX_ID" -- powershell -NoProfile -ExecutionPolicy Bypass -File 'C:\ow\mars\scripts\support\mars-doctor.ps1' -WebUrl https://poc.mars.test:8443 -ApiUrl https://poc.mars.test:9443 -ExpectedIssuerMatch "MarsAI TLS Repro"
 ```
 
 ## 5. Verify the fix
@@ -204,14 +204,14 @@ Copy `.opencode/skills/daytona-windows-cert/scripts/ca-probe.js` into the VM as
 `C:\ow\ca-probe.js`. Its contents are intentionally small and reusable:
 
 ```bash
-daytona exec "$SANDBOX_ID" -- cmd /c 'copy C:\ow\omnirush\ca-probe.js C:\ow\ca-probe.js'
+daytona exec "$SANDBOX_ID" -- cmd /c 'copy C:\ow\mars\ca-probe.js C:\ow\ca-probe.js'
 ```
 
 ```js
 const { X509Certificate } = require("node:crypto");
 const tls = require("node:tls");
 
-const needle = (process.env.OMNIRUSH_TLS_REPRO_CA_MATCH || "OmniRush.ai TLS Repro").toLowerCase();
+const needle = (process.env.MARS_TLS_REPRO_CA_MATCH || "MarsAI TLS Repro").toLowerCase();
 
 function countMatchingSubjects(certificates) {
   let count = 0;
@@ -247,7 +247,7 @@ Run Electron in node mode. Adjust the executable path for your unpacked build or
 installed app:
 
 ```bash
-daytona exec "$SANDBOX_ID" -- cmd /c 'set ELECTRON_RUN_AS_NODE=1 && "C:\ow\omnirush\app\OmniRush.ai.exe" C:\ow\ca-probe.js'
+daytona exec "$SANDBOX_ID" -- cmd /c 'set ELECTRON_RUN_AS_NODE=1 && "C:\ow\mars\app\MarsAI.exe" C:\ow\ca-probe.js'
 ```
 
 The verified result was:
@@ -262,13 +262,13 @@ the bundled Mozilla roots do not.
 
 ### Verify the installed app via VNC
 
-Drive the installed OmniRush.ai Windows app through VNC, not `daytona exec`.
+Drive the installed MarsAI Windows app through VNC, not `daytona exec`.
 
 1. Open Daytona Dashboard -> sandbox -> ⋮ menu -> **VNC** -> Connect.
-2. Launch or install OmniRush.ai as the interactive user.
-3. Point the self-hosted/control-plane URL at `https://poc.omnirush.test:8443`.
+2. Launch or install MarsAI as the interactive user.
+3. Point the self-hosted/control-plane URL at `https://poc.mars.test:8443`.
    The request should succeed.
-4. Repeat against `https://poc.omnirush.test:9443`. The request should fail with
+4. Repeat against `https://poc.mars.test:9443`. The request should fail with
    a named certificate/chain error, not a vague `fetch failed` banner.
 
 Use the `daytona` skill for normal Electron driving patterns. If this is PR
@@ -282,15 +282,15 @@ captures above remain supplementary setup and debugging evidence.
 The real Windows userData folder is:
 
 ```text
-C:\Users\<User>\AppData\Roaming\ai.omnirush.desktop
+C:\Users\<User>\AppData\Roaming\ai.marsai.desktop
 ```
 
-It is **not** `C:\Users\<User>\AppData\Roaming\OmniRush.ai`. Because `exec` runs as
+It is **not** `C:\Users\<User>\AppData\Roaming\MarsAI`. Because `exec` runs as
 SYSTEM, inspect the interactive user path explicitly:
 
 ```bash
-daytona exec "$SANDBOX_ID" -- cmd /c 'dir "C:\Users\Administrator\AppData\Roaming\ai.omnirush.desktop\system-ca-bundle.pem"'
-daytona exec "$SANDBOX_ID" -- cmd /c 'findstr /c:"OmniRush.ai TLS Repro" "C:\Users\Administrator\AppData\Roaming\ai.omnirush.desktop\system-ca-bundle.pem"'
+daytona exec "$SANDBOX_ID" -- cmd /c 'dir "C:\Users\Administrator\AppData\Roaming\ai.marsai.desktop\system-ca-bundle.pem"'
+daytona exec "$SANDBOX_ID" -- cmd /c 'findstr /c:"MarsAI TLS Repro" "C:\Users\Administrator\AppData\Roaming\ai.marsai.desktop\system-ca-bundle.pem"'
 ```
 
 Known gotcha: `system-ca-bundle.pem` is written once at first launch and then
@@ -304,7 +304,7 @@ usually does not bite customers.
   payload:
 
 ```bash
-daytona exec "$SANDBOX_ID" -- cmd /c 'dir "C:\Users\Administrator\AppData\Roaming\ai.omnirush.desktop"'
+daytona exec "$SANDBOX_ID" -- cmd /c 'dir "C:\Users\Administrator\AppData\Roaming\ai.marsai.desktop"'
 ```
 
 - Pipes and `|` inside `daytona exec ... -- powershell -Command '...'` can be
@@ -314,7 +314,7 @@ daytona exec "$SANDBOX_ID" -- cmd /c 'dir "C:\Users\Administrator\AppData\Roamin
 ```bash
 ENCODED=$(python3 - <<'PY'
 import base64
-command = r'Get-ChildItem Cert:\LocalMachine\Root | Where-Object Subject -like "*OmniRush.ai TLS Repro*"'
+command = r'Get-ChildItem Cert:\LocalMachine\Root | Where-Object Subject -like "*MarsAI TLS Repro*"'
 print(base64.b64encode(command.encode("utf-16le")).decode())
 PY
 )
@@ -341,9 +341,9 @@ Stop the scheduled repro, remove the certificates/hosts/bindings through the
 checked-in setup script, delete the sandbox, and delete the temporary prerelease:
 
 ```bash
-daytona exec "$SANDBOX_ID" -- cmd /c 'schtasks /end /tn OmniRushTlsRepro'
-# Core repro cleanup shape: setup-omnirush-tls-repro.ps1 -Cleanup
-daytona exec "$SANDBOX_ID" -- powershell -NoProfile -ExecutionPolicy Bypass -File 'C:\ow\omnirush\scripts\support\setup-omnirush-tls-repro.ps1' -Cleanup
+daytona exec "$SANDBOX_ID" -- cmd /c 'schtasks /end /tn MarsTlsRepro'
+# Core repro cleanup shape: setup-mars-tls-repro.ps1 -Cleanup
+daytona exec "$SANDBOX_ID" -- powershell -NoProfile -ExecutionPolicy Bypass -File 'C:\ow\mars\scripts\support\setup-mars-tls-repro.ps1' -Cleanup
 daytona sandbox delete <ID>
 gh release delete <tag> --yes
 ```

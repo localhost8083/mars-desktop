@@ -1,6 +1,6 @@
 import { eq } from "@omnirush-ee/den-db/drizzle"
 import { OrganizationTable } from "@omnirush-ee/den-db/schema"
-import { assertManagedModelsAllowed, ManagedModelsPolicyError, readOrganizationMetadata } from "@omnirush/types/den/managed-models-policy"
+import { assertManagedModelsAllowed, ManagedModelsPolicyError, readOrganizationMetadata } from "@mars/types/den/managed-models-policy"
 import { db } from "./db.js"
 
 type OrganizationId = typeof OrganizationTable.$inferSelect.id

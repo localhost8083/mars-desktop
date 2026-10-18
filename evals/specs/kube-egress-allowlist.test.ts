@@ -7,16 +7,16 @@ import {
   denFetch,
   readUsableConnection,
   signIn,
-} from "@omnirush/behaviors";
-import type { DenSession } from "@omnirush/behaviors";
-import { startMockMcp } from "@omnirush/labs";
-import type { MockMcpHandle, MockAuthorizeRequest } from "@omnirush/labs";
-import { eventually, sleep, test } from "@omnirush/testkit";
+} from "@mars/behaviors";
+import type { DenSession } from "@mars/behaviors";
+import { startMockMcp } from "@mars/labs";
+import type { MockMcpHandle, MockAuthorizeRequest } from "@mars/labs";
+import { eventually, sleep, test } from "@mars/testkit";
 
-const KUBE_CONTEXT = "kind-omnirush-kube-lab";
-const apiUrl = process.env.OMNIRUSH_EVAL_DEN_API_URL?.trim().replace(/\/+$/, "") ?? "";
-const webUrl = process.env.OMNIRUSH_EVAL_DEN_WEB_URL?.trim().replace(/\/+$/, "") ?? "";
-const allowedHostIp = process.env.OMNIRUSH_EVAL_KUBE_ALLOWED_HOST_IP?.trim() ?? "";
+const KUBE_CONTEXT = "kind-mars-kube-lab";
+const apiUrl = process.env.MARS_EVAL_DEN_API_URL?.trim().replace(/\/+$/, "") ?? "";
+const webUrl = process.env.MARS_EVAL_DEN_WEB_URL?.trim().replace(/\/+$/, "") ?? "";
+const allowedHostIp = process.env.MARS_EVAL_KUBE_ALLOWED_HOST_IP?.trim() ?? "";
 
 interface CommandResult {
   stdout: string;
@@ -32,16 +32,16 @@ function envPort(name: string, defaultPort: number): number | null {
   return Number.isInteger(port) && port >= 1 && port <= 65_535 ? port : null;
 }
 
-const allowedPort = envPort("OMNIRUSH_EVAL_KUBE_ALLOWED_MOCK_PORT", 4791);
-const deniedPort = envPort("OMNIRUSH_EVAL_KUBE_DENIED_MOCK_PORT", 4792);
+const allowedPort = envPort("MARS_EVAL_KUBE_ALLOWED_MOCK_PORT", 4791);
+const deniedPort = envPort("MARS_EVAL_KUBE_DENIED_MOCK_PORT", 4792);
 
 function precondition(): string | null {
-  if (!apiUrl) return "set OMNIRUSH_EVAL_DEN_API_URL";
-  if (!webUrl) return "set OMNIRUSH_EVAL_DEN_WEB_URL";
-  if (process.env.OMNIRUSH_EVAL_KUBE_EGRESS_TEST?.trim() !== "1") return "set OMNIRUSH_EVAL_KUBE_EGRESS_TEST=1";
-  if (!allowedHostIp) return "set OMNIRUSH_EVAL_KUBE_ALLOWED_HOST_IP";
-  if (allowedPort === null) return "OMNIRUSH_EVAL_KUBE_ALLOWED_MOCK_PORT must be a valid port";
-  if (deniedPort === null) return "OMNIRUSH_EVAL_KUBE_DENIED_MOCK_PORT must be a valid port";
+  if (!apiUrl) return "set MARS_EVAL_DEN_API_URL";
+  if (!webUrl) return "set MARS_EVAL_DEN_WEB_URL";
+  if (process.env.MARS_EVAL_KUBE_EGRESS_TEST?.trim() !== "1") return "set MARS_EVAL_KUBE_EGRESS_TEST=1";
+  if (!allowedHostIp) return "set MARS_EVAL_KUBE_ALLOWED_HOST_IP";
+  if (allowedPort === null) return "MARS_EVAL_KUBE_ALLOWED_MOCK_PORT must be a valid port";
+  if (deniedPort === null) return "MARS_EVAL_KUBE_DENIED_MOCK_PORT must be a valid port";
   const probe = spawnSync("kubectl", ["--context", KUBE_CONTEXT, "get", "nodes"], {
     encoding: "utf8",
     timeout: 15_000,
@@ -158,8 +158,8 @@ test.skipIf(skipReason !== null)(title, async ({ evidence }) => {
     deniedMock = await startUnauthenticatedMock(deniedPort);
     const den = { apiUrl, webUrl };
     const activeAdmin = await signIn(den, {
-      email: process.env.OMNIRUSH_EVAL_DEMO_EMAIL?.trim() || "alex@acme.test",
-      password: process.env.OMNIRUSH_EVAL_DEMO_PASSWORD?.trim() || "OmniRushDemo123!",
+      email: process.env.MARS_EVAL_DEMO_EMAIL?.trim() || "alex@acme.test",
+      password: process.env.MARS_EVAL_DEMO_PASSWORD?.trim() || "MarsDemo123!",
     });
     admin = activeAdmin;
     await deleteConnectionsNamed(activeAdmin, "Kube allowed MCP ");

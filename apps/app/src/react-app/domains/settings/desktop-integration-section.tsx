@@ -21,15 +21,15 @@ import {
 
 function statusDescription(status: DesktopIntegrationStatus) {
   if (status.state === "integrated") {
-    return "omnirush.ai is in your application launcher and handles omnirush:// browser callbacks.";
+    return "marsai.click is in your application launcher and handles mars:// browser callbacks.";
   }
   if (status.state === "managed_externally") {
-    return "This AppImage is integrated by another app. omnirush.ai will leave its launcher untouched.";
+    return "This AppImage is integrated by another app. marsai.click will leave its launcher untouched.";
   }
   if (status.state === "needs_repair" && status.ownership === "external") {
     return status.issues.includes("desktop-entry")
       ? "The manager-owned launcher cannot accept browser callbacks. Re-integrate this AppImage with its manager."
-      : "Another app manages this AppImage. Select its launcher for omnirush.ai browser callbacks.";
+      : "Another app manages this AppImage. Select its launcher for marsai.click browser callbacks.";
   }
   if (status.state === "needs_repair") {
     return "The AppImage moved or its launcher, icon, or browser callback needs repair.";
@@ -79,14 +79,14 @@ export function DesktopIntegrationSection() {
   if (!status?.supported) return null;
 
   const externallyManaged = status.ownership === "external";
-  const omnirushManaged = status.ownership === "omnirush";
+  const marsManaged = status.ownership === "mars";
 
   return (
     <LayoutSection>
       <LayoutSectionHeader>
         <LayoutSectionTitle>AppImage desktop integration</LayoutSectionTitle>
         <LayoutSectionDescription>
-          Control the launcher, icon, and omnirush:// callback for this AppImage.
+          Control the launcher, icon, and mars:// callback for this AppImage.
         </LayoutSectionDescription>
       </LayoutSectionHeader>
 
@@ -104,7 +104,7 @@ export function DesktopIntegrationSection() {
                 Integrate
               </Button>
             ) : null}
-            {omnirushManaged ? (
+            {marsManaged ? (
               <>
                 <Button
                   size="sm"

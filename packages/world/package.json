@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/world",
+  "name": "@mars/world",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -11,13 +11,13 @@
     }
   },
   "bin": {
-    "omnirush-world": "./bin/world.mjs"
+    "mars-world": "./bin/world.mjs"
   },
   "engines": {
     "node": ">=24"
   },
   "dependencies": {
-    "@omnirush/paths": "workspace:*"
+    "@mars/paths": "workspace:*"
   },
   "scripts": {
     "test": "node --test test/*.test.ts",

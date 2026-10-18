@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { emptySession } from "../worlds/desktop.ts";
 
 const test = spec.world(emptySession);
@@ -7,7 +7,7 @@ const test = spec.world(emptySession);
 test("reloading a session with a persisted composer draft keeps the renderer stable", async ({ user, probe, step }) => {
   const draft = "Keep this persisted draft through reload";
   await user.type("composer", draft);
-  const revision = await probe.storage("omnirush.session-drafts.v2", (value) => {
+  const revision = await probe.storage("mars.session-drafts.v2", (value) => {
     if (typeof value !== "object" || value === null || !("nextRevision" in value)) return undefined;
     return value.nextRevision;
   });
@@ -17,7 +17,7 @@ test("reloading a session with a persisted composer draft keeps the renderer sta
       await user.see("composer", { editable: true, text: draft });
     }
   });
-  expect(await probe.storage("omnirush.session-drafts.v2", (value) => {
+  expect(await probe.storage("mars.session-drafts.v2", (value) => {
     if (typeof value !== "object" || value === null || !("nextRevision" in value)) return undefined;
     return value.nextRevision;
   })).toBe(revision);

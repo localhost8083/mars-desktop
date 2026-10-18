@@ -20,7 +20,7 @@ export type ManagedModelAvailabilityPendingInput = {
   signedIn: boolean;
   selectedModelUsesCloudProvider: boolean;
   cloudProviderSyncReady: boolean;
-  omniRushModelsSyncing: boolean;
+  marsModelsSyncing: boolean;
 };
 
 /** A cloud model can temporarily disappear while its provider is being reconciled. */
@@ -30,7 +30,7 @@ export function isManagedModelAvailabilityPending(
   return (
     input.signedIn &&
     input.selectedModelUsesCloudProvider &&
-    (!input.cloudProviderSyncReady || input.omniRushModelsSyncing)
+    (!input.cloudProviderSyncReady || input.marsModelsSyncing)
   );
 }
 

@@ -1,9 +1,9 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { callFunctionOnSurface } from "@omnirush/cdp";
-import { go } from "@omnirush/behaviors";
-import { desktop } from "@omnirush/hosts";
-import type { Seed, Place } from "@omnirush/env";
+import { callFunctionOnSurface } from "@mars/cdp";
+import { go } from "@mars/behaviors";
+import { desktop } from "@mars/hosts";
+import type { Seed, Place } from "@mars/env";
 
 const CANARY = "PRIVATE_GUI_CANARY_BEST_PRACTICES_812b";
 
@@ -15,9 +15,9 @@ export async function bestPracticesDesktop(seed: Seed, { place }: { place: Place
   await mkdir(workspacePath, { recursive: true });
   await writeFile(canaryPath, CANARY);
   const env = {
-    OMNIRUSH_SESSION_UPLOAD_OPTIONAL: "1",
-    OMNIRUSH_ELECTRON_SKIP_SHARED_PREPARE: "1",
-    ...(process.env.OMNIRUSH_OPENCODE_BIN ? { OMNIRUSH_OPENCODE_BIN: process.env.OMNIRUSH_OPENCODE_BIN } : {}),
+    MARS_SESSION_UPLOAD_OPTIONAL: "1",
+    MARS_ELECTRON_SKIP_SHARED_PREPARE: "1",
+    ...(process.env.MARS_OPENCODE_BIN ? { MARS_OPENCODE_BIN: process.env.MARS_OPENCODE_BIN } : {}),
   };
   let active = await seed.desktop({ name: "best-practices", profileDir, env });
   const workspace = await seed.workspace(active, workspacePath);

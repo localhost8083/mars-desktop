@@ -1,20 +1,20 @@
-# Deploy OmniRush.ai EE on Google Cloud with GKE and Helm
+# Deploy MarsAI EE on Google Cloud with GKE and Helm
 
 Status: self-host operator guide
 Related: `packaging/helm/omnirush-ee`, `packaging/helm/omnirush-ee/examples/values.gcp-ingress.yaml`
 
-This is the recommended Google Cloud path for a first production-like OmniRush.ai
+This is the recommended Google Cloud path for a first production-like MarsAI
 EE self-host install. Use Helm on GKE Autopilot with Cloud SQL for MySQL. For
 web/API exposure, use GKE Ingress with Google-managed certificates, a reserved
 global IP address, and explicit backend health checks.
 
 Google recommends Gateway API for new L7 traffic management, and GKE Ingress is
-in maintenance mode. The current OmniRush.ai chart emits Ingress resources, so GKE
+in maintenance mode. The current MarsAI chart emits Ingress resources, so GKE
 Ingress is the simplest supported GCP path today. Treat Gateway API support as a
 future chart/platform hardening item.
 
 Do not use raw Kubernetes `LoadBalancer` Services as the normal GCP path for
-OmniRush.ai. GKE `LoadBalancer` Services are useful for TCP services and quick
+MarsAI. GKE `LoadBalancer` Services are useful for TCP services and quick
 smoke tests, but the customer-facing web app and SSO flow need HTTP(S) load
 balancing, host routing, managed certificates, and backend health checks.
 
@@ -24,13 +24,13 @@ balancing, host routing, managed certificates, and backend health checks.
 - Den Web on port `3005`
 - optional inference service, disabled by default
 - one Cloud SQL for MySQL database
-- one single-org OmniRush.ai deployment
+- one single-org MarsAI deployment
 - one external GKE Ingress backed by a Google Cloud Application Load Balancer
 - one Google-managed certificate covering web and API hosts
 
 Google Cloud owns the GKE cluster, Autopilot compute lifecycle, VPC networking,
 Cloud Load Balancing, managed certificates, Cloud SQL, IAM, and firewall rules.
-The OmniRush.ai Helm chart owns OmniRush.ai Deployments, Services, ConfigMaps,
+The MarsAI Helm chart owns MarsAI Deployments, Services, ConfigMaps,
 Secrets, health probes, the optional Ingress, and the database migration Job.
 The `BackendConfig` and `ManagedCertificate` resources in this guide are
 GKE-specific platform resources applied alongside the chart.
@@ -38,11 +38,11 @@ GKE-specific platform resources applied alongside the chart.
 ## Use Helm or something else?
 
 Use Helm on GKE for Google Cloud unless the customer explicitly cannot run
-Kubernetes. The OmniRush.ai EE release artifact is already a Helm chart, and GKE
+Kubernetes. The MarsAI EE release artifact is already a Helm chart, and GKE
 Autopilot keeps the first customer path small while still supporting migration
 Jobs, separate web/API services, SSO-ready HTTPS, and later enterprise network
 controls. The practical gap to fill is GCP-specific ingress and database
-guidance, not a different OmniRush.ai packaging format.
+guidance, not a different MarsAI packaging format.
 
 ## Prerequisites
 
@@ -53,8 +53,8 @@ guidance, not a different OmniRush.ai packaging format.
 - Enabled APIs: Kubernetes Engine API, Compute Engine API, Cloud SQL Admin API,
   and Service Networking API.
 - A real admin email address for the first owner account.
-- A domain you control, such as `omnirush.example.com` and
-  `api.omnirush.example.com`.
+- A domain you control, such as `mars.example.com` and
+  `api.mars.example.com`.
 
 Google Cloud docs used for this guide:
 
@@ -123,7 +123,7 @@ Private IP requires a one-time private services access connection for the VPC:
 
 ```bash
 export VPC_NETWORK=default
-export SQL_RANGE=omnirush-sql-range
+export SQL_RANGE=mars-sql-range
 
 gcloud compute addresses create "$SQL_RANGE" \
   --global \
@@ -151,7 +151,7 @@ gcloud sql instances create "$SQL_INSTANCE" \
 gcloud sql databases create omnirush_den \
   --instance="$SQL_INSTANCE"
 
-gcloud sql users create omnirush \
+gcloud sql users create mars \
   --instance="$SQL_INSTANCE" \
   --password=REPLACE_DB_PASSWORD
 ```
@@ -166,23 +166,23 @@ gcloud sql instances describe "$SQL_INSTANCE" \
 Example database URL:
 
 ```text
-mysql://omnirush:<password>@<cloud-sql-private-ip>:3306/omnirush_den
+mysql://mars:<password>@<cloud-sql-private-ip>:3306/omnirush_den
 ```
 
-This guide uses direct private IP because the current OmniRush.ai chart does not
+This guide uses direct private IP because the current MarsAI chart does not
 inject Cloud SQL Auth Proxy sidecars. Cloud SQL Auth Proxy is a stronger future
 hardening path when the chart supports sidecars or an operator-managed proxy
 pattern.
 
 If the Cloud SQL instance enforces encrypted client connections, use
 `?sslaccept=accept` for the simple private-MySQL smoke path. This keeps TLS on
-without requiring a cloud CA bundle to be mounted into the OmniRush.ai image. Use
+without requiring a cloud CA bundle to be mounted into the MarsAI image. Use
 strict certificate verification later, after you provide the required CA bundle,
 with a hardened value such as `sslmode=verify-ca` or `sslmode=verify-full`.
 Verify the same URL works for both the migration Job and runtime pods before
 testing the browser flow.
 
-Before installing OmniRush.ai, verify network access from the cluster:
+Before installing MarsAI, verify network access from the cluster:
 
 ```bash
 kubectl run mysql-client \
@@ -192,7 +192,7 @@ kubectl run mysql-client \
   --image=mysql:8 \
   -- mysql \
     --host="REPLACE_CLOUD_SQL_PRIVATE_IP" \
-    --user=omnirush \
+    --user=mars \
     --password \
     --execute "select 1"
 ```
@@ -231,7 +231,7 @@ spec:
 YAML
 ```
 
-Create explicit backend health checks for the two OmniRush.ai services:
+Create explicit backend health checks for the two MarsAI services:
 
 ```bash
 kubectl apply -n omnirush-ee -f - <<'YAML'
@@ -261,7 +261,7 @@ spec:
 YAML
 ```
 
-The Helm values annotate the OmniRush.ai Services so GKE associates these
+The Helm values annotate the MarsAI Services so GKE associates these
 `BackendConfig` objects with the Google Cloud backend services.
 
 ## 4. Prepare Helm values
@@ -290,10 +290,10 @@ To send transactional email, configure SMTP in the same values file:
 ```yaml
 secret:
   values:
-    emailFrom: "OmniRush.ai <no-reply@example.com>"
+    emailFrom: "MarsAI <no-reply@example.com>"
     smtpHost: "smtp.example.com"
     smtpPort: "587"
-    smtpUser: "omnirush@example.com"
+    smtpUser: "mars@example.com"
     smtpPass: "REPLACE_SMTP_PASSWORD"
     smtpSecure: "false"
 ```
@@ -305,7 +305,7 @@ add those keys to the existing Kubernetes Secret referenced by
 `SMTP_HOST`; leave `smtpHost` blank only when SMTP-backed transactional email
 should be disabled.
 
-Use a values file, not a long list of `--set` flags. Several OmniRush.ai values are
+Use a values file, not a long list of `--set` flags. Several MarsAI values are
 comma-separated strings, such as `config.public.corsOrigins`, and plain `--set`
 parsing commonly breaks them.
 
@@ -318,23 +318,23 @@ Before installing, render the chart and verify the migration Job will use your
 Cloud SQL URL:
 
 ```bash
-helm template omnirush-ee oci://ghcr.io/omnirush-ai/charts/omnirush-ee \
-  --version REPLACE_OMNIRUSH_VERSION \
+helm template omnirush-ee oci://ghcr.io/mars-ai/charts/omnirush-ee \
+  --version REPLACE_MARS_VERSION \
   --namespace omnirush-ee \
-  -f values.gcp.yaml > /tmp/omnirush-rendered.yaml
+  -f values.gcp.yaml > /tmp/mars-rendered.yaml
 
-grep -E 'DATABASE_URL|DEN_BASE_URL|DEN_WEB_PUBLIC_ORIGIN|EMAIL_FROM|SMTP_HOST|SMTP_PORT|SMTP_SECURE' /tmp/omnirush-rendered.yaml
+grep -E 'DATABASE_URL|DEN_BASE_URL|DEN_WEB_PUBLIC_ORIGIN|EMAIL_FROM|SMTP_HOST|SMTP_PORT|SMTP_SECURE' /tmp/mars-rendered.yaml
 ```
 
 Redact secrets before sharing rendered manifests or terminal output.
 
-## 5. Install OmniRush.ai
+## 5. Install MarsAI
 
 Published chart releases live in GHCR:
 
 ```bash
-helm upgrade --install omnirush-ee oci://ghcr.io/omnirush-ai/charts/omnirush-ee \
-  --version REPLACE_OMNIRUSH_VERSION \
+helm upgrade --install omnirush-ee oci://ghcr.io/mars-ai/charts/omnirush-ee \
+  --version REPLACE_MARS_VERSION \
   --namespace omnirush-ee \
   --create-namespace \
   -f values.gcp.yaml
@@ -387,8 +387,8 @@ migrations:
 Then run Helm and inspect the normal Job logs:
 
 ```bash
-helm upgrade --install omnirush-ee oci://ghcr.io/omnirush-ai/charts/omnirush-ee \
-  --version REPLACE_OMNIRUSH_VERSION \
+helm upgrade --install omnirush-ee oci://ghcr.io/mars-ai/charts/omnirush-ee \
+  --version REPLACE_MARS_VERSION \
   --namespace omnirush-ee \
   --create-namespace \
   -f values.gcp.yaml \
@@ -419,8 +419,8 @@ gcloud compute addresses describe omnirush-ee-ip \
 
 Create DNS records:
 
-- `omnirush.example.com` -> the reserved global IP address.
-- `api.omnirush.example.com` -> the reserved global IP address.
+- `mars.example.com` -> the reserved global IP address.
+- `api.mars.example.com` -> the reserved global IP address.
 
 GKE can take several minutes to provision the load balancer. Google-managed
 certificates can take up to an hour to become active after DNS points at the
@@ -467,8 +467,8 @@ kubectl logs -n omnirush-ee deploy/omnirush-ee-den-web
 Check readiness from your machine:
 
 ```bash
-curl -fsS https://api.omnirush.example.com/ready
-curl -fsS https://omnirush.example.com/api/ready
+curl -fsS https://api.mars.example.com/ready
+curl -fsS https://mars.example.com/api/ready
 ```
 
 ## 9. Bootstrap the first owner
@@ -493,8 +493,8 @@ secret:
 For releases that include initial-administrator bootstrap, inject the
 release-documented one-time setup secret through the Kubernetes Secret referenced
 by `secret.existingSecret`. Do not store the code in the values file or a
-ConfigMap. Then open `https://omnirush.example.com/setup`, enter the configured
-owner email and one-time operator code, and create the first account. OmniRush.ai
+ConfigMap. Then open `https://mars.example.com/setup`, enter the configured
+owner email and one-time operator code, and create the first account. MarsAI
 creates the singleton organization, grants owner and configured platform-admin
 access, and signs the administrator in. Public signup remains disabled. After
 the first user exists, the setup code cannot bootstrap another account.
@@ -517,19 +517,19 @@ demo IdPs.
 Configure the IdP application with this callback URL:
 
 ```text
-https://omnirush.example.com/api/auth/sso/callback/omnirush-sso-<org-id>
+https://mars.example.com/api/auth/sso/callback/mars-sso-<org-id>
 ```
 
-In OmniRush.ai, sign in as the owner, open the organization SSO settings, and enter
+In MarsAI, sign in as the owner, open the organization SSO settings, and enter
 the IdP issuer/client details. After saving, the organization sign-in path is:
 
 ```text
-https://omnirush.example.com/sso/<singleOrgSlug>
+https://mars.example.com/sso/<singleOrgSlug>
 ```
 
-For SAML, OmniRush.ai shows the generated ACS URL and metadata URL after the SAML
+For SAML, MarsAI shows the generated ACS URL and metadata URL after the SAML
 connection is registered. Use those values in the IdP rather than guessing.
-OmniRush.ai rejects unsigned or weak SAML responses, so configure the IdP to sign
+MarsAI rejects unsigned or weak SAML responses, so configure the IdP to sign
 assertions.
 
 After SSO is configured, root sign-in shows the SSO-only experience for the
@@ -540,14 +540,14 @@ single organization. Password sign-in for that organization is rejected.
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | Ingress does not reconcile | HTTP load balancing add-on is disabled or Ingress annotation is wrong | Keep HTTP load balancing enabled and use `kubernetes.io/ingress.class: gce` |
-| Backends are unhealthy | GKE load balancer health checks do not match OmniRush.ai readiness endpoints | Apply the `BackendConfig` resources and keep the service annotations from the starter values |
+| Backends are unhealthy | GKE load balancer health checks do not match MarsAI readiness endpoints | Apply the `BackendConfig` resources and keep the service annotations from the starter values |
 | Ingress events report `TimeoutSec should be less than checkIntervalSec` | The backend health-check timeout is greater than or equal to its effective interval | Set `checkIntervalSec: 15` and `timeoutSec: 5` on both `BackendConfig` resources |
 | Managed certificate is not `Active` | DNS does not point at the load balancer or provisioning is still running | Point both hosts at the reserved global IP and wait; check `kubectl describe managedcertificate` |
 | Migration Job fails to connect to MySQL | Private services access, VPC, credentials, IP, or TLS mode are wrong | Test from `mysql-client`, confirm the private IP, and confirm GKE and Cloud SQL share VPC reachability |
 | Migration Job logs show `self-signed certificate in certificate chain` | Strict certificate verification is being used without the cloud MySQL CA bundle | Use `?sslaccept=accept` for the smoke path or mount/configure the CA bundle before strict verification |
 | `ImagePullBackOff` from GHCR | Private image or missing pull token | Add `imagePullSecrets` |
 | Browser auth loops or CORS errors | Public origins do not match DNS/TLS | Set `webOrigin`, `apiOrigin`, `corsOrigins`, `betterAuthTrustedOrigins`, and `authCallbackUrl` to the final HTTPS domains |
-| SSO callback rejected | IdP callback URL does not match OmniRush.ai | Use the callback/ACS URL shown by OmniRush.ai for that org/provider |
+| SSO callback rejected | IdP callback URL does not match MarsAI | Use the callback/ACS URL shown by MarsAI for that org/provider |
 | SSO settings show Enterprise gating | `DEN_PLAN_GATING_ENABLED=true` or org is not entitled | Leave plan gating off for self-host smoke tests, or grant enterprise entitlement |
 
 ## 12. Cleanup

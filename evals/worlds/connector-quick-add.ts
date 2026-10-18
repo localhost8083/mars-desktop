@@ -1,5 +1,5 @@
-import type { Seed } from "@omnirush/env";
-import { SkipError } from "@omnirush/env";
+import type { Seed } from "@mars/env";
+import { SkipError } from "@mars/env";
 
 /** Curated API-key preset whose hosted server also answers unauthenticated MCP requests with an OAuth challenge. */
 export const API_KEY_PRESET_ID = "render";
@@ -40,7 +40,7 @@ export async function connectorQuickAddPresetAuth(seed: Seed) {
   // never disagreed with the preset.
   const discover = await seed.api(den.admin, "/v1/mcp-connections/discover", {
     method: "POST",
-    headers: { "x-omnirush-org-id": orgId },
+    headers: { "x-mars-org-id": orgId },
     body: JSON.stringify({ url: presetUrl }),
   });
   const authentication = isRecord(discover.body) && isRecord(discover.body.authentication) ? discover.body.authentication : null;

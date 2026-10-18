@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, jest, setSystemTime, test } fr
 type SyncInput = {
   workspaceId: string;
   baseUrl: string;
-  omnirushToken: string;
+  marsToken: string;
 };
 
 type Subscription = {
@@ -27,8 +27,8 @@ const {
 const inputs: SyncInput[] = [];
 const originalSetInterval = globalThis.setInterval;
 
-function input(baseUrl: string, omnirushToken: string): SyncInput {
-  const value = { workspaceId: "ws_shared", baseUrl, omnirushToken };
+function input(baseUrl: string, marsToken: string): SyncInput {
+  const value = { workspaceId: "ws_shared", baseUrl, marsToken };
   inputs.push(value);
   return value;
 }

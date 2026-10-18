@@ -23,6 +23,7 @@ import {
   SUBAGENT_MODEL_HELP,
   subagentEffortLabel,
   subagentEffortOptions,
+  subagentModelChoices,
   subagentModelName,
   subagentModelUnavailable,
   subagentSummary,
@@ -42,7 +43,7 @@ export function SubagentModelSettings(props: { client: SubagentModelClient | nul
   if (!props.client) return null;
   const disabled = Boolean(props.busy) || policyLocked || saving || loading || !state;
   const unavailable = subagentModelUnavailable(state, setting);
-  const models = state?.models ?? [];
+  const models = subagentModelChoices(state, setting.model);
   const modelItems = [
     { value: SAME, label: SAME_AS_MAIN_LABEL },
     ...models.map((model) => ({ value: model.id, label: model.family && model.family !== "OpenAI" ? `${model.name} (${model.family})` : model.name })),
@@ -62,7 +63,7 @@ export function SubagentModelSettings(props: { client: SubagentModelClient | nul
   const status = policyLocked
     ? "Locked by your organisation: its policy does not allow changing app settings."
     : state && !state.signedIn
-      ? "Sign in to omnirush.ai to pick a model for sub-agents."
+      ? "Sign in to marsai.click to pick a model for sub-agents."
       : unavailable
         ? "This model is not available to your account right now: sub-agents run on the main agent's model."
         : error;

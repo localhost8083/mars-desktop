@@ -20,8 +20,8 @@ const remoteWorkspace: WorkspaceServerClientWorkspace = {
   id: "rem_local-id",
   workspaceType: "remote",
   baseUrl: "https://worker.example.test",
-  omnirushToken: "remote-token",
-  omnirushWorkspaceId: "server-workspace-id",
+  marsToken: "remote-token",
+  marsWorkspaceId: "server-workspace-id",
 };
 
 describe("workspace server client primitive", () => {

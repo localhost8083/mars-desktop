@@ -35,7 +35,7 @@ import {
   type EnterpriseMcpOAuthPersistence,
   type EnterpriseMcpPersistenceContext,
   type EnterpriseMcpRequestPhase,
-} from "@omnirush/enterprise-mcp-client";
+} from "@mars/enterprise-mcp-client";
 import { ApiError } from "./errors.js";
 import { sanitizeDiagnosticString } from "./diagnostic-sanitizer.js";
 import { runtimeStorageDir } from "./runtime-db.js";
@@ -159,12 +159,12 @@ export type CreateLocalManagedMcpInput = {
   };
 };
 
-const VAULT_AAD = Buffer.from("omnirush-local-managed-mcp-v1", "utf8");
+const VAULT_AAD = Buffer.from("mars-local-managed-mcp-v1", "utf8");
 const VAULT_RECOVERY_REASON = "secure_storage_changed";
 const VAULT_RECOVERED_LAST_ERROR =
   "Secure storage on this device changed, so saved sign-ins were cleared. Reconnect to restore this connection.";
 const MANAGED_MCP_CONNECTION_FAILED_MESSAGE =
-  "OmniRush.ai could not connect to this MCP server. Check its OAuth settings and availability, then try again.";
+  "MarsAI could not connect to this MCP server. Check its OAuth settings and availability, then try again.";
 const EXTERNAL_HANDSHAKE_REQUEST_PHASES = new Set<EnterpriseMcpRequestPhase>([
   "oauth-client-registration",
   "mcp-discovery",
@@ -187,7 +187,7 @@ function secureVaultStorageUnavailable(): ApiError {
   return new ApiError(
     503,
     "managed_mcp_secure_storage_unavailable",
-    "Secure storage for OmniRush.ai-managed MCP credentials is unavailable. Start through OmniRush.ai Desktop or set OMNIRUSH_ENCRYPTION_KEY.",
+    "Secure storage for MarsAI-managed MCP credentials is unavailable. Start through MarsAI Desktop or set MARS_ENCRYPTION_KEY.",
   );
 }
 
@@ -201,7 +201,7 @@ async function resolveVaultKey(config: ServerConfig): Promise<Buffer> {
       throw secureVaultStorageUnavailable();
     }
   }
-  const configured = process.env.OMNIRUSH_ENCRYPTION_KEY?.trim();
+  const configured = process.env.MARS_ENCRYPTION_KEY?.trim();
   if (configured) return createHash("sha256").update(configured).digest();
   throw secureVaultStorageUnavailable();
 }
@@ -447,7 +447,7 @@ function backupTimestamp(date: Date): string {
 
 async function recoverVaultLocked(config: ServerConfig, file: VaultFileState): Promise<LoadedVault> {
   const path = vaultPath(config);
-  const backupName = `${basename(path)}.omnirush-backup-${backupTimestamp(new Date())}`;
+  const backupName = `${basename(path)}.mars-backup-${backupTimestamp(new Date())}`;
   await rename(path, join(dirname(path), backupName));
   const vault = emptyVault();
   for (const [key, entry] of Object.entries(file.index ?? {})) {
@@ -698,7 +698,7 @@ async function enterpriseConnection(config: ServerConfig, workspaceId: string, n
 function enterpriseClient(diagnostics?: EnterpriseMcpDiagnosticEvent[]) {
   return createEnterpriseMcpClient({
     fetch: guardedFetch,
-    clientName: "OmniRush.ai Local MCP Gateway",
+    clientName: "MarsAI Local MCP Gateway",
     clientVersion: "1.0.0",
     operationTimeoutMs: 45_000,
     ...(diagnostics ? { diagnosticSink: (event) => diagnostics.push(event) } : {}),
@@ -774,7 +774,7 @@ export async function createLocalManagedMcpConnection(config: ServerConfig, inpu
   } catch (error) {
     if (!(error instanceof LocalManagedMcpPrivateUrlError)) throw error;
     const message = error.message.includes("managed MCP egress requires HTTPS")
-      ? `OmniRush.ai-managed sign-in requires an HTTPS server URL. ${error.message}`
+      ? `MarsAI-managed sign-in requires an HTTPS server URL. ${error.message}`
       : error.message;
     throw new ApiError(400, "managed_mcp_url_not_allowed", message);
   }
@@ -1257,7 +1257,7 @@ export async function handleLocalManagedMcpGateway(
   }
   const redirectUri = localManagedMcpCallbackUrl(config);
   const server = new Server(
-    { name: `omnirush-local-${name}`, version: "1.0.0" },
+    { name: `mars-local-${name}`, version: "1.0.0" },
     { capabilities: { tools: {} } },
   );
   server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -1269,7 +1269,7 @@ export async function handleLocalManagedMcpGateway(
       throw new McpError(
         ErrorCode.InternalError,
         reconnect
-          ? "This MCP connection needs to be reconnected in OmniRush.ai."
+          ? "This MCP connection needs to be reconnected in MarsAI."
           : "This MCP tool catalog could not be loaded. Retry the request.",
       );
     }
@@ -1289,7 +1289,7 @@ export async function handleLocalManagedMcpGateway(
       throw new McpError(
         ErrorCode.InternalError,
         reconnect
-          ? "This MCP tool could not run. Reconnect it in OmniRush.ai and retry."
+          ? "This MCP tool could not run. Reconnect it in MarsAI and retry."
           : "This MCP tool could not run. Review the tool input or provider response and retry.",
       );
     }

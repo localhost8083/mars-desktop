@@ -5,17 +5,17 @@
 // opaque data (encrypted reasoning, signatures, base64 blobs, `data:` URIs) is
 // never touched. Until the server says so the uploader keeps its old rules.
 //
-// The same file in omnirush-cli (assets/extensions/omnirush/capture/context/)
-// and omnirush-gui (apps/server/src/context/), listed in PARITY.sha256; the
+// The same file in mars-cli (assets/extensions/mars/capture/context/)
+// and mars-gui (apps/server/src/context/), listed in PARITY.sha256; the
 // backend runs the same vectors (redact-vectors.json) against its port
-// (omnirush/credential_rules.py).
+// (mars/credential_rules.py).
 
 export const CLIENT_V3 = "client-v3";
 export type RedactionPolicy = "legacy" | typeof CLIENT_V3;
 
 // One switch per process, kept on globalThis so every copy of this module
 // (a bundle, a loader without a module cache) reads the same answer.
-const STATE = Symbol.for("omnirush.redactionPolicy");
+const STATE = Symbol.for("mars.redactionPolicy");
 type PolicyHolder = { [STATE]?: RedactionPolicy };
 
 /** Switches the uploader's rules; anything but `client-v3` is the old rule set. */

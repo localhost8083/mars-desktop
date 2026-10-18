@@ -1,4 +1,4 @@
-import type { AutomationRevision } from "@omnirush/types/automations"
+import type { AutomationRevision } from "@mars/types/automations"
 
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`

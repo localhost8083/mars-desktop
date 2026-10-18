@@ -1,18 +1,18 @@
 extends: ./electron-builder.base.yml
-appId: ai.omnirush.desktop
-productName: OmniRush.ai Enterprise
+appId: ai.marsai.desktop
+productName: MarsAI Enterprise
 extraMetadata:
-  omnirushDistribution: enterprise
+  marsDistribution: enterprise
 protocols:
-  - name: OmniRush.ai Enterprise
+  - name: MarsAI Enterprise
     schemes:
-      - omnirush
+      - mars
 publish:
   - provider: github
-    owner: omnirush-ai
-    repo: omnirush-gui
+    owner: mars-ai
+    repo: mars-gui
     releaseType: release
     channel: enterprise
 linux:
-  executableName: omnirush-enterprise
-artifactName: omnirush-enterprise-${os}-${arch}-${version}.${ext}
+  executableName: mars-enterprise
+artifactName: mars-enterprise-${os}-${arch}-${version}.${ext}

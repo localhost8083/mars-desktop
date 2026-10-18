@@ -42,12 +42,12 @@ describe("electron updater web unsupported state", () => {
 describe("electron updater error text", () => {
   test("strips the Electron remote-method prefix from bridge failures", () => {
     expect(describeError(new Error(
-      "Error invoking remote method 'omnirush:desktop': Error: net::ERR_NAME_NOT_RESOLVED",
+      "Error invoking remote method 'mars:desktop': Error: net::ERR_NAME_NOT_RESOLVED",
     ))).toBe("net::ERR_NAME_NOT_RESOLVED");
     expect(stripRemoteMethodErrorPrefix(
-      "Error invoking remote method 'omnirush:updater:check': Error: Error invoking remote method 'omnirush:desktop': Error: HTTP 404",
+      "Error invoking remote method 'mars:updater:check': Error: Error invoking remote method 'mars:desktop': Error: HTTP 404",
     )).toBe("HTTP 404");
-    expect(stripRemoteMethodErrorPrefix("Error invoking remote method 'omnirush:desktop': Request timed out.")).toBe(
+    expect(stripRemoteMethodErrorPrefix("Error invoking remote method 'mars:desktop': Request timed out.")).toBe(
       "Request timed out.",
     );
   });
@@ -56,8 +56,8 @@ describe("electron updater error text", () => {
     expect(describeError(new Error("network flake"))).toBe("network flake");
     expect(describeError("plain text")).toBe("\"plain text\"");
     expect(describeError({ reason: "boom" })).toContain("\"reason\": \"boom\"");
-    expect(stripRemoteMethodErrorPrefix("Error invoking remote method 'omnirush:desktop': ")).toBe(
-      "Error invoking remote method 'omnirush:desktop':",
+    expect(stripRemoteMethodErrorPrefix("Error invoking remote method 'mars:desktop': ")).toBe(
+      "Error invoking remote method 'mars:desktop':",
     );
   });
 });

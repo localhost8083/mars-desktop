@@ -3,7 +3,7 @@ import { join } from "node:path";
 import type { createOpencodeClient } from "@opencode-ai/sdk/v2/client";
 
 import {
-  readOmniRushCloudMcpHealth,
+  readMarsCloudMcpHealth,
   type CloudMcpHealth,
   type CloudMcpLiveStatusObserver,
   type CloudMcpProviderModelContext,
@@ -23,14 +23,14 @@ import { ensureDir } from "./utils.js";
 const CONNECT_STATE_FILE = "connect-state.json";
 const CONNECT_STATE_MAX_BYTES = 16 * 1024;
 const CONNECT_SNAPSHOT_MAX_RUNTIME_ROWS = 100;
-const OMNIRUSH_CLOUD_MCP_NAME = "omnirush-cloud";
+const MARS_CLOUD_MCP_NAME = "mars-cloud";
 type WorkspaceOpencodeClient = ReturnType<typeof createOpencodeClient>;
 
 type PersistedConnectState = {
   connectEnabled: boolean;
   updatedAt: number;
   /**
-   * Server-scoped OmniRush.ai Connect (`omnirush-cloud`) MCP desired config.
+   * Server-scoped MarsAI Connect (`mars-cloud`) MCP desired config.
    * Connect is identity/org scoped, not per-workspace — workspace runtime
    * copies remain for engine registration, but catalog/skill injection reads
    * this host-level entry.
@@ -115,12 +115,12 @@ function normalizeConnectState(value: Record<string, unknown>): PersistedConnect
 export function googleWorkspaceConnectGuidance(cloudHealthOrReady: CloudMcpHealth | boolean | null): string {
   const usable = typeof cloudHealthOrReady === "boolean" ? cloudHealthOrReady : cloudHealthOrReady?.usable === true;
   if (usable) {
-    return "Google Workspace is available through the OmniRush.ai Cloud connection: call search_capabilities to find the capability, then execute_capability to run it. Do not tell the user to reconfigure extensions; the relevant settings surface is Settings > Connect.";
+    return "Google Workspace is available through the MarsAI Cloud connection: call search_capabilities to find the capability, then execute_capability to run it. Do not tell the user to reconfigure extensions; the relevant settings surface is Settings > Connect.";
   }
   if (cloudHealthOrReady && typeof cloudHealthOrReady !== "boolean" && cloudHealthOrReady.desired.present) {
     const failure = cloudHealthOrReady.firstFailure;
     const suffix = failure ? ` Current health check: ${failure.code}.` : "";
-    return `Google Workspace is connected through OmniRush.ai Connect, but agent access needs attention for this workspace. Direct the user to Settings > Connect.${suffix}`;
+    return `Google Workspace is connected through MarsAI Connect, but agent access needs attention for this workspace. Direct the user to Settings > Connect.${suffix}`;
   }
   return "Google Workspace is not connected on this device. Direct the user to Settings > Connect to connect their account. Do not direct them to Settings > Extensions.";
 }
@@ -179,12 +179,12 @@ export async function writeConnectState(config: ServerConfig, state: { connectEn
   });
 }
 
-/** Read the host-level omnirush-cloud MCP config used for Connect catalog/skills. */
+/** Read the host-level mars-cloud MCP config used for Connect catalog/skills. */
 export async function readConnectCloudMcp(config: ServerConfig): Promise<Record<string, unknown> | null> {
   return (await readConnectState(config)).cloudMcp;
 }
 
-/** Persist the host-level omnirush-cloud MCP config (server-scoped Connect). */
+/** Persist the host-level mars-cloud MCP config (server-scoped Connect). */
 export async function writeConnectCloudMcp(
   config: ServerConfig,
   cloudMcp: Record<string, unknown> | null,
@@ -230,9 +230,9 @@ export function resolveConnectWorkspace(config: ServerConfig, options: ConnectSn
       if (workspace) return { workspace, directory: workspaceDirectory(workspace, options.resolveOpencodeDirectory) };
     }
     if (matches.length > 1) {
-      return { resolution: "ambiguous", directory: normalizedRequested, reason: "Multiple workspaces have this exact OmniRush directory" };
+      return { resolution: "ambiguous", directory: normalizedRequested, reason: "Multiple workspaces have this exact Mars directory" };
     }
-    return { resolution: "unknown", directory: normalizedRequested, reason: "No workspace has this exact OmniRush directory" };
+    return { resolution: "unknown", directory: normalizedRequested, reason: "No workspace has this exact Mars directory" };
   }
 
   const only = config.workspaces[0];
@@ -262,11 +262,11 @@ async function resolveCloudHealth(config: ServerConfig, options: ConnectSnapshot
         resolution: "resolved",
         id: resolved.workspace.id,
         directory: resolved.directory,
-        reason: "OmniRush health probe is not available in this route",
+        reason: "Mars health probe is not available in this route",
       },
     };
   }
-  const cloudHealth = await readOmniRushCloudMcpHealth({
+  const cloudHealth = await readMarsCloudMcpHealth({
     config,
     workspace: resolved.workspace,
     directory: resolved.directory,
@@ -332,7 +332,7 @@ export async function inspectConnectSnapshot(
         resolution: "unknown",
         id: null,
         directory: null,
-        reason: "Passive diagnostics inspection does not probe OmniRush health",
+        reason: "Passive diagnostics inspection does not probe Mars health",
       },
       googleWorkspace: { legacyConfigured: googleWorkspaceLegacyConfigured() },
     },
@@ -350,7 +350,7 @@ async function inspectConnectRuntime(
   if (globalInspection.status === "unreadable" || globalInspection.status === "invalid-row") {
     return { cloudMcpPresent: false, complete: false };
   }
-  if (Object.hasOwn(runtimeMcpMap(globalInspection.config), OMNIRUSH_CLOUD_MCP_NAME)) {
+  if (Object.hasOwn(runtimeMcpMap(globalInspection.config), MARS_CLOUD_MCP_NAME)) {
     return { cloudMcpPresent: true, complete: true };
   }
 
@@ -377,7 +377,7 @@ async function inspectConnectRuntime(
     if (inspection.status === "unreadable" || inspection.status === "invalid-row") {
       return { cloudMcpPresent: false, complete: false };
     }
-    if (Object.hasOwn(runtimeMcpMap(inspection.config), OMNIRUSH_CLOUD_MCP_NAME)) {
+    if (Object.hasOwn(runtimeMcpMap(inspection.config), MARS_CLOUD_MCP_NAME)) {
       return { cloudMcpPresent: true, complete: true };
     }
     if (inspection.status === "database-missing" || inspection.status === "table-missing") {

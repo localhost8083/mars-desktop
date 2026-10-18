@@ -1,4 +1,4 @@
-import { renderEmailHtml } from "@omnirush/email"
+import { renderEmailHtml } from "@mars/email"
 import { expect, test } from "bun:test"
 import { DomUtils, parseDocument } from "htmlparser2"
 

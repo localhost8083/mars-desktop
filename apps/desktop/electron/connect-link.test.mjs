@@ -29,12 +29,12 @@ const publicKeys = { [KID]: publicKeyPem };
 
 /**
  * @param {Record<string, unknown>} [overrides]
- * @returns {import("@omnirush/types/connect-link").ConnectLinkClaims}
+ * @returns {import("@mars/types/connect-link").ConnectLinkClaims}
  */
 function claims(overrides = {}) {
   return {
-    iss: "https://api.omnirush.acme.example.com",
-    aud: "omnirush-desktop-connect",
+    iss: "https://api.mars.acme.example.com",
+    aud: "mars-desktop-connect",
     iat: NOW,
     exp: NOW + 72 * 3600,
     jti: "test-jti-0001",
@@ -42,8 +42,8 @@ function claims(overrides = {}) {
     org: { name: "Acme Robotics" },
     brand: { appName: "Acme Work", logoUrl: null, iconUrl: null },
     den: {
-      baseUrl: "https://omnirush.acme.example.com",
-      apiBaseUrl: "https://api.omnirush.acme.example.com",
+      baseUrl: "https://mars.acme.example.com",
+      apiBaseUrl: "https://api.mars.acme.example.com",
     },
     requireSignin: true,
     ...overrides,
@@ -65,7 +65,7 @@ function verifyAt(token, nowEpochSeconds = NOW, extra = {}) {
   return verifyConnectLinkToken({ token, publicKeys, nowEpochSeconds, ...extra });
 }
 
-/** @param {import("@omnirush/types/connect-link").ConnectLinkVerifyResult} result */
+/** @param {import("@mars/types/connect-link").ConnectLinkVerifyResult} result */
 function failureOf(result) {
   assert.equal(result.ok, false);
   if (result.ok !== false) throw new Error("expected a failure result");
@@ -73,10 +73,10 @@ function failureOf(result) {
 }
 
 test("extracts only dedicated desktop connect links", () => {
-  assert.equal(extractConnectLinkToken("omnirush://connect?token=a.b.c"), "a.b.c");
-  assert.equal(extractConnectLinkToken("omnirush-dev://connect?token=a.b.c"), "a.b.c");
-  assert.equal(extractConnectLinkToken("omnirush:///connect?token=a.b.c"), "a.b.c");
-  assert.equal(extractConnectLinkToken("omnirush://den-auth?grant=x"), null);
+  assert.equal(extractConnectLinkToken("mars://connect?token=a.b.c"), "a.b.c");
+  assert.equal(extractConnectLinkToken("mars-dev://connect?token=a.b.c"), "a.b.c");
+  assert.equal(extractConnectLinkToken("mars:///connect?token=a.b.c"), "a.b.c");
+  assert.equal(extractConnectLinkToken("mars://den-auth?grant=x"), null);
   assert.equal(extractConnectLinkToken("https://connect?token=a.b.c"), null);
 });
 
@@ -84,7 +84,7 @@ test("verifies an exact signed organization target end to end", () => {
   const expected = claims();
   const token = mint(expected);
   const result = verifyConnectLinkUrl(
-    `omnirush://connect?token=${encodeURIComponent(token)}`,
+    `mars://connect?token=${encodeURIComponent(token)}`,
     { publicKeys, nowEpochSeconds: NOW },
   );
   assert.equal(result.ok, true);
@@ -95,7 +95,7 @@ test("verifies an exact signed organization target end to end", () => {
 
 test("resolves a keyless exchange through the exact HTTPS Den endpoint", async () => {
   const code = "abcdefghijklmnopqrstuvwxyz123456";
-  const apiBaseUrl = "https://api.omnirush.acme.example.com/api/den";
+  const apiBaseUrl = "https://api.mars.acme.example.com/api/den";
   const expected = claims({
     iss: apiBaseUrl,
     brand: {
@@ -104,11 +104,11 @@ test("resolves a keyless exchange through the exact HTTPS Den endpoint", async (
       iconUrl: "https://assets.acme.example.com/icon.png",
     },
     den: {
-      baseUrl: "https://omnirush.acme.example.com",
+      baseUrl: "https://mars.acme.example.com",
       apiBaseUrl,
     },
   });
-  const rawUrl = `omnirush://connect?code=${code}&apiBaseUrl=${encodeURIComponent(apiBaseUrl)}`;
+  const rawUrl = `mars://connect?code=${code}&apiBaseUrl=${encodeURIComponent(apiBaseUrl)}`;
   assert.deepEqual(extractConnectExchange(rawUrl), { code, apiBaseUrl });
 
   const calls = [];
@@ -130,7 +130,7 @@ test("resolves a keyless exchange through the exact HTTPS Den endpoint", async (
   assert.deepEqual(JSON.parse(calls[0].init.body), { code });
   assert.equal(calls[0].init.redirect, "error");
   assert.deepEqual(desktopBootstrapFromConnectClaims(result.claims), {
-    baseUrl: "https://omnirush.acme.example.com",
+    baseUrl: "https://mars.acme.example.com",
     apiBaseUrl,
     requireSignin: true,
     brandAppName: "Acme Work",
@@ -192,11 +192,11 @@ test("startup branding applies a saved icon and skips an absent one", async () =
 
 test("fails closed for ambiguous, insecure, mismatched, expired, and replayed exchanges", async () => {
   const code = "abcdefghijklmnopqrstuvwxyz123456";
-  const apiBaseUrl = "https://api.omnirush.acme.example.com";
-  const rawUrl = `omnirush://connect?code=${code}&apiBaseUrl=${encodeURIComponent(apiBaseUrl)}`;
+  const apiBaseUrl = "https://api.mars.acme.example.com";
+  const rawUrl = `mars://connect?code=${code}&apiBaseUrl=${encodeURIComponent(apiBaseUrl)}`;
   assert.equal(extractConnectExchange(`${rawUrl}&token=a.b.c`), null);
 
-  const insecure = `omnirush://connect?code=${code}&apiBaseUrl=${encodeURIComponent("http://den.example.com")}`;
+  const insecure = `mars://connect?code=${code}&apiBaseUrl=${encodeURIComponent("http://den.example.com")}`;
   assert.equal(failureOf(await resolveConnectExchangeUrl(insecure, {
     mode: "preview",
     fetcher: () => Promise.reject(new Error("must not fetch")),
@@ -208,7 +208,7 @@ test("fails closed for ambiguous, insecure, mismatched, expired, and replayed ex
     fetcher: () => Promise.resolve(Response.json({ claims: claims({
       iss: "https://other.example.com",
       den: {
-        baseUrl: "https://omnirush.acme.example.com",
+        baseUrl: "https://mars.acme.example.com",
         apiBaseUrl: "https://other.example.com",
       },
     }) })),

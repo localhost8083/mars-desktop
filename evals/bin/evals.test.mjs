@@ -17,26 +17,26 @@ import {
 
 test("consentVarsFromSource extracts, deduplicates, and sorts only opt-in variables", () => {
   const source = `
-    needs({ optIn: ["OMNIRUSH_EVAL_ZETA", 'OMNIRUSH_EVAL_ALPHA'] });
+    needs({ optIn: ["MARS_EVAL_ZETA", 'MARS_EVAL_ALPHA'] });
     const requirements = {
       optIn: [
-        "OMNIRUSH_EVAL_MULTI",
-        "OMNIRUSH_EVAL_ALPHA",
+        "MARS_EVAL_MULTI",
+        "MARS_EVAL_ALPHA",
       ],
     };
-    process.env.OMNIRUSH_EVAL_DIRECT === "1";
-    process.env.OMNIRUSH_EVAL_TRIMMED?.trim() === "1";
-    process.env.OMNIRUSH_EVAL_MODEL?.trim() || "";
-    process.env.OMNIRUSH_EVAL_DEN_API_URL?.trim();
+    process.env.MARS_EVAL_DIRECT === "1";
+    process.env.MARS_EVAL_TRIMMED?.trim() === "1";
+    process.env.MARS_EVAL_MODEL?.trim() || "";
+    process.env.MARS_EVAL_DEN_API_URL?.trim();
     process.env.UNRELATED === "1";
   `;
 
   assert.deepEqual(consentVarsFromSource(source), [
-    "OMNIRUSH_EVAL_ALPHA",
-    "OMNIRUSH_EVAL_DIRECT",
-    "OMNIRUSH_EVAL_MULTI",
-    "OMNIRUSH_EVAL_TRIMMED",
-    "OMNIRUSH_EVAL_ZETA",
+    "MARS_EVAL_ALPHA",
+    "MARS_EVAL_DIRECT",
+    "MARS_EVAL_MULTI",
+    "MARS_EVAL_TRIMMED",
+    "MARS_EVAL_ZETA",
   ]);
 });
 
@@ -80,17 +80,17 @@ test("explicit local placement removes inherited remote provisioning inputs", ()
   const options = parseArgs(["app-smoke", "--local"]);
   const resolved = resolveRunEnvironment(options, {
     PATH: "/bin",
-    OMNIRUSH_EVAL_DAYTONA: "1",
-    OMNIRUSH_EVAL_DAYTONA_SANDBOX: "desktop-sandbox",
-    OMNIRUSH_EVAL_DAYTONA_SANDBOX_ID: "legacy-sandbox",
-    OMNIRUSH_EVAL_DAYTONA_DEN_SANDBOX: "den-sandbox",
-    OMNIRUSH_EVAL_DAYTONA_DESKTOP_SANDBOX: "prepared-desktop",
-    OMNIRUSH_EVAL_DEN_API_URL: "https://den-api.example.test",
-    OMNIRUSH_EVAL_DEN_WEB_URL: "https://den.example.test",
-    OMNIRUSH_EVAL_ENGINE: "v2",
+    MARS_EVAL_DAYTONA: "1",
+    MARS_EVAL_DAYTONA_SANDBOX: "desktop-sandbox",
+    MARS_EVAL_DAYTONA_SANDBOX_ID: "legacy-sandbox",
+    MARS_EVAL_DAYTONA_DEN_SANDBOX: "den-sandbox",
+    MARS_EVAL_DAYTONA_DESKTOP_SANDBOX: "prepared-desktop",
+    MARS_EVAL_DEN_API_URL: "https://den-api.example.test",
+    MARS_EVAL_DEN_WEB_URL: "https://den.example.test",
+    MARS_EVAL_ENGINE: "v2",
   }, () => { throw new Error("probe called"); });
 
-  assert.deepEqual(resolved, { env: { PATH: "/bin", OMNIRUSH_EVAL_ENGINE: "v2" }, placement: "local", reason: "--local" });
+  assert.deepEqual(resolved, { env: { PATH: "/bin", MARS_EVAL_ENGINE: "v2" }, placement: "local", reason: "--local" });
 });
 
 test("explicit attached Den placement does not probe Daytona", () => {
@@ -98,7 +98,7 @@ test("explicit attached Den placement does not probe Daytona", () => {
     throw new Error("probe called");
   });
   assert.deepEqual(attached, {
-    env: { OMNIRUSH_EVAL_DEN_API_URL: "https://den.example.test" },
+    env: { MARS_EVAL_DEN_API_URL: "https://den.example.test" },
     placement: "attached",
     reason: "--den",
   });
@@ -106,12 +106,12 @@ test("explicit attached Den placement does not probe Daytona", () => {
 
 test("explicit Daytona placement requires an authenticated CLI", () => {
   const daytona = resolveRunEnvironment(parseArgs(["app-smoke", "--daytona"]), {
-    OMNIRUSH_EVAL_DEN_API_URL: "https://attached.example.test",
+    MARS_EVAL_DEN_API_URL: "https://attached.example.test",
   }, () => true);
   assert.deepEqual(daytona, {
     env: {
-      OMNIRUSH_EVAL_DEN_API_URL: "https://attached.example.test",
-      OMNIRUSH_EVAL_DAYTONA: "1",
+      MARS_EVAL_DEN_API_URL: "https://attached.example.test",
+      MARS_EVAL_DAYTONA: "1",
     },
     placement: "daytona",
     reason: "--daytona",
@@ -125,22 +125,22 @@ test("explicit Daytona placement requires an authenticated CLI", () => {
 
 test("ambient Daytona placement preserves the caller environment without probing", () => {
   const ambient = {
-    OMNIRUSH_EVAL_DAYTONA: "1",
-    OMNIRUSH_EVAL_DEN_API_URL: "https://den.example.test",
-    OMNIRUSH_EVAL_ENGINE: "v2",
+    MARS_EVAL_DAYTONA: "1",
+    MARS_EVAL_DEN_API_URL: "https://den.example.test",
+    MARS_EVAL_ENGINE: "v2",
   };
   assert.deepEqual(resolveRunEnvironment(parseArgs(["app-smoke"]), ambient, () => {
     throw new Error("probe called");
   }), {
     env: ambient,
     placement: "daytona",
-    reason: "OMNIRUSH_EVAL_DAYTONA=1 in environment",
+    reason: "MARS_EVAL_DAYTONA=1 in environment",
   });
 });
 
 test("automatic placement uses authenticated Daytona and otherwise falls back to local", () => {
   assert.deepEqual(resolveRunEnvironment(parseArgs(["app-smoke"]), { PATH: "/bin" }, () => true), {
-    env: { PATH: "/bin", OMNIRUSH_EVAL_DAYTONA: "1" },
+    env: { PATH: "/bin", MARS_EVAL_DAYTONA: "1" },
     placement: "daytona",
     reason: "daytona CLI authenticated",
   });
@@ -187,7 +187,7 @@ test("summarize reads counts and skipped test details", () => {
 });
 
 test("worldSnapshotsSince returns only snapshots written during the run, newest first", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "omnirush-world-snapshots-"));
+  const directory = await mkdtemp(join(tmpdir(), "mars-world-snapshots-"));
   try {
     await writeFile(join(directory, "old.json"), "{}\n");
     await utimes(join(directory, "old.json"), new Date(0), new Date(0));

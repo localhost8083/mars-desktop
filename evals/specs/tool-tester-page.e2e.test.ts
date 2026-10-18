@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { toolTesterWorld } from "../worlds/first-run.ts";
 
 const test = spec.world(toolTesterWorld, { timeout: 300_000 });
@@ -41,7 +41,7 @@ test("an admin reaches the Tool Tester from Connectors and can test and govern a
     const runStartedAt = new Date().toISOString();
     await user.click("Run tool");
     await user.see({ text: /Tool completed/ }, { timeoutMs: 120_000 });
-    await user.see({ text: /OmniRush.ai/ });
+    await user.see({ text: /MarsAI/ });
     await user.see({ text: /HTTP 200/ });
     await user.see({ text: /Tool result/ });
     await user.see({ text: new RegExp(marker) });
@@ -57,7 +57,7 @@ test("an admin reaches the Tool Tester from Connectors and can test and govern a
     expect(await world.orgToolsSwitchChecked()).toBe("true");
     await user.looks([
       "The dedicated Tool Tester page shows a completed mock_echo run",
-      "A clear trace reads OmniRush.ai, HTTP 200, and Tool result",
+      "A clear trace reads MarsAI, HTTP 200, and Tool result",
       "The result is visible with Result, Request, and Response tabs available",
       "No error banner or crash message is visible",
     ]);

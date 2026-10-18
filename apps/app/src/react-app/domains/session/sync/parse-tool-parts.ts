@@ -3,7 +3,7 @@ import type { ToolPart } from "@opencode-ai/sdk/v2/client";
 import {
   connectionActionAppSchemaVersion,
   connectionActionPayloadSchema,
-} from "@omnirush/types/connection-action-app";
+} from "@mars/types/connection-action-app";
 
 import { safeStringify } from "@/app/utils";
 import { normalizeErrorText } from "@/lib/error-text";
@@ -58,10 +58,10 @@ function connectionActionMcpResultFromError(error: string): JSONValue | null {
 
 function toolCallProviderMetadata(part: ToolPart): ProviderMetadata {
   const stateMetadata = "metadata" in part.state && isRecord(part.state.metadata) ? part.state.metadata : {};
-  const persistedMcpResult = isJsonValue(stateMetadata.omnirushMcpResult)
-    ? stateMetadata.omnirushMcpResult
-    : isJsonValue(stateMetadata.omnirushMcpApp)
-      ? stateMetadata.omnirushMcpApp
+  const persistedMcpResult = isJsonValue(stateMetadata.marsMcpResult)
+    ? stateMetadata.marsMcpResult
+    : isJsonValue(stateMetadata.marsMcpApp)
+      ? stateMetadata.marsMcpApp
       : null;
   const mcpResult = persistedMcpResult
     ?? (part.state.status === "error" ? connectionActionMcpResultFromError(part.state.error) : null);
@@ -76,16 +76,16 @@ function toolCallProviderMetadata(part: ToolPart): ProviderMetadata {
   const subagentModel = finishedTask && isRecord(stateMetadata.model) && typeof stateMetadata.model.modelID === "string" && stateMetadata.model.modelID.trim()
     ? stateMetadata.model.modelID.trim().slice(0, 128)
     : null;
-  const fallback = finishedTask && isRecord(stateMetadata.omnirushModelFallback) ? stateMetadata.omnirushModelFallback : null;
+  const fallback = finishedTask && isRecord(stateMetadata.marsModelFallback) ? stateMetadata.marsModelFallback : null;
   const subagentModelFallback = fallback && typeof fallback.requested === "string" && typeof fallback.used === "string"
     ? { requested: fallback.requested.slice(0, 128), used: fallback.used.slice(0, 128), reason: typeof fallback.reason === "string" ? fallback.reason.slice(0, 64) : "unavailable" }
     : null;
-  const omnirush = {
+  const mars = {
     ...(mcpResult ? { mcpResult } : {}),
     ...(childSessionId ? { childSessionId } : {}),
     ...(subagentModel ? { subagentModel } : {}),
     ...(subagentModelFallback ? { subagentModelFallback } : {}),
-    ...(part.metadata?.omnirushV2CodeMode === true ? {
+    ...(part.metadata?.marsV2CodeMode === true ? {
       codeMode: {
         calls: Array.isArray(stateMetadata.toolCalls) && isJsonValue(stateMetadata.toolCalls) ? stateMetadata.toolCalls : [],
       },
@@ -93,7 +93,7 @@ function toolCallProviderMetadata(part: ToolPart): ProviderMetadata {
   };
   return {
     opencode: { partId: part.id },
-    ...(Object.keys(omnirush).length > 0 ? { omnirush } : {}),
+    ...(Object.keys(mars).length > 0 ? { mars } : {}),
   };
 }
 
@@ -142,7 +142,7 @@ export function parseDynamicToolUIPart(part: ToolPart): DynamicToolUIPart | null
   }
 
   if (part.state.status === "completed") {
-    if (part.metadata?.omnirushV2CodeMode === true && part.state.metadata.error === true) {
+    if (part.metadata?.marsV2CodeMode === true && part.state.metadata.error === true) {
       return {
         type: "dynamic-tool", toolName: part.tool, toolCallId: part.callID,
         state: "output-error", input: part.state.input,

@@ -155,7 +155,7 @@ test("video references render native players without autoplay or unsafe sources"
     expect(html).toContain("<video");
     expect(html).toContain("controls playsinline");
     expect(html).not.toContain("autoplay");
-    expect(html).not.toContain("data-omnirush-image-preview");
+    expect(html).not.toContain("data-mars-image-preview");
     expect(joined(streamThrough(markdown, 3).frames.at(-1)!)).toBe(html);
   }
   expect(renderMarkdownHtml("[Bad](javascript:evil.mp4)")).not.toContain("<video");

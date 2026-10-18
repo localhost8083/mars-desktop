@@ -7,13 +7,13 @@ import {
   cloudMcpDeliveryState,
   CloudMcpDeliveryStateStore,
   calculateCloudMcpDesiredRevision,
-  clearOmniRushCloudMcpProbeFlights,
+  clearMarsCloudMcpProbeFlights,
   cloudMcpTokenHealthFromConfig,
   isTrustedCloudMcpEndpointForGlobalPersist,
-  OMNIRUSH_CLOUD_EXPECTED_TOOLS,
-  OMNIRUSH_CLOUD_PLUGIN_CANARIES,
-  migrateOmniRushCloudMcpRuntimeConfig,
-  readOmniRushCloudMcpHealth,
+  MARS_CLOUD_EXPECTED_TOOLS,
+  MARS_CLOUD_PLUGIN_CANARIES,
+  migrateMarsCloudMcpRuntimeConfig,
+  readMarsCloudMcpHealth,
 } from "./cloud-mcp-health.js";
 import { sanitizeDiagnosticValue } from "./diagnostic-sanitizer.js";
 import { diagnoseMcpToolDeniesFromConfigs } from "./mcp.js";
@@ -34,8 +34,8 @@ const workspace: WorkspaceInfo = {
   workspaceType: "local",
 };
 
-const previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
-const previousBootstrapPath = process.env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH;
+const previousRuntimeDb = process.env.MARS_RUNTIME_DB;
+const previousBootstrapPath = process.env.MARS_DESKTOP_BOOTSTRAP_PATH;
 const previousFetch = globalThis.fetch;
 /** Administrator-activated enterprise Den origin used by trusted fixtures. */
 const DEN = "https://den.example.com";
@@ -52,7 +52,7 @@ type ReadHealthOptions = {
 afterEach(async () => {
   globalThis.fetch = previousFetch;
   cloudMcpDeliveryState.clear();
-  clearOmniRushCloudMcpProbeFlights();
+  clearMarsCloudMcpProbeFlights();
   while (stops.length) stops.pop()?.();
   while (roots.length) await rm(roots.pop() ?? "", { recursive: true, force: true });
   if (process.platform === "win32") {
@@ -62,19 +62,19 @@ afterEach(async () => {
   } else {
     while (runtimeDbRoots.length) await rm(runtimeDbRoots.pop() ?? "", { recursive: true, force: true });
   }
-  if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-  else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
-  if (previousBootstrapPath === undefined) delete process.env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH;
-  else process.env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH = previousBootstrapPath;
+  if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+  else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
+  if (previousBootstrapPath === undefined) delete process.env.MARS_DESKTOP_BOOTSTRAP_PATH;
+  else process.env.MARS_DESKTOP_BOOTSTRAP_PATH = previousBootstrapPath;
 });
 
 async function activateEnterpriseDen(origin: string | null): Promise<void> {
-  const root = await createRoot("omnirush-cloud-mcp-bootstrap-");
+  const root = await createRoot("mars-cloud-mcp-bootstrap-");
   const path = join(root, "desktop-bootstrap.json");
   await writeFile(path, JSON.stringify(origin
     ? { baseUrl: origin, enterpriseActivation: { activatedAt: "2026-09-22T00:00:00.000Z", denBaseUrl: origin } }
     : {}), "utf8");
-  process.env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH = path;
+  process.env.MARS_DESKTOP_BOOTSTRAP_PATH = path;
 }
 
 beforeEach(async () => {
@@ -141,20 +141,20 @@ function startMockOpencode(initialMode: DirectProbeMode) {
       if (url.pathname === "/mcp" && request.method === "GET") {
         if (mode === "status_missing_token") {
           return Response.json({
-            "omnirush-cloud": {
+            "mars-cloud": {
               status: "failed",
               error: "Streamable HTTP error: Error POSTing to endpoint: {\"error\":\"missing_mcp_token\",\"message\":\"Provide a Bearer token with MCP scope to access this resource.\",\"referenceId\":\"req_missing\"}",
             },
           });
         }
         return Response.json({
-          "omnirush-cloud": { status: "connected" },
+          "mars-cloud": { status: "connected" },
           "sibling-remote": { status: "failed", error: "fetch failed" },
         });
       }
       if (url.pathname === "/experimental/tool/ids") {
         if (toolIdsBarrier) await toolIdsBarrier.enter();
-        return Response.json([...OMNIRUSH_CLOUD_EXPECTED_TOOLS, ...OMNIRUSH_CLOUD_PLUGIN_CANARIES]);
+        return Response.json([...MARS_CLOUD_EXPECTED_TOOLS, ...MARS_CLOUD_PLUGIN_CANARIES]);
       }
       if (url.pathname === "/cloud-mcp/mcp/agent" && request.method === "POST") {
         const body: unknown = await request.json();
@@ -171,7 +171,7 @@ function startMockOpencode(initialMode: DirectProbeMode) {
             result: {
               capabilities: { tools: {} },
               protocolVersion: "2025-06-18",
-              serverInfo: { name: "omnirush-cloud-test", version: "1.0.0" },
+              serverInfo: { name: "mars-cloud-test", version: "1.0.0" },
             },
           });
         }
@@ -247,7 +247,7 @@ async function setupDirectProbeHarness(mode: DirectProbeMode, workspaceIds = ["w
   const baseUrl = `http://127.0.0.1:${engine.server.port}`;
   const workspaces: WorkspaceInfo[] = [];
   for (const id of workspaceIds) {
-    const root = await createRoot(`omnirush-cloud-health-${id}-`);
+    const root = await createRoot(`mars-cloud-health-${id}-`);
     workspaces.push({
       id,
       name: `Workspace ${id}`,
@@ -262,7 +262,7 @@ async function setupDirectProbeHarness(mode: DirectProbeMode, workspaceIds = ["w
   const config = serverConfig(primary.path, primary);
   config.workspaces = workspaces;
   config.authorizedRoots = workspaces.map((entry) => entry.path);
-  process.env.OMNIRUSH_RUNTIME_DB = await createRuntimeDbPath("omnirush-cloud-health-runtime-");
+  process.env.MARS_RUNTIME_DB = await createRuntimeDbPath("mars-cloud-health-runtime-");
   const directUrl = `${baseUrl}/cloud-mcp/mcp/agent`;
   const desiredConfig = {
     type: "remote",
@@ -273,12 +273,12 @@ async function setupDirectProbeHarness(mode: DirectProbeMode, workspaceIds = ["w
   };
   await writeGlobalRuntimeOpencodeConfig(config, (current) => ({
     ...current,
-    mcp: { ...current.mcp, "omnirush-cloud": desiredConfig },
+    mcp: { ...current.mcp, "mars-cloud": desiredConfig },
   }));
   const read = async (workspaceId = primary.id, providerModel?: { provider: string; model: string }) => {
     const testWorkspace = workspaces.find((entry) => entry.id === workspaceId);
     if (!testWorkspace) throw new Error(`Unknown direct-probe workspace ${workspaceId}`);
-    return readOmniRushCloudMcpHealth({
+    return readMarsCloudMcpHealth({
       config,
       workspace: testWorkspace,
       directory: testWorkspace.path,
@@ -293,7 +293,7 @@ async function setupDirectProbeHarness(mode: DirectProbeMode, workspaceIds = ["w
 async function readHealthForDirectProbe(mode: DirectProbeMode, options: ReadHealthOptions = {}) {
   const harness = await setupDirectProbeHarness(mode, [`ws_${mode}`]);
   options.beforeRead?.(harness.directUrl);
-  const health = options.probe ? await harness.read() : await readOmniRushCloudMcpHealth({
+  const health = options.probe ? await harness.read() : await readMarsCloudMcpHealth({
     config: harness.config,
     workspace: harness.primary,
     directory: harness.primary.path,
@@ -408,35 +408,35 @@ describe("cloud MCP health foundation", () => {
   });
 
   test("migrates the newest valid workspace config globally and preserves workspace state", async () => {
-    const root = await createRoot("omnirush-cloud-migration-");
+    const root = await createRoot("mars-cloud-migration-");
     const workspaceA = { ...workspace, id: "ws_a", path: join(root, "a") };
     const workspaceB = { ...workspace, id: "ws_b", path: join(root, "b") };
     const workspaceC = { ...workspace, id: "ws_c", path: join(root, "c") };
     const config = serverConfig(root, workspaceA);
     config.workspaces = [workspaceA, workspaceB, workspaceC];
-    process.env.OMNIRUSH_RUNTIME_DB = await createRuntimeDbPath("omnirush-cloud-migration-runtime-");
+    process.env.MARS_RUNTIME_DB = await createRuntimeDbPath("mars-cloud-migration-runtime-");
     // Trusted origins: promotion to account-global scope refuses anything else.
     const older = { type: "remote", url: "http://127.0.0.1:4801/mcp/agent", enabled: true, headers: { Authorization: "Bearer older" }, oauth: false };
     const newer = { ...older, url: `${DEN}/mcp/agent`, headers: { Authorization: "Bearer newer" } };
     await writeRuntimeOpencodeConfig(config, workspaceA.id, () => ({
       plugin: ["keep-a"],
-      mcp: { "omnirush-cloud": older, posthog: { type: "remote", url: "https://posthog.example/mcp" } },
+      mcp: { "mars-cloud": older, posthog: { type: "remote", url: "https://posthog.example/mcp" } },
     }));
     await Bun.sleep(2);
     await writeRuntimeOpencodeConfig(config, workspaceB.id, () => ({
       disabled_providers: ["keep-b"],
-      mcp: { "omnirush-cloud": newer, stripe: { type: "remote", url: "https://stripe.example/mcp" } },
+      mcp: { "mars-cloud": newer, stripe: { type: "remote", url: "https://stripe.example/mcp" } },
     }));
     await Bun.sleep(2);
     await writeRuntimeOpencodeConfig(config, workspaceC.id, () => ({
       mcp: {
-        "omnirush-cloud": { ...newer, headers: {} },
+        "mars-cloud": { ...newer, headers: {} },
         linear: { type: "remote", url: "https://linear.example/mcp" },
       },
     }));
 
-    expect(await migrateOmniRushCloudMcpRuntimeConfig(config)).toMatchObject({ config: newer, changed: true });
-    expect((await readGlobalRuntimeOpencodeConfig(config)).mcp?.["omnirush-cloud"]).toEqual(newer);
+    expect(await migrateMarsCloudMcpRuntimeConfig(config)).toMatchObject({ config: newer, changed: true });
+    expect((await readGlobalRuntimeOpencodeConfig(config)).mcp?.["mars-cloud"]).toEqual(newer);
     expect(await readRuntimeOpencodeConfig(config, workspaceA.id)).toEqual({
       plugin: ["keep-a"],
       mcp: { posthog: { type: "remote", url: "https://posthog.example/mcp" } },
@@ -448,44 +448,44 @@ describe("cloud MCP health foundation", () => {
     expect((await readRuntimeOpencodeConfig(config, workspaceC.id)).mcp).toEqual({
       linear: { type: "remote", url: "https://linear.example/mcp" },
     });
-    expect((await readEffectiveRuntimeOpencodeConfig(config, workspaceA.id)).mcp?.["omnirush-cloud"]).toEqual(newer);
-    expect((await readEffectiveRuntimeOpencodeConfig(config, workspaceB.id)).mcp?.["omnirush-cloud"]).toEqual(newer);
-    expect(await migrateOmniRushCloudMcpRuntimeConfig(config)).toEqual({ config: newer, changed: false });
+    expect((await readEffectiveRuntimeOpencodeConfig(config, workspaceA.id)).mcp?.["mars-cloud"]).toEqual(newer);
+    expect((await readEffectiveRuntimeOpencodeConfig(config, workspaceB.id)).mcp?.["mars-cloud"]).toEqual(newer);
+    expect(await migrateMarsCloudMcpRuntimeConfig(config)).toEqual({ config: newer, changed: false });
   });
 
   test("does not promote an untrusted legacy endpoint to account-global scope", async () => {
-    const root = await createRoot("omnirush-cloud-migration-untrusted-");
+    const root = await createRoot("mars-cloud-migration-untrusted-");
     const workspaceA = { ...workspace, id: "ws_a", path: join(root, "a") };
     const config = serverConfig(root, workspaceA);
     config.workspaces = [workspaceA];
-    process.env.OMNIRUSH_RUNTIME_DB = await createRuntimeDbPath("omnirush-cloud-migration-untrusted-runtime-");
+    process.env.MARS_RUNTIME_DB = await createRuntimeDbPath("mars-cloud-migration-untrusted-runtime-");
     // Valid shape, untrusted origin: a planted or stale workspace row must stay
     // workspace-scoped instead of silently reconfiguring every workspace.
     const untrusted = { type: "remote", url: "https://evil.example/mcp/agent", enabled: true, headers: { Authorization: "Bearer planted" }, oauth: false };
-    await writeRuntimeOpencodeConfig(config, workspaceA.id, () => ({ mcp: { "omnirush-cloud": untrusted } }));
+    await writeRuntimeOpencodeConfig(config, workspaceA.id, () => ({ mcp: { "mars-cloud": untrusted } }));
 
-    const result = await migrateOmniRushCloudMcpRuntimeConfig(config);
+    const result = await migrateMarsCloudMcpRuntimeConfig(config);
 
     expect(result).toEqual({ config: null, changed: false });
-    expect((await readGlobalRuntimeOpencodeConfig(config)).mcp?.["omnirush-cloud"]).toBeUndefined();
+    expect((await readGlobalRuntimeOpencodeConfig(config)).mcp?.["mars-cloud"]).toBeUndefined();
     // Not promoted and not destroyed: the entry keeps its pre-migration
     // workspace-scoped blast radius.
-    expect((await readRuntimeOpencodeConfig(config, workspaceA.id)).mcp?.["omnirush-cloud"]).toEqual(untrusted);
+    expect((await readRuntimeOpencodeConfig(config, workspaceA.id)).mcp?.["mars-cloud"]).toEqual(untrusted);
   });
 
   test("does not promote a retired hosted endpoint to account-global scope", async () => {
     await activateEnterpriseDen(null);
-    const root = await createRoot("omnirush-cloud-migration-retired-");
+    const root = await createRoot("mars-cloud-migration-retired-");
     const workspaceA = { ...workspace, id: "ws_a", path: join(root, "a") };
     const config = serverConfig(root, workspaceA);
     config.workspaces = [workspaceA];
-    process.env.OMNIRUSH_RUNTIME_DB = await createRuntimeDbPath("omnirush-cloud-migration-retired-runtime-");
-    const retired = { type: "remote", url: "https://api.omnirushlabs.com/mcp/agent", enabled: true, headers: { Authorization: "Bearer stale" }, oauth: false };
-    await writeRuntimeOpencodeConfig(config, workspaceA.id, () => ({ mcp: { "omnirush-cloud": retired } }));
+    process.env.MARS_RUNTIME_DB = await createRuntimeDbPath("mars-cloud-migration-retired-runtime-");
+    const retired = { type: "remote", url: "https://api.marslabs.com/mcp/agent", enabled: true, headers: { Authorization: "Bearer stale" }, oauth: false };
+    await writeRuntimeOpencodeConfig(config, workspaceA.id, () => ({ mcp: { "mars-cloud": retired } }));
 
-    expect(await migrateOmniRushCloudMcpRuntimeConfig(config)).toEqual({ config: null, changed: false });
-    expect((await readGlobalRuntimeOpencodeConfig(config)).mcp?.["omnirush-cloud"]).toBeUndefined();
-    expect((await readRuntimeOpencodeConfig(config, workspaceA.id)).mcp?.["omnirush-cloud"]).toEqual(retired);
+    expect(await migrateMarsCloudMcpRuntimeConfig(config)).toEqual({ config: null, changed: false });
+    expect((await readGlobalRuntimeOpencodeConfig(config)).mcp?.["mars-cloud"]).toBeUndefined();
+    expect((await readRuntimeOpencodeConfig(config, workspaceA.id)).mcp?.["mars-cloud"]).toEqual(retired);
   });
 
   test("trusts only loopback and the activated Den origin for a global Connect endpoint", async () => {
@@ -495,11 +495,11 @@ describe("cloud MCP health foundation", () => {
     expect(await isTrustedCloudMcpEndpointForGlobalPersist("https://evil.example/mcp/agent")).toBe(false);
 
     const retired = [
-      "https://api.omnirushlabs.com/mcp/agent",
-      "https://api.app.omnirushlabs.com/mcp/agent",
-      "https://app.omnirushlabs.com/api/den/mcp/agent",
-      "https://api.omnirush.software/mcp/agent",
-      "https://app.omnirush.software/api/den/mcp/agent",
+      "https://api.marslabs.com/mcp/agent",
+      "https://api.app.marslabs.com/mcp/agent",
+      "https://app.marslabs.com/api/den/mcp/agent",
+      "https://api.mars.software/mcp/agent",
+      "https://app.mars.software/api/den/mcp/agent",
     ];
     for (const activation of [DEN, null]) {
       await activateEnterpriseDen(activation);
@@ -511,21 +511,21 @@ describe("cloud MCP health foundation", () => {
     // The app-gateway endpoint is no longer rewritten onto the retired api
     // host: it keeps its own origin, so trusting that api host (the old
     // rewrite target) does not make the gateway endpoint trusted.
-    await activateEnterpriseDen("https://api.app.omnirushlabs.com");
-    expect(await isTrustedCloudMcpEndpointForGlobalPersist("https://app.omnirushlabs.com/api/den/mcp/agent")).toBe(false);
+    await activateEnterpriseDen("https://api.app.marslabs.com");
+    expect(await isTrustedCloudMcpEndpointForGlobalPersist("https://app.marslabs.com/api/den/mcp/agent")).toBe(false);
   });
 
   test("does not mutate legacy rows while the server is read-only", async () => {
-    const root = await createRoot("omnirush-cloud-readonly-migration-");
+    const root = await createRoot("mars-cloud-readonly-migration-");
     const config = serverConfig(root, workspace);
-    process.env.OMNIRUSH_RUNTIME_DB = await createRuntimeDbPath("omnirush-cloud-readonly-migration-runtime-");
+    process.env.MARS_RUNTIME_DB = await createRuntimeDbPath("mars-cloud-readonly-migration-runtime-");
     const desired = { type: "remote", url: "http://127.0.0.1:4802/mcp/agent", enabled: true, headers: { Authorization: "Bearer token" }, oauth: false };
-    await writeRuntimeOpencodeConfig(config, workspace.id, () => ({ mcp: { "omnirush-cloud": desired } }));
+    await writeRuntimeOpencodeConfig(config, workspace.id, () => ({ mcp: { "mars-cloud": desired } }));
     config.readOnly = true;
 
-    expect(await migrateOmniRushCloudMcpRuntimeConfig(config)).toEqual({ config: desired, changed: false });
-    expect((await readGlobalRuntimeOpencodeConfig(config)).mcp?.["omnirush-cloud"]).toBeUndefined();
-    expect((await readRuntimeOpencodeConfig(config, workspace.id)).mcp?.["omnirush-cloud"]).toEqual(desired);
+    expect(await migrateMarsCloudMcpRuntimeConfig(config)).toEqual({ config: desired, changed: false });
+    expect((await readGlobalRuntimeOpencodeConfig(config)).mcp?.["mars-cloud"]).toBeUndefined();
+    expect((await readRuntimeOpencodeConfig(config, workspace.id)).mcp?.["mars-cloud"]).toEqual(desired);
   });
 
   test("keeps delivery state independent for two directories sharing global desired state", () => {
@@ -546,56 +546,56 @@ describe("cloud MCP health foundation", () => {
 
   test("diagnoses project and global OpenCode tool denies for exact Cloud IDs", () => {
     const denies = diagnoseMcpToolDeniesFromConfigs({
-      name: "omnirush-cloud",
-      toolIds: [...OMNIRUSH_CLOUD_EXPECTED_TOOLS],
+      name: "mars-cloud",
+      toolIds: [...MARS_CLOUD_EXPECTED_TOOLS],
       projectConfig: {
         tools: {
-          "omnirush-cloud_search_capabilities": false,
+          "mars-cloud_search_capabilities": false,
         },
       },
       globalConfig: {
         permission: [
-          { permission: "tool", pattern: "omnirush-cloud_execute_capability", action: "deny" },
+          { permission: "tool", pattern: "mars-cloud_execute_capability", action: "deny" },
         ],
       },
     });
 
     expect(denies.map((deny) => deny.source).sort()).toEqual(["config.global", "config.project"]);
     expect(denies.map((deny) => deny.matched).sort()).toEqual([
-      "omnirush-cloud_execute_capability",
-      "omnirush-cloud_search_capabilities",
+      "mars-cloud_execute_capability",
+      "mars-cloud_search_capabilities",
     ]);
   });
 
   test("project tool allows override global denies for matching Cloud tool IDs", () => {
     const denies = diagnoseMcpToolDeniesFromConfigs({
-      name: "omnirush-cloud",
-      toolIds: [...OMNIRUSH_CLOUD_EXPECTED_TOOLS],
+      name: "mars-cloud",
+      toolIds: [...MARS_CLOUD_EXPECTED_TOOLS],
       projectConfig: {
         tools: {
-          "omnirush-cloud_search_capabilities": true,
+          "mars-cloud_search_capabilities": true,
         },
       },
       globalConfig: {
-        tools: { deny: ["omnirush-cloud_*"] },
+        tools: { deny: ["mars-cloud_*"] },
       },
     });
 
     expect(denies).toHaveLength(1);
     expect(denies[0]).toMatchObject({
       source: "config.global",
-      pattern: "omnirush-cloud_*",
-      matched: "omnirush-cloud_execute_capability",
+      pattern: "mars-cloud_*",
+      matched: "mars-cloud_execute_capability",
     });
   });
 
   test("plugin canary denies are not reported as Cloud tool denies", () => {
     const denies = diagnoseMcpToolDeniesFromConfigs({
-      name: "omnirush-cloud",
-      toolIds: [...OMNIRUSH_CLOUD_EXPECTED_TOOLS],
+      name: "mars-cloud",
+      toolIds: [...MARS_CLOUD_EXPECTED_TOOLS],
       projectConfig: {
         tools: {
-          omnirush_query: false,
+          mars_query: false,
         },
       },
       globalConfig: {},
@@ -614,7 +614,7 @@ describe("cloud MCP health foundation", () => {
 
     expect(health.usable).toBe(true);
     expect(health.phase).toBe("ready");
-    expect(health.tools.present.sort()).toEqual([...OMNIRUSH_CLOUD_EXPECTED_TOOLS].sort());
+    expect(health.tools.present.sort()).toEqual([...MARS_CLOUD_EXPECTED_TOOLS].sort());
     expect(health.tools.missing).toEqual([]);
     expect(health.tools.direct.checked).toBe(false);
     expect(directFetchCount).toBe(0);
@@ -676,7 +676,7 @@ describe("cloud MCP health foundation", () => {
     const providerInitialize = harness.blockInitialize();
     const providerChecks = [
       harness.read("ws_a", { provider: "anthropic", model: "claude" }),
-      harness.read("ws_a", { provider: "omnirush", model: "gpt-5" }),
+      harness.read("ws_a", { provider: "mars", model: "gpt-5" }),
     ];
     await providerToolIds.waitForEntries(2);
     providerToolIds.release();
@@ -711,7 +711,7 @@ describe("cloud MCP health foundation", () => {
     };
     await writeGlobalRuntimeOpencodeConfig(harness.config, (current) => ({
       ...current,
-      mcp: { ...current.mcp, "omnirush-cloud": changedConfig },
+      mcp: { ...current.mcp, "mars-cloud": changedConfig },
     }));
     const changedAuthToolIds = harness.blockToolIds();
     const changedAuthCheck = harness.read("ws_a");
@@ -794,7 +794,7 @@ describe("cloud MCP health foundation", () => {
 
     expect(health.usable).toBe(false);
     expect(health.firstFailure?.code).toBe("missing_mcp_token");
-    expect(health.firstFailure?.aliases).toContain("omnirush_cloud_auth_required");
+    expect(health.firstFailure?.aliases).toContain("mars_cloud_auth_required");
   });
 
   test("still reports missing Cloud tools when tools/list completes without required tools", async () => {
@@ -813,7 +813,7 @@ describe("cloud MCP health foundation", () => {
     expect(health.engineInspection.cloudPresent).toBe(true);
     expect(health.engineInspection.serverCount).toBe(2);
     expect(health.engineInspection.servers).toEqual([
-      { name: "omnirush-cloud", status: "connected" },
+      { name: "mars-cloud", status: "connected" },
       { name: "sibling-remote", status: "failed", error: "fetch failed" },
     ]);
   });
@@ -829,7 +829,7 @@ describe("cloud MCP health foundation", () => {
       expect(step.latencyMs).toBeGreaterThanOrEqual(0);
     }
     expect(trace?.steps[0]?.httpStatus).toBe(200);
-    expect(trace?.serverInfo).toEqual({ name: "omnirush-cloud-test", version: "1.0.0" });
+    expect(trace?.serverInfo).toEqual({ name: "mars-cloud-test", version: "1.0.0" });
     expect(trace?.protocolVersion).toBe("2025-06-18");
     expect(health.durationMs).toBeGreaterThanOrEqual(0);
   });

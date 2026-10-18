@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { INFERENCE_MODEL_ALIASES } from "@omnirush/types/den/inference";
+import { INFERENCE_MODEL_ALIASES } from "@mars/types/den/inference";
 
 const screen = readFileSync(
   join(import.meta.dir, "..", "app", "(den)", "dashboard", "_components", "inference-screen.tsx"),

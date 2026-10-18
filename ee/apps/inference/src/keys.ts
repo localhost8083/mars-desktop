@@ -1,7 +1,7 @@
 import { timingSafeEqual } from "node:crypto"
 import { and, eq, inArray, isNull } from "@omnirush-ee/den-db/drizzle"
 import { InferenceKeyTable, InferenceOrgUpstreamProviderKeyTable, MemberTable, OrganizationTable } from "@omnirush-ee/den-db"
-import { assertManagedModelsAllowed, ManagedModelsPolicyError } from "@omnirush/types/den/managed-models-policy"
+import { assertManagedModelsAllowed, ManagedModelsPolicyError } from "@mars/types/den/managed-models-policy"
 import {
   inferenceBearerKeyLookupDigests,
   type InferenceBearerKey,

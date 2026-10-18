@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
 import { COMPUTER_USE_PAUSED, MCP_QUICK_CONNECT } from "../src/app/constants";
-import { createOmniRushServerClient } from "../src/app/lib/omnirush-server";
-import { createOmniRushServerStore } from "../src/react-app/domains/connections/omnirush-server-store";
+import { createMarsServerClient } from "../src/app/lib/mars-server";
+import { createMarsServerStore } from "../src/react-app/domains/connections/mars-server-store";
 import type { McpDirectoryInfo } from "../src/app/constants";
 import { submitMcpEntry } from "../src/react-app/domains/connections/modals/add-mcp-submission";
-import type { OmniRushServerStore } from "../src/react-app/domains/connections/omnirush-server-store";
+import type { MarsServerStore } from "../src/react-app/domains/connections/mars-server-store";
 import { createConnectionsStore } from "../src/react-app/domains/connections/store";
 
 const originalWindow = globalThis.window;
@@ -13,7 +13,7 @@ const originalWindow = globalThis.window;
 function installDesktopWindow() {
   Object.defineProperty(globalThis, "window", {
     configurable: true,
-    value: { __OMNIRUSH_ELECTRON__: {} },
+    value: { __MARS_ELECTRON__: {} },
   });
 }
 
@@ -29,29 +29,29 @@ describe("local MCP server recovery", () => {
     installDesktopWindow();
     let recoveryAttempts = 0;
     const stalledRecovery = new Promise<never>(() => undefined);
-    const omnirushServer = {
+    const marsServer = {
       getSnapshot: () => ({
-        omnirushServerStatus: "disconnected",
-        omnirushServerClient: null,
-        omnirushServerCapabilities: null,
+        marsServerStatus: "disconnected",
+        marsServerClient: null,
+        marsServerCapabilities: null,
       }),
-      ensureLocalOmniRushServerClient: () => {
+      ensureLocalMarsServerClient: () => {
         recoveryAttempts += 1;
         return stalledRecovery;
       },
-    } as unknown as OmniRushServerStore;
+    } as unknown as MarsServerStore;
     const store = createConnectionsStore({
       checkDesktopAppRestriction: () => false,
       client: () => null,
       setClient: () => undefined,
-      projectDir: () => "/tmp/omnirush-mcp-recovery",
+      projectDir: () => "/tmp/mars-mcp-recovery",
       selectedWorkspaceId: () => "workspace_local",
-      selectedWorkspaceRoot: () => "/tmp/omnirush-mcp-recovery",
+      selectedWorkspaceRoot: () => "/tmp/mars-mcp-recovery",
       workspaceType: () => "local",
-      omnirushServer,
+      marsServer,
       runtimeWorkspaceId: () => null,
       ensureRuntimeWorkspaceId: async () => "workspace_local",
-      localOmniRushServerRecoveryTimeoutMs: 10,
+      localMarsServerRecoveryTimeoutMs: 10,
       developerMode: () => false,
     });
     const entry: McpDirectoryInfo = {
@@ -80,25 +80,25 @@ describe.skipIf(COMPUTER_USE_PAUSED)("bundled Computer Use setup", () => {
   async function connectWithHelper(command: string[] | null) {
     Object.defineProperty(globalThis, "window", {
       configurable: true,
-      value: { __OMNIRUSH_ELECTRON__: { invokeDesktop: async (name: string) => name === "getComputerUseMcpCommand" ? command : name === "getComputerUseMcpEnvironment" ? {} : null } },
+      value: { __MARS_ELECTRON__: { invokeDesktop: async (name: string) => name === "getComputerUseMcpCommand" ? command : name === "getComputerUseMcpEnvironment" ? {} : null } },
     });
-    const server = createOmniRushServerStore({
+    const server = createMarsServerStore({
       startupPreference: () => "server", documentVisible: () => true, developerMode: () => false,
       runtimeWorkspaceId: () => "setup-workspace", activeClient: () => null,
       selectedWorkspaceDisplay: () => ({ id: "setup-workspace", name: "Setup", path: "/tmp/setup", preset: "starter", workspaceType: "local" }),
       restartLocalServer: async () => false, createRemoteWorkspaceFlow: async () => false,
     });
-    const saved: Array<Parameters<ReturnType<typeof createOmniRushServerClient>["addMcp"]>[1]> = [];
+    const saved: Array<Parameters<ReturnType<typeof createMarsServerClient>["addMcp"]>[1]> = [];
     const client = {
-      ...createOmniRushServerClient({ baseUrl: "http://127.0.0.1:1" }),
-      addMcp: async (_workspace: string, payload: Parameters<ReturnType<typeof createOmniRushServerClient>["addMcp"]>[1]) => { saved.push(payload); return { items: [] }; },
+      ...createMarsServerClient({ baseUrl: "http://127.0.0.1:1" }),
+      addMcp: async (_workspace: string, payload: Parameters<ReturnType<typeof createMarsServerClient>["addMcp"]>[1]) => { saved.push(payload); return { items: [] }; },
       listMcp: async () => ({ items: [] }),
     };
-    const getSnapshot: typeof server.getSnapshot = () => ({ ...server.getSnapshot(), omnirushServerStatus: "connected", omnirushServerClient: client });
+    const getSnapshot: typeof server.getSnapshot = () => ({ ...server.getSnapshot(), marsServerStatus: "connected", marsServerClient: client });
     const store = createConnectionsStore({
       checkDesktopAppRestriction: () => false, client: () => null, setClient: () => {},
       projectDir: () => "/tmp/setup", selectedWorkspaceId: () => "setup-workspace", selectedWorkspaceRoot: () => "/tmp/setup",
-      workspaceType: () => "local", omnirushServer: { ...server, getSnapshot }, runtimeWorkspaceId: () => "setup-workspace", developerMode: () => false,
+      workspaceType: () => "local", marsServer: { ...server, getSnapshot }, runtimeWorkspaceId: () => "setup-workspace", developerMode: () => false,
     });
     const entry = MCP_QUICK_CONNECT.find((entry) => entry.id === "computer-use");
     if (!entry) throw new Error("Computer Use catalog entry missing");
@@ -108,7 +108,7 @@ describe.skipIf(COMPUTER_USE_PAUSED)("bundled Computer Use setup", () => {
   }
 
   test("resolves the desktop helper before validating the empty catalog command", async () => {
-    const command = ["/Applications/omnirush.ai.app/Contents/Resources/helpers/omnirush.ai Computer Use.app/Contents/MacOS/ComputerUse", "mcp"];
+    const command = ["/Applications/marsai.click.app/Contents/Resources/helpers/marsai.click Computer Use.app/Contents/MacOS/ComputerUse", "mcp"];
     const { result, saved } = await connectWithHelper(command);
     expect(result).toEqual({ ok: true });
     expect(saved).toEqual([{ name: "computer-use", config: { type: "local", enabled: true, command, environment: {} } }]);
@@ -123,12 +123,12 @@ describe.skipIf(COMPUTER_USE_PAUSED)("bundled Computer Use setup", () => {
 
 describe("bundled UI-control setup", () => {
   const bundledCommand = [
-    "/Applications/OmniRush.ai.app/Contents/MacOS/OmniRush.ai",
-    "/Applications/OmniRush.ai.app/Contents/Resources/omnirush-ui-mcp/index.mjs",
+    "/Applications/MarsAI.app/Contents/MacOS/MarsAI",
+    "/Applications/MarsAI.app/Contents/Resources/mars-ui-mcp/index.mjs",
   ];
   const bundledEnvironment = {
     ELECTRON_RUN_AS_NODE: "1",
-    OMNIRUSH_UI_CONTROL_DISCOVERY: "/Users/me/Library/Application Support/ai.omnirush.desktop/omnirush-ui-control.json",
+    MARS_UI_CONTROL_DISCOVERY: "/Users/me/Library/Application Support/ai.marsai.desktop/mars-ui-control.json",
   };
 
   async function connectUiControl(desktop: {
@@ -138,45 +138,45 @@ describe("bundled UI-control setup", () => {
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: {
-        __OMNIRUSH_ELECTRON__: desktop
+        __MARS_ELECTRON__: desktop
           ? {
             invokeDesktop: async (name: string) => {
-              if (name === "getOmniRushUiMcpCommand") return desktop.command ? desktop.command() : null;
-              if (name === "getOmniRushUiMcpEnvironment") return desktop.environment ? desktop.environment() : null;
+              if (name === "getMarsUiMcpCommand") return desktop.command ? desktop.command() : null;
+              if (name === "getMarsUiMcpEnvironment") return desktop.environment ? desktop.environment() : null;
               return null;
             },
           }
           : {},
       },
     });
-    const server = createOmniRushServerStore({
+    const server = createMarsServerStore({
       startupPreference: () => "server", documentVisible: () => true, developerMode: () => false,
       runtimeWorkspaceId: () => "setup-workspace", activeClient: () => null,
       selectedWorkspaceDisplay: () => ({ id: "setup-workspace", name: "Setup", path: "/tmp/setup", preset: "starter", workspaceType: "local" }),
       restartLocalServer: async () => false, createRemoteWorkspaceFlow: async () => false,
     });
-    const saved: Array<Parameters<ReturnType<typeof createOmniRushServerClient>["addMcp"]>[1]> = [];
+    const saved: Array<Parameters<ReturnType<typeof createMarsServerClient>["addMcp"]>[1]> = [];
     const client = {
-      ...createOmniRushServerClient({ baseUrl: "http://127.0.0.1:1" }),
-      addMcp: async (_workspace: string, payload: Parameters<ReturnType<typeof createOmniRushServerClient>["addMcp"]>[1]) => { saved.push(payload); return { items: [] }; },
+      ...createMarsServerClient({ baseUrl: "http://127.0.0.1:1" }),
+      addMcp: async (_workspace: string, payload: Parameters<ReturnType<typeof createMarsServerClient>["addMcp"]>[1]) => { saved.push(payload); return { items: [] }; },
       listMcp: async () => ({ items: [] }),
     };
-    const getSnapshot: typeof server.getSnapshot = () => ({ ...server.getSnapshot(), omnirushServerStatus: "connected", omnirushServerClient: client });
+    const getSnapshot: typeof server.getSnapshot = () => ({ ...server.getSnapshot(), marsServerStatus: "connected", marsServerClient: client });
     const store = createConnectionsStore({
       checkDesktopAppRestriction: () => false, client: () => null, setClient: () => {},
       projectDir: () => "/tmp/setup", selectedWorkspaceId: () => "setup-workspace", selectedWorkspaceRoot: () => "/tmp/setup",
-      workspaceType: () => "local", omnirushServer: { ...server, getSnapshot }, runtimeWorkspaceId: () => "setup-workspace", developerMode: () => false,
+      workspaceType: () => "local", marsServer: { ...server, getSnapshot }, runtimeWorkspaceId: () => "setup-workspace", developerMode: () => false,
     });
-    const entry = MCP_QUICK_CONNECT.find((item) => item.serverName === "omnirush-ui");
+    const entry = MCP_QUICK_CONNECT.find((item) => item.serverName === "mars-ui");
     if (!entry) throw new Error("UI-control catalog entry missing");
     const result = await store.connectMcp(entry);
     return { entry, result, saved };
   }
 
   test("the catalog carries no npx fallback for the unpublished package", () => {
-    const entry = MCP_QUICK_CONNECT.find((item) => item.serverName === "omnirush-ui");
+    const entry = MCP_QUICK_CONNECT.find((item) => item.serverName === "mars-ui");
     expect(entry?.command).toEqual([]);
-    expect(JSON.stringify(MCP_QUICK_CONNECT)).not.toContain("omnirush-ui-mcp");
+    expect(JSON.stringify(MCP_QUICK_CONNECT)).not.toContain("mars-ui-mcp");
   });
 
   test("saves the bundled desktop launch with its Node-mode environment", async () => {
@@ -186,7 +186,7 @@ describe("bundled UI-control setup", () => {
     });
     expect(result).toEqual({ ok: true });
     expect(saved).toEqual([{
-      name: "omnirush-ui",
+      name: "mars-ui",
       config: { type: "local", enabled: true, command: bundledCommand, environment: bundledEnvironment },
     }]);
     expect(JSON.stringify(saved)).not.toContain("npx");
@@ -194,10 +194,10 @@ describe("bundled UI-control setup", () => {
 
   test("a missing bundle fails without saving an npx command", async () => {
     const { result, saved } = await connectUiControl({
-      command: async () => { throw new Error("The OmniRush.ai UI-control MCP is missing from this build. Reinstall OmniRush.ai."); },
+      command: async () => { throw new Error("The MarsAI UI-control MCP is missing from this build. Reinstall MarsAI."); },
       environment: async () => bundledEnvironment,
     });
-    expect(result).toEqual({ ok: false, error: "The OmniRush.ai UI-control MCP is missing from this build. Reinstall OmniRush.ai." });
+    expect(result).toEqual({ ok: false, error: "The MarsAI UI-control MCP is missing from this build. Reinstall MarsAI." });
     expect(saved).toEqual([]);
   });
 

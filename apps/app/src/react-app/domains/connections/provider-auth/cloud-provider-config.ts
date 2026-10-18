@@ -54,7 +54,7 @@ const selectPrimaryCredentialEnvName = (
 const removeCloudProviderComment = (raw: string, providerId: string) =>
   raw.replace(
     new RegExp(
-      `(^[ \t]*)// omnirush.ai Cloud import:.*\\n\\1(?="${escapeRegExp(providerId)}":)`,
+      `(^[ \t]*)// marsai.click Cloud import:.*\\n\\1(?="${escapeRegExp(providerId)}":)`,
       "m",
     ),
     "$1",
@@ -99,17 +99,17 @@ export const resolveCloudProviderCredentials = (
 
 export const getCloudManagedProviderId = (
   provider: Pick<DenOrgLlmProvider, "id" | "providerId" | "source">,
-) => (provider.source === "omnirush" ? "omnirush" : provider.id.trim());
+) => (provider.source === "mars" ? "mars" : provider.id.trim());
 
 /**
  * A provider key in `opencode.jsonc` that is owned by the cloud-import system:
- * `lpr_*` keys (org-managed providers) and the `omnirush` hosted provider.
+ * `lpr_*` keys (org-managed providers) and the `mars` hosted provider.
  * These keys are never hand-authored, so re-importing over an existing block
  * with one of these ids is a safe reconcile (recovers a lost import baseline)
  * rather than a clobber of a user's manual provider (#2346).
  */
 export const isCloudManagedProviderKey = (providerId: string) =>
-  /^lpr_/i.test(providerId) || providerId.trim() === "omnirush";
+  /^lpr_/i.test(providerId) || providerId.trim() === "mars";
 
 
 export const getProviderModelIds = (
@@ -179,10 +179,10 @@ export const buildCloudProviderConfig = (
     env: getCloudProviderEnv(provider.providerConfig),
   };
 
-  // omnirush.ai Models are catalog-backed via OPENCODE_MODELS_URL. Den provisions
+  // marsai.click Models are catalog-backed via OPENCODE_MODELS_URL. Den provisions
   // the provider + key with zero model rows — writing `models: {}` can prevent
-  // the engine from keeping catalog models, so omit an empty map for omnirush.
-  if (Object.keys(models).length > 0 || provider.source !== "omnirush") {
+  // the engine from keeping catalog models, so omit an empty map for mars.
+  if (Object.keys(models).length > 0 || provider.source !== "mars") {
     next.models = models;
   }
 

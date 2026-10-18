@@ -7,14 +7,14 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { SessionStatus } from "@opencode-ai/sdk/v2/client";
 
-import type { OmniRushSessionSnapshot } from "../src/app/lib/omnirush-server";
+import type { MarsSessionSnapshot } from "../src/app/lib/mars-server";
 import type { ComposerDraft } from "../src/app/types";
 import type { CloudMcpSubmissionResult } from "../src/react-app/domains/connections/cloud-mcp-submit-readiness";
 
 const workspaceId = "workspace-queue-steer";
 const sessionId = "session-queue-steer";
 
-function createSnapshot(status: SessionStatus, updated: number): OmniRushSessionSnapshot {
+function createSnapshot(status: SessionStatus, updated: number): MarsSessionSnapshot {
   return {
     session: {
       id: sessionId,
@@ -68,14 +68,14 @@ test("while busy, Enter queues locally and Cmd/Ctrl+Enter steers; the queued mes
     mock.module(moduleId, () => moduleExports);
   }
   const [
-    { createOmniRushServerClient },
+    { createMarsServerClient },
     { IDLE_CLOUD_MCP_SUBMISSION_GATE_STATE },
     { useComposerStateStore },
     { getReactQueryClient },
     { LocalProvider },
     { ShellConfigProvider },
   ] = await Promise.all([
-    import("../src/app/lib/omnirush-server"),
+    import("../src/app/lib/mars-server"),
     import("../src/react-app/domains/connections/cloud-mcp-submit-readiness"),
     import("../src/react-app/domains/session/surface/composer-state-store"),
     import("../src/react-app/infra/query-client"),
@@ -106,7 +106,7 @@ test("while busy, Enter queues locally and Cmd/Ctrl+Enter steers; the queued mes
   };
   Object.defineProperty(globalThis, "fetch", { configurable: true, value: fetchStub });
   Object.defineProperty(window, "fetch", { configurable: true, value: fetchStub });
-  window.localStorage.setItem("omnirush.shell-config", JSON.stringify({ starterCards: false }));
+  window.localStorage.setItem("mars.shell-config", JSON.stringify({ starterCards: false }));
   let fetchedSnapshot = createSnapshot({ type: "busy" }, 1);
   mock.module("@/components/model-select", () => ({ ModelSelect: () => null }));
   mock.module("@/react-app/domains/session/surface/composer/workspace-run-mode-menu", () => ({ WorkspaceRunModeMenu: () => null }));
@@ -127,7 +127,7 @@ test("while busy, Enter queues locally and Cmd/Ctrl+Enter steers; the queued mes
     role: "user",
     parts: [{ type: "text", text: "Keep this session mounted." }],
   }]);
-  const client = createOmniRushServerClient({ baseUrl: "http://127.0.0.1:1", token: "test-token" });
+  const client = createMarsServerClient({ baseUrl: "http://127.0.0.1:1", token: "test-token" });
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
@@ -147,7 +147,7 @@ test("while busy, Enter queues locally and Cmd/Ctrl+Enter steers; the queued mes
                 draftScope="local"
                 isControlTarget={false}
                 opencodeBaseUrl="http://127.0.0.1:1/opencode"
-                omnirushToken="test-token"
+                marsToken="test-token"
                 developerMode
                 modelLabel="Test model"
                 onModelClick={() => {}}
@@ -167,7 +167,7 @@ test("while busy, Enter queues locally and Cmd/Ctrl+Enter steers; the queued mes
                 modelVariantLabel="Default"
                 modelVariant={null}
                 onModelVariantChange={() => {}}
-                agentLabel="OmniRush.ai"
+                agentLabel="MarsAI"
                 selectedAgent={null}
                 listAgents={async () => []}
                 onSelectAgent={() => {}}

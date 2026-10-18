@@ -240,7 +240,7 @@ function isSafeArchivePath(name) {
   return !normalized.split("/").some((part) => part === ".." || part === "");
 }
 
-function defaultOmniRushConfig(targetDir, preset = "starter") {
+function defaultMarsConfig(targetDir, preset = "starter") {
   return {
     version: 1,
     workspace: {
@@ -307,12 +307,12 @@ export async function importWorkspaceConfig({ archivePath, targetDir, name }) {
   const opencodeDir = path.join(targetDir, ".opencode");
   if (!(await pathExists(opencodeDir))) throw new Error("Archive is missing .opencode config");
 
-  const omnirushPath = path.join(opencodeDir, "omnirush.json");
+  const marsPath = path.join(opencodeDir, "mars.json");
   let preset = "starter";
   let workspaceName = typeof name === "string" && name.trim() ? name.trim() : null;
 
-  if (await pathExists(omnirushPath)) {
-    const raw = await readFile(omnirushPath, "utf8");
+  if (await pathExists(marsPath)) {
+    const raw = await readFile(marsPath, "utf8");
     try {
       const config = JSON.parse(raw);
       config.authorizedRoots = [targetDir];
@@ -322,14 +322,14 @@ export async function importWorkspaceConfig({ archivePath, targetDir, name }) {
       if (typeof config.workspace?.preset === "string" && config.workspace.preset.trim()) {
         preset = config.workspace.preset.trim();
       }
-      await writeFile(omnirushPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+      await writeFile(marsPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
     } catch {
-      const config = defaultOmniRushConfig(targetDir, preset);
-      await writeFile(omnirushPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+      const config = defaultMarsConfig(targetDir, preset);
+      await writeFile(marsPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
     }
   } else {
-    const config = defaultOmniRushConfig(targetDir, preset);
-    await writeFile(omnirushPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+    const config = defaultMarsConfig(targetDir, preset);
+    await writeFile(marsPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
   }
 
   return {

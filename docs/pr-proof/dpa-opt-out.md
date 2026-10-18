@@ -43,7 +43,7 @@ the spec calls real HTTP boundaries rather than importing product source.
 6. GET repair cannot recreate arranged missing managed access.
 7. Actual invitation acceptance under DPA creates no managed key/provider.
 8. Owner/member/newcomer receive usable customer-key provider configurations despite
-   OpenRouter/OmniRush.ai branding; their delivered endpoint/model/key reach the BYOK
+   OpenRouter/MarsAI branding; their delivered endpoint/model/key reach the BYOK
    HTTP witness successfully, while managed use stays forbidden.
 9. Ordinary and raw Better Auth metadata writes cannot set/erase the decision.
 10. Approved explicit-false unset restores the original key and records the actor,
@@ -73,7 +73,7 @@ testkit database, never an existing service or organization.
 | --- | --- |
 | `pnpm evals:pr specs/team-organization-admin.test.ts` | Exit 0; 1 passed, 0 failed, 0 skipped; 26.21s. This runner emitted no placement line. |
 | `NODE_OPTIONS=--conditions=development pnpm --dir ee/apps/inference exec tsx --test test/proxy.test.ts` | Exit 0; 58 passed, 0 failed, 0 skipped. Supplementary unit checks, not boundary proof. |
-| `pnpm --filter @omnirush/types build` | Exit 0; JS and declaration build passed. |
+| `pnpm --filter @mars/types build` | Exit 0; JS and declaration build passed. |
 | `pnpm --dir ee/apps/inference exec tsc -p tsconfig.json --noEmit` | Exit 0. |
 | `pnpm --dir ee/apps/den-api exec tsc --noEmit --pretty false` | Exit 0. |
 | `git diff --check` | Exit 0. |
@@ -97,7 +97,7 @@ was removed cleanly afterward. No unrelated fixes were made.
 | `pnpm exec node evals/scripts/spec-boundary-ratchet.mjs` | Exit 1 / 1 | Fourteen violations in five other specs; no violation for the new DPA spec. |
 
 Ratchet files: `bench-opencode-engines.test.ts`,
-`bench-omnirush-app-v1.e2e.test.ts`, `engine-v2-preview-flag.e2e.test.ts`,
+`bench-mars-app-v1.e2e.test.ts`, `engine-v2-preview-flag.e2e.test.ts`,
 `opencode-v2-chat-routing.e2e.test.ts`, `opencode-v2-provider-hot-inject.test.ts`.
 First identical failure: `bench-opencode-engines.test.ts: imports product source`.
 
@@ -144,7 +144,7 @@ Den policy, trusted administration, and protected metadata writers:
 - `ee/apps/den-api/src/orgs.ts`
 - `ee/apps/den-api/src/auth.ts`
 - `ee/apps/den-api/src/audit-events.ts`
-- `ee/apps/den-api/src/omnirush-web-access.ts`
+- `ee/apps/den-api/src/mars-web-access.ts`
 - `ee/apps/den-api/src/routes/admin/index.ts`
 - `ee/apps/den-api/src/routes/bootstrap/index.ts`
 - `ee/apps/den-api/src/routes/org/core.ts`

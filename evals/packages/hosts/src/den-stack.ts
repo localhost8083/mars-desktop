@@ -9,8 +9,8 @@
  *   4. Demo-org seed (only when the demo owner cannot sign in)
  *   5. Desktop bootstrap pointed at the local Den + dev Electron with CDP
  *      (only when no CDP endpoint is reachable)
- *   6. A demo-owner session token, exported as OMNIRUSH_EVAL_DEN_API_URL /
- *      OMNIRUSH_EVAL_DEN_TOKEN so env-gated specs run without manual setup.
+ *   6. A demo-owner session token, exported as MARS_EVAL_DEN_API_URL /
+ *      MARS_EVAL_DEN_TOKEN so env-gated specs run without manual setup.
  *
  * `denStackDown()` stops what the harness started.
  */
@@ -23,23 +23,23 @@ import { fileURLToPath } from "node:url";
 const HOSTS_SRC_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HOSTS_SRC_DIR, "..", "..", "..", "..");
 const STATE_DIR = resolve(HOSTS_SRC_DIR, "..", "..", "..", "results", ".den-stack");
-const EVAL_ELECTRON_USERDATA = process.env.OMNIRUSH_EVAL_ELECTRON_USERDATA?.trim()
+const EVAL_ELECTRON_USERDATA = process.env.MARS_EVAL_ELECTRON_USERDATA?.trim()
   || join(STATE_DIR, "electron-user-data");
 
-const DEN_API_PORT = Number(process.env.OMNIRUSH_EVAL_DEN_PORT ?? 8790);
+const DEN_API_PORT = Number(process.env.MARS_EVAL_DEN_PORT ?? 8790);
 const DEN_API_INTERNAL_PORT = DEN_API_PORT + 1;
 const DEN_API_URL = `http://127.0.0.1:${DEN_API_PORT}`;
 const DEN_API_INTERNAL_URL = `http://127.0.0.1:${DEN_API_INTERNAL_PORT}`;
 const DEN_BASE_URL = `http://localhost:${DEN_API_PORT}`;
 const DEMO_EMAIL = process.env.DEN_DEMO_OWNER_EMAIL ?? "alex@acme.test";
-const DEMO_PASSWORD = process.env.DEN_DEMO_OWNER_PASSWORD ?? "OmniRushDemo123!";
-const MYSQL_CONTAINER = "omnirush-web-local-mysql";
+const DEMO_PASSWORD = process.env.DEN_DEMO_OWNER_PASSWORD ?? "MarsDemo123!";
+const MYSQL_CONTAINER = "mars-web-local-mysql";
 const MYSQL_STATE_DIR = join(STATE_DIR, "mysql");
 const MYSQL_SOCKET = join(MYSQL_STATE_DIR, "mysql.sock");
-const COMPOSE_ARGS = ["compose", "-p", "omnirush-den-local", "-f", "packaging/docker/docker-compose.web-local.yml"];
+const COMPOSE_ARGS = ["compose", "-p", "mars-den-local", "-f", "packaging/docker/docker-compose.web-local.yml"];
 const DEFAULT_MOCK_IDP_ISSUER = "http://127.0.0.1:19190";
-const MOCK_IDP_ISSUER = (process.env.OMNIRUSH_EVAL_MOCK_IDP_ISSUER?.trim() || DEFAULT_MOCK_IDP_ISSUER).replace(/\/+$/, "");
-const DEN_WEB_ORIGIN = (process.env.OMNIRUSH_EVAL_DEN_WEB_URL ?? "http://localhost:3005").replace(/\/+$/, "");
+const MOCK_IDP_ISSUER = (process.env.MARS_EVAL_MOCK_IDP_ISSUER?.trim() || DEFAULT_MOCK_IDP_ISSUER).replace(/\/+$/, "");
+const DEN_WEB_ORIGIN = (process.env.MARS_EVAL_DEN_WEB_URL ?? "http://localhost:3005").replace(/\/+$/, "");
 const DEN_WEB_PORT = new URL(DEN_WEB_ORIGIN).port || "3005";
 
 function envCsv(name: string): string[] {
@@ -57,12 +57,12 @@ const DEN_TRUSTED_ORIGINS = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
   MOCK_IDP_ISSUER,
-  ...envCsv("OMNIRUSH_EVAL_DEN_EXTRA_TRUSTED_ORIGINS"),
+  ...envCsv("MARS_EVAL_DEN_EXTRA_TRUSTED_ORIGINS"),
 ].filter((origin, index, origins) => origins.indexOf(origin) === index).join(",");
 
-// Override with OMNIRUSH_EVAL_DATABASE_URL to isolate a run from the shared
+// Override with MARS_EVAL_DATABASE_URL to isolate a run from the shared
 // dev database (e.g. a dedicated schema on the same MySQL container).
-const DEN_DATABASE_URL = process.env.OMNIRUSH_EVAL_DATABASE_URL ?? "mysql://root:password@127.0.0.1:3306/omnirush_den";
+const DEN_DATABASE_URL = process.env.MARS_EVAL_DATABASE_URL ?? "mysql://root:password@127.0.0.1:3306/omnirush_den";
 const DEN_DATABASE_NAME = new URL(DEN_DATABASE_URL).pathname.replace(/^\//, "") || "omnirush_den";
 if (!/^[A-Za-z0-9_]+$/.test(DEN_DATABASE_NAME)) {
   throw new Error(`Unsupported Den database name: ${DEN_DATABASE_NAME}`);
@@ -76,7 +76,7 @@ interface DenEvalEnvironmentOptions {
 
 export function denEvalEnvironment(options: DenEvalEnvironmentOptions = {}): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {
-    OMNIRUSH_DEV_MODE: "1",
+    MARS_DEV_MODE: "1",
     DEN_SINGLE_ORG_ALLOW_PUBLIC_SIGNUP: "true",
     PORT: String(DEN_API_INTERNAL_PORT),
     DATABASE_URL: DEN_DATABASE_URL,
@@ -87,9 +87,9 @@ export function denEvalEnvironment(options: DenEvalEnvironmentOptions = {}): Nod
     DEN_BETTER_AUTH_TRUSTED_ORIGINS: DEN_TRUSTED_ORIGINS,
     CORS_ORIGINS: DEN_TRUSTED_ORIGINS,
     PROVISIONER_MODE: "stub",
-    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ?? "sk_test_omnirush_eval",
-    STRIPE_INFERENCE_PRICE_ID: process.env.STRIPE_INFERENCE_PRICE_ID ?? "price_omnirush_models_eval",
-    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ?? "whsec_omnirush_eval",
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ?? "sk_test_mars_eval",
+    STRIPE_INFERENCE_PRICE_ID: process.env.STRIPE_INFERENCE_PRICE_ID ?? "price_mars_models_eval",
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ?? "whsec_mars_eval",
     INFERENCE_PROXY_BASE_URL: process.env.INFERENCE_PROXY_BASE_URL ?? "http://127.0.0.1:8791",
   };
   if (options.orgMode) env.DEN_ORG_MODE = options.orgMode;
@@ -117,7 +117,7 @@ function devUserDataHome(): string {
 }
 
 function devBootstrapPath(): string {
-  return join(devUserDataHome(), "omnirush-dev-data", "home", ".config", "omnirush", "desktop-bootstrap.json");
+  return join(devUserDataHome(), "mars-dev-data", "home", ".config", "mars", "desktop-bootstrap.json");
 }
 
 async function httpOk(url: string, timeoutMs = 2_500): Promise<boolean> {
@@ -452,9 +452,9 @@ async function ensureNativeMysql(log: (message: string) => void): Promise<void> 
 }
 
 async function ensureMysql(log: (message: string) => void): Promise<void> {
-  if (process.env.OMNIRUSH_EVAL_DATABASE_URL) {
+  if (process.env.MARS_EVAL_DATABASE_URL) {
     if (!(await nativeMysqlHealthy())) {
-      throw new Error("OMNIRUSH_EVAL_DATABASE_URL is configured but not reachable.");
+      throw new Error("MARS_EVAL_DATABASE_URL is configured but not reachable.");
     }
     await writePidState("mysql.backend", "external");
     log("External MySQL already healthy");
@@ -533,7 +533,7 @@ async function ensureDenApi(log: (message: string) => void, orgMode?: DenOrgMode
   if (publicHealthOk) {
     throw new Error(
       `A den-api is already healthy on :${DEN_API_PORT}, but it does not serve /api/den. ` +
-      "The desktop app cannot use a bare den-api there; rerun with OMNIRUSH_EVAL_DEN_PORT=<free port>.",
+      "The desktop app cannot use a bare den-api there; rerun with MARS_EVAL_DEN_PORT=<free port>.",
     );
   }
 
@@ -566,7 +566,7 @@ async function ensureDenApi(log: (message: string) => void, orgMode?: DenOrgMode
     env: {
       DEN_PROXY_LISTEN_PORT: String(DEN_API_PORT),
       DEN_PROXY_UPSTREAM_PORT: String(DEN_API_INTERNAL_PORT),
-      OMNIRUSH_EVAL_DEN_PROXY_CONTROL: "1",
+      MARS_EVAL_DEN_PROXY_CONTROL: "1",
     },
   });
   await writePidState("den-proxy.pid", proxyPid);
@@ -714,7 +714,7 @@ async function ensureApp(log: (message: string) => void, cdpCandidates: string[]
   log("Starting dev Electron (pnpm dev)...");
   const pid = spawnDetached("pnpm", ["dev"], {
     logName: "app",
-    env: { OMNIRUSH_ELECTRON_USERDATA: EVAL_ELECTRON_USERDATA },
+    env: { MARS_ELECTRON_USERDATA: EVAL_ELECTRON_USERDATA },
   });
   await writePidState("app.pid", pid);
   for (let attempt = 0; attempt < 45; attempt += 1) {
@@ -755,10 +755,10 @@ export async function ensureDenStack({ log, cdpCandidates, skipApp = false, orgM
   const token = await signInDemoOwner();
   if (!token) throw new Error("Could not obtain a demo-owner session token.");
 
-  process.env.OMNIRUSH_EVAL_DEN_API_URL = DEN_API_URL;
-  process.env.OMNIRUSH_EVAL_DEN_WEB_URL = DEN_WEB_ORIGIN;
-  process.env.OMNIRUSH_EVAL_DEN_TOKEN = token;
-  log(`Den stack ready — flows get OMNIRUSH_EVAL_DEN_API_URL=${DEN_API_URL}, OMNIRUSH_EVAL_DEN_WEB_URL=${DEN_WEB_ORIGIN}, and a fresh ${DEMO_EMAIL} token.`);
+  process.env.MARS_EVAL_DEN_API_URL = DEN_API_URL;
+  process.env.MARS_EVAL_DEN_WEB_URL = DEN_WEB_ORIGIN;
+  process.env.MARS_EVAL_DEN_TOKEN = token;
+  log(`Den stack ready — flows get MARS_EVAL_DEN_API_URL=${DEN_API_URL}, MARS_EVAL_DEN_WEB_URL=${DEN_WEB_ORIGIN}, and a fresh ${DEMO_EMAIL} token.`);
 }
 
 export interface DenStackDownOptions {

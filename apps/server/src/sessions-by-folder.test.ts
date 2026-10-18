@@ -33,7 +33,7 @@ describe("listEngineSessionsInFolder", () => {
   const workspace: WorkspaceInfo = {
     id: "ws_folder",
     name: "taskforge",
-    path: "/tmp/omnirush-by-folder",
+    path: "/tmp/mars-by-folder",
     preset: "starter",
     workspaceType: "local",
     baseUrl: "http://engine.invalid",

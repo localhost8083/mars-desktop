@@ -13,7 +13,7 @@ export const PASSWORD_STORE_PROBE_TIMEOUT_MS = 300;
 /** Where the store that sealed each keyring-encrypted file is recorded, in userData. */
 export const PASSWORD_STORE_RECORD_FILE = "linux-password-store.json";
 /** Keyring-sealed files in userData whose store is kept sticky, most important first. */
-export const KEYRING_SEALED_FILES = ["omnirush-account.bin", "local-managed-mcp-vault-key.bin"];
+export const KEYRING_SEALED_FILES = ["mars-account.bin", "local-managed-mcp-vault-key.bin"];
 
 const SECRET_SERVICE_NAME = "org.freedesktop.secrets";
 const KWALLET6_NAME = "org.kde.kwalletd6";
@@ -223,6 +223,6 @@ export async function applyLinuxPasswordStore({
   const recorded = userChoseStore ? null : readRecorded(userDataPath);
   const { store, reason } = await selectLinuxPasswordStore({ platform, env, userChoseStore, recorded, listBusNames });
   if (store) app.commandLine.appendSwitch("password-store", store);
-  log(`[omnirush] Linux password store: ${store ?? "unchanged"} (${reason})`);
+  log(`[mars] Linux password store: ${store ?? "unchanged"} (${reason})`);
   return store;
 }

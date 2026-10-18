@@ -2,8 +2,8 @@ import type { DenOrgLlmProvider } from "@/app/lib/den"
 import { formatGenericBehaviorLabel, getModelBehaviorSummary } from "@/app/lib/model-behavior"
 import type { ModelOption, ProviderListItem } from "@/app/types"
 import { resolveModelDisplayName, resolveModelProviderDisplayName } from "@/app/utils"
-import type { AutomationModel } from "@omnirush/types/automations"
-import { INFERENCE_MODEL_ALIASES } from "@omnirush/types/den/inference"
+import type { AutomationModel } from "@mars/types/automations"
+import { INFERENCE_MODEL_ALIASES } from "@mars/types/den/inference"
 
 /** providerId → modelId → the local runtime's model record. */
 export type AutomationProviderCatalog = Record<string, Record<string, ProviderListItem["models"][string]>>
@@ -13,7 +13,7 @@ export type AutomationModelOption = {
   modelId: string
   providerName: string
   modelName: string
-  accessKind: "omnirush_managed" | "authorized_custom"
+  accessKind: "mars_managed" | "authorized_custom"
 }
 
 export type ResolvedProposalModel = {
@@ -22,26 +22,26 @@ export type ResolvedProposalModel = {
 }
 
 export const AUTOMATION_INTERNAL_MODEL = {
-  providerId: "omnirush",
+  providerId: "mars",
   modelId: "z-ai/glm-5.2",
-  providerName: "omnirush.ai Models",
+  providerName: "marsai.click Models",
   modelName: "GLM-5.2",
 } satisfies Omit<AutomationModelOption, "accessKind">
 
 const internalStarterModel: AutomationModelOption = {
   ...AUTOMATION_INTERNAL_MODEL,
-  accessKind: "omnirush_managed",
+  accessKind: "mars_managed",
 }
 
-function omniRushManagedModels(provider: DenOrgLlmProvider): AutomationModelOption[] {
+function marsManagedModels(provider: DenOrgLlmProvider): AutomationModelOption[] {
   return Object.entries(INFERENCE_MODEL_ALIASES)
     .filter(([, model]) => model.enabled)
     .map(([modelId, model]) => ({
-      providerId: "omnirush",
+      providerId: "mars",
       modelId,
       providerName: provider.name,
-      modelName: model.displayName.replace(/^omnirush.ai:\s*/, ""),
-      accessKind: "omnirush_managed" as const,
+      modelName: model.displayName.replace(/^marsai.click:\s*/, ""),
+      accessKind: "mars_managed" as const,
     }))
 }
 
@@ -58,14 +58,14 @@ function authorizedProviderModels(provider: DenOrgLlmProvider): AutomationModelO
 /**
  * Den's usable-provider response is already scoped to the active member. Keep
  * the submitted value normalized to the same IDs the server revalidates:
- * `omnirush` or the concrete `lpr_*` provider record.
+ * `mars` or the concrete `lpr_*` provider record.
  */
 export function automationModelOptions(
   providers: readonly DenOrgLlmProvider[],
   options: { includeInternalStarter?: boolean } = {},
 ): AutomationModelOption[] {
-  const managed = providers.flatMap((provider) => provider.source === "omnirush"
-    ? omniRushManagedModels(provider)
+  const managed = providers.flatMap((provider) => provider.source === "mars"
+    ? marsManagedModels(provider)
     : authorizedProviderModels(provider))
 
   return [
@@ -74,7 +74,7 @@ export function automationModelOptions(
       model.providerId !== internalStarterModel.providerId
       || model.modelId !== internalStarterModel.modelId),
   ].sort((left, right) => {
-    const kindOrder = ["omnirush_managed", "authorized_custom"]
+    const kindOrder = ["mars_managed", "authorized_custom"]
     return kindOrder.indexOf(left.accessKind) - kindOrder.indexOf(right.accessKind)
       || left.providerName.localeCompare(right.providerName)
       || left.modelName.localeCompare(right.modelName)
@@ -113,7 +113,7 @@ export function resolveProposalModel(
   }
 
   const provider = providers.find((candidate) =>
-    candidate.source !== "omnirush"
+    candidate.source !== "mars"
     && candidate.providerId === proposed.providerId
     && candidate.models.some((model) => model.id === proposed.modelId))
   if (provider) {

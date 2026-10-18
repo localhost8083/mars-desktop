@@ -6,7 +6,7 @@ import type { PDFiumDocument } from "@hyzyla/pdfium";
 
 /**
  * PDFium (the PDF engine used by Chrome) compiled to WebAssembly. It runs the
- * same way inside the OpenCode engine (Bun) and the OmniRush.ai server (Node or
+ * same way inside the OpenCode engine (Bun) and the MarsAI server (Node or
  * Electron), needs no native build step, and keeps rendering sandboxed.
  *
  * The wasm binary is looked up next to the running module first — the server

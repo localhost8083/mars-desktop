@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 
 import { desktopRestrictionNotice } from "../../../../app/cloud/desktop-app-restrictions";
-import { isBuiltInOmniRushExtension, getMcpServerName, type McpDirectoryInfo } from "../../../../app/constants";
+import { isBuiltInMarsExtension, getMcpServerName, type McpDirectoryInfo } from "../../../../app/constants";
 import { evaluateEnablement } from "../../../../app/enablement";
 import type { EnablementResult } from "../../../../app/extensions";
 import type { CloudImportedPlugin, CloudImportedPluginFile } from "../../../../app/cloud/import-state";
@@ -86,14 +86,14 @@ import {
   canDisconnectNativeProviderAccount,
   canMemberAuthorizeConnection,
 } from "../../connections/native-provider-connections";
-import type { OmniRushClaudePluginPreview } from "../../../../app/lib/omnirush-server";
+import type { MarsClaudePluginPreview } from "../../../../app/lib/mars-server";
 import {
-  isOmniRushExtensionEnabled,
-  isOmniRushExtensionHidden,
-  OMNIRUSH_EXTENSION_STATE_CHANGED,
+  isMarsExtensionEnabled,
+  isMarsExtensionHidden,
+  MARS_EXTENSION_STATE_CHANGED,
   readExtensionLayout,
-  setOmniRushExtensionEnabled,
-  setOmniRushExtensionHidden,
+  setMarsExtensionEnabled,
+  setMarsExtensionHidden,
   writeExtensionLayout,
 } from "../extension-state";
 import {
@@ -155,7 +155,7 @@ export type SkillItem = {
   trigger?: string;
   path: string;
   content?: string;
-  origin?: "local" | "omnirush-connect";
+  origin?: "local" | "mars-connect";
   marketplaceName?: string;
   pluginName?: string;
 };
@@ -172,8 +172,8 @@ export type McpViewProps = {
   installedCommands?: LibraryCommandItem[];
   /** Composer agents to render in Library. */
   installedAgents?: LibraryAgentItem[];
-  /** MCP capabilities assigned through omnirush.ai Connect. */
-  /** True when the connected OmniRush server has disabled MCP for this client. */
+  /** MCP capabilities assigned through marsai.click Connect. */
+  /** True when the connected Mars server has disabled MCP for this client. */
   mcpDisabled?: boolean;
   availableConnectMcpServers?: McpServerEntry[];
   availableConnectMcpStatuses?: McpStatusMap;
@@ -193,7 +193,7 @@ export type McpViewProps = {
   mcpLastUpdatedAt: number | null;
   mcpStatuses: McpStatusMap;
   mcpConnectingName: string | null;
-  /** False when secure storage for omnirush.ai-managed sign-ins is unavailable on this device. */
+  /** False when secure storage for marsai.click-managed sign-ins is unavailable on this device. */
   managedOAuthAvailable?: boolean;
   /** Organization policy permission for local extension configuration. */
   allowManageExtensions: boolean;
@@ -211,10 +211,10 @@ export type McpViewProps = {
   isExtensionConnected?: (entry: McpDirectoryInfo) => boolean;
   /** Enablement context for evaluating extension active state. */
   enablementContext?: import("../../../../app/enablement").EnablementContext;
-  /** Organization policy restriction for omnirush.ai-provided built-in extensions. */
+  /** Organization policy restriction for marsai.click-provided built-in extensions. */
   builtInExtensionsDisabled?: boolean;
   /** Preview a Claude Code plugin bundle from a GitHub URL ("Will install" disclosure). */
-  previewClaudePlugin?: (url: string) => Promise<OmniRushClaudePluginPreview>;
+  previewClaudePlugin?: (url: string) => Promise<MarsClaudePluginPreview>;
   /** Install a Claude Code plugin bundle from a GitHub URL. */
   installClaudePlugin?: (url: string) => Promise<{ ok: boolean; message: string }>;
   /** Connected org-level External MCP Connections rendered in My Extensions. */
@@ -241,8 +241,8 @@ export type McpViewProps = {
   ) => Promise<string>;
   /**
    * Write a workspace-local skill (`.opencode/skills/<name>/SKILL.md`) through
-   * the local server. Offered when the member is not signed in to omnirush.ai
-   * Cloud, so an omnirush.ai account alone can still add skills. Must reject
+   * the local server. Offered when the member is not signed in to marsai.click
+   * Cloud, so an marsai.click account alone can still add skills. Must reject
    * with a message when the server refuses the skill.
    */
   createWorkspaceSkill?: (input: WorkspaceSkillDraft) => Promise<void>;
@@ -326,8 +326,8 @@ const serviceIcon = (name: string) => {
   if (lower.includes("devtools")) {
     return MonitorSmartphone;
   }
-  if (lower.includes("omnirush") && lower.includes("cloud")) return Cloud;
-  if (lower.includes("omnirush") && lower.includes("ui")) return MonitorSmartphone;
+  if (lower.includes("mars") && lower.includes("cloud")) return Cloud;
+  if (lower.includes("mars") && lower.includes("ui")) return MonitorSmartphone;
   return Plug2;
 };
 
@@ -341,7 +341,7 @@ const serviceColor = (name: string) => {
   if (lower.includes("devtools")) {
     return "text-amber-11";
   }
-  if (lower.includes("omnirush")) return "text-gray-12";
+  if (lower.includes("mars")) return "text-gray-12";
   return "text-dls-secondary";
 };
 
@@ -355,7 +355,7 @@ const serviceIconBg = (name: string) => {
   if (lower.includes("devtools")) {
     return "bg-amber-3 border-amber-6";
   }
-  if (lower.includes("omnirush")) return "bg-gray-3 border-gray-6";
+  if (lower.includes("mars")) return "bg-gray-3 border-gray-6";
   return "bg-dls-hover border-dls-border";
 };
 
@@ -478,8 +478,8 @@ export function McpView(props: McpViewProps) {
   const [mcpConnectFailure, setMcpConnectFailure] = useState<{ id: string; message: string } | null>(null);
   const [pendingPlugin, setPendingPlugin] = useState<CloudImportedPlugin | null>(null);
   const [detailSkillContent, setDetailSkillContent] = useState<string | null>(null);
-  const [omnirushUiMcpCommand, setOmniRushUiMcpCommand] = useState<string[] | null>(null);
-  const [omnirushUiMcpEnvironment, setOmniRushUiMcpEnvironment] = useState<Record<string, string> | null>(null);
+  const [marsUiMcpCommand, setMarsUiMcpCommand] = useState<string[] | null>(null);
+  const [marsUiMcpEnvironment, setMarsUiMcpEnvironment] = useState<Record<string, string> | null>(null);
   const [computerUseMcpCommand, setComputerUseMcpCommand] = useState<string[] | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<ExtensionInventoryFilter>(props.initialFilter ?? "all");
@@ -711,7 +711,7 @@ export function McpView(props: McpViewProps) {
     setMcpConnectFailure(null);
     if (target.kind === "skill") {
       setDetailSkillContent(target.skill.content ?? null);
-      if (!target.skill.content && target.skill.origin !== "omnirush-connect" && props.readSkill) {
+      if (!target.skill.content && target.skill.origin !== "mars-connect" && props.readSkill) {
         void props.readSkill(target.skill.name).then((result) => {
           if (result?.content) {
             setDetailSkillContent(result.content);
@@ -756,7 +756,7 @@ export function McpView(props: McpViewProps) {
     setDetailTarget(resolved);
     if (resolved?.kind === "skill") {
       setDetailSkillContent(resolved.skill.content ?? null);
-      if (!resolved.skill.content && resolved.skill.origin !== "omnirush-connect" && props.readSkill) {
+      if (!resolved.skill.content && resolved.skill.origin !== "mars-connect" && props.readSkill) {
         void props.readSkill(resolved.skill.name).then((result) => {
           if (result?.content) {
             setDetailSkillContent(result.content);
@@ -802,10 +802,10 @@ export function McpView(props: McpViewProps) {
 
   useEffect(() => {
     const refresh = () => setExtensionStateVersion((value) => value + 1);
-    window.addEventListener(OMNIRUSH_EXTENSION_STATE_CHANGED, refresh);
+    window.addEventListener(MARS_EXTENSION_STATE_CHANGED, refresh);
     window.addEventListener("storage", refresh);
     return () => {
-      window.removeEventListener(OMNIRUSH_EXTENSION_STATE_CHANGED, refresh);
+      window.removeEventListener(MARS_EXTENSION_STATE_CHANGED, refresh);
       window.removeEventListener("storage", refresh);
     };
   }, []);
@@ -816,24 +816,24 @@ export function McpView(props: McpViewProps) {
       // The bundled UI-control MCP can be missing from a broken build; that
       // must not hide the Computer Use launch details, so resolve separately.
       try {
-        const command = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("getOmniRushUiMcpCommand");
+        const command = await window.__MARS_ELECTRON__?.invokeDesktop?.("getMarsUiMcpCommand");
         if (Array.isArray(command) && command.every((part) => typeof part === "string")) {
-          setOmniRushUiMcpCommand(command);
+          setMarsUiMcpCommand(command);
         }
-        const environment = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("getOmniRushUiMcpEnvironment");
+        const environment = await window.__MARS_ELECTRON__?.invokeDesktop?.("getMarsUiMcpEnvironment");
         if (environment && typeof environment === "object" && !Array.isArray(environment)) {
-          setOmniRushUiMcpEnvironment(Object.fromEntries(
+          setMarsUiMcpEnvironment(Object.fromEntries(
             Object.entries(environment).filter((entry): entry is [string, string] =>
               typeof entry[0] === "string" && typeof entry[1] === "string"
             ),
           ));
         }
       } catch {
-        setOmniRushUiMcpCommand(null);
-        setOmniRushUiMcpEnvironment(null);
+        setMarsUiMcpCommand(null);
+        setMarsUiMcpEnvironment(null);
       }
       try {
-        const computerUseCommand = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("getComputerUseMcpCommand");
+        const computerUseCommand = await window.__MARS_ELECTRON__?.invokeDesktop?.("getComputerUseMcpCommand");
         if (Array.isArray(computerUseCommand) && computerUseCommand.every((part) => typeof part === "string")) {
           setComputerUseMcpCommand(computerUseCommand);
         }
@@ -911,16 +911,16 @@ export function McpView(props: McpViewProps) {
       );
     });
 
-  // Auto-configured built-ins like omnirush-cloud remain active but hidden from
+  // Auto-configured built-ins like mars-cloud remain active but hidden from
   // Your apps until Show hidden reveals the row for disable/remove. Projected
-  // direct org connections are shown through their omnirush.ai Connect card.
+  // direct org connections are shown through their marsai.click Connect card.
   const visibleMcpServers = !mcpDisabled && inventoryState === "all" && (filter === "all" || filter === "mcp")
     ? showHidden
       ? props.mcpServers
       : props.mcpServers.filter((entry) => {
           if (isConnectDirectMcpServerName(entry.name)) return false;
           const match = resolveQuickConnectMatch(entry.name);
-          return !match || !isOmniRushExtensionHidden(match);
+          return !match || !isMarsExtensionHidden(match);
         })
     : [];
 
@@ -944,30 +944,30 @@ export function McpView(props: McpViewProps) {
   };
 
   const isEntryConfigured = (entry: McpDirectoryInfo) => {
-    if (props.builtInExtensionsDisabled && isBuiltInOmniRushExtension(entry)) return false;
+    if (props.builtInExtensionsDisabled && isBuiltInMarsExtension(entry)) return false;
     const result = enablementForEntry(entry);
     if (result) return result.active;
     // Fallback for entries without enablement context.
-    if (isToggleOnlyExtension(entry)) return isOmniRushExtensionEnabled(entry);
+    if (isToggleOnlyExtension(entry)) return isMarsExtensionEnabled(entry);
     if (entry.kind === "extension" && !isMcpBackedExtension(entry)) return props.isExtensionConnected?.(entry) ?? false;
     return isQuickConnectConfigured(entry);
   };
 
-  // Built-in omnirush.ai extensions answer to `allowBuiltInExtensions`; every
+  // Built-in marsai.click extensions answer to `allowBuiltInExtensions`; every
   // other directory entry is a local install governed by
   // `allowManageExtensions`. Entries the member already installed stay usable
   // but can no longer be managed.
   const builtInDisabledReasonForEntry = (entry: McpDirectoryInfo) =>
-    props.builtInExtensionsDisabled && isBuiltInOmniRushExtension(entry)
+    props.builtInExtensionsDisabled && isBuiltInMarsExtension(entry)
       ? builtInExtensionDisabledReason()
       : null;
   const manageDisabledReasonForEntry = (entry: McpDirectoryInfo) =>
-    !props.allowManageExtensions && !isBuiltInOmniRushExtension(entry)
+    !props.allowManageExtensions && !isBuiltInMarsExtension(entry)
       ? manageExtensionsDisabledReason()
       : null;
 
   const launchCommandForEntry = (entry: McpDirectoryInfo) => {
-    if (entry.serverName === "omnirush-ui") return omnirushUiMcpCommand ?? undefined;
+    if (entry.serverName === "mars-ui") return marsUiMcpCommand ?? undefined;
     if (entry.serverName === "computer-use") return computerUseMcpCommand ?? entry.command;
     return entry.command;
   };
@@ -981,12 +981,12 @@ export function McpView(props: McpViewProps) {
     return resolved?.status ?? "disconnected";
   };
 
-  const hiddenCount = quickConnectList.filter((entry) => isOmniRushExtensionHidden(entry)).length +
+  const hiddenCount = quickConnectList.filter((entry) => isMarsExtensionHidden(entry)).length +
     props.mcpServers.filter((entry) => isConnectDirectMcpServerName(entry.name)).length +
-    (props.installedSkills ?? []).filter((skill) => isOmniRushExtensionHidden(getSkillHiddenId(skill))).length +
-    (props.installedPlugins ?? []).filter((plugin) => isOmniRushExtensionHidden(`plugin:${plugin.pluginId}`)).length;
+    (props.installedSkills ?? []).filter((skill) => isMarsExtensionHidden(getSkillHiddenId(skill))).length +
+    (props.installedPlugins ?? []).filter((plugin) => isMarsExtensionHidden(`plugin:${plugin.pluginId}`)).length;
   const policyHiddenBuiltInCount = props.builtInExtensionsDisabled
-    ? quickConnectList.filter((entry) => isBuiltInOmniRushExtension(entry) && !isOmniRushExtensionHidden(entry)).length
+    ? quickConnectList.filter((entry) => isBuiltInMarsExtension(entry) && !isMarsExtensionHidden(entry)).length
     : 0;
   const hiddenOrPolicyCount = hiddenCount + policyHiddenBuiltInCount;
 
@@ -1049,7 +1049,7 @@ export function McpView(props: McpViewProps) {
       {detailEntry ? (() => {
         const extensionConfigSlot = props.configSlotForEntry?.(detailEntry) ?? null;
         const hasConfigSlot = extensionConfigSlot !== null;
-        const hidden = isOmniRushExtensionHidden(detailEntry);
+        const hidden = isMarsExtensionHidden(detailEntry);
         const builtInDisabledReason = builtInDisabledReasonForEntry(detailEntry);
         const disabledReason = builtInDisabledReason ?? manageDisabledReasonForEntry(detailEntry);
         const isConnected = builtInDisabledReason
@@ -1057,7 +1057,7 @@ export function McpView(props: McpViewProps) {
           : detailEntry.serverName === "computer-use"
           ? enablementForEntry(detailEntry)?.active === true
           : isToggleOnlyExtension(detailEntry)
-          ? isOmniRushExtensionEnabled(detailEntry)
+          ? isMarsExtensionEnabled(detailEntry)
           : detailEntry.kind === "extension" && !isMcpBackedExtension(detailEntry)
           ? props.isExtensionConnected?.(detailEntry) ?? false
           : isQuickConnectConfigured(detailEntry);
@@ -1083,13 +1083,13 @@ export function McpView(props: McpViewProps) {
             resourceLabels={extensionResourceLabels(detailEntry)}
             contributionLabels={extensionContributionLabels(detailEntry)}
             launchCommand={launchCommandForEntry(detailEntry)}
-            environment={detailEntry.serverName === "omnirush-ui" ? omnirushUiMcpEnvironment ?? undefined : undefined}
+            environment={detailEntry.serverName === "mars-ui" ? marsUiMcpEnvironment ?? undefined : undefined}
             url={typeof detailEntry.url === "string" ? detailEntry.url : undefined}
             oauth={detailEntry.oauth}
             configSlot={disabledReason ? null : extensionConfigSlot}
             showEnablementCard
             onConnect={disabledReason ? undefined : isToggleOnlyExtension(detailEntry) ? () => {
-              setOmniRushExtensionEnabled(detailEntry, true);
+              setMarsExtensionEnabled(detailEntry, true);
               closeDetail();
             } : hasConfigSlot ? undefined : async () => {
               setMcpConnectFailure(null);
@@ -1104,20 +1104,20 @@ export function McpView(props: McpViewProps) {
               });
             }}
             onUninstall={disabledReason ? undefined : isToggleOnlyExtension(detailEntry) && isConnected ? () => {
-              setOmniRushExtensionEnabled(detailEntry, false);
+              setMarsExtensionEnabled(detailEntry, false);
             } : isQuickConnectConfigured(detailEntry) ? () => {
               const slug = getMcpIdentityKey(detailEntry);
               props.removeMcp(slug);
               closeDetail();
             } : undefined}
-            onHide={() => setOmniRushExtensionHidden(detailEntry, true)}
-            onShow={() => setOmniRushExtensionHidden(detailEntry, false)}
+            onHide={() => setMarsExtensionHidden(detailEntry, true)}
+            onShow={() => setMarsExtensionHidden(detailEntry, false)}
           />
         );
       })() : null}
 
       {detailSkill ? (() => {
-        const hidden = isOmniRushExtensionHidden(getSkillHiddenId(detailSkill));
+        const hidden = isMarsExtensionHidden(getSkillHiddenId(detailSkill));
         return (
           <ExtensionDetailModal
             open={!!detailSkill}
@@ -1128,11 +1128,11 @@ export function McpView(props: McpViewProps) {
             description={detailSkill.description ?? "Installed skill"}
             taxonomy="skill"
             connected={true}
-            connectedLabel={detailSkill.origin === "omnirush-connect" ? "Available through omnirush.ai Connect" : undefined}
+            connectedLabel={detailSkill.origin === "mars-connect" ? "Available through marsai.click Connect" : undefined}
             hidden={hidden}
-            path={detailSkill.origin === "omnirush-connect" ? undefined : detailSkill.path}
+            path={detailSkill.origin === "mars-connect" ? undefined : detailSkill.path}
             sourceLabel={
-              detailSkill.origin === "omnirush-connect"
+              detailSkill.origin === "mars-connect"
                 ? [detailSkill.pluginName, detailSkill.marketplaceName].filter(Boolean).join(" · ") || t("extensions.surface_cloud")
                 : detailSkill.path
             }
@@ -1144,7 +1144,7 @@ export function McpView(props: McpViewProps) {
             configSlot={(
               <>
                 {openInDenAction({ id: detailSkill.path })}
-                {detailSkill.origin !== "omnirush-connect" && props.listSkillFiles && props.updateSkillFiles && props.saveSkillContent ? (
+                {detailSkill.origin !== "mars-connect" && props.listSkillFiles && props.updateSkillFiles && props.saveSkillContent ? (
                   <SkillFilesPanel
                     key={detailSkill.name}
                     name={detailSkill.name}
@@ -1157,15 +1157,15 @@ export function McpView(props: McpViewProps) {
                 ) : null}
               </>
             )}
-            onReveal={detailSkill.path && detailSkill.origin !== "omnirush-connect" ? () => {
+            onReveal={detailSkill.path && detailSkill.origin !== "mars-connect" ? () => {
               void revealDesktopItemInDir(detailSkill.path);
             } : undefined}
-            onUninstall={props.uninstallSkill && detailSkill.origin !== "omnirush-connect" ? () => {
+            onUninstall={props.uninstallSkill && detailSkill.origin !== "mars-connect" ? () => {
               props.uninstallSkill?.(detailSkill.name);
               closeDetail();
             } : undefined}
-            onHide={() => setOmniRushExtensionHidden(getSkillHiddenId(detailSkill), true)}
-            onShow={() => setOmniRushExtensionHidden(getSkillHiddenId(detailSkill), false)}
+            onHide={() => setMarsExtensionHidden(getSkillHiddenId(detailSkill), true)}
+            onShow={() => setMarsExtensionHidden(getSkillHiddenId(detailSkill), false)}
           />
         );
       })() : null}
@@ -1230,11 +1230,11 @@ export function McpView(props: McpViewProps) {
               ? `Provided by ${detailConnectMcp.pluginName}${detailConnectMcp.marketplaceName ? ` · ${detailConnectMcp.marketplaceName}` : ""}.`
               : detailConnectMcp.marketplaceName
                 ? `Provided by ${detailConnectMcp.marketplaceName}.`
-                : "Available through omnirush.ai Connect."
+                : "Available through marsai.click Connect."
           }
           taxonomy="connection"
           connected={(props.availableConnectMcpStatuses?.[detailConnectMcp.id ?? detailConnectMcp.name]?.status) === "connected"}
-          connectedLabel="Available through omnirush.ai Connect"
+          connectedLabel="Available through marsai.click Connect"
           disconnectedLabel="Setup required"
           url={detailConnectMcp.config.type === "remote" ? detailConnectMcp.config.url : undefined}
           oauth={detailConnectMcp.config.type === "remote"}
@@ -1252,7 +1252,7 @@ export function McpView(props: McpViewProps) {
       ) : null}
 
       {detailPlugin ? (() => {
-        const hidden = isOmniRushExtensionHidden(`plugin:${detailPlugin.pluginId}`);
+        const hidden = isMarsExtensionHidden(`plugin:${detailPlugin.pluginId}`);
         const marketplaceName = detailPlugin.files.find((file) => file.marketplaceName)?.marketplaceName;
         return (
           <ExtensionDetailModal
@@ -1288,8 +1288,8 @@ export function McpView(props: McpViewProps) {
               void props.removeCloudPlugin?.(detailPlugin.pluginId);
               closeDetail();
             } : undefined}
-            onHide={() => setOmniRushExtensionHidden(`plugin:${detailPlugin.pluginId}`, true)}
-            onShow={() => setOmniRushExtensionHidden(`plugin:${detailPlugin.pluginId}`, false)}
+            onHide={() => setMarsExtensionHidden(`plugin:${detailPlugin.pluginId}`, true)}
+            onShow={() => setMarsExtensionHidden(`plugin:${detailPlugin.pluginId}`, false)}
           />
         );
       })() : null}
@@ -1408,12 +1408,12 @@ export function McpView(props: McpViewProps) {
       {mcpDisabled ? (
         <div data-testid="mcp-disabled-policy-notice" className="mb-5 rounded-xl border border-dls-border bg-dls-hover px-4 py-4 text-xs leading-5 text-dls-secondary">
           <p className="text-sm font-medium text-foreground">MCP servers are disabled</p>
-          <p className="mt-1">MCP servers cannot be enabled in OmniRush.ai.</p>
+          <p className="mt-1">MCP servers cannot be enabled in MarsAI.</p>
         </div>
       ) : null}
       {props.builtInExtensionsDisabled && props.allowManageExtensions ? (
         <div className="mb-5 rounded-xl border border-amber-6 bg-amber-2 px-4 py-3 text-xs text-amber-11">
-          Built-in omnirush.ai extensions are disabled by your organization. Use Show hidden to review blocked built-ins.
+          Built-in marsai.click extensions are disabled by your organization. Use Show hidden to review blocked built-ins.
         </div>
       ) : null}
 
@@ -1425,7 +1425,7 @@ export function McpView(props: McpViewProps) {
           <p className="text-sm font-medium text-foreground">Your team’s tool access</p>
           <p className="mt-1">{manageExtensionsDisabledReason()}</p>
           <p className="mt-2">Need an MCP server or skill? Ask your admin to share it with your team or allow local tools in Team → Access. You can still sign in to available connections below.</p>
-          {props.builtInExtensionsDisabled ? <p className="mt-2">Built-in omnirush.ai extensions are disabled by your organization. Use Show hidden to review blocked built-ins.</p> : null}
+          {props.builtInExtensionsDisabled ? <p className="mt-2">Built-in marsai.click extensions are disabled by your organization. Use Show hidden to review blocked built-ins.</p> : null}
         </div>
       )}
 
@@ -1516,7 +1516,7 @@ export function McpView(props: McpViewProps) {
         skillCount={skillCount}
         entries={
           quickConnectList.filter((entry) => {
-            if (!showHidden && (isOmniRushExtensionHidden(entry) || (props.builtInExtensionsDisabled && isBuiltInOmniRushExtension(entry)))) return false;
+            if (!showHidden && (isMarsExtensionHidden(entry) || (props.builtInExtensionsDisabled && isBuiltInMarsExtension(entry)))) return false;
             if (!matchesExtensionFilter(
               filter,
               taxonomyForDirectoryEntry(entry),
@@ -1529,7 +1529,7 @@ export function McpView(props: McpViewProps) {
         }
         installedSkills={
           installedSkills.filter((skill) => {
-            if (!showHidden && isOmniRushExtensionHidden(getSkillHiddenId(skill))) return false;
+            if (!showHidden && isMarsExtensionHidden(getSkillHiddenId(skill))) return false;
             if (!matchesExtensionFilter(filter, "skill")) return false;
             if (!search.trim()) return true;
             const q = search.toLowerCase();
@@ -1572,7 +1572,7 @@ export function McpView(props: McpViewProps) {
         onStateCountsChange={setInventoryStateCounts}
         installedPlugins={
           installedPlugins.filter((plugin) => {
-            if (!showHidden && isOmniRushExtensionHidden(`plugin:${plugin.pluginId}`)) return false;
+            if (!showHidden && isMarsExtensionHidden(`plugin:${plugin.pluginId}`)) return false;
             if (!matchesExtensionFilter(filter, "plugin")) return false;
             if (!search.trim()) return true;
             const q = search.toLowerCase();
@@ -1598,9 +1598,9 @@ export function McpView(props: McpViewProps) {
         organizationName={props.organizationName}
         busy={props.busy}
         connectingName={props.mcpConnectingName}
-        isEntryHidden={(entry) => isOmniRushExtensionHidden(entry)}
-        isSkillHidden={(skill) => isOmniRushExtensionHidden(getSkillHiddenId(skill))}
-        isPluginHidden={(plugin) => isOmniRushExtensionHidden(`plugin:${plugin.pluginId}`)}
+        isEntryHidden={(entry) => isMarsExtensionHidden(entry)}
+        isSkillHidden={(skill) => isMarsExtensionHidden(getSkillHiddenId(skill))}
+        isPluginHidden={(plugin) => isMarsExtensionHidden(`plugin:${plugin.pluginId}`)}
         disabledReasonForEntry={(entry) =>
           builtInDisabledReasonForEntry(entry)
             ?? (isEntryConfigured(entry) ? null : manageDisabledReasonForEntry(entry))
@@ -2000,7 +2000,7 @@ function McpQuickConnectSection(props: {
 
   for (const skill of props.installedSkills ?? []) {
     const hidden = props.isSkillHidden(skill);
-    const fromOrg = skill.origin === "omnirush-connect";
+    const fromOrg = skill.origin === "mars-connect";
     cards.push({
       key: `skill:${skill.path}`,
       group: "ready",

@@ -19,17 +19,17 @@ import { RemoteWorkspaceFields } from "./remote-workspace-fields";
 import type { CreateRemoteWorkspaceModalProps } from "./types";
 
 type RemoteWorkspaceFormState = {
-  omnirushHostUrl: string;
-  omnirushToken: string;
-  omnirushTokenVisible: boolean;
+  marsHostUrl: string;
+  marsToken: string;
+  marsTokenVisible: boolean;
   directory: string;
   displayName: string;
 };
 
 const emptyRemoteWorkspaceForm: RemoteWorkspaceFormState = {
-  omnirushHostUrl: "",
-  omnirushToken: "",
-  omnirushTokenVisible: false,
+  marsHostUrl: "",
+  marsToken: "",
+  marsTokenVisible: false,
   directory: "",
   displayName: "",
 };
@@ -40,7 +40,7 @@ export function CreateRemoteWorkspaceModal(
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [form, setForm] = useState<RemoteWorkspaceFormState>(emptyRemoteWorkspaceForm);
-  const { omnirushHostUrl, omnirushToken, omnirushTokenVisible, directory, displayName } = form;
+  const { marsHostUrl, marsToken, marsTokenVisible, directory, displayName } = form;
 
   const showClose = props.showClose ?? true;
   const title = props.title ?? t("dashboard.create_remote_workspace_title");
@@ -52,8 +52,8 @@ export function CreateRemoteWorkspaceModal(
 
   const canSubmit = useMemo(() => {
     if (submitting) return false;
-    return omnirushHostUrl.trim().length > 0;
-  }, [omnirushHostUrl, submitting]);
+    return marsHostUrl.trim().length > 0;
+  }, [marsHostUrl, submitting]);
 
   useEffect(() => {
     if (!props.open) return;
@@ -65,9 +65,9 @@ export function CreateRemoteWorkspaceModal(
     if (!props.open) return;
     const defaults = props.initialValues ?? {};
     setForm({
-      omnirushHostUrl: defaults.omnirushHostUrl?.trim() ?? "",
-      omnirushToken: defaults.omnirushToken?.trim() ?? "",
-      omnirushTokenVisible: false,
+      marsHostUrl: defaults.marsHostUrl?.trim() ?? "",
+      marsToken: defaults.marsToken?.trim() ?? "",
+      marsTokenVisible: false,
       directory: defaults.directory?.trim() ?? "",
       displayName: defaults.displayName?.trim() ?? "",
     });
@@ -91,13 +91,13 @@ export function CreateRemoteWorkspaceModal(
 
         <div className="min-h-0 flex-1 overflow-y-auto">
           <RemoteWorkspaceFields
-            hostUrl={omnirushHostUrl}
-            onHostUrlInput={(value) => setForm((current) => ({ ...current, omnirushHostUrl: value }))}
-            token={omnirushToken}
-            tokenVisible={omnirushTokenVisible}
-            onTokenInput={(value) => setForm((current) => ({ ...current, omnirushToken: value }))}
+            hostUrl={marsHostUrl}
+            onHostUrlInput={(value) => setForm((current) => ({ ...current, marsHostUrl: value }))}
+            token={marsToken}
+            tokenVisible={marsTokenVisible}
+            onTokenInput={(value) => setForm((current) => ({ ...current, marsToken: value }))}
             onToggleTokenVisible={() =>
-              setForm((current) => ({ ...current, omnirushTokenVisible: !current.omnirushTokenVisible }))
+              setForm((current) => ({ ...current, marsTokenVisible: !current.marsTokenVisible }))
             }
             displayName={displayName}
             onDisplayNameInput={(value) => setForm((current) => ({ ...current, displayName: value }))}
@@ -107,7 +107,7 @@ export function CreateRemoteWorkspaceModal(
             submitting={submitting}
             hostInputRef={inputRef}
             title="Remote server details"
-            description="Use the URL your omnirush.ai server shared with you. Add a token only if the server needs one."
+            description="Use the URL your marsai.click server shared with you. Add a token only if the server needs one."
           />
         </div>
 
@@ -128,15 +128,15 @@ export function CreateRemoteWorkspaceModal(
               type="button"
               onClick={() =>
                 props.onConfirm({
-                  omnirushHostUrl: omnirushHostUrl.trim(),
-                  omnirushToken: omnirushToken.trim(),
+                  marsHostUrl: marsHostUrl.trim(),
+                  marsToken: marsToken.trim(),
                   directory: directory.trim() ? directory.trim() : null,
                   displayName: displayName.trim() ? displayName.trim() : null,
                 })
               }
               disabled={!canSubmit}
               title={
-                !omnirushHostUrl.trim()
+                !marsHostUrl.trim()
                   ? t("dashboard.remote_base_url_required")
                   : undefined
               }

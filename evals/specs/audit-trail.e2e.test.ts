@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { auditMarkdown } from "../worlds/audit.ts";
 import { streamedMarkdownMarker } from "../worlds/chat.ts";
 

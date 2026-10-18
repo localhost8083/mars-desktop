@@ -6,10 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import type { OmniRushQualitySpinRecord, OmniRushQualitySpinTotals } from "@omnirush/types/desktop-ipc";
+import type { MarsQualitySpinRecord, MarsQualitySpinTotals } from "@mars/types/desktop-ipc";
 
-import { omnirushAccountStatus, omnirushQualityDetails, omnirushQualitySpin, omnirushQualitySpins } from "../../../app/lib/desktop";
-import { compactTokenCount } from "../../../app/lib/omnirush-usage";
+import { marsAccountStatus, marsQualityDetails, marsQualitySpin, marsQualitySpins } from "../../../app/lib/desktop";
+import { compactTokenCount } from "../../../app/lib/mars-usage";
 import {
   CLIENT_GRADE_NOTE,
   GOOD_SESSION_STAR_LABEL,
@@ -79,13 +79,13 @@ function useCountUp(value: number, active: boolean, reducedMotion: boolean, dura
 
 type Phase = "idle" | "requesting" | "spinning" | "result" | "error";
 
-function recentSpinLabel(spin: OmniRushQualitySpinRecord): string {
+function recentSpinLabel(spin: MarsQualitySpinRecord): string {
   if (spin.status === "spun") return spin.prizeTokens !== null ? compactTokenCount(spin.prizeTokens) : "spun";
   return spin.status === "ready" ? "ready" : spin.status;
 }
 
 /** The last spins (newest first) as one muted line, ★ on the Good session ones. */
-export function RecentSpins({ spins }: { spins: OmniRushQualitySpinRecord[] }) {
+export function RecentSpins({ spins }: { spins: MarsQualitySpinRecord[] }) {
   const shown = spins.slice(0, 10);
   if (!shown.length) return null;
   return (
@@ -179,7 +179,7 @@ export function QualitySpinPanel(props: QualitySpinPanelProps) {
   const [expectedTokens, setExpectedTokens] = useState<number | null>(null);
   const [jackpotTokens, setJackpotTokens] = useState<number | null>(null);
   const [clientSegments, setClientSegments] = useState<WheelSegment[]>([]);
-  const [totals, setTotals] = useState<OmniRushQualitySpinTotals | null>(null);
+  const [totals, setTotals] = useState<MarsQualitySpinTotals | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<QualitySpin | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -193,7 +193,7 @@ export function QualitySpinPanel(props: QualitySpinPanelProps) {
 
   useEffect(() => {
     let active = true;
-    void omnirushQualityDetails()
+    void marsQualityDetails()
       .then((details) => {
         if (!active || !details) return;
         if (details.segments.length) setSegments(details.segments);
@@ -202,7 +202,7 @@ export function QualitySpinPanel(props: QualitySpinPanelProps) {
         setClientSegments(details.clientSegments ?? []);
       })
       .catch(() => undefined);
-    void omnirushQualitySpins()
+    void marsQualitySpins()
       .then((next) => { if (active) setTotals(next); })
       .catch(() => undefined);
     return () => { active = false; };
@@ -214,7 +214,7 @@ export function QualitySpinPanel(props: QualitySpinPanelProps) {
     setError(null);
     // One key per click: a retry of this click gets this click's result back.
     const idempotencyKey = newSpinIdempotencyKey();
-    const send = props.spin ?? ((input: { idempotencyKey: string }) => omnirushQualitySpin(input));
+    const send = props.spin ?? ((input: { idempotencyKey: string }) => marsQualitySpin(input));
     let outcome: QualitySpinOutcome;
     try {
       outcome = await send({ idempotencyKey });
@@ -224,7 +224,7 @@ export function QualitySpinPanel(props: QualitySpinPanelProps) {
     if (!outcome.ok) {
       setPhase("error");
       setError(spinRefusalMessage(outcome.reason));
-      void refreshAccountStatus(omnirushAccountStatus);
+      void refreshAccountStatus(marsAccountStatus);
       return;
     }
     if (outcome.spin.segments.length) setSegments(outcome.spin.segments);
@@ -235,8 +235,8 @@ export function QualitySpinPanel(props: QualitySpinPanelProps) {
 
   const landed = useCallback(() => {
     setPhase("result");
-    void refreshAccountStatus(omnirushAccountStatus);
-    void omnirushQualitySpins().then(setTotals).catch(() => undefined);
+    void refreshAccountStatus(marsAccountStatus);
+    void marsQualitySpins().then(setTotals).catch(() => undefined);
   }, []);
 
   const toggleSound = () => {

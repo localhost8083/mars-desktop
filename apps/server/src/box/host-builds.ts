@@ -1,4 +1,4 @@
-// Ported from the CLI (omnirush-cli src/box/host-builds.js); keep the two in
+// Ported from the CLI (mars-cli src/box/host-builds.js); keep the two in
 // step. host-builds.json (the rules and the notices) is the same file in both,
 // listed in PARITY.sha256.
 //
@@ -247,10 +247,10 @@ type CacheEntry = { sig: string; at: number; result: HostBuildScan };
 
 /**
  * scanHostBuilds() with a per-folder cache in <stateDir>/box-host-builds.json
- * (`cached: true` on a hit). OMNIRUSH_BOX_HOST_BUILDS=off: never found.
+ * (`cached: true` on a hit). MARS_BOX_HOST_BUILDS=off: never found.
  */
 export function hostBuilds(root: string, { platform = process.platform, stateDir = null, env = process.env, limits = HOST_BUILD_RULES.limits, now = Date.now }: { platform?: string; stateDir?: string | null; env?: NodeJS.ProcessEnv; limits?: HostBuildLimits; now?: () => number } = {}): HostBuildScan {
-  if (!hostRules(platform) || String(env.OMNIRUSH_BOX_HOST_BUILDS ?? "").trim().toLowerCase() === "off") return { host: platform, found: false, hits: [], scanned: 0, ms: 0, truncated: false };
+  if (!hostRules(platform) || String(env.MARS_BOX_HOST_BUILDS ?? "").trim().toLowerCase() === "off") return { host: platform, found: false, hits: [], scanned: 0, ms: 0, truncated: false };
   const key = `${platform}:${path.resolve(root)}`;
   const sig = hostBuildsSignature(root);
   let cache: Record<string, CacheEntry> = {};

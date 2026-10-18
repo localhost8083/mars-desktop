@@ -1,11 +1,11 @@
 import { getMcpServerName, type McpDirectoryInfo } from "../../../app/constants";
 import type { ExtensionLayout } from "../../design-system/extension-card";
 
-const EXTENSION_LAYOUT_KEY = "omnirush.extensions.layout";
-const EXTENSION_DISABLED_KEY_PREFIX = "omnirush.extension.disabled.";
-const EXTENSION_ENABLED_KEY_PREFIX = "omnirush.extension.enabled.";
-const EXTENSION_HIDDEN_KEY_PREFIX = "omnirush.extension.hidden.";
-export const OMNIRUSH_EXTENSION_STATE_CHANGED = "omnirush:extension-state-changed";
+const EXTENSION_LAYOUT_KEY = "mars.extensions.layout";
+const EXTENSION_DISABLED_KEY_PREFIX = "mars.extension.disabled.";
+const EXTENSION_ENABLED_KEY_PREFIX = "mars.extension.enabled.";
+const EXTENSION_HIDDEN_KEY_PREFIX = "mars.extension.hidden.";
+export const MARS_EXTENSION_STATE_CHANGED = "mars:extension-state-changed";
 
 /** Whether the inventory shows tiles or dense rows. Remembered across sessions; defaults to the dense list. */
 export function readExtensionLayout(): ExtensionLayout {
@@ -22,14 +22,14 @@ export function getExtensionId(entry: McpDirectoryInfo): string {
   return entry.id ?? entry.serverName ?? getMcpServerName(entry);
 }
 
-export function isOmniRushExtensionEnabled(entry: McpDirectoryInfo): boolean {
+export function isMarsExtensionEnabled(entry: McpDirectoryInfo): boolean {
   if (typeof window === "undefined") return Boolean(entry.defaultEnabled);
   const id = getExtensionId(entry);
   if (!entry.defaultEnabled) return window.localStorage.getItem(`${EXTENSION_ENABLED_KEY_PREFIX}${id}`) === "1";
   return window.localStorage.getItem(`${EXTENSION_DISABLED_KEY_PREFIX}${id}`) !== "1";
 }
 
-export function setOmniRushExtensionEnabled(entry: McpDirectoryInfo, enabled: boolean) {
+export function setMarsExtensionEnabled(entry: McpDirectoryInfo, enabled: boolean) {
   if (typeof window === "undefined") return;
   const id = getExtensionId(entry);
   if (entry.defaultEnabled) {
@@ -47,12 +47,12 @@ export function setOmniRushExtensionEnabled(entry: McpDirectoryInfo, enabled: bo
       window.localStorage.removeItem(enabledKey);
     }
   }
-  window.dispatchEvent(new CustomEvent(OMNIRUSH_EXTENSION_STATE_CHANGED, {
+  window.dispatchEvent(new CustomEvent(MARS_EXTENSION_STATE_CHANGED, {
     detail: { id, enabled },
   }));
 }
 
-export function isOmniRushExtensionHidden(entryOrId: McpDirectoryInfo | string): boolean {
+export function isMarsExtensionHidden(entryOrId: McpDirectoryInfo | string): boolean {
   const id = typeof entryOrId === "string" ? entryOrId : getExtensionId(entryOrId);
   if (typeof window === "undefined") return false;
   const stored = window.localStorage.getItem(`${EXTENSION_HIDDEN_KEY_PREFIX}${id}`);
@@ -61,12 +61,12 @@ export function isOmniRushExtensionHidden(entryOrId: McpDirectoryInfo | string):
   return typeof entryOrId !== "string" && entryOrId.defaultHidden === true;
 }
 
-export function setOmniRushExtensionHidden(entryOrId: McpDirectoryInfo | string, hidden: boolean) {
+export function setMarsExtensionHidden(entryOrId: McpDirectoryInfo | string, hidden: boolean) {
   const id = typeof entryOrId === "string" ? entryOrId : getExtensionId(entryOrId);
   if (typeof window === "undefined") return;
   const key = `${EXTENSION_HIDDEN_KEY_PREFIX}${id}`;
   window.localStorage.setItem(key, hidden ? "1" : "0");
-  window.dispatchEvent(new CustomEvent(OMNIRUSH_EXTENSION_STATE_CHANGED, {
+  window.dispatchEvent(new CustomEvent(MARS_EXTENSION_STATE_CHANGED, {
     detail: { id, hidden },
   }));
 }

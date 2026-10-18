@@ -147,7 +147,7 @@ function denHeaders(input) {
   return {
     authorization: `Bearer ${input.denToken}`,
     "content-type": "application/json",
-    "x-omnirush-org-id": input.orgId,
+    "x-mars-org-id": input.orgId,
   };
 }
 
@@ -427,7 +427,7 @@ export async function reconcileMemberKeys(input) {
   for (const entry of memberCredentials(listed)) {
     if (entry.state !== "missing" || typeof entry.orgMembershipId !== "string") continue;
     const orgMembershipId = entry.orgMembershipId;
-    const keyAlias = `omnirush-${orgMembershipId}`;
+    const keyAlias = `mars-${orgMembershipId}`;
     const generated = await requestJson(
       `${liteLlmBaseUrl}/key/generate`,
       {
@@ -439,7 +439,7 @@ export async function reconcileMemberKeys(input) {
         body: JSON.stringify({
           models,
           key_alias: keyAlias,
-          metadata: { omnirush_org_membership_id: orgMembershipId },
+          metadata: { mars_org_membership_id: orgMembershipId },
         }),
       },
       secrets,
@@ -520,10 +520,10 @@ function env(name) {
 /** @returns {ProvisionerConfig} */
 function configFromEnv() {
   return {
-    denApiUrl: env("OMNIRUSH_DEN_API_URL"),
-    denToken: env("OMNIRUSH_DEN_TOKEN"),
-    orgId: env("OMNIRUSH_ORG_ID"),
-    providerId: env("OMNIRUSH_LLM_PROVIDER_ID"),
+    denApiUrl: env("MARS_DEN_API_URL"),
+    denToken: env("MARS_DEN_TOKEN"),
+    orgId: env("MARS_ORG_ID"),
+    providerId: env("MARS_LLM_PROVIDER_ID"),
     liteLlmBaseUrl: env("LITELLM_BASE_URL"),
     liteLlmMasterKey: env("LITELLM_MASTER_KEY"),
     models: env("LITELLM_MODELS").split(",").map((model) => model.trim()).filter(Boolean),

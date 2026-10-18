@@ -30,7 +30,7 @@ export function workspaceAvatarInitials(label: string) {
 }
 
 export function workspaceAvatarColor(workspaceId: string) {
-  const seed = workspaceId.trim() || "omnirush";
+  const seed = workspaceId.trim() || "mars";
   let hash = 2166136261;
   for (let index = 0; index < seed.length; index += 1) {
     hash ^= seed.charCodeAt(index);

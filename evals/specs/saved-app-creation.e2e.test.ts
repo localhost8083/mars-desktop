@@ -1,6 +1,6 @@
 import { expect } from "vitest";
-import { saveWorkflow, runWorkflow } from "@omnirush/behaviors";
-import { spec } from "@omnirush/testkit";
+import { saveWorkflow, runWorkflow } from "@mars/behaviors";
+import { spec } from "@mars/testkit";
 import { creationPrompt, creationReply, field, record, savedAppCreation } from "../worlds/saved-apps.ts";
 
 const test = spec.world(savedAppCreation, { timeout: 900_000 });
@@ -41,7 +41,7 @@ test("create, preview, save and reopen an app without changing already-open resu
   await step("create an app through the Dashboard conversation", async () => {
     await world.open("/dashboard");
     await user.click({ role: "button", label: "Add" });
-    await user.click("Create with OmniRush.ai");
+    await user.click("Create with MarsAI");
     await probe.eventually(() => probe.composer(), { within: 30_000, label: "app creation prompt", until: (composer) => JSON.stringify(composer).includes("Create a reusable app for my dashboard that") });
     expect(creationPrompt).not.toContain(world.configObjectId);
     await user.type("composer", creationPrompt, { replace: true });
@@ -76,7 +76,7 @@ test("create, preview, save and reopen an app without changing already-open resu
   const before = await probe.api(world.den.admin, "/v1/apps");
   expect(record(before.body).items).toEqual([]);
   expect(record((await readApp(originalPath)).view).activeRevisionId).toBeNull();
-  expect(record(await world.render())["_meta"]).not.toHaveProperty("omnirush/mcpApp");
+  expect(record(await world.render())["_meta"]).not.toHaveProperty("mars/mcpApp");
 
   await step("try a draft and cancel saving", async () => {
     await user.see("Save", { timeoutMs: 60_000 });
@@ -179,7 +179,7 @@ test("create, preview, save and reopen an app without changing already-open resu
     await user.see({ text: "Make this dashboard yours" }, { timeoutMs: 30_000 });
     expect(await readApp()).toMatchObject({ onDashboard: false, view: { activeRevisionId: revisionId } });
     await user.click({ role: "button", label: "Add" });
-    await user.see("Create with OmniRush.ai");
+    await user.see("Create with MarsAI");
     await user.click("Choose an existing app");
     await user.click("Add Team briefing");
     await probe.eventually(readApp, { within: 30_000, label: "personal dashboard placement restored", until: (app) => app.onDashboard === true });
@@ -231,7 +231,7 @@ test("create, preview, save and reopen an app without changing already-open resu
     await user.click({ role: "button", label: "Save changes", nth: 1 });
     await user.see({ text: "Saved to your dashboard. Open it whenever you need it." }, { timeoutMs: 30_000 });
     expect(record((await readApp()).view)).toMatchObject({ activeRevisionId: optOutRevision, useInWorkflow: false });
-    expect(record((await world.render())._meta)).not.toHaveProperty("omnirush/mcpApp");
+    expect(record((await world.render())._meta)).not.toHaveProperty("mars/mcpApp");
   });
   evidence.recordAssertionEvidence("Saving a new app version preserves original previews and respects workflow opt-out", "New data appeared only in the latest result, original revision and receipt remained fixed, and opting out removed automatic app selection.", true);
 
@@ -347,7 +347,7 @@ test("create, preview, save and reopen an app without changing already-open resu
     await user.click({ role: "button", label: "Share" });
     await user.click({ role: "checkbox", label: "Private planning" });
     await user.screenshot();
-    await user.type({ label: "Teammate’s email" }, "unknown@omnirush.test");
+    await user.type({ label: "Teammate’s email" }, "unknown@mars.test");
     await user.click("Share apps");
     await user.see({ text: /No teammate with that email belongs to this organization/ });
     expect((await probe.api(colleague, `/v1/apps/${appId}`)).response.status).toBe(403);
@@ -376,7 +376,7 @@ test("create, preview, save and reopen an app without changing already-open resu
     expect(verificationUrl).not.toContain(encodeURIComponent(world.den.admin.email));
     const wrongGrant = await seed.api(colleague, "/v1/auth/desktop-handoff", { method: "POST", body: "{}" });
     expect(wrongGrant.response.status, wrongGrant.text).toBe(200);
-    const wrongLink = `omnirush://den-reauth?nonce=${nonce}&grant=${field(wrongGrant.body, "grant")}`;
+    const wrongLink = `mars://den-reauth?nonce=${nonce}&grant=${field(wrongGrant.body, "grant")}`;
     await user.type({ label: "Or paste your verification link" }, wrongLink);
     await user.click("Confirm and share");
     await user.see({ text: `Sign in as ${world.den.admin.email} to confirm this share.` });
@@ -386,7 +386,7 @@ test("create, preview, save and reopen an app without changing already-open resu
     const webProbe = probe.on(world.web);
     // Follow the address offered by the app; authentication and the returned grant are real.
     await webUser.navigate(verificationUrl);
-    await webUser.type({ label: "OmniRush.ai email" }, world.den.admin.email);
+    await webUser.type({ label: "MarsAI email" }, world.den.admin.email);
     await webUser.click("Continue");
     await webUser.see({ text: "Confirm your identity to share apps" }, { timeoutMs: 90_000 });
     await webUser.type({ label: "Password" }, "wrong-password");
@@ -395,7 +395,7 @@ test("create, preview, save and reopen an app without changing already-open resu
     expect((await probe.api(colleague, `/v1/apps/${appId}`)).response.status).toBe(403);
     await webUser.type({ label: "Password" }, world.den.admin.password, { replace: true });
     await webUser.click("Verify password");
-    await webUser.see({ text: "Return to OmniRush.ai to finish sharing" }, { timeoutMs: 60_000 });
+    await webUser.see({ text: "Return to MarsAI to finish sharing" }, { timeoutMs: 60_000 });
     const verifiedLink = await webProbe.eval(() => document.querySelector<HTMLInputElement>('[aria-label="Verification link"]')?.value);
     if (typeof verifiedLink !== "string") throw new Error("Browser did not provide a verification link");
     // Use a fresh grant for the correct account so only attempt binding can
@@ -476,9 +476,9 @@ test("create, preview, save and reopen an app without changing already-open resu
     await webUser.navigate(verificationUrl);
     await webUser.type({ label: "Password" }, world.den.admin.password);
     await webUser.click("Verify password");
-    await webUser.see({ text: "Return to OmniRush.ai to finish sharing" }, { timeoutMs: 60_000 });
-    const returned = await probe.on(world.web).eval(() => document.querySelector<HTMLAnchorElement>('a[href^="omnirush://den-reauth"]')?.href);
-    if (typeof returned !== "string") throw new Error("Missing Return to OmniRush.ai link");
+    await webUser.see({ text: "Return to MarsAI to finish sharing" }, { timeoutMs: 60_000 });
+    const returned = await probe.on(world.web).eval(() => document.querySelector<HTMLAnchorElement>('a[href^="mars://den-reauth"]')?.href);
+    if (typeof returned !== "string") throw new Error("Missing Return to MarsAI link");
     await world.returnVerification(returned);
     await user.see({ text: `Shared 1 app with ${browserRecipient.email}. They’ll appear when your teammate opens or reloads their dashboard.` }, { timeoutMs: 30_000 });
     const granted = await probe.api(browserRecipient, `/v1/apps/${appId}`);
@@ -541,7 +541,7 @@ test("create, preview, save and reopen an app without changing already-open resu
     await user.click({ role: "button", label: "Add" });
     await user.see("Choose an existing app");
     await user.screenshot();
-    await user.click("Create with OmniRush.ai");
+    await user.click("Create with MarsAI");
     await probe.eventually(() => probe.composer(), { within: 30_000, label: "app creation prompt", until: (composer) => JSON.stringify(composer).includes("Create a reusable app for my dashboard that") });
     await user.screenshot();
   });

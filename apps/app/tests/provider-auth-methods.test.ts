@@ -22,7 +22,7 @@ function installWindow(options: {
       removeEventListener: () => undefined,
       dispatchEvent: () => true,
       location: { origin: options.origin },
-      __OMNIRUSH_ELECTRON__: options.electronInfo
+      __MARS_ELECTRON__: options.electronInfo
         ? {
             invokeDesktop: async () => ({
               running: true,
@@ -80,11 +80,11 @@ function createTestStore(workerType: "local" | "remote") {
     providerBaseUrl: () => "https://engine.example",
     selectedWorkspaceRoot: () => workspace.path,
     runtimeWorkspaceId: () => workspace.id,
-    omnirushServer: {
+    marsServer: {
       getSnapshot: () => ({
-        omnirushServerStatus: "disconnected",
-        omnirushServerClient: null,
-        omnirushServerCapabilities: null,
+        marsServerStatus: "disconnected",
+        marsServerClient: null,
+        marsServerCapabilities: null,
       }),
     },
     setProviders: () => undefined,

@@ -8,7 +8,7 @@ const OBSERVATION_MS = 15_000;
 const TRUST = "untrusted-site-content";
 
 function browserAutoApprovalEnabled() {
-  return process.env.OMNIRUSH_DEV_MODE === "1" && process.env.OMNIRUSH_BROWSER_AUTO_APPROVE === "1";
+  return process.env.MARS_DEV_MODE === "1" && process.env.MARS_BROWSER_AUTO_APPROVE === "1";
 }
 
 export class BrowserTaskError extends Error {
@@ -30,7 +30,7 @@ function safeUrl(value) {
 // Runs in Electron's isolated world. It has DOM access but no page globals,
 // Node, IPC, browser profile or network tools. References never enter page DOM.
 function observePage(id) {
-  const key = "__omnirushBrowserObservation";
+  const key = "__marsBrowserObservation";
   globalThis[key]?.observer?.disconnect();
   const nodes = new Map();
   const elements = [];
@@ -57,7 +57,7 @@ function observePage(id) {
     limitations: ["DOM references cover the top document and open controls; use a fresh image for frames or canvas."] };
 }
 function prepareAction(id, action) {
-  const state = globalThis.__omnirushBrowserObservation;
+  const state = globalThis.__marsBrowserObservation;
   if (!state || state.id !== id || state.changed || state.width !== innerWidth || state.height !== innerHeight || state.x !== scrollX || state.y !== scrollY) throw new Error("stale_observation");
   const element = action.ref ? state.nodes.get(action.ref) : null;
   if (action.ref && (!element || !element.isConnected)) throw new Error("stale_element");
@@ -271,7 +271,7 @@ export function createBrowserTaskHost({ getTab, tabsFor, ownerOf, activeFor, isV
     let tab, state, dispatched = false, timer, abort, openingController;
     try {
       if (typeof sessionId !== "string" || !sessionId.trim()) fail("missing_session", "Browser control requires a requesting conversation.");
-      if (!enabled()) fail("browser_disabled", "Enable OmniRush.ai Browser in Library, or ask your organization to allow browser control.");
+      if (!enabled()) fail("browser_disabled", "Enable MarsAI Browser in Library, or ask your organization to allow browser control.");
       if (operation === "tabs") return { ok: true, provider: "builtin", externalBrowsers: "unsupported", tabs: tabsFor(sessionId).map((item) => ({ tabId: item.tabId, url: safeUrl(item.view.webContents.getURL()), title: item.view.webContents.getTitle().slice(0, 300), visible: isVisible(item.tabId), ...stateFor(item.tabId), observation: undefined, controller: undefined })) };
       if (pausedSessions.has(sessionId)) fail("paused", "The user has browser control. Resume in the browser panel before continuing.");
       // Existing same-origin opener/popup pages can navigate each other. Enroll

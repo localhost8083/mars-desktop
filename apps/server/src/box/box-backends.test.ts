@@ -1,7 +1,7 @@
-// Ported from the CLI (omnirush-cli test/box-backends.test.js,
+// Ported from the CLI (mars-cli test/box-backends.test.js,
 // feat/local-box-backends): the ranked choice per OS and each backend against
 // its real CLI's output, mocked (no runtime on the test machine is touched):
-// bubblewrap (boxrun's JSON), Apple `container` (1.x JSON), the OmniRush WSL
+// bubblewrap (boxrun's JSON), Apple `container` (1.x JSON), the Mars WSL
 // distro (wsl.exe's UTF-16 output), WSL containers (wslc 3.0.1 JSON), and the
 // overrides (the backend setting, the server's allowlist). Desktop additions:
 // the service's status and setting, files-used through a non-container box.
@@ -96,7 +96,7 @@ function linuxRun(bwrapAnswer: unknown, { podman = true }: { podman?: boolean } 
 describe("box backends: Linux", () => {
   test("bubblewrap first when its probe starts a namespace", async () => {
     const home = tmp();
-    const env = { PATH: "/usr/bin", OMNIRUSH_BOX_BIN_DIR: helperBin() };
+    const env = { PATH: "/usr/bin", MARS_BOX_BIN_DIR: helperBin() };
     const { run } = linuxRun(BWRAP_OK);
     const found = await detectBackend({ boxHome: home, platform: "linux", home, env, exists: set(boxrunPath({ env }), "/usr/bin/podman"), run, fresh: true, wsl: false });
     expect(found).toMatchObject({ ok: true, backend: "bwrap", flavor: "overlayfs", idmap: "subuid", version: "0.9.0" });
@@ -106,12 +106,12 @@ describe("box backends: Linux", () => {
 
   test("AppArmor's userns restriction: one-line reason with the admin fix, rootless Podman is used", async () => {
     const home = tmp();
-    const env = { PATH: "/usr/bin", OMNIRUSH_BOX_BIN_DIR: helperBin() };
+    const env = { PATH: "/usr/bin", MARS_BOX_BIN_DIR: helperBin() };
     const found = await detectBackend({ boxHome: home, platform: "linux", home, env, exists: set(boxrunPath({ env }), "/usr/bin/podman"), run: linuxRun(BWRAP_AA).run, fresh: true, all: true, wsl: false });
     expect(found).toMatchObject({ ok: true, backend: "podman" });
     const bw = found.alternatives?.find((a) => a.backend === "bwrap");
     expect(bw?.ok).toBe(false);
-    expect(bw?.reason).toMatch(/AppArmor .*sudo omnirush sandbox enable/);
+    expect(bw?.reason).toMatch(/AppArmor .*sudo mars sandbox enable/);
     expect(bw?.reason).not.toMatch(/\n/);
     // Nothing else either: the project runs natively and says why in one line.
     const none = await detectBackend({ boxHome: home, platform: "linux", home, env, exists: set(boxrunPath({ env })), run: linuxRun(BWRAP_AA, { podman: false }).run, fresh: true, wsl: false });
@@ -123,16 +123,16 @@ describe("box backends: Linux", () => {
     expect(explainProbe({ code: "no_bwrap", reason: "bubblewrap (bwrap) is not installed" })).toMatch(/apt install bubblewrap/);
     expect(explainProbe({ code: "userns_off", reason: "x" })).toMatch(/Podman or Docker/);
     const home = tmp();
-    const missing = await probeBwrap({ env: { OMNIRUSH_BOX_BIN_DIR: "/nope" }, boxHome: home, exists: () => false, platform: "linux" });
+    const missing = await probeBwrap({ env: { MARS_BOX_BIN_DIR: "/nope" }, boxHome: home, exists: () => false, platform: "linux" });
     expect(missing.ok ? "" : missing.reason).toMatch(/boxrun is missing/);
-    const garbage = await probeBwrap({ env: { OMNIRUSH_BOX_BIN_DIR: helperBin() }, boxHome: home, exists: () => true, platform: "linux", run: async () => ({ code: 1, stdout: "", stderr: "segfault" }) });
+    const garbage = await probeBwrap({ env: { MARS_BOX_BIN_DIR: helperBin() }, boxHome: home, exists: () => true, platform: "linux", run: async () => ({ code: 1, stdout: "", stderr: "segfault" }) });
     expect(garbage.ok).toBe(false);
     expect(parseOut('noise\n{"a":1}\n{"ok":true,"port":5}\n')).toEqual({ ok: true, port: 5 });
   });
 
   test("the setting picks one backend; native turns the box off; the server's allowlist skips the rest", async () => {
     const home = tmp();
-    const env = { PATH: "/usr/bin", OMNIRUSH_BOX_BIN_DIR: helperBin() };
+    const env = { PATH: "/usr/bin", MARS_BOX_BIN_DIR: helperBin() };
     const { run, calls } = linuxRun(BWRAP_OK);
     const asked = await detectBackend({ boxHome: home, platform: "linux", home, env, exists: set(boxrunPath({ env }), "/usr/bin/podman"), run, fresh: true, asked: "podman", wsl: false });
     expect(asked).toMatchObject({ ok: true, backend: "podman" });
@@ -152,7 +152,7 @@ describe("box backends: Linux", () => {
     expect(readBackend(state)).toBe("auto");
     expect(saveBackend(state, "Bubblewrap")).toBe("bwrap");
     expect(askedBackend({ env: {}, stateDir: state })).toEqual({ backend: "bwrap", source: "setting" });
-    expect(askedBackend({ env: { OMNIRUSH_BOX_BACKEND: "docker" }, stateDir: state })).toEqual({ backend: "docker", source: "env" });
+    expect(askedBackend({ env: { MARS_BOX_BACKEND: "docker" }, stateDir: state })).toEqual({ backend: "docker", source: "env" });
     expect(() => saveBackend(state, "nope")).toThrow();
     expect(JSON.parse(readFileSync(path.join(state, "box.json"), "utf8"))).toEqual({ backend: "bwrap" });
     expect(rememberServerDefault(state, { local_box: { default: "offer", backends: ["bwrap", "docker", 3] } })).toBe(true);
@@ -163,21 +163,21 @@ describe("box backends: Linux", () => {
   });
 
   test("bwrap box start: the project at its path, the run folder, boxd on loopback with a port file, nothing of $HOME", () => {
-    const args = upArgs({ box: "/h/.omnirush/box/bwrap/boxes/k", store: "/h/.omnirush/box/bwrap/store", image: "abc-amd64", boxd: "/pkg/boxd", portFile: "/h/.omnirush/box/projects/k/boxd.port", root: "/home/u/proj", croot: "/home/u/proj", runFolder: "/h/.omnirush/box/projects/k", pkglog: { root: "/h/.omnirush/pkglog" }, token: "t0k", idleMinutes: 90 });
+    const args = upArgs({ box: "/h/.mars/box/bwrap/boxes/k", store: "/h/.mars/box/bwrap/store", image: "abc-amd64", boxd: "/pkg/boxd", portFile: "/h/.mars/box/projects/k/boxd.port", root: "/home/u/proj", croot: "/home/u/proj", runFolder: "/h/.mars/box/projects/k", pkglog: { root: "/h/.mars/pkglog" }, token: "t0k", idleMinutes: 90 });
     const binds = args.flatMap((a, i) => (a === "--bind" || a === "--ro-bind" ? [args[i + 1]] : []));
-    expect(binds).toEqual(["/home/u/proj=/home/u/proj", "/h/.omnirush/box/projects/k=/run/omnirush", "/h/.omnirush/pkglog=/h/.omnirush/pkglog"]);
+    expect(binds).toEqual(["/home/u/proj=/home/u/proj", "/h/.mars/box/projects/k=/run/mars", "/h/.mars/pkglog=/h/.mars/pkglog"]);
     const env = args.flatMap((a, i) => (a === "--env" ? [args[i + 1]] : []));
     expect(env).toContain("BOXD_LISTEN=127.0.0.1:0");
-    expect(env).toContain("BOXD_PORT_FILE=/run/omnirush/boxd.port");
+    expect(env).toContain("BOXD_PORT_FILE=/run/mars/boxd.port");
     expect(env).toContain("BOXD_IDLE_EXIT=90");
     expect(env).toContain("BOXD_TOKEN=t0k");
     expect(binds.some((b) => b?.startsWith("/h=") || b?.includes(".ssh"))).toBe(false);
     expect(boxdEnv({ token: "x", croot: "/c" }).filter((kv) => kv.startsWith("BOXD_UID") || kv.startsWith("BOXD_HOME"))).toEqual(["BOXD_UID=0", "BOXD_HOME=/root"]);
   });
 
-  test("the AppArmor profile the CLI installs covers OmniRush's own bwrap only (userns), never the sysctl", () => {
-    const profile = apparmorProfile("/usr/local/lib/omnirush/bwrap");
-    expect(profile).toMatch(/profile omnirush-bwrap \/usr\/local\/lib\/omnirush\/bwrap flags=\(unconfined\) \{\n  userns,/);
+  test("the AppArmor profile the CLI installs covers Mars's own bwrap only (userns), never the sysctl", () => {
+    const profile = apparmorProfile("/usr/local/lib/mars/bwrap");
+    expect(profile).toMatch(/profile mars-bwrap \/usr\/local\/lib\/mars\/bwrap flags=\(unconfined\) \{\n  userns,/);
     expect(/sysctl|apparmor_restrict/.test(profile.replace(/^#.*$/gm, ""))).toBe(false);
   });
 });
@@ -216,15 +216,15 @@ describe("box backends: macOS", () => {
   });
 
   test("Apple container: create args, list/inspect JSON, image digest", () => {
-    const args = createAppleArgs({ name: "omnirush-box-k", key: "k", root: "/Users/sam/proj", croot: "/Users/sam/proj", image: `ghcr.io/omnirush-ai/box-base@sha256:${"a".repeat(64)}`, runFolder: "/Users/sam/.omnirush/box/projects/k", token: "t", port: 50123, env: { OMNIRUSH_BOX_MEMORY: "6G" } });
+    const args = createAppleArgs({ name: "mars-box-k", key: "k", root: "/Users/sam/proj", croot: "/Users/sam/proj", image: `ghcr.io/omnirush-ai/box-base@sha256:${"a".repeat(64)}`, runFolder: "/Users/sam/.mars/box/projects/k", token: "t", port: 50123, env: { MARS_BOX_MEMORY: "6G" } });
     expect(args).toContain("type=bind,source=/Users/sam/proj,target=/Users/sam/proj");
-    expect(args).toContain("type=bind,source=/Users/sam/.omnirush/box/projects/k/bin,target=/opt/omnirush/bin,readonly");
+    expect(args).toContain("type=bind,source=/Users/sam/.mars/box/projects/k/bin,target=/opt/mars/bin,readonly");
     expect(args.slice(args.indexOf("-p"), args.indexOf("-p") + 2)).toEqual(["-p", "127.0.0.1:50123:7777"]);
     expect(args[args.indexOf("--memory") + 1]).toBe("6G");
-    expect(args[args.indexOf("--entrypoint") + 1]).toBe("/opt/omnirush/bin/boxd");
+    expect(args[args.indexOf("--entrypoint") + 1]).toBe("/opt/mars/bin/boxd");
     expect(args).toContain("--init");
-    expect(args).toContain("ai.omnirush.box.port=50123");
-    const snap = { configuration: { id: "omnirush-box-k", image: { reference: "ghcr.io/omnirush-ai/box-base:1", descriptor: { digest: `sha256:${"b".repeat(64)}` } }, labels: { "ai.omnirush.box": "1", "ai.omnirush.box.key": "k" } }, status: "running", networks: [{ network: "default", hostname: "omnirush-box-k", ipv4Address: "192.168.64.7/24", ipv4Gateway: "192.168.64.1" }] };
+    expect(args).toContain("ai.mars.box.port=50123");
+    const snap = { configuration: { id: "mars-box-k", image: { reference: "ghcr.io/omnirush-ai/box-base:1", descriptor: { digest: `sha256:${"b".repeat(64)}` } }, labels: { "ai.mars.box": "1", "ai.mars.box.key": "k" } }, status: "running", networks: [{ network: "default", hostname: "mars-box-k", ipv4Address: "192.168.64.7/24", ipv4Gateway: "192.168.64.1" }] };
     expect(snapshotInfo(snap)).toMatchObject({ running: true, address: "192.168.64.7", digest: `sha256:${"b".repeat(64)}` });
     expect(snapshotInfo({ ...snap, networks: [{ address: "192.168.64.9/24" }] }).address).toBe("192.168.64.9");
     expect(findDigest([{ name: "x", index: { digest: `sha256:${"c".repeat(64)}` } }])).toBe(`sha256:${"c".repeat(64)}`);
@@ -269,7 +269,7 @@ describe("box backends: macOS", () => {
   });
 });
 
-// --- Windows: the OmniRush WSL distro --------------------------------------------------------
+// --- Windows: the Mars WSL distro --------------------------------------------------------
 
 const WSL = "C:\\Windows\\System32\\wsl.exe";
 const winEnv = { Path: "C:\\Windows\\System32", SystemRoot: "C:\\Windows", ProgramFiles: "C:\\Program Files", LOCALAPPDATA: "C:\\Users\\sam\\AppData\\Local" };
@@ -312,11 +312,11 @@ describe("box backends: Windows", () => {
   });
 
   test("wsl.exe output: UTF-16LE with a BOM or UTF-8, the verbose list with its default marker", () => {
-    const list = "  NAME            STATE           VERSION\r\n* Ubuntu-24.04    Running         2\r\n  OmniRushBox     Stopped         2\r\n  Legacy Distro   Stopped         1\r\n";
+    const list = "  NAME            STATE           VERSION\r\n* Ubuntu-24.04    Running         2\r\n  MarsBox     Stopped         2\r\n  Legacy Distro   Stopped         1\r\n";
     expect(decodeWsl(utf16(list))).toBe(decodeWsl(Buffer.from(list)));
     expect(parseWslList(utf16(list))).toEqual([
       { name: "Ubuntu-24.04", state: "Running", version: "2", isDefault: true },
-      { name: "OmniRushBox", state: "Stopped", version: "2", isDefault: false },
+      { name: "MarsBox", state: "Stopped", version: "2", isDefault: false },
       { name: "Legacy Distro", state: "Stopped", version: "1", isDefault: false },
     ]);
     // What runCommand hands over when it read UTF-16 as UTF-8: NULs between letters.
@@ -329,28 +329,28 @@ describe("box backends: Windows", () => {
     expect(reason(off)).toBe(ENABLE_HINT);
     expect(ENABLE_HINT).toMatch(/administrator terminal: `wsl --install --no-distribution`, then restart/);
     expect(reason(await probeWslDistro({ platform: "win32", env: winEnv, exists: () => false, run: wslRun() }))).toBe(ENABLE_HINT);
-    const v1 = await probeWslDistro({ platform: "win32", env: { ...winEnv, OMNIRUSH_BOX_WSL_ROOTFS: "C:\\x.tar.gz" }, exists: set(WSL), run: wslRun({ list: ok("  NAME STATE VERSION\r\n  OmniRushBox  Stopped  1\r\n") }) });
+    const v1 = await probeWslDistro({ platform: "win32", env: { ...winEnv, MARS_BOX_WSL_ROOTFS: "C:\\x.tar.gz" }, exists: set(WSL), run: wslRun({ list: ok("  NAME STATE VERSION\r\n  MarsBox  Stopped  1\r\n") }) });
     expect(reason(v1)).toMatch(/WSL 1/);
-    expect(reason(await probeWslDistro({ platform: "win32", env: winEnv, exists: set(WSL), run: wslRun(), pins: { version: "x", distro: "OmniRushBox", base: "x", assets: { amd64: { url: null, sha256: null, bytes: null } } } as never }))).toMatch(/not published yet/);
+    expect(reason(await probeWslDistro({ platform: "win32", env: winEnv, exists: set(WSL), run: wslRun(), pins: { version: "x", distro: "MarsBox", base: "x", assets: { amd64: { url: null, sha256: null, bytes: null } } } as never }))).toMatch(/not published yet/);
     // The shipped wsl.json pins a published image.
     expect((await probeWslDistro({ platform: "win32", arch: "x64", env: winEnv, exists: set(WSL), run: wslRun() })).ok).toBe(true);
-    const ready = await probeWslDistro({ platform: "win32", env: { ...winEnv, OMNIRUSH_BOX_WSL_ROOTFS: "C:\\x.tar.gz" }, exists: set(WSL), run: wslRun() });
-    expect(ready).toMatchObject({ ok: true, installed: false, distro: "OmniRushBox", version: "2.6.1.0" });
-    const installed = await probeWslDistro({ platform: "win32", env: winEnv, exists: set(WSL), run: wslRun({ list: ok(utf16("  NAME  STATE  VERSION\r\n  OmniRushBox  Running  2\r\n").toString("latin1")) }) });
+    const ready = await probeWslDistro({ platform: "win32", env: { ...winEnv, MARS_BOX_WSL_ROOTFS: "C:\\x.tar.gz" }, exists: set(WSL), run: wslRun() });
+    expect(ready).toMatchObject({ ok: true, installed: false, distro: "MarsBox", version: "2.6.1.0" });
+    const installed = await probeWslDistro({ platform: "win32", env: winEnv, exists: set(WSL), run: wslRun({ list: ok(utf16("  NAME  STATE  VERSION\r\n  MarsBox  Running  2\r\n").toString("latin1")) }) });
     expect(installed.ok).toBe(true);
   });
 
   test("distro box: Windows paths bound as /mnt/c into /c, commands as root without a shell", () => {
-    expect(inDistro({ distro: "OmniRushBox" }, ["/opt/omnirush/boxrun", "status"])).toEqual(["-d", "OmniRushBox", "-u", "root", "--cd", "/", "--exec", "/opt/omnirush/boxrun", "status"]);
+    expect(inDistro({ distro: "MarsBox" }, ["/opt/mars/boxrun", "status"])).toEqual(["-d", "MarsBox", "-u", "root", "--cd", "/", "--exec", "/opt/mars/boxrun", "status"]);
     const wslPath = (p: string) => `/mnt/${p[0]!.toLowerCase()}/${p.slice(3).replace(/\\/g, "/")}`;
-    const args = upArgs({ box: "/var/lib/omnirush/boxes/k", store: "/var/lib/omnirush/store", image: "id", boxd: "/opt/omnirush/boxd", portFile: "/mnt/c/Users/Sam/.omnirush/box/projects/k/boxd.port", root: "C:\\Users\\Sam\\proj", croot: "/c/Users/Sam/proj", runFolder: "C:\\Users\\Sam\\.omnirush\\box\\projects\\k", token: "t", platform: "win32", mapPath: wslPath });
+    const args = upArgs({ box: "/var/lib/mars/boxes/k", store: "/var/lib/mars/store", image: "id", boxd: "/opt/mars/boxd", portFile: "/mnt/c/Users/Sam/.mars/box/projects/k/boxd.port", root: "C:\\Users\\Sam\\proj", croot: "/c/Users/Sam/proj", runFolder: "C:\\Users\\Sam\\.mars\\box\\projects\\k", token: "t", platform: "win32", mapPath: wslPath });
     expect(args).toContain("/mnt/c/Users/Sam/proj=/c/Users/Sam/proj");
-    expect(args).toContain("/mnt/c/Users/Sam/.omnirush/box/projects/k=/run/omnirush");
+    expect(args).toContain("/mnt/c/Users/Sam/.mars/box/projects/k=/run/mars");
   });
 
   test("keeper: the first JSON line (UTF-16 or not) gives the port; the keeper stays as a child", async () => {
     let spawnedArgs: string[] = [];
-    const kept = await startKeeper({ bin: WSL, distro: "OmniRushBox" }, ["up", "--box", "/var/lib/omnirush/boxes/k"], {
+    const kept = await startKeeper({ bin: WSL, distro: "MarsBox" }, ["up", "--box", "/var/lib/mars/boxes/k"], {
       timeoutMs: 2_000,
       spawnImpl: (_bin, args) => {
         spawnedArgs = args;
@@ -362,7 +362,7 @@ describe("box backends: Windows", () => {
     expect(kept.ok).toBe(true);
     if (kept.ok) expect(kept.out.port).toBe(40123);
     expect(spawnedArgs.at(-1)).toBe("--foreground");
-    const bad = await startKeeper({ bin: WSL, distro: "OmniRushBox" }, ["up"], {
+    const bad = await startKeeper({ bin: WSL, distro: "MarsBox" }, ["up"], {
       timeoutMs: 2_000,
       spawnImpl: () => {
         const child = fakeChild();
@@ -388,10 +388,10 @@ describe("box backends: Windows", () => {
   });
 
   test("wslc: create args take the Windows path as the bind source, publish boxd on loopback, upper-case memory, no --init", () => {
-    const args = createWslcArgs({ name: "omnirush-box-k", key: "k", root: "C:\\Users\\Sam\\proj", croot: "/c/Users/Sam/proj", image: "ghcr.io/omnirush-ai/box-base:1", runFolder: "C:\\Users\\Sam\\.omnirush\\box\\projects\\k", token: "t", port: 50999, env: { OMNIRUSH_BOX_MEMORY: "4g" } });
+    const args = createWslcArgs({ name: "mars-box-k", key: "k", root: "C:\\Users\\Sam\\proj", croot: "/c/Users/Sam/proj", image: "ghcr.io/omnirush-ai/box-base:1", runFolder: "C:\\Users\\Sam\\.mars\\box\\projects\\k", token: "t", port: 50999, env: { MARS_BOX_MEMORY: "4g" } });
     expect(args.slice(0, 2)).toEqual(["container", "create"]);
     expect(args).toContain("type=bind,source=C:\\Users\\Sam\\proj,target=/c/Users/Sam/proj");
-    expect(args).toContain("type=bind,source=C:\\Users\\Sam\\.omnirush\\box\\projects\\k\\bin,target=/opt/omnirush/bin,readonly");
+    expect(args).toContain("type=bind,source=C:\\Users\\Sam\\.mars\\box\\projects\\k\\bin,target=/opt/mars/bin,readonly");
     expect(args).toContain("127.0.0.1:50999:7777");
     expect(args[args.indexOf("-m") + 1]).toBe("4G");
     expect(args).not.toContain("--init");
@@ -399,13 +399,13 @@ describe("box backends: Windows", () => {
   });
 
   test("wslc: list JSON (an array or one object per line), labels as a map or docker's string", () => {
-    const rows = [{ ID: "abc", Names: "omnirush-box-k", Image: "ghcr.io/omnirush-ai/box-base:1", State: "running", Labels: { "ai.omnirush.box": "1", "ai.omnirush.box.key": "k" }, Size: "57.2MB (virtual 1.1GB)" }];
+    const rows = [{ ID: "abc", Names: "mars-box-k", Image: "ghcr.io/omnirush-ai/box-base:1", State: "running", Labels: { "ai.mars.box": "1", "ai.mars.box.key": "k" }, Size: "57.2MB (virtual 1.1GB)" }];
     expect(parseJsonRows(JSON.stringify(rows))).toEqual(rows);
     expect(parseJsonRows(rows.map((r) => JSON.stringify(r)).join("\n"))).toEqual(rows);
     expect(labelsOf("a=1,b=x=y")).toEqual({ a: "1", b: "x=y" });
   });
 
-  test("ranking: wslc, then the OmniRush distro, then Docker Desktop", async () => {
+  test("ranking: wslc, then the Mars distro, then Docker Desktop", async () => {
     const docker = "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe";
     const desktop = { ServerVersion: "27.3.1", OSType: "linux", OperatingSystem: "Docker Desktop" };
     const run: RunCommand = async (bin, args) => {
@@ -414,7 +414,7 @@ describe("box backends: Windows", () => {
       if (args[0] === "context") return ok("");
       return ok(desktop);
     };
-    const env = { ...winEnv, OMNIRUSH_BOX_WSL_ROOTFS: "C:\\x.tar.gz" };
+    const env = { ...winEnv, MARS_BOX_WSL_ROOTFS: "C:\\x.tar.gz" };
     expect(await detectBackend({ platform: "win32", home: "C:\\Users\\sam", env, exists: set(WSLC, WSL, docker), run, fresh: true })).toMatchObject({ backend: "wslc" });
     const noWslc = await detectBackend({ platform: "win32", home: "C:\\Users\\sam", env, exists: set(WSL, docker), run, fresh: true, all: true });
     expect(noWslc).toMatchObject({ ok: true, backend: "wsl" });
@@ -431,7 +431,7 @@ describe("box backends: record, label, status", () => {
     const runFolder = path.join(home, "projects", "k");
     mkdirSync(runFolder, { recursive: true });
     const run: RunCommand = async () => ok("");
-    const box = new Box({ key: "k", name: "omnirush-box-k", root: "/p", croot: "/p", runtime: { name: "bwrap", backend: "bwrap", bin: "/pkg/boxrun", version: "0.9.0", flavor: "overlayfs", rootless: true, arch: "amd64" }, home, runFolder, run, log: () => {}, platform: "linux", env: {} });
+    const box = new Box({ key: "k", name: "mars-box-k", root: "/p", croot: "/p", runtime: { name: "bwrap", backend: "bwrap", bin: "/pkg/boxrun", version: "0.9.0", flavor: "overlayfs", rootless: true, arch: "amd64" }, home, runFolder, run, log: () => {}, platform: "linux", env: {} });
     box.connect({ port: 5, token: "t", uid: 0, gid: 0, containerId: "bwrap_k_1", imageId: `sha256:${"e".repeat(64)}` });
     box.writeRecord();
     const rec = JSON.parse(readFileSync(path.join(home, "boxes", "k.json"), "utf8"));
@@ -441,7 +441,7 @@ describe("box backends: record, label, status", () => {
     const label = box.label();
     expect(label.backend).toBe("bwrap");
     expect(label.image.digest).toBe(`sha256:${"f".repeat(64)}`);
-    const docker = new Box({ key: "d", name: "omnirush-box-d", root: "/p", croot: "/p", runtime: { name: "docker", backend: "docker-desktop", bin: "/usr/bin/docker", prefix: ["--context", "desktop-linux"] }, home, runFolder, run, log: () => {}, platform: "linux", env: {} });
+    const docker = new Box({ key: "d", name: "mars-box-d", root: "/p", croot: "/p", runtime: { name: "docker", backend: "docker-desktop", bin: "/usr/bin/docker", prefix: ["--context", "desktop-linux"] }, home, runFolder, run, log: () => {}, platform: "linux", env: {} });
     docker.connect({ port: 6, token: "t", uid: 0, gid: 0, containerId: "c", imageId: "i" });
     docker.writeRecord();
     const drec = JSON.parse(readFileSync(path.join(home, "boxes", "d.json"), "utf8"));
@@ -453,7 +453,7 @@ describe("box backends: record, label, status", () => {
     const dir = tmp();
     const file = path.join(dir, "note.txt");
     writeFileSync(file, "hello");
-    const view = sandboxFilesUsed({ container: "omnirush-box-k", manifest: { home: "/root", workspaces: [] }, cwd: dir, hostHome: null, docker: "/nonexistent/docker", exec: { bin: "/bin/sh", args: ["-c", 'exec "$0" "$@"'], env: { OMNIRUSH_BOX_KEY: "k" } } });
+    const view = sandboxFilesUsed({ container: "mars-box-k", manifest: { home: "/root", workspaces: [] }, cwd: dir, hostHome: null, docker: "/nonexistent/docker", exec: { bin: "/bin/sh", args: ["-c", 'exec "$0" "$@"'], env: { MARS_BOX_KEY: "k" } } });
     const facts = await view?.view.inspect([file], 1024);
     expect(facts?.get(file)).toMatchObject({ kind: "file", size: 5 });
   });
@@ -464,13 +464,13 @@ describe("box backends: record, label, status", () => {
     const root = tmp();
     const workspace: BoxWorkspace = { id: "ws_1", path: root, workspaceType: "local" };
     const settings = new Map<string, { mode: "on" | "off" | null; offered: boolean }>([["ws_1", { mode: "on", offered: true }]]);
-    const env = { OMNIRUSH_BOX_HOME: home, OMNIRUSH_BOX_BIN_DIR: tmp(), PATH: "", OMNIRUSH_BOX_RUNTIME: "/nonexistent/docker" };
+    const env = { MARS_BOX_HOME: home, MARS_BOX_BIN_DIR: tmp(), PATH: "", MARS_BOX_RUNTIME: "/nonexistent/docker" };
     const boxes = new BoxService({
       stateDir,
       readSettings: async (id) => settings.get(id) ?? { mode: null, offered: false },
       writeSettings: async () => {},
       workspaces: () => [workspace],
-      pluginPath: () => "/plugins/omnirush-box.js",
+      pluginPath: () => "/plugins/mars-box.js",
       env,
     });
     const status = await boxes.status(workspace, { fresh: true });

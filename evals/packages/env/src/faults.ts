@@ -1,10 +1,10 @@
 import { createServer, request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import { setTimeout as delay } from "node:timers/promises";
-import { allocateFreePort } from "@omnirush/cdp";
-import { startFaultProxyOnSandbox } from "@omnirush/hosts";
+import { allocateFreePort } from "@mars/cdp";
+import { startFaultProxyOnSandbox } from "@mars/hosts";
 import type { IncomingHttpHeaders, IncomingMessage, OutgoingHttpHeaders, Server, ServerResponse } from "node:http";
-import type { DenRef } from "@omnirush/behaviors";
+import type { DenRef } from "@mars/behaviors";
 import type { Place } from "./place.ts";
 
 export interface FaultRequest {
@@ -219,9 +219,9 @@ export async function faultProxy(ref: DenRef, options: FaultProxyOptions = {}): 
   const remote = await startFaultProxyOnSandbox({ sandbox: options.sandbox });
   const requests: FaultRequest[] = [];
   const control = async (path: string, init: RequestInit = {}): Promise<Response> => {
-    const response = await fetch(`${remote.url}/__omnirush_faults/${path}`, {
+    const response = await fetch(`${remote.url}/__mars_faults/${path}`, {
       ...init,
-      headers: { ...init.headers, "x-omnirush-fault-token": remote.token },
+      headers: { ...init.headers, "x-mars-fault-token": remote.token },
     });
     if (!response.ok) {
       const body = await response.text().catch(() => "");
@@ -264,7 +264,7 @@ export async function faultProxy(ref: DenRef, options: FaultProxyOptions = {}): 
       if (disposed) return;
       disposed = true;
       await remote.stop().catch((error: unknown) => {
-        console.error(`[omnirush/testkit] Fault proxy cleanup failed: ${error instanceof Error ? error.message : String(error)}`);
+        console.error(`[mars/testkit] Fault proxy cleanup failed: ${error instanceof Error ? error.message : String(error)}`);
       });
     },
   };

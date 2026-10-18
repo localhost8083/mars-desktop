@@ -342,11 +342,11 @@ func TestImportRootfsTar(t *testing.T) {
 	file := filepath.Join(t.TempDir(), "rootfs.tar.gz")
 	os.WriteFile(file, archive, 0o644)
 	store := Store{Dir: t.TempDir()}
-	img, id, err := store.Import(file, "omnirush/wsl:1", "amd64", ApplyOptions{})
+	img, id, err := store.Import(file, "mars/wsl:1", "amd64", ApplyOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if img.Digest != digestOf(archive) || img.Ref != "omnirush/wsl:1" {
+	if img.Digest != digestOf(archive) || img.Ref != "mars/wsl:1" {
 		t.Fatalf("%+v", img)
 	}
 	if _, err := os.Stat(filepath.Join(store.RootFS(id), "etc/wsl.conf")); err != nil {

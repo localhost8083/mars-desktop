@@ -1,6 +1,6 @@
 # Initial Administrator Bootstrap
 
-Private OmniRush.ai Den deployments often disable public signup before anyone has an account. Configuring an owner or bootstrap administrator email authorizes that person after an account exists; it does not create the account and it does not make knowing the email sufficient to claim the deployment.
+Private MarsAI Den deployments often disable public signup before anyone has an account. Configuring an owner or bootstrap administrator email authorizes that person after an account exists; it does not create the account and it does not make knowing the email sufficient to claim the deployment.
 
 Use the initial-administrator bootstrap flow to create the first account without enabling public signup and without requiring SMTP.
 
@@ -12,7 +12,7 @@ Use the initial-administrator bootstrap flow to create the first account without
 4. The submitted one-time setup code must match the server-side setup-code secret.
 5. The server issues a short-lived, email-bound bootstrap grant.
 6. The final account creation goes through Better Auth email/password signup.
-7. OmniRush.ai creates or reuses the singleton organization, grants owner membership, adds platform-admin authorization, and signs the admin in.
+7. MarsAI creates or reuses the singleton organization, grants owner membership, adds platform-admin authorization, and signs the admin in.
 
 After the first user exists, rotating or re-adding the setup-code secret cannot reopen bootstrap. Existing users are never deleted or mutated to recover setup.
 
@@ -51,7 +51,7 @@ code_file=$(mktemp)
 openssl rand -base64 32 | tr -d '\n' > "$code_file"
 ```
 
-Store the raw code from `code_file` in your password manager or break-glass secret store and in the OmniRush.ai deployment secret.
+Store the raw code from `code_file` in your password manager or break-glass secret store and in the MarsAI deployment secret.
 
 Remove local files after the first administrator has signed in:
 
@@ -103,7 +103,7 @@ The same pattern works with container-platform secret stores, systemd environmen
 Open:
 
 ```text
-https://omnirush.example.com/setup
+https://mars.example.com/setup
 ```
 
 The setup page asks for the eligible administrator email and the raw one-time setup code. It does not display configured privileged emails and it does not require email delivery.
@@ -113,7 +113,7 @@ The setup page asks for the eligible administrator email and the raw one-time se
 The status endpoint reports only general state:
 
 ```bash
-curl -fsS https://api.omnirush.example.com/v1/auth/bootstrap/status
+curl -fsS https://api.mars.example.com/v1/auth/bootstrap/status
 ```
 
 Possible statuses are `available`, `complete`, and `unavailable`. The response never includes configured emails or setup-code material.
@@ -126,7 +126,7 @@ After the first user is created, rotating the setup code cannot re-enable bootst
 
 If the setup code is missing, bootstrap fails closed and `/setup` reports that setup is unavailable. Fix the secret and restart the API. Do not delete users or organizations to recover a malformed bootstrap configuration.
 
-Bootstrap availability is checked with an existence query against the Better Auth `user` table (`SELECT id ... LIMIT 1`) instead of a full user count. Once any user exists, setup is permanently unavailable unless an operator deliberately changes the database outside OmniRush.ai.
+Bootstrap availability is checked with an existence query against the Better Auth `user` table (`SELECT id ... LIMIT 1`) instead of a full user count. Once any user exists, setup is permanently unavailable unless an operator deliberately changes the database outside MarsAI.
 
 ## Security Warnings
 

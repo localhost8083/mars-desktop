@@ -17,7 +17,7 @@ test("couldn't start: one report, the hint it answers with, and Reset app data a
   mock.module("@/react-app/shell/cloud-workspace-overlay", () => ({
     useCloudWorkspaceStatus: () => cloudStatus,
   }));
-  const technical = "spawn C:\\Program Files\\omnirush.ai\\resources\\sidecars\\opencode.exe ENOENT";
+  const technical = "spawn C:\\Program Files\\marsai.click\\resources\\sidecars\\opencode.exe ENOENT";
   const bootState = { phase: "error", routeReady: false, message: "Something went wrong", error: technical };
   mock.module("@/react-app/shell/boot-state", () => ({
     bootOverlayCanHide: () => false,
@@ -28,17 +28,17 @@ test("couldn't start: one report, the hint it answers with, and Reset app data a
   const reportFailure = mock(async (_input: { message?: string | null }) => ({
     category: "engine_missing",
     avHint: "binary_missing",
-    hint: { title: "Your antivirus may have removed omnirush.ai's engine", body: "Open Windows Security > Protection history." },
+    hint: { title: "Your antivirus may have removed marsai.click's engine", body: "Open Windows Security > Protection history." },
   }));
-  const resetAppData = mock(async () => ({ ok: true, backupDir: "C:\\Users\\Ana\\AppData\\Roaming\\ai.omnirush.desktop\\start-reset-20261017-100000" }));
+  const resetAppData = mock(async () => ({ ok: true, backupDir: "C:\\Users\\Ana\\AppData\\Roaming\\ai.marsai.desktop\\start-reset-20261017-100000" }));
   let confirmAnswer = false;
   const confirms: string[] = [];
   Object.assign(window, {
-    __OMNIRUSH_ELECTRON__: {
+    __MARS_ELECTRON__: {
       startup: { reportFailure, resetAppData },
       recovery: { list: async () => ({ ok: true, releases: [] }) },
     },
-    __omnirushRecoveryControl: {},
+    __marsRecoveryControl: {},
     confirm: (text: string) => {
       confirms.push(text);
       return confirmAnswer;
@@ -56,7 +56,7 @@ test("couldn't start: one report, the hint it answers with, and Reset app data a
     await act(async () => {
       await Promise.resolve();
     });
-    expect(container.textContent).toContain("omnirush.ai couldn't start");
+    expect(container.textContent).toContain("marsai.click couldn't start");
     expect(container.querySelector("[data-testid=start-failure-hint]")?.textContent).toContain("Your antivirus may have removed");
     expect(container.textContent).toContain(technical);
     expect(reportFailure).toHaveBeenCalledTimes(1);

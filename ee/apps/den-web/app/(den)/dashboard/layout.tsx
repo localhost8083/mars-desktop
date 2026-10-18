@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { joinBaseUrl, readBaseUrlEnv } from "@omnirush/types/url";
+import { joinBaseUrl, readBaseUrlEnv } from "@mars/types/url";
 
 import { getManagedBrandIconUrl, parseOrgListPayload } from "../_lib/den-org";
 import { OrgDashboardShell } from "./_components/org-dashboard-shell";

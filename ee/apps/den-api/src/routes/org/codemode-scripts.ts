@@ -12,7 +12,7 @@ import {
   savedAppSummarySchema,
   savedAppDetailSchema,
   saveAppSchema,
-} from "@omnirush/types/workflows"
+} from "@mars/types/workflows"
 import {
   createWorkflowVersion,
   deleteWorkflowSnapshotContent,

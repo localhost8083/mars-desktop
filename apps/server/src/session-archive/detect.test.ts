@@ -251,7 +251,7 @@ describe("all-folders gate (4.4)", () => {
 
   test("the userData dir, a folder inside or above it, a system directory and a path that resolves into one are refused without asking", async () => {
     const home = await tempDir("folder-home");
-    const userData = join(home, ".config/OmniRush.ai");
+    const userData = join(home, ".config/MarsAI");
     await mkdir(join(userData, "managed-opencode-workdir"), { recursive: true });
     await symlink("/usr", join(home, "system"));
     const on = policy(true);
@@ -264,9 +264,9 @@ describe("all-folders gate (4.4)", () => {
   });
 
   test("every refusal, on macOS, Linux and Windows paths", () => {
-    const mac: FolderGateContext = { platform: "darwin", homes: ["/Users/sam"], userData: ["/Users/sam/Library/Application Support/ai.omnirush.desktop"] };
-    const linux: FolderGateContext = { platform: "linux", homes: ["/home/sam"], userData: ["/home/sam/.config/ai.omnirush.desktop"] };
-    const windows: FolderGateContext = { platform: "win32", homes: ["C:\\Users\\sam"], userData: ["C:\\Users\\sam\\AppData\\Roaming\\ai.omnirush.desktop"] };
+    const mac: FolderGateContext = { platform: "darwin", homes: ["/Users/sam"], userData: ["/Users/sam/Library/Application Support/ai.marsai.desktop"] };
+    const linux: FolderGateContext = { platform: "linux", homes: ["/home/sam"], userData: ["/home/sam/.config/ai.marsai.desktop"] };
+    const windows: FolderGateContext = { platform: "win32", homes: ["C:\\Users\\sam"], userData: ["C:\\Users\\sam\\AppData\\Roaming\\ai.marsai.desktop"] };
     const cases: Array<[FolderGateContext, string, ReturnType<typeof refusedFolderRoot>]> = [
       // Filesystem, drive and share roots.
       [mac, "/", "root_too_broad"],
@@ -289,13 +289,13 @@ describe("all-folders gate (4.4)", () => {
       [windows, "c:\\users\\SAM", "root_too_broad"],
       [windows, "C:\\Users", "root_too_broad"],
       // The userData dir, inside it, and above it.
-      [mac, "/Users/sam/Library/Application Support/ai.omnirush.desktop", "root_app_data"],
-      [mac, "/Users/sam/Library/Application Support/ai.omnirush.desktop/managed-opencode-workdir", "root_app_data"],
+      [mac, "/Users/sam/Library/Application Support/ai.marsai.desktop", "root_app_data"],
+      [mac, "/Users/sam/Library/Application Support/ai.marsai.desktop/managed-opencode-workdir", "root_app_data"],
       [mac, "/Users/sam/Library/Application Support", "root_app_data"],
       [mac, "/Users/sam/Library", "root_app_data"],
-      [linux, "/home/sam/.config/ai.omnirush.desktop", "root_app_data"],
+      [linux, "/home/sam/.config/ai.marsai.desktop", "root_app_data"],
       [linux, "/home/sam/.config", "root_app_data"],
-      [windows, "C:\\Users\\sam\\AppData\\Roaming\\ai.omnirush.desktop\\logs", "root_app_data"],
+      [windows, "C:\\Users\\sam\\AppData\\Roaming\\ai.marsai.desktop\\logs", "root_app_data"],
       [windows, "C:\\Users\\sam\\AppData\\Roaming", "root_app_data"],
       [windows, "C:\\Users\\sam\\AppData", "root_app_data"],
       // AppData itself is refused with no userData dir known too.
@@ -319,17 +319,17 @@ describe("all-folders gate (4.4)", () => {
       ].map((root): [FolderGateContext, string, "root_system"] => [windows, root, "root_system"]),
       ...["C:\\Users\\sam\\AppData\\Local", "C:\\Users\\sam\\AppData\\Local\\Temp\\x", "C:\\Users\\sam\\appdata\\locallow"].map((root): [FolderGateContext, string, "root_app_data"] => [windows, root, "root_app_data"]),
       // Allowed: folders under home, and elsewhere outside system directories.
-      [mac, "/Users/sam/omnirush.ai", null],
+      [mac, "/Users/sam/marsai.click", null],
       [mac, "/Users/sam/projects/x", null],
       [mac, "/Users/sam/Library/Mobile Documents/com~apple~CloudDocs/x", "root_app_data"],
       [mac, "/Volumes/Backup/projects/x", null],
       [mac, "/Users/other/x", null],
-      [linux, "/home/sam/omnirush.ai", null],
+      [linux, "/home/sam/marsai.click", null],
       [linux, "/home/sam/.local/share/x", "root_app_data"],
       [linux, "/srv/site", null],
       [linux, "/tmp/scratch", null],
       [linux, "/Library/x", "root_system"],
-      [windows, "C:\\Users\\sam\\omnirush.ai", null],
+      [windows, "C:\\Users\\sam\\marsai.click", null],
       [windows, "C:\\Users\\sam\\projects\\x", null],
       [windows, "D:\\work\\x", null],
       [windows, "D:\\Windows Backup", null],

@@ -1,4 +1,4 @@
-import { desktopExecutionPolicySchema, desktopPolicyDefaults, desktopPolicyDefinitions, resolveTeamAccessCapabilities, type DesktopExecutionPolicy, type TeamAccess } from "@omnirush/types/den/desktop-policies";
+import { desktopExecutionPolicySchema, desktopPolicyDefaults, desktopPolicyDefinitions, resolveTeamAccessCapabilities, type DesktopExecutionPolicy, type TeamAccess } from "@mars/types/den/desktop-policies";
 
 export const teamCapabilities = desktopPolicyDefinitions.filter((entry) => entry.restrictedValue !== null);
 

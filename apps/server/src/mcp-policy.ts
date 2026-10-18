@@ -1,10 +1,10 @@
 import { ApiError } from "./errors.js";
 
-/** MCP is disabled for every OmniRush.ai server configuration. */
+/** MCP is disabled for every MarsAI server configuration. */
 export type McpPolicyMode = "disabled";
 
 export const MCP_DISABLED_MESSAGE =
-  "MCP servers are disabled in OmniRush.ai.";
+  "MCP servers are disabled in MarsAI.";
 
 export function mcpPolicyForConfig(_config: unknown): McpPolicyMode {
   return "disabled";

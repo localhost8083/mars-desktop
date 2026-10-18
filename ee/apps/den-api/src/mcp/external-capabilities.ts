@@ -5,7 +5,7 @@ import {
   OMNIRUSH_CLOUD_MCP_CONNECTION_ACTION_KIND,
   OMNIRUSH_CLOUD_MCP_CONNECTION_ACTION_SOURCE,
   OMNIRUSH_CLOUD_MCP_CONNECTION_ACTION_VERSION,
-} from "@omnirush/types/den/mcp-connection-action"
+} from "@mars/types/den/mcp-connection-action"
 import { normalizeDenTypeId, type DenTypeId } from "@omnirush-ee/utils/typeid"
 import {
   getExternalMcpConnection,

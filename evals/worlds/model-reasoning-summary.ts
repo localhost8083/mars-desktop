@@ -2,8 +2,8 @@ import { spawn } from "node:child_process";
 import { mkdir, rm } from "node:fs/promises";
 import { createServer } from "node:http";
 import { join, resolve } from "node:path";
-import { SkipError, type Seed } from "@omnirush/env";
-import { close, engineBinary, isRecord, listen, readBody, sendJson, sendStream, stopChild } from "./omnirush-server-cli.ts";
+import { SkipError, type Seed } from "@mars/env";
+import { close, engineBinary, isRecord, listen, readBody, sendJson, sendStream, stopChild } from "./mars-server-cli.ts";
 
 export const SUMMARY = "I will add the two numbers.";
 export const REPLY = "42.";
@@ -11,7 +11,7 @@ export type SummaryRequest = { path: string; body: Record<string, unknown>; head
 
 export async function modelReasoningSummary(seed: Seed) {
   const binary = engineBinary();
-  if (!binary) throw new SkipError("set OMNIRUSH_OPENCODE_BIN or install opencode");
+  if (!binary) throw new SkipError("set MARS_OPENCODE_BIN or install opencode");
   const root = seed.tmpPath("model-reasoning-summary");
   const workspace = join(root, "workspace");
   const home = join(root, "home");
@@ -58,17 +58,17 @@ export async function modelReasoningSummary(seed: Seed) {
     })().catch((error: unknown) => { if (!response.headersSent) sendJson(response, 500, { error: String(error) }); else response.destroy(); });
   });
   const upstream = await listen(witness);
-  const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("OPENCODE") && !key.startsWith("OMNIRUSH_")));
+  const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("OPENCODE") && !key.startsWith("MARS_")));
   const script = `
     import { startEmbeddedServer } from "./src/embedded.ts";
     const server = await startEmbeddedServer({
       host: "127.0.0.1", port: 0, token: "summary-client", hostToken: "summary-host",
       workspaces: [process.env.SUMMARY_WORKSPACE], approvalMode: "auto", logRequests: false,
       manageOpencode: true, opencodeBin: process.env.SUMMARY_BINARY,
-      omnirushGatewayCredentials: { gatewayUrl: process.env.SUMMARY_UPSTREAM + "/v1",
+      marsGatewayCredentials: { gatewayUrl: process.env.SUMMARY_UPSTREAM + "/v1",
         accessToken: "summary-witness-access", refreshToken: "summary-witness-refresh" },
     });
-    console.log("SUMMARY_SERVER " + JSON.stringify({ base: server.url, workspaceId: server.config.workspaces[0].id, engineToken: server.config.omnirushEngineToken }));
+    console.log("SUMMARY_SERVER " + JSON.stringify({ base: server.url, workspaceId: server.config.workspaces[0].id, engineToken: server.config.marsEngineToken }));
     process.once("SIGTERM", async () => { await server.stop(); process.exit(0); });
     await new Promise(() => {});
   `;
@@ -109,7 +109,7 @@ export async function modelReasoningSummary(seed: Seed) {
     return {
       engine, requests,
       gateway: (body: Record<string, unknown>, path = "responses", headers: Record<string, string> = {}) =>
-        fetch(`${connection.base}/omnirush-gateway/v1/${path}`, { method: "POST",
+        fetch(`${connection.base}/mars-gateway/v1/${path}`, { method: "POST",
           headers: { authorization: `Bearer ${connection.engineToken}`, "content-type": "application/json", ...headers },
           body: JSON.stringify(body), signal: AbortSignal.timeout(15_000) }),
       [Symbol.asyncDispose]: dispose,

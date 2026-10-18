@@ -1,9 +1,9 @@
 import { expect } from "vitest";
 import { createDenClient } from "@omnirush/sdk";
-import { denFetch } from "@omnirush/behaviors";
-import { localMysqlIsRunning, localRedisIsRunning, server, test } from "@omnirush/testkit";
+import { denFetch } from "@mars/behaviors";
+import { localMysqlIsRunning, localRedisIsRunning, server, test } from "@mars/testkit";
 
-const remote = process.env.OMNIRUSH_EVAL_DAYTONA === "1" || Boolean(process.env.OMNIRUSH_EVAL_DEN_API_URL);
+const remote = process.env.MARS_EVAL_DAYTONA === "1" || Boolean(process.env.MARS_EVAL_DEN_API_URL);
 const available = remote || (await localMysqlIsRunning() && await localRedisIsRunning());
 
 test.skipIf(!available)(
@@ -66,7 +66,7 @@ test.skipIf(!available)(
         expect(defaultTeam.data.team.organizationId).toBe(secondOrg.id);
         expect(defaultTeam.data.team.id).not.toBe(selectedTeam.data.team.id);
         const override = await scoped.getV1Org(undefined, {
-          headers: { "x-omnirush-org-id": secondOrg.id }, throwOnError: true,
+          headers: { "x-mars-org-id": secondOrg.id }, throwOnError: true,
         });
         expect(override.data.organization.id).toBe(secondOrg.id);
         const unchanged = await scoped.getV1Org(undefined, { throwOnError: true });

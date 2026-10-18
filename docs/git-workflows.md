@@ -1,10 +1,10 @@
 # Git and pull requests from the desktop agent
 
-The omnirush.ai desktop agent can work on a git tree from the chat: clone,
+The marsai.click desktop agent can work on a git tree from the chat: clone,
 branch, create worktrees, commit, push, open and review pull requests with
 `gh`. This page describes what runs without asking, what asks once, what
 always asks, how the commit identity is chosen, and how to fix `gh`
-authentication. It applies to omnirush.ai models and to external providers
+authentication. It applies to marsai.click models and to external providers
 alike: the rules live in the engine's permission ruleset and in the
 managed-policy plugin, not in the model.
 
@@ -27,7 +27,7 @@ managed-policy plugin, not in the model.
   asked, preferring `--force-with-lease`.
 
 The rules are stated to the agent in its base prompt
-(`apps/server/src/omnirush-agent-prompt.ts`, section "Git workflows").
+(`apps/server/src/mars-agent-prompt.ts`, section "Git workflows").
 
 ## Approval rules
 
@@ -55,24 +55,24 @@ How it is wired:
 
 - `legacyExecutionPermissions` (`apps/server/src/managed-policy-rules.ts`)
   injects the `permission.bash` rules into the engine config
-  (`omnirush-runtime-config.ts`): `git *`, `gh *` and `sudo *` ask, the
+  (`mars-runtime-config.ts`): `git *`, `gh *` and `sudo *` ask, the
   read-only shapes are allowed again, destructive shapes ask. Organization
   rules from Den (`commands: deny`, `blockedCommands`) are appended last, and
   the engine keeps the last matching rule, so an organization deny always wins.
 - The engine remembers "Allow for session" by command family, which would
   otherwise cover `git push --force` once a plain `git push` was approved. The
   managed-policy plugin therefore prefixes every destructive command with
-  `OMNIRUSH_DESTRUCTIVE=1` (an ordinary environment assignment). The prompt
+  `MARS_DESTRUCTIVE=1` (an ordinary environment assignment). The prompt
   shows the marker, the marked command matches the always-ask rule and never
   the remembered family. The agent is told not to add or remove the marker.
 - The engine parses the command line (tree-sitter) and evaluates every
   `command` node it finds, including the ones inside `if`, `for`, `while`,
   `!`, subshells and `$(...)`. The marker is therefore inserted in front of
-  the command itself, after any reserved word (`if OMNIRUSH_DESTRUCTIVE=1 git
-  push --force; then …`, `! OMNIRUSH_DESTRUCTIVE=1 git push -f`), so the node
+  the command itself, after any reserved word (`if MARS_DESTRUCTIVE=1 git
+  push --force; then …`, `! MARS_DESTRUCTIVE=1 git push -f`), so the node
   the engine evaluates starts with the marker. For an interpreter the engine
   only sees `bash -c '…'`, so the marker goes in front of the interpreter
-  (`OMNIRUSH_DESTRUCTIVE=1 bash -c 'git push --force'`) and the interpreter
+  (`MARS_DESTRUCTIVE=1 bash -c 'git push --force'`) and the interpreter
   families ask once per session like write commands.
 - Heredoc bodies and comments are left untouched: `cat > deploy.sh <<'EOF'`
   followed by `git push --force` on the next line writes exactly that line,
@@ -90,10 +90,10 @@ checks the target repository:
 
 - identity set in the repository or through `GIT_AUTHOR_*` /
   `GIT_COMMITTER_*`: nothing happens;
-- identity missing and an omnirush.ai account is connected: the account's
+- identity missing and an marsai.click account is connected: the account's
   display name and email are written to that repository only (`git config
   --local`, never `--global`), and the tool output ends with a note the agent
-  relays: `[omnirush.ai] omnirush.ai set the commit identity for <repo> to
+  relays: `[marsai.click] marsai.click set the commit identity for <repo> to
   <name> <email> ...`;
 - identity missing and no account: the command is refused with a message that
   asks the agent to collect a name and email and to set them with `git config
@@ -110,14 +110,14 @@ commit or one written to a different repository (`git -C`) is still refused.
 Server side this is the `git_identity` action of `/managed-policy/evaluate`
 (`apps/server/src/managed-git-identity.ts`). The desktop app supplies the
 profile through the account store; a standalone server with
-`OMNIRUSH_GATEWAY_URL` / `OMNIRUSH_ACCESS_TOKEN` reads `/device/me` directly.
+`MARS_GATEWAY_URL` / `MARS_ACCESS_TOKEN` reads `/device/me` directly.
 
 ## Full permissions mode
 
 The rules above are the `guarded` approval mode, the default. Settings >
 General > Approvals > "Full permissions" switches the engine to `full` mode:
 nothing asks. The injected `permission.bash` block becomes a single
-`"*": "allow"` rule (no git ask rules, no `OMNIRUSH_DESTRUCTIVE` marker rule),
+`"*": "allow"` rule (no git ask rules, no `MARS_DESTRUCTIVE` marker rule),
 `permission.read` becomes a single `"*": "allow"` rule (so `.env` files, which
 the engine asks about by default, are read without a prompt) and `edit`,
 `webfetch`, `websearch`, `doom_loop` and `external_directory` are set to
@@ -125,10 +125,10 @@ the engine asks about by default, are read without a prompt) and `edit`,
 
 In full mode the managed-policy plugin does not write the destructive marker
 and never refuses a commit for a missing identity; it still sets the
-repository-local identity from the connected omnirush.ai account when the
+repository-local identity from the connected marsai.click account when the
 repository has none, and reports it in the tool output.
 
-`OMNIRUSH_APPROVALS=full|guarded` in the environment of the app or server
+`MARS_APPROVALS=full|guarded` in the environment of the app or server
 process forces the mode and disables the switch. See
 [approvals.md](approvals.md) for how to launch with it and how the mode reaches
 the engine.
@@ -157,7 +157,7 @@ the engine.
   `gh auth git-credential`.
 - A write command asks on every call: answer "Allow for session" once per
   command family; "Allow once" is deliberately single-use.
-- A command shows `OMNIRUSH_DESTRUCTIVE=1` in the approval prompt: the plugin
+- A command shows `MARS_DESTRUCTIVE=1` in the approval prompt: the plugin
   classified it as destructive; approve it only if you meant it. "Allow for
   session" on such a prompt approves the plain family (for example `git push`)
   but destructive variants keep asking.

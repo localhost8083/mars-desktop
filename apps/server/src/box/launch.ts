@@ -1,10 +1,10 @@
-// Ported from the CLI (omnirush-cli src/box/launch.js,
+// Ported from the CLI (mars-cli src/box/launch.js,
 // feat/local-box-backends); keep the shared parts in step. Desktop
-// differences: the per-project choice lives in the workspace's OmniRush
+// differences: the per-project choice lives in the workspace's Mars
 // settings (service.ts), not box.json (box.json keeps only the machine's
 // backend, as the CLI's does); the plan is per workspace (one engine serves
 // every project); a run tracks its turns per chat; there is no --sandbox or
-// --sandbox-backend flag (OMNIRUSH_BOX=1|0 and OMNIRUSH_BOX_BACKEND still
+// --sandbox-backend flag (MARS_BOX=1|0 and MARS_BOX_BACKEND still
 // override); a download with no detached command (the WSL distro) runs in
 // this process.
 //
@@ -130,25 +130,25 @@ export function saveBackend(stateDir: string, backend: unknown): BackendSetting 
   return id;
 }
 
-/** The backend asked for, and by whom: OMNIRUSH_BOX_BACKEND, then the saved setting. */
+/** The backend asked for, and by whom: MARS_BOX_BACKEND, then the saved setting. */
 export function askedBackend({ env = process.env, stateDir }: { env?: NodeJS.ProcessEnv; stateDir: string }): { backend: string; source: "env" | "setting" | "auto" } {
-  const flag = String(env.OMNIRUSH_BOX_BACKEND || "").trim();
+  const flag = String(env.MARS_BOX_BACKEND || "").trim();
   if (flag) return { backend: normalizeBackend(flag) ?? flag, source: "env" };
   const saved = readBackend(stateDir);
   return { backend: saved, source: saved !== "auto" ? "setting" : "auto" };
 }
 
 /**
- * On or off for a project, and why: OMNIRUSH_BOX=1|0 (every project), then
+ * On or off for a project, and why: MARS_BOX=1|0 (every project), then
  * the project's setting, then (a buildathon project, buildathon-repro.ts) the
  * event's `repro.box`, then the server's default ("on"; "offer" shows a
  * one-line offer until the project was offered it once; "off"). A buildathon
- * project kept off by OMNIRUSH_BOX=0 or its own switch says so (`lessRepro`).
+ * project kept off by MARS_BOX=0 or its own switch says so (`lessRepro`).
  * CLI: src/box/launch.js resolveMode, the same order.
  */
 export function resolveMode({ env = process.env, project, server, offered = false, buildathon = null }: { env?: NodeJS.ProcessEnv; project: ProjectBoxMode; server: ServerBoxDefault; offered?: boolean; buildathon?: "on" | "offer" | "off" | null }): { on: boolean; source: "env" | "project" | "server" | "default" | "buildathon"; offer: boolean; lessRepro?: true } {
   const lessRepro = buildathon === "on" || buildathon === "offer" ? { lessRepro: true as const } : {};
-  const asked = String(env.OMNIRUSH_BOX ?? "").trim().toLowerCase();
+  const asked = String(env.MARS_BOX ?? "").trim().toLowerCase();
   if (["1", "on", "true"].includes(asked)) return { on: true, source: "env", offer: false };
   if (["0", "off", "false"].includes(asked)) return { on: false, source: "env", offer: false, ...lessRepro };
   if (project === "on" || project === "off") return { on: project === "on", source: "project", offer: false, ...(project === "off" ? lessRepro : {}) };
@@ -268,10 +268,10 @@ export async function planBox({ env = process.env, home, root, log = () => {}, r
     const present = await bounded(driver.imagePresent(runtime, image, { run, home, env }), probeMs, null);
     if (!present) {
       pullInBackground(runtime, image, home, { env, log });
-      return { box: null, notice: `Sandbox is downloading (${image.approxMb ? `about ${image.approxMb} MB, ` : ""}once${runtime.backend === "wsl" && !runtime.installed ? ", with the OmniRush WSL distro" : ""}); chats here run on this machine until it is ready.`, runtime, image, downloading: true };
+      return { box: null, notice: `Sandbox is downloading (${image.approxMb ? `about ${image.approxMb} MB, ` : ""}once${runtime.backend === "wsl" && !runtime.installed ? ", with the Mars WSL distro" : ""}); chats here run on this machine until it is ready.`, runtime, image, downloading: true };
     }
   }
-  if (env.OMNIRUSH_BOX_GC !== "off") setTimeout(() => gcInBackground(runtime, home, { log }), 30_000).unref?.();
+  if (env.MARS_BOX_GC !== "off") setTimeout(() => gcInBackground(runtime, home, { log }), 30_000).unref?.();
   let opening: Promise<Box> | null = null;
   let phase: string | null = null;
   return {
@@ -304,7 +304,7 @@ export function gcInBackground(runtime: BoxRuntime, home: string, { log = () => 
 
 /** The package-manager wrappers' source folder (phase 1), mounted read-only when present. */
 export function shimsDir(env: NodeJS.ProcessEnv = process.env): string | null {
-  const asked = String(env.OMNIRUSH_BOX_SHIMS_DIR || "").trim();
+  const asked = String(env.MARS_BOX_SHIMS_DIR || "").trim();
   if (asked) return existsSync(path.join(asked, "install.sh")) ? path.resolve(asked) : null;
   return null;
 }

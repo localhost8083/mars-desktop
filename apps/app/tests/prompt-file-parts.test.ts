@@ -15,15 +15,15 @@ import {
 describe("first-line local file parts", () => {
   test("detects tilde paths in the first line", () => {
     const parts = firstLineLocalFileParts(
-      "check ~/code/research/omnirush-users/list.csv\nits a list of unique email domains",
-      "/Users/omar/code/omnirush",
+      "check ~/code/research/mars-users/list.csv\nits a list of unique email domains",
+      "/Users/omar/code/mars",
     );
 
     expect(parts).toEqual([
       {
         type: "file",
         mime: "text/plain",
-        url: "file:///Users/omar/code/research/omnirush-users/list.csv",
+        url: "file:///Users/omar/code/research/mars-users/list.csv",
         filename: "list.csv",
       },
     ]);
@@ -31,8 +31,8 @@ describe("first-line local file parts", () => {
 
   test("only detects paths from the first line", () => {
     const parts = firstLineLocalFileParts(
-      "summarize this\n~/code/research/omnirush-users/list.csv",
-      "/Users/omar/code/omnirush",
+      "summarize this\n~/code/research/mars-users/list.csv",
+      "/Users/omar/code/mars",
     );
 
     expect(parts).toEqual([]);
@@ -41,14 +41,14 @@ describe("first-line local file parts", () => {
   test("does not treat URL paths as local files", () => {
     const parts = firstLineLocalFileParts(
       "check https://example.com/research/list.csv",
-      "/Users/omar/code/omnirush",
+      "/Users/omar/code/mars",
     );
 
     expect(parts).toEqual([]);
   });
 
   test("detects Windows absolute paths in the first line", () => {
-    expect(firstLineLocalFileParts("check C:\\Users\\omar\\list.csv", "C:/Users/omar/code/omnirush")).toEqual([
+    expect(firstLineLocalFileParts("check C:\\Users\\omar\\list.csv", "C:/Users/omar/code/mars")).toEqual([
       {
         type: "file",
         mime: "text/plain",
@@ -57,7 +57,7 @@ describe("first-line local file parts", () => {
       },
     ]);
 
-    expect(firstLineLocalFileParts("check C:/Users/omar/list.csv", "C:/Users/omar/code/omnirush")).toEqual([
+    expect(firstLineLocalFileParts("check C:/Users/omar/list.csv", "C:/Users/omar/code/mars")).toEqual([
       {
         type: "file",
         mime: "text/plain",
@@ -72,7 +72,7 @@ describe("first-line local file parts", () => {
     // refuses binaries with "Cannot read binary file" as a session error.
     expect(firstLineLocalFileParts(
       "could you add this to descript /Users/ben/Downloads/C0217.MP4",
-      "/Users/ben/code/omnirush",
+      "/Users/ben/code/mars",
     )).toEqual([]);
     expect(firstLineLocalFileParts("unzip ~/Downloads/archive.zip and C:\\Users\\ben\\deck.pptx", "/Users/ben/code")).toEqual([]);
   });
@@ -132,7 +132,7 @@ describe("slash-command parsing", () => {
   });
 
   test("does not parse absolute file paths as commands", () => {
-    expect(parseSlashCommandInvocation("/Users/omar/code/omnirush/apps/app/src/file.ts\nwhy does this fail?")).toBeNull();
+    expect(parseSlashCommandInvocation("/Users/omar/code/mars/apps/app/src/file.ts\nwhy does this fail?")).toBeNull();
     expect(getSlashCommandQuery("/Users/omar/code/file.ts")).toBeNull();
   });
 });
@@ -143,8 +143,8 @@ describe("Connect skill slash commands", () => {
       name: "Escalate ticket",
       trigger: "escalate-ticket",
       description: "Prepare a support escalation.",
-      path: "omnirush-connect://marketplace_1/plugin_1/skill_1",
-      origin: "omnirush-connect",
+      path: "mars-connect://marketplace_1/plugin_1/skill_1",
+      origin: "mars-connect",
       marketplaceName: "Team tools",
       pluginName: "Support kit",
       connectCapabilityName: "plugin:plugin_1:skill_1",
@@ -186,8 +186,8 @@ describe("Connect skill slash commands", () => {
         {
           name: "Unresolved",
           trigger: "unresolved",
-          path: "omnirush-connect://marketplace_1/plugin_1/skill_2",
-          origin: "omnirush-connect",
+          path: "mars-connect://marketplace_1/plugin_1/skill_2",
+          origin: "mars-connect",
         },
       ]),
     ).toEqual([]);
@@ -202,8 +202,8 @@ describe("Connect skill slash commands", () => {
     const [withProvenance] = connectSkillSlashCommandOptions([{
       name: "Escalate ticket",
       trigger: "escalate-ticket",
-      path: "omnirush-connect://marketplace_1/plugin_1/skill_1",
-      origin: "omnirush-connect",
+      path: "mars-connect://marketplace_1/plugin_1/skill_1",
+      origin: "mars-connect",
       marketplaceName: "Team tools",
       pluginName: "Support kit",
       connectCapabilityName: "plugin:plugin_1:skill_1",
@@ -213,8 +213,8 @@ describe("Connect skill slash commands", () => {
     const [withoutProvenance] = connectSkillSlashCommandOptions([{
       name: "Escalate ticket",
       trigger: "escalate-ticket",
-      path: "omnirush-connect://marketplace_1/plugin_1/skill_1",
-      origin: "omnirush-connect",
+      path: "mars-connect://marketplace_1/plugin_1/skill_1",
+      origin: "mars-connect",
       connectCapabilityName: "plugin:plugin_1:skill_1",
     }]);
     expect(withoutProvenance?.description).toBe("");

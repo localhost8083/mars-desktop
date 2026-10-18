@@ -17,7 +17,7 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { omnirushConfigDir } from "@omnirush/paths";
+import { marsConfigDir } from "@mars/paths";
 
 export const START_RESET_PENDING = ".start-reset-pending.json";
 export const START_RESTORE_PENDING = ".start-restore-pending.json";
@@ -38,14 +38,14 @@ function stamp(date) {
  * @returns {StartResetTarget[]}
  */
 export function startResetTargets({ userDataPath, env = process.env, homedir, platform = process.platform, includeEngineData = false }) {
-  const configDir = omnirushConfigDir({ env, homeDir: homedir, platform });
+  const configDir = marsConfigDir({ env, homeDir: homedir, platform });
   const app = (name) => ({ label: `app/${name}`, paths: [path.join(userDataPath, name)] });
   const config = (name) => ({ label: `config/${name}`, paths: [path.join(configDir, name)] });
   return [
-    app("omnirush-workspaces.json"),
+    app("mars-workspaces.json"),
     app("workspace-state.json"),
-    app("omnirush-server-tokens.json"),
-    app("omnirush-server-state.json"),
+    app("mars-server-tokens.json"),
+    app("mars-server-state.json"),
     app("managed-opencode-workdir"),
     ...(includeEngineData ? [app("engine-data")] : []),
     config("server.json"),
@@ -106,7 +106,7 @@ async function moveGroup(moves, renameImpl) {
 /**
  * On launch: when a reset was asked for, move each target group that
  * exists into the backup folder (or, across drives, beside itself with a
- * `.omnirush-reset-<time>` suffix). Never throws; returns what moved and
+ * `.mars-reset-<time>` suffix). Never throws; returns what moved and
  * writes the receipt a restore reads.
  *
  * @param {{
@@ -139,7 +139,7 @@ export async function applyPendingStartReset({ userDataPath, targetsFor, now = (
       moved.push({ label: target.label, moves: await moveGroup(intoBackup, renameImpl) });
     } catch {
       try {
-        const beside = present.map((from) => ({ from, to: `${from}.omnirush-reset-${time}` }));
+        const beside = present.map((from) => ({ from, to: `${from}.mars-reset-${time}` }));
         moved.push({ label: target.label, moves: await moveGroup(beside, renameImpl) });
       } catch (error) {
         failed.push({ label: target.label, code: error?.code ?? "error" });

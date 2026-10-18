@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/test-artifacts",
+  "name": "@mars/test-artifacts",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,6 +12,6 @@
     "./review": "./src/review.ts"
   },
   "dependencies": {
-    "@omnirush/review": "link:../../../packages/review"
+    "@mars/review": "link:../../../packages/review"
   }
 }

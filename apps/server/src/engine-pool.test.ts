@@ -19,15 +19,15 @@ import { proxyOpencodeRequest, startServer } from "./server.js";
 import type { ServerConfig, WorkspaceInfo } from "./types.js";
 
 const ENV_NAMES = [
-  "OMNIRUSH_RUNTIME_DB",
-  "OMNIRUSH_ENGINE_DRAIN_POLL_MS",
-  "OMNIRUSH_ENGINE_DRAIN_TIMEOUT_MS",
-  "OMNIRUSH_ENGINE_ABORT_SETTLE_MS",
-  "OMNIRUSH_ENGINE_MIN_SPAWN_INTERVAL_MS",
-  "OMNIRUSH_POOL_LOG",
-  "OMNIRUSH_POOL_STATE",
-  "OMNIRUSH_ENGINE_DRAIN_REQUEST_GRACE_MS",
-  "OMNIRUSH_ENGINE_PROMPT_START_GRACE_MS",
+  "MARS_RUNTIME_DB",
+  "MARS_ENGINE_DRAIN_POLL_MS",
+  "MARS_ENGINE_DRAIN_TIMEOUT_MS",
+  "MARS_ENGINE_ABORT_SETTLE_MS",
+  "MARS_ENGINE_MIN_SPAWN_INTERVAL_MS",
+  "MARS_POOL_LOG",
+  "MARS_POOL_STATE",
+  "MARS_ENGINE_DRAIN_REQUEST_GRACE_MS",
+  "MARS_ENGINE_PROMPT_START_GRACE_MS",
 ];
 
 const cleanups: Array<() => void | Promise<void>> = [];
@@ -58,8 +58,8 @@ async function writeFakeEngineBin(root: string): Promise<string> {
     "import { appendFileSync, readFileSync } from 'node:fs';",
     "const portIndex = process.argv.indexOf('--port');",
     "const requestedPort = Number(process.argv[portIndex + 1] ?? 0);",
-    "const logPath = process.env.OMNIRUSH_POOL_LOG;",
-    "const statePath = process.env.OMNIRUSH_POOL_STATE;",
+    "const logPath = process.env.MARS_POOL_LOG;",
+    "const statePath = process.env.MARS_POOL_STATE;",
     "const append = (line) => { if (logPath) appendFileSync(logPath, `${line}\\n`); };",
     "const busySessions = (port, directory) => {",
     "  try {",
@@ -195,7 +195,7 @@ type Fixture = {
 };
 
 async function createFixture(options?: { bin?: "ready" | "unready" }): Promise<Fixture> {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-engine-pool-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-engine-pool-"));
   cleanups.push(() => rm(root, { recursive: true, force: true }));
 
   const logPath = join(root, "engine.log");
@@ -205,13 +205,13 @@ async function createFixture(options?: { bin?: "ready" | "unready" }): Promise<F
   await writeFile(runtimeConfigPath, JSON.stringify({ generation: 1 }));
 
   for (const name of ENV_NAMES) if (!savedEnv.has(name)) savedEnv.set(name, process.env[name]);
-  process.env.OMNIRUSH_RUNTIME_DB = join(root, "runtime.sqlite");
-  process.env.OMNIRUSH_POOL_LOG = logPath;
-  process.env.OMNIRUSH_POOL_STATE = statePath;
+  process.env.MARS_RUNTIME_DB = join(root, "runtime.sqlite");
+  process.env.MARS_POOL_LOG = logPath;
+  process.env.MARS_POOL_STATE = statePath;
   // Fast drain polling and no spawn throttle so the tests exercise the loop
   // rather than the clock.
-  process.env.OMNIRUSH_ENGINE_DRAIN_POLL_MS = "100";
-  process.env.OMNIRUSH_ENGINE_MIN_SPAWN_INTERVAL_MS = "0";
+  process.env.MARS_ENGINE_DRAIN_POLL_MS = "100";
+  process.env.MARS_ENGINE_MIN_SPAWN_INTERVAL_MS = "0";
 
   const bin = options?.bin === "unready"
     ? await writeUnreadyEngineBin(root)
@@ -247,8 +247,8 @@ async function createFixture(options?: { bin?: "ready" | "unready" }): Promise<F
     cwd: root,
     runtimeConfigPath,
     env: {
-      OMNIRUSH_POOL_LOG: logPath,
-      OMNIRUSH_POOL_STATE: statePath,
+      MARS_POOL_LOG: logPath,
+      MARS_POOL_STATE: statePath,
       OPENCODE_CONFIG: runtimeConfigPath,
     },
     reservedPorts: () => [],
@@ -776,7 +776,7 @@ describe("engine pool", () => {
     const release = pool.beginRequest(primary.url);
     await fixture.setRuntimeConfig(JSON.stringify({ generation: 2 }));
 
-    const outcome = await pool.requestRollover({ reason: "omnirush_model_catalog", workspace: fixture.workspace, forceStandby: true });
+    const outcome = await pool.requestRollover({ reason: "mars_model_catalog", workspace: fixture.workspace, forceStandby: true });
 
     expect(outcome).toMatchObject({ action: "rolled_over", drainingSessions: 0 });
     // Idle, yet not closed under the request.
@@ -795,7 +795,7 @@ describe("engine pool", () => {
     pool.beginRequest(primary.url, { method: "POST", proxyPath: "/session/ses_starting/prompt_async" })();
     await fixture.setRuntimeConfig(JSON.stringify({ generation: 2 }));
 
-    const outcome = await pool.requestRollover({ reason: "omnirush_model_catalog", workspace: fixture.workspace, forceStandby: true });
+    const outcome = await pool.requestRollover({ reason: "mars_model_catalog", workspace: fixture.workspace, forceStandby: true });
 
     expect(outcome).toMatchObject({ action: "rolled_over", drainingSessions: 1 });
     expect(pool.routeRequest("GET", "/session/ses_starting/message")?.target.baseUrl).toBe(primary.url);
@@ -811,22 +811,22 @@ describe("engine pool", () => {
 
   test("a prompt that never starts holds a drained engine only for the start grace period", async () => {
     const fixture = await createFixture();
-    setEnv("OMNIRUSH_ENGINE_PROMPT_START_GRACE_MS", "500");
+    setEnv("MARS_ENGINE_PROMPT_START_GRACE_MS", "500");
     const { pool, primary } = await createPool(fixture);
     pool.beginRequest(primary.url, { method: "POST", proxyPath: "/session/ses_never/prompt_async" })();
     await fixture.setRuntimeConfig(JSON.stringify({ generation: 2 }));
-    expect(await pool.requestRollover({ reason: "omnirush_model_catalog", workspace: fixture.workspace, forceStandby: true }))
+    expect(await pool.requestRollover({ reason: "mars_model_catalog", workspace: fixture.workspace, forceStandby: true }))
       .toMatchObject({ action: "rolled_over", drainingSessions: 1 });
     expect(await waitUntil(() => !primary.isAlive(), 5_000)).toBe(true);
   });
 
   test("a request that never answers holds a drained engine only for the grace period", async () => {
     const fixture = await createFixture();
-    setEnv("OMNIRUSH_ENGINE_DRAIN_REQUEST_GRACE_MS", "300");
+    setEnv("MARS_ENGINE_DRAIN_REQUEST_GRACE_MS", "300");
     const { pool, primary } = await createPool(fixture);
     pool.beginRequest(primary.url);
     await fixture.setRuntimeConfig(JSON.stringify({ generation: 2 }));
-    expect((await pool.requestRollover({ reason: "omnirush_model_catalog", workspace: fixture.workspace, forceStandby: true })).action)
+    expect((await pool.requestRollover({ reason: "mars_model_catalog", workspace: fixture.workspace, forceStandby: true })).action)
       .toBe("rolled_over");
     expect(await waitUntil(() => !primary.isAlive(), 5_000)).toBe(true);
   });
@@ -848,7 +848,7 @@ describe("engine pool", () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await fixture.setRuntimeConfig(JSON.stringify({ generation: 2 }));
 
-    expect((await pool.requestRollover({ reason: "omnirush_model_catalog", workspace: fixture.workspace, forceStandby: true })).action)
+    expect((await pool.requestRollover({ reason: "mars_model_catalog", workspace: fixture.workspace, forceStandby: true })).action)
       .toBe("rolled_over");
     await new Promise((resolve) => setTimeout(resolve, 300));
     expect(await Promise.race([settled, Promise.resolve("pending")])).toBe("pending");
@@ -872,7 +872,7 @@ describe("engine pool", () => {
     };
     const { pool, primary } = await createPool(fixture);
     await fixture.setRuntimeConfig(JSON.stringify({ generation: 2 }));
-    const rollover = pool.requestRollover({ reason: "omnirush_model_catalog", workspace: fixture.workspace, forceStandby: true });
+    const rollover = pool.requestRollover({ reason: "mars_model_catalog", workspace: fixture.workspace, forceStandby: true });
     await standbyHealthy;
     // The old engine is gone before the flip; a request is routed to it all the same.
     await primary.close();
@@ -915,10 +915,10 @@ describe("engine pool", () => {
     const fixture = await createFixture();
     await createPool(fixture);
     const originalFetch = globalThis.fetch;
-    const originalTelemetry = globalThis.__omnirushDesktopTelemetry;
+    const originalTelemetry = globalThis.__marsDesktopTelemetry;
     const captured: unknown[] = [];
     const server = await startServer(fixture.config);
-    globalThis.__omnirushDesktopTelemetry = {
+    globalThis.__marsDesktopTelemetry = {
       captureException(error) {
         captured.push(error);
         return true;
@@ -940,7 +940,7 @@ describe("engine pool", () => {
       expect(captured).toEqual([]);
     } finally {
       globalThis.fetch = originalFetch;
-      globalThis.__omnirushDesktopTelemetry = originalTelemetry;
+      globalThis.__marsDesktopTelemetry = originalTelemetry;
       await server.stop();
     }
   });
@@ -986,8 +986,8 @@ describe("engine pool", () => {
   });
 
   test("aborts the remaining sessions once the drain inactivity grace period expires", async () => {
-    setEnv("OMNIRUSH_ENGINE_DRAIN_TIMEOUT_MS", "300");
-    setEnv("OMNIRUSH_ENGINE_ABORT_SETTLE_MS", "100");
+    setEnv("MARS_ENGINE_DRAIN_TIMEOUT_MS", "300");
+    setEnv("MARS_ENGINE_ABORT_SETTLE_MS", "100");
     const fixture = await createFixture();
     const { pool, primary } = await createPool(fixture);
     const oldPort = portOf(primary.url);
@@ -1008,8 +1008,8 @@ describe("engine pool", () => {
   });
 
   test("uses one global activity stream across many workspaces and never aborts an active session", async () => {
-    setEnv("OMNIRUSH_ENGINE_DRAIN_TIMEOUT_MS", "300");
-    setEnv("OMNIRUSH_ENGINE_ABORT_SETTLE_MS", "100");
+    setEnv("MARS_ENGINE_DRAIN_TIMEOUT_MS", "300");
+    setEnv("MARS_ENGINE_ABORT_SETTLE_MS", "100");
     const fixture = await createFixture();
     for (let index = 1; index < 32; index += 1) {
       fixture.config.workspaces.push({
@@ -1158,7 +1158,7 @@ describe("engine event stream bounds", () => {
   };
 
   test("a sibling that never returns headers does not stall the client event stream", async () => {
-    setEnv("OMNIRUSH_ENGINE_EVENT_ESTABLISH_TIMEOUT_MS", "300");
+    setEnv("MARS_ENGINE_EVENT_ESTABLISH_TIMEOUT_MS", "300");
     const fixture = await createFixture();
     const { pool, primary } = await createPool(fixture);
     const oldPort = portOf(primary.url);
@@ -1180,7 +1180,7 @@ describe("engine event stream bounds", () => {
   });
 
   test("a quiet live event stream stays open past the establishment deadline", async () => {
-    setEnv("OMNIRUSH_ENGINE_EVENT_ESTABLISH_TIMEOUT_MS", "300");
+    setEnv("MARS_ENGINE_EVENT_ESTABLISH_TIMEOUT_MS", "300");
     const fixture = await createFixture();
     await createPool(fixture);
 
@@ -1216,7 +1216,7 @@ describe("engine event stream bounds", () => {
   });
 
   test("the drain activity watch drops a runaway frame stream and reconnects", async () => {
-    setEnv("OMNIRUSH_ENGINE_DRAIN_ACTIVITY_RECONNECT_MS", "100");
+    setEnv("MARS_ENGINE_DRAIN_ACTIVITY_RECONNECT_MS", "100");
     const fixture = await createFixture();
     const { pool, primary } = await createPool(fixture);
     const oldPort = portOf(primary.url);

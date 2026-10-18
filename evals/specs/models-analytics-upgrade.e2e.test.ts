@@ -1,6 +1,6 @@
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { expect } from "vitest";
-import { denFetch, sendComposerMessage, waitForAssistantReply, selectModel } from "@omnirush/behaviors";
+import { denFetch, sendComposerMessage, waitForAssistantReply, selectModel } from "@mars/behaviors";
 import { modelsAnalyticsWorld } from "../worlds/models-analytics.ts";
 
 const test = spec.world(modelsAnalyticsWorld, { timeout: 900_000, needs: {} });
@@ -13,7 +13,7 @@ function list(value: unknown): Record<string, unknown>[] { return Array.isArray(
 test("an existing Models subscriber can decline, enable and disable task analytics without losing Models", { timeout: 1_800_000 }, async ({ world, user, probe, evidence }) => {
   {
   const api = (path: string, init?: RequestInit, session = world.den.admin) => denFetch(session, path, {
-    ...init, headers: { authorization: `Bearer ${session.token}`, "x-omnirush-org-id": world.orgId, "content-type": "application/json" },
+    ...init, headers: { authorization: `Bearer ${session.token}`, "x-mars-org-id": world.orgId, "content-type": "application/json" },
   });
   const settings = async () => record((await api("/v1/inference/analytics/settings")).body);
   const activity = async () => list(record((await api("/v1/inference/analytics/activity")).body).events);
@@ -43,7 +43,7 @@ test("an existing Models subscriber can decline, enable and disable task analyti
   evidence.recordAssertionEvidence("An existing paid Models organization keeps model access while analytics is unreleased and inaccessible", "Managed model request returned 200; subscription remained enabled; analytics was absent from the UI and read API returned 403", true);
 
   const unupgraded = await world.anotherOrganization();
-  const legacyDeletion = await denFetch(unupgraded.admin, "/v1/org", { method: "DELETE", headers: { authorization: `Bearer ${unupgraded.admin.token}`, "x-omnirush-org-id": unupgraded.orgId } });
+  const legacyDeletion = await denFetch(unupgraded.admin, "/v1/org", { method: "DELETE", headers: { authorization: `Bearer ${unupgraded.admin.token}`, "x-mars-org-id": unupgraded.orgId } });
   expect(legacyDeletion.response.status).toBe(200);
   evidence.recordAssertionEvidence("Existing workspace deletion remains available before the analytics migration", "A separate workspace was deleted through the public API while the analytics tables were absent", true);
 
@@ -88,7 +88,7 @@ test("an existing Models subscriber can decline, enable and disable task analyti
   evidence.recordAssertionEvidence("Moving between Models and Analytics preserves consent and keeps the Models page focused", "After opting in, the Models page still contains no task analytics, usage limits, analytics navigation or integrations. Returning through Analytics restores the enabled Activity view without asking again.", true);
 
   expect(await activity()).toHaveLength(0);
-  await user.see({ text: "Your next OmniRush.ai Models task appears here" });
+  await user.see({ text: "Your next MarsAI Models task appears here" });
   await user.see({ text: "Tasks using your own provider connections" });
   const subscription = record(record((await api("/v1/inference")).body).inference);
   expect(subscription).toEqual(baseline);
@@ -119,14 +119,14 @@ test("an existing Models subscriber can decline, enable and disable task analyti
   evidence.recordAssertionEvidence("The ingestion API preserves submitted metadata, deduplicates retries and excludes content", "No pre-consent backfill; 2 real inference calls plus 4 events submitted through the ingestion API after retry; private prompt absent; content and client-supplied costs rejected", true);
   evidence.recordAssertionEvidence("Members cannot view organization analytics, change the choice or attach events to another member's task", "Read/write settings returned 403; forged task batch accepted zero events", true);
   const other = await world.anotherSubscriber();
-  const isolated = await denFetch(other.admin, "/v1/inference/analytics/activity", { headers: { authorization: `Bearer ${other.admin.token}`, "x-omnirush-org-id": other.orgId } });
+  const isolated = await denFetch(other.admin, "/v1/inference/analytics/activity", { headers: { authorization: `Bearer ${other.admin.token}`, "x-mars-org-id": other.orgId } });
   expect(isolated.response.status).toBe(200);
   expect(record(isolated.body).events).toEqual([]);
   evidence.recordAssertionEvidence("A second paid, opted-in organization cannot see the first organization's activity", "The second organization has analytics access, returns HTTP 200, and sees zero events", true);
 
   await user.see({ text: "completed" }, { timeoutMs: 45_000 });
   await user.see({ text: /^(MiniMax-M3, GLM-5\.2|GLM-5\.2, MiniMax-M3)$/ });
-  await user.notSee({ text: "Your next OmniRush.ai Models task appears here" });
+  await user.notSee({ text: "Your next MarsAI Models task appears here" });
   evidence.recordAssertionEvidence("New Models activity appears without a manual refresh", "The empty activity screen became a completed task showing both real inference models, MiniMax-M3 and GLM-5.2, without reloading or pressing Refresh; provider coverage guidance was visible before the first task", true);
   await user.screenshot();
   await user.click({ role: "tab", label: "Consumption" });
@@ -227,12 +227,12 @@ test("an existing Models subscriber can decline, enable and disable task analyti
   {
   const webUser = user.on(world.web);
   const api = (path: string, init?: RequestInit) => denFetch(world.den.admin, path, { ...init,
-    headers: { authorization: `Bearer ${world.den.admin.token}`, "x-omnirush-org-id": world.orgId, "content-type": "application/json" },
+    headers: { authorization: `Bearer ${world.den.admin.token}`, "x-mars-org-id": world.orgId, "content-type": "application/json" },
   });
   await world.rollout(true);
   expect((await api("/v1/inference/analytics/settings", { method: "PATCH", body: JSON.stringify({ enabled: false }) })).response.ok).toBe(true);
   const { app, session, analyticsTransport, upgradeDenApi } = await world.desktop();
-  await selectModel(app, "z-ai/glm-5.2", { provider: "OmniRush.ai Models" });
+  await selectModel(app, "z-ai/glm-5.2", { provider: "MarsAI Models" });
   let replies = 0;
   async function send(prompt: string) {
     await sendComposerMessage(app, prompt);
@@ -264,8 +264,8 @@ test("an existing Models subscriber can decline, enable and disable task analyti
   expect(new Set(events.map((event) => event.taskId)).size).toBe(1);
   expect(events.filter((event) => event.type === "task.started")).toHaveLength(1);
   expect(JSON.stringify(events)).not.toContain("Continue the same conversation");
-  await selectModel(app, "minimax/minimax-m3", { provider: "OmniRush.ai Models" });
-  await send("Continue with another OmniRush.ai model.");
+  await selectModel(app, "minimax/minimax-m3", { provider: "MarsAI Models" });
+  await send("Continue with another MarsAI model.");
   const switched = await probe.eventually(activity, { within: 90_000, label: "model switch keeps the conversation's task history", until: (events) => events.filter((event) => event.type === "task.completed").length === 2 });
   expect(new Set(switched.filter((event) => event.type === "model.call").map((event) => event.model))).toEqual(new Set(["z-ai/glm-5.2", "minimax/minimax-m3"]));
   await user.on(app).see({ text: "Summarize the plan before enabling task analytics." });

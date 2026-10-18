@@ -4,12 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect } from "vitest";
-import { denFetch } from "@omnirush/behaviors";
-import type { DenSession } from "@omnirush/behaviors";
-import { localMysqlIsRunning, localRedisIsRunning, mcpMock, server, test } from "@omnirush/testkit";
+import { denFetch } from "@mars/behaviors";
+import type { DenSession } from "@mars/behaviors";
+import { localMysqlIsRunning, localRedisIsRunning, mcpMock, server, test } from "@mars/testkit";
 
-const daytona = process.env.OMNIRUSH_EVAL_DAYTONA?.trim() === "1";
-const attached = Boolean(process.env.OMNIRUSH_EVAL_DEN_API_URL?.trim());
+const daytona = process.env.MARS_EVAL_DAYTONA?.trim() === "1";
+const attached = Boolean(process.env.MARS_EVAL_DEN_API_URL?.trim());
 const mysqlOpen = daytona || attached || await localMysqlIsRunning();
 const redisOpen = daytona || attached || await localRedisIsRunning();
 const title = !mysqlOpen
@@ -34,7 +34,7 @@ function stringField(record: Record<string, unknown>, field: string): string {
 }
 
 function orgHeaders(session: DenSession, orgId: string): Record<string, string> {
-  return { authorization: `Bearer ${session.token}`, "x-omnirush-org-id": orgId };
+  return { authorization: `Bearer ${session.token}`, "x-mars-org-id": orgId };
 }
 
 async function organizationId(admin: DenSession, organizationName: string): Promise<string> {
@@ -441,7 +441,7 @@ test.skipIf(!mysqlOpen || !redisOpen)("the shipped manifest CLI provisions five 
   const apiKey = stringField(requireRecord(minted.body, "API key"), "key");
   const headers = { "x-api-key": apiKey };
   const secret = 'cli-witness-"quoted"\nsecond-line';
-  const directory = await mkdtemp(join(tmpdir(), "omnirush-manifest-cli-"));
+  const directory = await mkdtemp(join(tmpdir(), "mars-manifest-cli-"));
   const file = join(directory, "organization.json");
   const client = fileURLToPath(new URL("../../examples/declarative-org/apply.mjs", import.meta.url));
   const manifest = {

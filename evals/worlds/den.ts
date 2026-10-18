@@ -1,9 +1,9 @@
-import { addInitScript, browserScript } from "@omnirush/cdp";
-import { localMysqlIsRunning, SkipError } from "@omnirush/env";
-import type { Seed } from "@omnirush/env";
-import { waitFor } from "@omnirush/behaviors";
-import { navigate } from "@omnirush/cdp";
-import { startMockIdpLab } from "@omnirush/labs";
+import { addInitScript, browserScript } from "@mars/cdp";
+import { localMysqlIsRunning, SkipError } from "@mars/env";
+import type { Seed } from "@mars/env";
+import { waitFor } from "@mars/behaviors";
+import { navigate } from "@mars/cdp";
+import { startMockIdpLab } from "@mars/labs";
 
 function recordField(value: unknown, key: string): Record<string, unknown> | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
@@ -57,7 +57,7 @@ export async function ssoInvite(seed: Seed) {
       method: "POST",
       headers: {
         cookie: sessionCookie,
-        "x-omnirush-org-id": organizationId,
+        "x-mars-org-id": organizationId,
       },
       body: JSON.stringify({
         issuer: registration.issuer,
@@ -77,7 +77,7 @@ export async function ssoInvite(seed: Seed) {
 
     const orgHeaders = {
       cookie: sessionCookie,
-      "x-omnirush-org-id": organizationId,
+      "x-mars-org-id": organizationId,
     };
     const createdTest = await seed.api(den.admin, "/v1/sso/test", {
       method: "POST",

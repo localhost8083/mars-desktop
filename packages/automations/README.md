@@ -1,4 +1,4 @@
-# `@omnirush/automations`
+# `@mars/automations`
 
 Pure, infrastructure-free Automations domain shared by hosted and on-prem Den.
 
@@ -9,7 +9,7 @@ recovery, and repository conformance helpers.
 
 It deliberately has no runtime adapter. Den supplies MySQL persistence, leases,
 membership and model checks, Connect access, and the model execution adapter.
-The OmniRush.ai desktop is only a Den client and is never an Automation scheduler
+The MarsAI desktop is only a Den client and is never an Automation scheduler
 or execution host.
 
 ## Hosted engine lifecycle

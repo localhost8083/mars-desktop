@@ -11,10 +11,10 @@ import {
   workflowArtifactSchemaVersion,
   type ArtifactFreshness,
   type WorkflowArtifactPayload,
-} from "@omnirush/types/workflows"
+} from "@mars/types/workflows"
 import { z } from "zod"
 
-export { workflowArtifactPayloadSchema } from "@omnirush/types/workflows"
+export { workflowArtifactPayloadSchema } from "@mars/types/workflows"
 
 export const WORKFLOW_ARTIFACT_APP_RESOURCE_URI = "ui://omnirush/workflow-artifact/v1/view.html"
 export const WORKFLOW_ARTIFACT_APP_TOOL_NAME = "render_workflow_artifact"

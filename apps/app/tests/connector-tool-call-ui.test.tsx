@@ -11,7 +11,7 @@ import {
 test("renders a connector logo beside a human-readable completed tool call", () => {
   const part: DynamicToolUIPart = {
     type: "dynamic-tool",
-    toolName: "omnirush-cloud_execute_capability",
+    toolName: "mars-cloud_execute_capability",
     toolCallId: "call-google-calendar",
     state: "output-available",
     input: { name: "getCapabilitiesGoogleWorkspaceCalendarEvents", body: {} },

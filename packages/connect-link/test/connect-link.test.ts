@@ -20,7 +20,7 @@ const publicKeys = { [KID]: publicKeyPem }
 
 function claims(overrides: Partial<ConnectLinkClaims> = {}): ConnectLinkClaims {
   return {
-    iss: "https://api.omnirush.acme.example.com",
+    iss: "https://api.mars.acme.example.com",
     aud: CONNECT_LINK_AUDIENCE,
     iat: NOW,
     exp: NOW + 72 * 3600,
@@ -29,8 +29,8 @@ function claims(overrides: Partial<ConnectLinkClaims> = {}): ConnectLinkClaims {
     org: { name: "Acme Robotics" },
     brand: { appName: "Acme Work", logoUrl: null, iconUrl: null },
     den: {
-      baseUrl: "https://omnirush.acme.example.com",
-      apiBaseUrl: "https://api.omnirush.acme.example.com",
+      baseUrl: "https://mars.acme.example.com",
+      apiBaseUrl: "https://api.mars.acme.example.com",
     },
     requireSignin: true,
     ...overrides,
@@ -115,8 +115,8 @@ describe("signed desktop connect links", () => {
   })
 
   test("builds only the dedicated connect route", () => {
-    expect(buildConnectDeepLink("abc.def.ghi")).toBe("omnirush://connect?token=abc.def.ghi")
+    expect(buildConnectDeepLink("abc.def.ghi")).toBe("mars://connect?token=abc.def.ghi")
     expect(buildConnectExchangeDeepLink("abcdefghijklmnopqrstuvwxyz123456", "https://den.example.com/api/den"))
-      .toBe("omnirush://connect?code=abcdefghijklmnopqrstuvwxyz123456&apiBaseUrl=https%3A%2F%2Fden.example.com%2Fapi%2Fden")
+      .toBe("mars://connect?code=abcdefghijklmnopqrstuvwxyz123456&apiBaseUrl=https%3A%2F%2Fden.example.com%2Fapi%2Fden")
   })
 })

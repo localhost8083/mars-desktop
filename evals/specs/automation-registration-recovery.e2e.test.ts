@@ -1,11 +1,11 @@
 import { expect } from "vitest"
-import { denFetch, evalIn } from "@omnirush/behaviors"
-import { app, eventually, faultProxy, needs, server, test } from "@omnirush/testkit"
+import { denFetch, evalIn } from "@mars/behaviors"
+import { app, eventually, faultProxy, needs, server, test } from "@mars/testkit"
 
 // Registration is independent of local engine health. A transient mint failure
 // after reconnect must retry without another online event or a 30-minute wait.
 test("desktop registration recovers from a transient Den outage without another reconnect", { timeout: 420_000 }, async ({ evidence, place }) => {
-  needs({ optIn: ["OMNIRUSH_EVAL_E2E_TESTS"] })
+  needs({ optIn: ["MARS_EVAL_E2E_TESTS"] })
   await using den = await server({
     place,
     env: { DEN_AUTOMATIONS_ENABLED: "true" },
@@ -75,7 +75,7 @@ function record(value: unknown): Record<string, unknown> {
 // Exercise the real Den dispatch boundary with a synthetic Windows runner;
 // no model provider or private desktop profile participates in this witness.
 test("a queued manual run completes once after a synthetic Windows runner registers", { timeout: 180_000 }, async ({ evidence, place }) => {
-  needs({ optIn: ["OMNIRUSH_EVAL_E2E_TESTS"] })
+  needs({ optIn: ["MARS_EVAL_E2E_TESTS"] })
   await using den = await server({ place, org: { name: "Synthetic dispatch recovery" } })
   const headers = { authorization: `Bearer ${den.admin.token}` }
   const request = async (path: string, method = "GET", body?: unknown, token?: string) => {

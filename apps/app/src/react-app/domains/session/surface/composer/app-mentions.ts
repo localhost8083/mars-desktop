@@ -1,6 +1,6 @@
-import { OMNIRUSH_EXTENSION_CATALOG } from "@/app/constants";
+import { MARS_EXTENSION_CATALOG } from "@/app/constants";
 import { desktopBridge } from "@/app/lib/desktop";
-import { isOmniRushExtensionEnabled, isOmniRushExtensionHidden } from "@/react-app/domains/settings/extension-state";
+import { isMarsExtensionEnabled, isMarsExtensionHidden } from "@/react-app/domains/settings/extension-state";
 
 /**
  * "@App" mentions let the user target a running desktop app for Computer Use
@@ -9,10 +9,10 @@ import { isOmniRushExtensionEnabled, isOmniRushExtensionHidden } from "@/react-a
  * - the Computer Use extension is enabled (it is enabled for this workspace).
  */
 export function isAppMentionAvailable(): boolean {
-  if (typeof window === "undefined" || !window.__OMNIRUSH_ELECTRON__?.invokeDesktop) return false;
-  const entry = OMNIRUSH_EXTENSION_CATALOG.find((candidate) => candidate.id === "computer-use");
+  if (typeof window === "undefined" || !window.__MARS_ELECTRON__?.invokeDesktop) return false;
+  const entry = MARS_EXTENSION_CATALOG.find((candidate) => candidate.id === "computer-use");
   if (!entry) return false;
-  return isOmniRushExtensionEnabled(entry) && !isOmniRushExtensionHidden(entry);
+  return isMarsExtensionEnabled(entry) && !isMarsExtensionHidden(entry);
 }
 
 /**

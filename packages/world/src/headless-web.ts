@@ -10,15 +10,15 @@ import {
   desktopBootstrapPath,
   globalOpencodeConfigDir,
   opencodeDbCandidates,
-  omnirushEnvStorePath,
-  omnirushServerConfigPath,
-  omnirushServerDataDir,
-} from "@omnirush/paths";
+  marsEnvStorePath,
+  marsServerConfigPath,
+  marsServerDataDir,
+} from "@mars/paths";
 import {
   buildHeadlessCorsOrigins,
   buildHeadlessRuntimeManifest,
   buildHeadlessServerLaunch,
-  buildOmniRushServerArgs,
+  buildMarsServerArgs,
   mergeHeadlessServerConfig,
   normalizeDenTarget,
   resolveHeadlessRuntimeManifestPath,
@@ -174,13 +174,13 @@ function isOwnedRuntimeProcess(
   if (!command) return false;
   if (kind === "web") {
     return command.includes("vite")
-      && commandHasArgument(command, "@omnirush/app")
+      && commandHasArgument(command, "@mars/app")
       && commandHasArgument(command, runtimePort(manifest.webUrl));
   }
   if (kind === "server") {
     return command.includes("apps/server/src/cli.ts")
       && commandHasArgument(command, manifest.serverConfigPath)
-      && commandHasArgument(command, runtimePort(manifest.omnirushUrl));
+      && commandHasArgument(command, runtimePort(manifest.marsUrl));
   }
   return command.includes("headless-monitor.mjs")
     && commandHasArgument(command, manifest.runtimeManifestPath);
@@ -234,7 +234,7 @@ function parseRuntimeManifest(value: unknown): HeadlessRuntimeManifest | null {
   if (!isRecord(value) || value.mode !== "local-server" || !isRecord(value.pids)) return null;
   const requiredStrings = [
     "webUrl",
-    "omnirushUrl",
+    "marsUrl",
     "healthUrl",
     "workspace",
     "token",
@@ -254,7 +254,7 @@ function parseRuntimeManifest(value: unknown): HeadlessRuntimeManifest | null {
   return {
     mode: "local-server",
     webUrl: String(value.webUrl),
-    omnirushUrl: String(value.omnirushUrl),
+    marsUrl: String(value.marsUrl),
     healthUrl: String(value.healthUrl),
     workspace: String(value.workspace),
     token: String(value.token),
@@ -271,7 +271,7 @@ function parseRuntimeManifest(value: unknown): HeadlessRuntimeManifest | null {
     pids: {
       launcher,
       web: parsedPid(value.pids.web),
-      omnirushServer: parsedPid(value.pids.omnirushServer),
+      marsServer: parsedPid(value.pids.marsServer),
     },
     ...(parsedPid(value.supervisorPid) === null ? {} : { supervisorPid: parsedPid(value.supervisorPid) }),
     ...(parsedWorld(value.world) ? { world: parsedWorld(value.world) } : {}),
@@ -370,7 +370,7 @@ async function requirePath(path: string, kind: "directory" | "file", label: stri
   const metadata = await stat(path).catch(() => null);
   const valid = kind === "directory" ? metadata?.isDirectory() : metadata?.isFile();
   if (!valid) {
-    throw new Error(`${label} is unavailable at ${path}. Start the installed production OmniRush.ai desktop once and confirm its local state exists.`);
+    throw new Error(`${label} is unavailable at ${path}. Start the installed production MarsAI desktop once and confirm its local state exists.`);
   }
 }
 
@@ -408,16 +408,16 @@ export async function resolveInstalledProductionHeadlessState(options: {
   }
   const env = options.env ?? process.env;
   const homeDir = options.homeDir ?? homedir();
-  const userDataDir = join(homeDir, "Library", "Application Support", "ai.omnirush.desktop");
+  const userDataDir = join(homeDir, "Library", "Application Support", "ai.marsai.desktop");
   const pathOptions = { env, homeDir, platform };
-  const dataDir = omnirushServerDataDir(pathOptions);
-  const serverConfigPath = omnirushServerConfigPath(pathOptions);
-  const envStorePath = omnirushEnvStorePath(pathOptions);
+  const dataDir = marsServerDataDir(pathOptions);
+  const serverConfigPath = marsServerConfigPath(pathOptions);
+  const envStorePath = marsEnvStorePath(pathOptions);
   const bootstrapPath = desktopBootstrapPath(pathOptions);
   const opencodeConfigDir = globalOpencodeConfigDir(pathOptions);
-  const serverTokenStorePath = join(userDataDir, "omnirush-server-tokens.json");
-  const serverStatePath = join(userDataDir, "omnirush-server-state.json");
-  const workspaceStatePath = join(userDataDir, "omnirush-workspaces.json");
+  const serverTokenStorePath = join(userDataDir, "mars-server-tokens.json");
+  const serverStatePath = join(userDataDir, "mars-server-state.json");
+  const workspaceStatePath = join(userDataDir, "mars-workspaces.json");
   const dbCandidates = opencodeDbCandidates({ ...pathOptions, defaultChannel: "latest" });
   let opencodeDb: string | null = null;
   for (const candidate of dbCandidates) {
@@ -427,7 +427,7 @@ export async function resolveInstalledProductionHeadlessState(options: {
     }
   }
   for (const [path, kind, label] of [
-    [dataDir, "directory", "Installed production OmniRush.ai data directory"],
+    [dataDir, "directory", "Installed production MarsAI data directory"],
     [opencodeConfigDir, "directory", "Installed production OpenCode config directory"],
     [workspaceStatePath, "file", "Installed production workspace state"],
     [serverTokenStorePath, "file", "Installed production server token store"],
@@ -469,15 +469,15 @@ export function installedProductionHeadlessEnv(state: InstalledProductionHeadles
     XDG_DATA_HOME: join(state.homeDir, ".local", "share"),
     XDG_CACHE_HOME: join(state.homeDir, ".cache"),
     XDG_STATE_HOME: join(state.homeDir, ".local", "state"),
-    OMNIRUSH_DATA_DIR: state.dataDir,
-    OMNIRUSH_DESKTOP_BOOTSTRAP_PATH: state.bootstrapPath,
-    OMNIRUSH_DESKTOP_DISABLE_WORKSPACE_RECOVERY: "0",
-    OMNIRUSH_DESKTOP_WORKSPACE_STATE_PATH: state.workspaceStatePath,
-    OMNIRUSH_DEV_SHARED_STATE: "1",
-    OMNIRUSH_ENV_STORE: state.envStorePath,
-    OMNIRUSH_SERVER_CONFIG: state.serverConfigPath,
-    OMNIRUSH_SERVER_STATE_PATH: state.serverStatePath,
-    OMNIRUSH_SERVER_TOKEN_STORE_PATH: state.serverTokenStorePath,
+    MARS_DATA_DIR: state.dataDir,
+    MARS_DESKTOP_BOOTSTRAP_PATH: state.bootstrapPath,
+    MARS_DESKTOP_DISABLE_WORKSPACE_RECOVERY: "0",
+    MARS_DESKTOP_WORKSPACE_STATE_PATH: state.workspaceStatePath,
+    MARS_DEV_SHARED_STATE: "1",
+    MARS_ENV_STORE: state.envStorePath,
+    MARS_SERVER_CONFIG: state.serverConfigPath,
+    MARS_SERVER_STATE_PATH: state.serverStatePath,
+    MARS_SERVER_TOKEN_STORE_PATH: state.serverTokenStorePath,
     OPENCODE_DB: state.opencodeDb,
     OPENCODE_CONFIG_DIR: state.opencodeConfigDir,
   };
@@ -498,13 +498,13 @@ export function assertHeadlessLaunchSafety(
 ): void {
   if (state !== "installed-production") return;
   if (
-    readBool(env.OMNIRUSH_REMOTE_ACCESS)
-    || Boolean(env.OMNIRUSH_PUBLIC_HOST?.trim())
+    readBool(env.MARS_REMOTE_ACCESS)
+    || Boolean(env.MARS_PUBLIC_HOST?.trim())
     || !isLoopbackHost(env.VITE_HOST)
     || !isLoopbackHost(env.HOST)
   ) {
     throw new Error(
-      "LIVE SHARED PRODUCTION STATE headless worlds require loopback-only access; OMNIRUSH_REMOTE_ACCESS, OMNIRUSH_PUBLIC_HOST, and non-loopback HOST/VITE_HOST values are refused.",
+      "LIVE SHARED PRODUCTION STATE headless worlds require loopback-only access; MARS_REMOTE_ACCESS, MARS_PUBLIC_HOST, and non-loopback HOST/VITE_HOST values are refused.",
     );
   }
 }
@@ -512,21 +512,21 @@ export function assertHeadlessLaunchSafety(
 export function resolveHeadlessClientConnection(input: {
   state: HeadlessWebState;
   env: NodeJS.ProcessEnv;
-  omnirushUrl: string;
-  omnirushPort: number;
+  marsUrl: string;
+  marsPort: number;
   token: string;
 }): HeadlessClientConnection {
   if (input.state === "installed-production") {
     return {
-      url: input.omnirushUrl,
-      port: String(input.omnirushPort),
+      url: input.marsUrl,
+      port: String(input.marsPort),
       token: input.token,
     };
   }
   return {
-    url: input.env.VITE_OMNIRUSH_URL ?? input.omnirushUrl,
-    port: input.env.VITE_OMNIRUSH_PORT ?? String(input.omnirushPort),
-    token: input.env.VITE_OMNIRUSH_TOKEN ?? input.token,
+    url: input.env.VITE_MARS_URL ?? input.marsUrl,
+    port: input.env.VITE_MARS_PORT ?? String(input.marsPort),
+    token: input.env.VITE_MARS_TOKEN ?? input.token,
   };
 }
 
@@ -576,7 +576,7 @@ async function stopAcquiredChild(child: ChildProcess): Promise<void> {
 
 export function headlessRuntimeProcessesAreOwned(manifest: HeadlessRuntimeManifest): boolean {
   const webPid = manifest.pids.web;
-  const serverPid = manifest.pids.omnirushServer;
+  const serverPid = manifest.pids.marsServer;
   return webPid !== null
     && serverPid !== null
     && isOwnedRuntimeProcess(manifest, webPid, "web")
@@ -598,7 +598,7 @@ async function removeRuntimeManifest(manifest: HeadlessRuntimeManifest): Promise
 
 async function stopManifest(manifest: HeadlessRuntimeManifest): Promise<void> {
   await killOwnedRuntimeProcess(manifest, manifest.pids.web, "web");
-  await killOwnedRuntimeProcess(manifest, manifest.pids.omnirushServer, "server");
+  await killOwnedRuntimeProcess(manifest, manifest.pids.marsServer, "server");
   await killOwnedRuntimeProcess(manifest, manifest.supervisorPid, "supervisor");
   await removeRuntimeManifest(manifest);
 }
@@ -620,8 +620,8 @@ async function waitForOwnedRuntimeExit(manifest: HeadlessRuntimeManifest): Promi
   while (headlessRuntimeProcessesAreOwned(manifest)) await delay(500);
   const webRunning = manifest.pids.web !== null
     && isOwnedRuntimeProcess(manifest, manifest.pids.web, "web");
-  const serverRunning = manifest.pids.omnirushServer !== null
-    && isOwnedRuntimeProcess(manifest, manifest.pids.omnirushServer, "server");
+  const serverRunning = manifest.pids.marsServer !== null
+    && isOwnedRuntimeProcess(manifest, manifest.pids.marsServer, "server");
   return `headless process exited (web=${webRunning ? "running" : "stopped"}, server=${serverRunning ? "running" : "stopped"})`;
 }
 
@@ -630,7 +630,7 @@ export async function monitorHeadlessRuntime(runtimeManifestPath: string): Promi
   if (!manifest || manifest.runtimeManifestPath !== runtimeManifestPath) return;
   await waitForOwnedRuntimeExit(manifest);
   await killOwnedRuntimeProcess(manifest, manifest.pids.web, "web");
-  await killOwnedRuntimeProcess(manifest, manifest.pids.omnirushServer, "server");
+  await killOwnedRuntimeProcess(manifest, manifest.pids.marsServer, "server");
   await removeRuntimeManifest(manifest);
 }
 
@@ -736,28 +736,28 @@ export async function launchHeadlessWeb(options: HeadlessWebLaunchOptions): Prom
   }
   if (existing) await stopManifest(existing);
 
-  const remoteAccessEnabled = readBool(env.OMNIRUSH_REMOTE_ACCESS);
+  const remoteAccessEnabled = readBool(env.MARS_REMOTE_ACCESS);
   const host = remoteAccessEnabled ? "0.0.0.0" : "127.0.0.1";
   const viteHost = env.VITE_HOST ?? env.HOST ?? host;
-  const publicHost = env.OMNIRUSH_PUBLIC_HOST ?? null;
+  const publicHost = env.MARS_PUBLIC_HOST ?? null;
   const clientHost = publicHost ?? (host === "0.0.0.0" ? "127.0.0.1" : host);
-  const declaredWorkspace = resolve(options.workspace ?? env.OMNIRUSH_WORKSPACE ?? repoRoot);
+  const declaredWorkspace = resolve(options.workspace ?? env.MARS_WORKSPACE ?? repoRoot);
   const productionState = options.state === "installed-production"
     ? await resolveInstalledProductionHeadlessState({ env, fallbackWorkspace: declaredWorkspace })
     : null;
   const workspace = productionState?.workspace ?? declaredWorkspace;
-  const omnirushPort = await resolvePort(env.OMNIRUSH_PORT ?? DEFAULT_SERVER_PORT, "127.0.0.1");
-  const webPort = await resolvePort(env.OMNIRUSH_WEB_PORT ?? DEFAULT_WEB_PORT, "127.0.0.1");
+  const marsPort = await resolvePort(env.MARS_PORT ?? DEFAULT_SERVER_PORT, "127.0.0.1");
+  const webPort = await resolvePort(env.MARS_WEB_PORT ?? DEFAULT_WEB_PORT, "127.0.0.1");
   const rotateTokens = options.rotateTokens === true || (options.replace === true && options.keepTokens !== true);
   const resolvedTokens = productionState ?? resolveHeadlessTokens({
-    envToken: env.OMNIRUSH_TOKEN,
-    envHostToken: env.OMNIRUSH_HOST_TOKEN,
+    envToken: env.MARS_TOKEN,
+    envHostToken: env.MARS_HOST_TOKEN,
     previous: rotateTokens ? null : existing,
     generate: randomUUID,
   });
   const serverConfigPath = productionState?.serverConfigPath
-    ?? (options.name === "dev-headless" && env.OMNIRUSH_DEV_HEADLESS_WEB_CONFIG
-      ? resolveHeadlessServerConfigPath(repoRoot, env.OMNIRUSH_DEV_HEADLESS_WEB_CONFIG)
+    ?? (options.name === "dev-headless" && env.MARS_DEV_HEADLESS_WEB_CONFIG
+      ? resolveHeadlessServerConfigPath(repoRoot, env.MARS_DEV_HEADLESS_WEB_CONFIG)
       : runtimePaths.serverConfigPath);
   if (!productionState) {
     const existingConfig = await readFile(serverConfigPath, "utf8").catch(() => null);
@@ -769,51 +769,51 @@ export async function launchHeadlessWeb(options: HeadlessWebLaunchOptions): Prom
   }
   const webLogPath = runtimePaths.webLogPath;
   const headlessLogPath = runtimePaths.headlessLogPath;
-  const omnirushUrl = `http://${clientHost}:${omnirushPort}`;
+  const marsUrl = `http://${clientHost}:${marsPort}`;
   const webUrl = `http://${clientHost}:${webPort}`;
   // There is no hosted Den to proxy by default: the Den proxy is wired only
   // when a target is given. Forcing it on without a target is an error.
-  const denProxyEnabled = env.OMNIRUSH_DEV_HEADLESS_WEB_DEN_PROXY === undefined
-    ? Boolean(env.OMNIRUSH_DEV_DEN_PROXY_TARGET?.trim())
-    : readBool(env.OMNIRUSH_DEV_HEADLESS_WEB_DEN_PROXY);
-  const denTarget = denProxyEnabled ? normalizeDenTarget(env.OMNIRUSH_DEV_DEN_PROXY_TARGET) : null;
+  const denProxyEnabled = env.MARS_DEV_HEADLESS_WEB_DEN_PROXY === undefined
+    ? Boolean(env.MARS_DEV_DEN_PROXY_TARGET?.trim())
+    : readBool(env.MARS_DEV_HEADLESS_WEB_DEN_PROXY);
+  const denTarget = denProxyEnabled ? normalizeDenTarget(env.MARS_DEV_DEN_PROXY_TARGET) : null;
   const denApiUrl = denTarget ? `${webUrl}/api/den` : null;
   const clientConnection = resolveHeadlessClientConnection({
     state: options.state,
     env,
-    omnirushUrl,
-    omnirushPort,
+    marsUrl,
+    marsPort,
     token: resolvedTokens.token,
   });
   const viteEnv: NodeJS.ProcessEnv = {
     ...env,
-    OMNIRUSH_DEV_MODE: "1",
+    MARS_DEV_MODE: "1",
     HOST: viteHost,
     PORT: String(webPort),
-    VITE_OMNIRUSH_URL: clientConnection.url,
-    VITE_OMNIRUSH_PORT: clientConnection.port,
-    VITE_OMNIRUSH_TOKEN: clientConnection.token,
-    VITE_OMNIRUSH_FORCE_ENV_SETTINGS: "1",
-    VITE_OMNIRUSH_DEPLOYMENT: env.VITE_OMNIRUSH_DEPLOYMENT ?? "web",
+    VITE_MARS_URL: clientConnection.url,
+    VITE_MARS_PORT: clientConnection.port,
+    VITE_MARS_TOKEN: clientConnection.token,
+    VITE_MARS_FORCE_ENV_SETTINGS: "1",
+    VITE_MARS_DEPLOYMENT: env.VITE_MARS_DEPLOYMENT ?? "web",
     ...(denTarget && denApiUrl ? {
-      OMNIRUSH_DEV_HEADLESS_DEN_TARGET: denTarget,
+      MARS_DEV_HEADLESS_DEN_TARGET: denTarget,
       VITE_DEN_API_BASE_URL: env.VITE_DEN_API_BASE_URL ?? denApiUrl,
       VITE_DEN_BASE_URL: env.VITE_DEN_BASE_URL ?? denTarget,
     } : {}),
   };
   const headlessEnv: NodeJS.ProcessEnv = {
     ...env,
-    OMNIRUSH_DEV_MODE: "1",
+    MARS_DEV_MODE: "1",
     ...(productionState ? installedProductionHeadlessEnv(productionState) : isolatedHeadlessEngineEnv(runtimePaths, env)),
-    ...(productionState ? {} : { OMNIRUSH_WORKSPACE: workspace }),
-    OMNIRUSH_HOST: host,
-    OMNIRUSH_REMOTE_ACCESS: remoteAccessEnabled ? "1" : "0",
-    OMNIRUSH_PORT: String(omnirushPort),
-    OMNIRUSH_TOKEN: resolvedTokens.token,
-    OMNIRUSH_HOST_TOKEN: resolvedTokens.hostToken,
-    OMNIRUSH_SERVER_CONFIG: serverConfigPath,
-    OMNIRUSH_MANAGE_OPENCODE: "1",
-    OMNIRUSH_OPENCODE_BIN: env.OMNIRUSH_OPENCODE_BIN ?? "opencode",
+    ...(productionState ? {} : { MARS_WORKSPACE: workspace }),
+    MARS_HOST: host,
+    MARS_REMOTE_ACCESS: remoteAccessEnabled ? "1" : "0",
+    MARS_PORT: String(marsPort),
+    MARS_TOKEN: resolvedTokens.token,
+    MARS_HOST_TOKEN: resolvedTokens.hostToken,
+    MARS_SERVER_CONFIG: serverConfigPath,
+    MARS_MANAGE_OPENCODE: "1",
+    MARS_OPENCODE_BIN: env.MARS_OPENCODE_BIN ?? "opencode",
   };
   const pnpmExecPath = env.npm_execpath?.trim();
   const pnpmCommand = pnpmExecPath ? env.npm_node_execpath?.trim() || "node" : "pnpm";
@@ -824,10 +824,10 @@ export async function launchHeadlessWeb(options: HeadlessWebLaunchOptions): Prom
   const launchId = randomUUID();
   const provisionalManifest = (
     webPid: number | null,
-    omnirushServerPid: number | null,
+    marsServerPid: number | null,
   ): HeadlessRuntimeManifest => buildHeadlessRuntimeManifest({
     webUrl,
-    omnirushUrl,
+    marsUrl,
     workspace,
     token: resolvedTokens.token,
     hostToken: resolvedTokens.hostToken,
@@ -837,13 +837,13 @@ export async function launchHeadlessWeb(options: HeadlessWebLaunchOptions): Prom
     headlessLogPath,
     denTarget,
     webPid,
-    omnirushServerPid,
+    marsServerPid,
     world: { name: options.name, state: options.state, launchId },
   });
   try {
     const webProcess = spawnLogged(pnpmCommand, [...pnpmArgs,
       "--filter",
-      "@omnirush/app",
+      "@mars/app",
       "exec",
       "vite",
       "--host",
@@ -854,9 +854,9 @@ export async function launchHeadlessWeb(options: HeadlessWebLaunchOptions): Prom
     ], webLogPath, repoRoot, viteEnv);
     acquiredChildren.push(webProcess);
     acquiredManifest = provisionalManifest(webProcess.pid ?? null, null);
-    const serverLaunch = buildHeadlessServerLaunch(repoRoot, buildOmniRushServerArgs({
+    const serverLaunch = buildHeadlessServerLaunch(repoRoot, buildMarsServerArgs({
       host,
-      port: omnirushPort,
+      port: marsPort,
       configPath: serverConfigPath,
       corsOrigins: buildHeadlessCorsOrigins({ webUrl, webPort }),
     }));
@@ -869,7 +869,7 @@ export async function launchHeadlessWeb(options: HeadlessWebLaunchOptions): Prom
     acquiredManifest = manifest;
     await Promise.all([
       waitForSpawn(webProcess, "headless web"),
-      waitForSpawn(serverProcess, "omnirush-server"),
+      waitForSpawn(serverProcess, "mars-server"),
     ]);
     await writeRuntimeManifest(manifest);
     await waitForHealthy(manifest);
@@ -921,6 +921,6 @@ export async function launchHeadlessWeb(options: HeadlessWebLaunchOptions): Prom
     const cleanupDetail = cleanupErrors.length === 0
       ? ""
       : ` Cleanup could not confirm ownership release: ${cleanupErrors.join("; ")}.`;
-    throw new Error(`${messageText(error)} Headless server: ${omnirushUrl}; web: ${webUrl}.${cleanupDetail}`);
+    throw new Error(`${messageText(error)} Headless server: ${marsUrl}; web: ${webUrl}.${cleanupDetail}`);
   }
 }

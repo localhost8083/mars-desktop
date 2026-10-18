@@ -12,8 +12,8 @@ export class ManagedModelsPolicyError extends Error {
 
   constructor(code: ManagedModelsDenialCode) {
     super(code === "managed_models_disabled_for_dpa"
-      ? "Company-provided OmniRush.ai Models are unavailable for this organization because a DPA is signed. Permitted customer-key providers and AI Gateway may still be used."
-      : "Company-provided OmniRush.ai Models policy could not be verified. Please try again later.")
+      ? "Company-provided MarsAI Models are unavailable for this organization because a DPA is signed. Permitted customer-key providers and AI Gateway may still be used."
+      : "Company-provided MarsAI Models policy could not be verified. Please try again later.")
     this.name = "ManagedModelsPolicyError"
     this.code = code
     this.status = code === "managed_models_disabled_for_dpa" ? 403 : 503

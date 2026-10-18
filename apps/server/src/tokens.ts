@@ -1,6 +1,6 @@
 import { dirname, join, resolve } from "node:path";
 import { readFile, writeFile } from "node:fs/promises";
-import { omnirushConfigDir } from "@omnirush/paths";
+import { marsConfigDir } from "@mars/paths";
 
 import type { ServerConfig, TokenScope } from "./types.js";
 import { ensureDir, exists, hashToken, shortId } from "./utils.js";
@@ -25,11 +25,11 @@ function normalizeScope(value: unknown): TokenScope | null {
 }
 
 function resolveTokenStorePath(config: ServerConfig): string {
-  const override = (process.env.OMNIRUSH_TOKEN_STORE ?? "").trim();
+  const override = (process.env.MARS_TOKEN_STORE ?? "").trim();
   if (override) return resolve(override);
 
   const configPath = config.configPath?.trim();
-  const configDir = configPath ? dirname(configPath) : omnirushConfigDir();
+  const configDir = configPath ? dirname(configPath) : marsConfigDir();
   return join(configDir, "tokens.json");
 }
 

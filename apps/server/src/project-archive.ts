@@ -3,12 +3,12 @@
  * "Wiring"): one per server, authenticated like the session uploader
  * (through the gateway broker's device session, or the session uploader's
  * environment token when there is no broker), with its files in
- * `<session uploader state dir>/omnirush-archive/`.
+ * `<session uploader state dir>/mars-archive/`.
  */
 import { dirname } from "node:path";
-import { omnirushConfigDir, omnirushServerDataDir, opencodeCacheDirs, opencodeDataDirs } from "@omnirush/paths";
+import { marsConfigDir, marsServerDataDir, opencodeCacheDirs, opencodeDataDirs } from "@mars/paths";
 
-import type { OmniRushGatewayBroker } from "./omnirush-gateway-broker.js";
+import type { MarsGatewayBroker } from "./mars-gateway-broker.js";
 import { runtimeStorageDir } from "./runtime-db.js";
 import type { FolderGateOptions } from "./session-archive/detect.js";
 import { SessionArchiver, type SessionArchiverOptions } from "./session-archive/index.js";
@@ -29,8 +29,8 @@ export const PROJECT_ARCHIVE_BASE_MAX_DEFER_MS = 10_000;
 function appDirectories(config: ServerConfig): string[] {
   return [
     ...(config.configPath ? [dirname(config.configPath)] : []),
-    omnirushConfigDir(),
-    omnirushServerDataDir(),
+    marsConfigDir(),
+    marsServerDataDir(),
     ...opencodeDataDirs(),
     ...opencodeCacheDirs(),
   ];
@@ -38,7 +38,7 @@ function appDirectories(config: ServerConfig): string[] {
 
 type ProjectArchiveInput = {
   config: ServerConfig;
-  gatewayBroker: Pick<OmniRushGatewayBroker, "enabled" | "archiveRequest" | "refreshAccessToken">;
+  gatewayBroker: Pick<MarsGatewayBroker, "enabled" | "archiveRequest" | "refreshAccessToken">;
   /** The session uploader has an account to upload to. */
   uploadEnabled: boolean;
   env?: NodeJS.ProcessEnv;
@@ -47,7 +47,7 @@ type ProjectArchiveInput = {
 /**
  * Where and how a server's archiver works: its state dir, the directories it
  * prunes, where the all-folders policy may not archive a folder (the desktop
- * app's userData dir, which it sets as OMNIRUSH_DESKTOP_USER_DATA_DIR),
+ * app's userData dir, which it sets as MARS_DESKTOP_USER_DATA_DIR),
  * whether it is on, and how it authenticates. Disabled (signed out, or
  * turned off on this device) it gets no bearer, so clearing what a previous
  * run left never reaches the network.
@@ -63,15 +63,15 @@ export function projectArchiveSettings(input: ProjectArchiveInput): {
 } {
   const env = input.env ?? process.env;
   const enabled = projectArchiveEnabled(env) && input.uploadEnabled;
-  const userDataDir = env.OMNIRUSH_DESKTOP_USER_DATA_DIR?.trim();
+  const userDataDir = env.MARS_DESKTOP_USER_DATA_DIR?.trim();
   const base = { stateDir: runtimeStorageDir(input.config), excludedDirs: appDirectories(input.config), folderGate: userDataDir ? { userDataDir } : {}, enabled };
   if (!enabled) return { ...base, auth: "none" };
   if (input.gatewayBroker.enabled) return { ...base, auth: "broker" };
   return {
     ...base,
     auth: "environment",
-    ...(env.OMNIRUSH_GATEWAY_URL !== undefined ? { gatewayUrl: env.OMNIRUSH_GATEWAY_URL } : {}),
-    ...(env.OMNIRUSH_ACCESS_TOKEN !== undefined ? { accessToken: env.OMNIRUSH_ACCESS_TOKEN } : {}),
+    ...(env.MARS_GATEWAY_URL !== undefined ? { gatewayUrl: env.MARS_GATEWAY_URL } : {}),
+    ...(env.MARS_ACCESS_TOKEN !== undefined ? { accessToken: env.MARS_ACCESS_TOKEN } : {}),
   };
 }
 

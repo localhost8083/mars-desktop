@@ -5,14 +5,14 @@ import { Downsampler, VOICE_SAMPLE_RATE, VoiceError, type AudioSource } from "@/
  * worklet only forwards: resampling and VAD run in voice-core.
  */
 const WORKLET_SOURCE = `
-class OmniRushCaptureProcessor extends AudioWorkletProcessor {
+class MarsCaptureProcessor extends AudioWorkletProcessor {
   process(inputs) {
     const channel = inputs[0] && inputs[0][0];
     if (channel && channel.length) this.port.postMessage(channel.slice(0));
     return true;
   }
 }
-registerProcessor("omnirush-capture", OmniRushCaptureProcessor);
+registerProcessor("mars-capture", MarsCaptureProcessor);
 `;
 
 /** How long the microphone stays open after a recording, so the next one starts without a cold start. */
@@ -35,7 +35,7 @@ let opening: Promise<OpenMic> | null = null;
 function mapCaptureError(error: unknown): VoiceError {
   const name = error instanceof DOMException || error instanceof Error ? error.name : "";
   if (name === "NotAllowedError" || name === "SecurityError" || name === "PermissionDeniedError") {
-    return new VoiceError("permission_denied", "Microphone access is turned off for OmniRush.ai.");
+    return new VoiceError("permission_denied", "Microphone access is turned off for MarsAI.");
   }
   if (name === "NotFoundError" || name === "OverconstrainedError" || name === "DevicesNotFoundError") {
     return new VoiceError("no_device", "No microphone was found. Connect one, or pick another input in Settings → Voice.");
@@ -107,7 +107,7 @@ async function openMicrophone(deviceId: string | null): Promise<OpenMic> {
     } finally {
       URL.revokeObjectURL(url);
     }
-    const worklet = new AudioWorkletNode(context, "omnirush-capture", { numberOfInputs: 1, numberOfOutputs: 0, channelCount: 1 });
+    const worklet = new AudioWorkletNode(context, "mars-capture", { numberOfInputs: 1, numberOfOutputs: 0, channelCount: 1 });
     worklet.port.onmessage = (event: MessageEvent<Float32Array>) => deliver(event.data);
     node = worklet;
   } catch {
@@ -197,7 +197,7 @@ export type MicPermission = "granted" | "denied" | "prompt" | "unknown";
  * getUserMedia itself decides.
  */
 export async function ensureMicrophonePermission(): Promise<MicPermission> {
-  const system = window.__OMNIRUSH_ELECTRON__?.system;
+  const system = window.__MARS_ELECTRON__?.system;
   if (!system?.getMicrophoneStatus) return "unknown";
   const { status } = await system.getMicrophoneStatus();
   if (status === "granted" || status === "not-mac") return "granted";
@@ -216,6 +216,6 @@ export function microphoneSettingsUrl(): string | null {
 
 export async function openMicrophoneSettings(): Promise<void> {
   const url = microphoneSettingsUrl();
-  const openExternal = window.__OMNIRUSH_ELECTRON__?.shell?.openExternal;
+  const openExternal = window.__MARS_ELECTRON__?.shell?.openExternal;
   if (url && openExternal) await openExternal(url);
 }

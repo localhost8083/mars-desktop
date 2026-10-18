@@ -2,7 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 
 import type { UiState } from "../src/react-app/shell/ui-state-store";
 
-const PERSISTED_UI_STATE_KEY = "omnirush:ui-state:v1";
+const PERSISTED_UI_STATE_KEY = "mars:ui-state:v1";
 const originalWindow = globalThis.window;
 const originalLocalStorage = globalThis.localStorage;
 

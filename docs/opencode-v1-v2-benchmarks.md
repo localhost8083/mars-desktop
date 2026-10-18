@@ -22,7 +22,7 @@ The original questions map to the measured scenarios as follows.
 
 ### Lane A: app perspective, pure CDP
 
-Lane A runs the real OmniRush.ai Electron app on the v1 engine. It drives the app
+Lane A runs the real MarsAI Electron app on the v1 engine. It drives the app
 only through the UI: CDP `Input.insertText` types into the real composer and
 the real controls are clicked.
 
@@ -30,7 +30,7 @@ The witness provider is provisioned by a file on disk before workspace
 creation. The benchmark chooses its model through the picker UI. There is zero
 API seeding of workspaces, sessions, messages, or model selection.
 
-This is the lane that answers what an OmniRush.ai user sees today.
+This is the lane that answers what an MarsAI user sees today.
 
 ### Lane B: engine vs engine
 
@@ -39,14 +39,14 @@ Lane B compares the v1 engine, `opencode` 1.18.18, with the v2 engine,
 each engine's own HTTP dialect and routes both engines to the same kind of
 witness.
 
-This isolates the engine boundary from OmniRush.ai renderer and Electron costs.
+This isolates the engine boundary from MarsAI renderer and Electron costs.
 
 ### Why the pure-CDP v2 app lane arrived through the adapter
 
-OmniRush.ai's UI now routes chat through v2 behind the preview flag and the
+MarsAI's UI now routes chat through v2 behind the preview flag and the
 **Route chat through OpenCode v2** toggle from
 `feat/opencode-v2-chat-routing`. Lane A was rerun in that mode with
-`OMNIRUSH_BENCH_ENGINE=v2`, using the server-to-engine dialect adapter.
+`MARS_BENCH_ENGINE=v2`, using the server-to-engine dialect adapter.
 
 Historically, the v2 stack's own drivable surface was not a substitute. Its web
 UI, bundled in the `opencode2` binary, crashed on `/new-session` with:
@@ -60,8 +60,8 @@ That failure was reproduced through CDP in Chrome 152 on 2026-08-30 with both
 way. The older 0.0.0-beta-17823 home screen never opened a session view.
 
 Building the v2 desktop app from source would have benchmarked a different app,
-not the proposed engine swap inside OmniRush.ai. That is why the app lane arrived
-through OmniRush.ai's adapter rather than through the v2 web or desktop UI.
+not the proposed engine swap inside MarsAI. That is why the app lane arrived
+through MarsAI's adapter rather than through the v2 web or desktop UI.
 
 ## Method
 
@@ -154,11 +154,11 @@ exact payload handling, workspace isolation, and witness fidelity only.
 Lane A runs with `OPENCODE_PURE=true` (plugins disabled) because it measures engine and UI latency rather than external-plugin dependency bootstrap time.
 
 ```sh
-OMNIRUSH_BENCH_ITERATIONS=5 pnpm evals:pr specs/bench-opencode-engines.test.ts
-OMNIRUSH_BENCH_ITERATIONS=5 OMNIRUSH_EVAL_E2E_TESTS=1 pnpm --dir evals exec vitest run --config vitest.config.ts --project e2e specs/bench-omnirush-app-v1.e2e.test.ts
+MARS_BENCH_ITERATIONS=5 pnpm evals:pr specs/bench-opencode-engines.test.ts
+MARS_BENCH_ITERATIONS=5 MARS_EVAL_E2E_TESTS=1 pnpm --dir evals exec vitest run --config vitest.config.ts --project e2e specs/bench-mars-app-v1.e2e.test.ts
 ```
 
-Set `OMNIRUSH_BENCH_RESULTS_DIR` to retain the generated JSON files.
+Set `MARS_BENCH_RESULTS_DIR` to retain the generated JSON files.
 
 ## Lane B results: engine vs engine (medians, N=5)
 
@@ -203,7 +203,7 @@ Delta is v2 minus v1. Negative means v2 completed this boundary sooner.
 - **Completion:** against the 400 ms witness pacing floor, median overhead is
   52 ms for v1 and 117 ms for v2.
 - **First-token caveat:** Lane B `first_token` is when a message-list poll sees
-  persisted text. It is not user-perceived streaming. OmniRush.ai receives push
+  persisted text. It is not user-perceived streaming. MarsAI receives push
   events; Lane A measures a 92 ms v1 user-visible first token.
 - **Compaction:** v1 `summarize` and v2 `compact` are witness-served and nearly
   equal on this boundary. Both are verified to reach the provider with their
@@ -213,7 +213,7 @@ Delta is v2 minus v1. Negative means v2 completed this boundary sooner.
   [no-reload provider injection](opencode-v2-parallel-lane.md#providers-on-v2-why-no-reload-is-needed),
   durable sessions, and one daemon for many directories.
 
-## Lane A results: OmniRush.ai app on v1, pure CDP (medians, N=5)
+## Lane A results: MarsAI app on v1, pure CDP (medians, N=5)
 
 ### Cold boot to composer: DEV BUILD, not packaged startup
 
@@ -256,10 +256,10 @@ first token, and 34 ms to completion. In practical terms, the 200 KB paste adds
 roughly 40-70 ms around the normal round trip, with the exact observed boundary
 deltas stated above.
 
-`uiCompactionAvailable=false`: OmniRush.ai has no user-facing compact or summarize
+`uiCompactionAvailable=false`: MarsAI has no user-facing compact or summarize
 control in this UI today. Engine-side compaction is covered in Lane B.
 
-## Lane A results: OmniRush.ai app on v2 (adapter preview), pure CDP (medians, N=5)
+## Lane A results: MarsAI app on v2 (adapter preview), pure CDP (medians, N=5)
 
 Delta is app on v2 minus app on v1. Negative means v2 completed this boundary
 sooner.

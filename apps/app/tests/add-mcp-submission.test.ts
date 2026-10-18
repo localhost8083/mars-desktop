@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { McpDirectoryInfo } from "../src/app/constants";
-import { conflictsWithOmniRushConnect } from "../src/react-app/domains/connections/mcp-connection-boundary";
+import { conflictsWithMarsConnect } from "../src/react-app/domains/connections/mcp-connection-boundary";
 import { submitMcpEntry } from "../src/react-app/domains/connections/modals/add-mcp-submission";
 
 const entry: McpDirectoryInfo = {
@@ -14,16 +14,16 @@ const entry: McpDirectoryInfo = {
 };
 
 describe("local MCP submission feedback", () => {
-  test("reserves the OmniRush.ai Connect runtime name for its managed entry", () => {
-    expect(conflictsWithOmniRushConnect({ name: "OmniRush.ai Cloud" })).toBe(true);
-    expect(conflictsWithOmniRushConnect({ name: "omnirush-cloud" })).toBe(true);
-    expect(conflictsWithOmniRushConnect({ id: "omnirush-cloud", name: "Custom cloud" })).toBe(true);
-    expect(conflictsWithOmniRushConnect({
-      name: "OmniRush.ai Cloud",
-      serverName: "omnirush-cloud",
-      managedBy: "omnirush-connect",
+  test("reserves the MarsAI Connect runtime name for its managed entry", () => {
+    expect(conflictsWithMarsConnect({ name: "MarsAI Cloud" })).toBe(true);
+    expect(conflictsWithMarsConnect({ name: "mars-cloud" })).toBe(true);
+    expect(conflictsWithMarsConnect({ id: "mars-cloud", name: "Custom cloud" })).toBe(true);
+    expect(conflictsWithMarsConnect({
+      name: "MarsAI Cloud",
+      serverName: "mars-cloud",
+      managedBy: "mars-connect",
     })).toBe(false);
-    expect(conflictsWithOmniRushConnect({ name: "BigQuery" })).toBe(false);
+    expect(conflictsWithMarsConnect({ name: "BigQuery" })).toBe(false);
   });
 
   test("returns no error only after the connection succeeds", async () => {

@@ -1,4 +1,4 @@
-import { AUTOMATION_FREE_MODEL } from "@omnirush/types/automations"
+import { AUTOMATION_FREE_MODEL } from "@mars/types/automations"
 
 type ModelSelection = { providerId: string; modelId: string }
 type ModelAccessFailure = {

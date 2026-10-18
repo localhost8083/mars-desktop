@@ -12,12 +12,12 @@ files:
 extraResources:
   - from: electron/computer-use-relay.mjs
     to: computer-use/relay.mjs
-  - from: .electron-runtime/omnirush-sentry.json
-    to: omnirush-sentry.json
+  - from: .electron-runtime/mars-sentry.json
+    to: mars-sentry.json
   # Bundled UI-control MCP (scripts/prepare-ui-mcp.mjs). Launched with the app's
   # own binary and ELECTRON_RUN_AS_NODE=1; never fetched from a registry.
-  - from: .electron-runtime/omnirush-ui-mcp
-    to: omnirush-ui-mcp
+  - from: .electron-runtime/mars-ui-mcp
+    to: mars-ui-mcp
     filter:
       - index.mjs
   - from: ../app/dist
@@ -28,7 +28,7 @@ extraResources:
       - "*.js"
       - "*.wasm"
   - from: ../../packages/docs
-    to: omnirush-docs
+    to: mars-docs
     filter:
       - "**/*.md"
       - "**/*.mdx"
@@ -43,8 +43,8 @@ afterPack: scripts/electron-after-pack.cjs
 afterSign: scripts/electron-after-sign.cjs
 publish:
   - provider: github
-    owner: omnirush-ai
-    repo: omnirush-gui
+    owner: localhost8083
+    repo: mars-desktop
     releaseType: release
 mac:
   icon: resources/icons/icon.icns
@@ -55,7 +55,7 @@ mac:
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
-    NSMicrophoneUsageDescription: omnirush uses the microphone when you allow a page to access audio input.
+    NSMicrophoneUsageDescription: mars uses the microphone when you allow a page to access audio input.
   extraResources:
     - from: resources/sidecars
       to: sidecars
@@ -70,7 +70,7 @@ mac:
     - from: resources/helpers
       to: helpers
       filter:
-        - "OmniRush.ai Computer Use.app/**"
+        - "MarsAI Computer Use.app/**"
   target:
     - dmg
     - zip
@@ -99,9 +99,9 @@ linux:
     - deb
     - tar.gz
     - pacman
-    # Fedora / RHEL (`sudo dnf install ./omnirush-linux-<arch>-<version>.rpm`).
+    # Fedora / RHEL (`sudo dnf install ./mars-linux-<arch>-<version>.rpm`).
     - rpm
-# Arch Linux package (`sudo pacman -U omnirush-linux-<arch>-<version>.pacman`).
+# Arch Linux package (`sudo pacman -U mars-linux-<arch>-<version>.pacman`).
 # electron-builder's default pacman dependencies name packages Arch no longer
 # ships (http-parser) or moved to the AUR (libappindicator-gtk3), which makes
 # `pacman -U` fail; these are the ones in packaging/aur/PKGBUILD.

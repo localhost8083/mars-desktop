@@ -1,14 +1,14 @@
 ---
-title: "OmniRush.ai MCP for VS Code"
+title: "MarsAI MCP for VS Code"
 sidebarTitle: "VS Code"
-description: "VS Code MCP setup for OmniRush.ai Connect, with OAuth access to your org's Gmail, Calendar, Drive, shared connections, skills, and Cloud resources."
+description: "VS Code MCP setup for MarsAI Connect, with OAuth access to your org's Gmail, Calendar, Drive, shared connections, skills, and Cloud resources."
 ---
 
-The OmniRush.ai MCP server ([OmniRush.ai Connect](/cloud/run-in-the-cloud/cloud-mcp))
-enables VS Code to use the OmniRush.ai capabilities your organization has made
+The MarsAI MCP server ([MarsAI Connect](/cloud/run-in-the-cloud/cloud-mcp))
+enables VS Code to use the MarsAI capabilities your organization has made
 available to you: Gmail read/search, Calendar list/create, Drive search/read,
 Gmail draft creation, shared MCP connections such as Notion, Linear, Slack,
-Stripe, Exa, and Context7, shared skills, and OmniRush.ai Cloud resources like
+Stripe, Exa, and Context7, shared skills, and MarsAI Cloud resources like
 skills, plugins, Collections, workers, members, roles, teams, and LLM
 providers. The server exposes only `search_capabilities` and
 `execute_capability`, so VS Code searches what you can access and runs exact
@@ -17,12 +17,12 @@ capability names instead of loading hundreds of tool definitions into context.
 ## Server URL
 
 ```text
-https://api.omnirush.example.com/mcp/agent
+https://api.mars.example.com/mcp/agent
 ```
 
-omnirush.ai does not run a hosted Den, so there is no public endpoint: use the
+marsai.click does not run a hosted Den, so there is no public endpoint: use the
 `/mcp/agent` URL on the API origin of your [self-hosted Den](/start-here/self-host)
-(`api.omnirush.example.com` above is a placeholder). OAuth sign-in uses your
+(`api.mars.example.com` above is a placeholder). OAuth sign-in uses your
 account on that Den, and the organization you pick is pinned into the token.
 
 ## Setup
@@ -30,10 +30,10 @@ account on that Den, and the organization you pick is pinned into the token.
 Run this command:
 
 ```sh
-code --add-mcp '{"name":"omnirush","type":"http","url":"https://api.omnirush.example.com/mcp/agent"}'
+code --add-mcp '{"name":"mars","type":"http","url":"https://api.mars.example.com/mcp/agent"}'
 ```
 
-Then open the Command Palette and run `MCP: List Servers` > `omnirush` >
+Then open the Command Palette and run `MCP: List Servers` > `mars` >
 `Start Server`. Follow the sign-in prompt and choose your organization.
 
 ## Manual setup
@@ -44,24 +44,24 @@ Open the Command Palette and run `MCP: Open User Configuration`, or edit
 ```json
 {
   "servers": {
-    "omnirush": {
+    "mars": {
       "type": "http",
-      "url": "https://api.omnirush.example.com/mcp/agent"
+      "url": "https://api.mars.example.com/mcp/agent"
     }
   }
 }
 ```
 
-Then run `MCP: List Servers` > `omnirush` > `Start Server`, and follow the
+Then run `MCP: List Servers` > `mars` > `Start Server`, and follow the
 sign-in prompt.
 
 ## Switch organizations
 
-Remove the stored MCP auth token for `omnirush`, then start the server again
+Remove the stored MCP auth token for `mars`, then start the server again
 and choose the organization you want during browser sign-in.
 
 <Note>
-This is a setup guide. These steps match OmniRush.ai Connect's OAuth profile:
+This is a setup guide. These steps match MarsAI Connect's OAuth profile:
 HTTPS or HTTP loopback callbacks, PKCE S256, and dynamic client registration
 fallback. VS Code is listed as setup only because native proof is not complete.
 See the
@@ -71,7 +71,7 @@ table.
 
 ## What you can ask
 
-- "Which OmniRush.ai organization am I connected to?"
+- "Which MarsAI organization am I connected to?"
 - "Assign Priya to the Sales team."
 - "Search my org's capabilities for calendar tools, then list tomorrow's events."
 - "Find the Q3 launch page in Notion and summarize it."

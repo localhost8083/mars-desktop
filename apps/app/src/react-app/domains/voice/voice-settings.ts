@@ -37,7 +37,7 @@ export const useVoiceSettings = create<VoiceSettingsStore>()(
       update: (patch) => set(patch),
     }),
     {
-      name: "omnirush.voice.v1",
+      name: "mars.voice.v1",
       storage: createJSONStorage(() => localStorage),
       partialize: ({ update: _update, ...settings }) => settings,
     },
@@ -51,8 +51,8 @@ export const useVoiceSettings = create<VoiceSettingsStore>()(
  */
 export function voicePrivacyNote(providerRetentionDays?: number | null): string {
   const provider = providerRetentionDays
-    ? `omnirush.ai doesn't store your audio; the provider keeps a copy for up to ${providerRetentionDays} days.`
-    : "omnirush.ai doesn't store your audio.";
+    ? `marsai.click doesn't store your audio; the provider keeps a copy for up to ${providerRetentionDays} days.`
+    : "marsai.click doesn't store your audio.";
   return `Voice is transcribed by our cloud speech provider. ${provider} Nothing is saved on this computer, and only the text you send becomes part of your prompt.`;
 }
 

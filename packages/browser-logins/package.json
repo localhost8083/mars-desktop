@@ -1,8 +1,8 @@
 {
-  "name": "@omnirush/browser-logins",
+  "name": "@mars/browser-logins",
   "private": true,
   "type": "module",
-  "description": "Sync selected logins from a browser profile into OmniRush.ai's built-in browser: source discovery, readers, decryption, site grouping, and sensitivity defaults.",
+  "description": "Sync selected logins from a browser profile into MarsAI's built-in browser: source discovery, readers, decryption, site grouping, and sensitivity defaults.",
   "exports": {
     ".": {
       "types": "./index.d.ts",

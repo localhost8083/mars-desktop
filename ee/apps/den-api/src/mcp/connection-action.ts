@@ -2,10 +2,10 @@ import {
   connectionActionAppSchemaVersion,
   connectionActionPayloadSchema,
   type ConnectionActionPayload,
-} from "@omnirush/types/connection-action-app"
+} from "@mars/types/connection-action-app"
 import type { ExternalConnectionStatus } from "./external-capabilities.js"
 
-export { connectionActionPayloadSchema } from "@omnirush/types/connection-action-app"
+export { connectionActionPayloadSchema } from "@mars/types/connection-action-app"
 
 export function connectionActionPayloadFromStatus(status: ExternalConnectionStatus): ConnectionActionPayload {
   return connectionActionPayloadSchema.parse({

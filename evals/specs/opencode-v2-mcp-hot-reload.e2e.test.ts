@@ -1,9 +1,9 @@
-import { browserScript } from "@omnirush/testkit";
+import { browserScript } from "@mars/testkit";
 import { expect } from "vitest";
 import { createHash } from "node:crypto";
-import { control, evalIn, assertNoLiveSecret, liveOpenAiEnabled, liveOpenAiModel, provisionLiveOpenAi, liveProviderId, liveV2Turn } from "@omnirush/behaviors";
-import type { Surface } from "@omnirush/cdp";
-import { app, eventually, mcpMock, needs, server, test } from "@omnirush/testkit";
+import { control, evalIn, assertNoLiveSecret, liveOpenAiEnabled, liveOpenAiModel, provisionLiveOpenAi, liveProviderId, liveV2Turn } from "@mars/behaviors";
+import type { Surface } from "@mars/cdp";
+import { app, eventually, mcpMock, needs, server, test } from "@mars/testkit";
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -12,8 +12,8 @@ function record(value: unknown): value is Record<string, unknown> {
 
 async function request(surface: Surface, path: string, method = "GET", body?: unknown) {
   const result = await evalIn(surface, browserScript(async (path, inputMethod, value) => {
-    const port = localStorage.getItem("omnirush.server.port");
-    const token = localStorage.getItem("omnirush.server.token");
+    const port = localStorage.getItem("mars.server.port");
+    const token = localStorage.getItem("mars.server.token");
     const response = await fetch("http://127.0.0.1:" + port + path, {
       method: inputMethod, headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
       body: value,
@@ -28,9 +28,9 @@ async function request(surface: Surface, path: string, method = "GET", body?: un
   return { status: result.status, json: result.json };
 }
 
-test("v2 uses an MCP added through OmniRush.ai on the next call and removes it in the same conversation", { timeout: 20 * 60_000 }, async ({ place, evidence }) => {
+test("v2 uses an MCP added through MarsAI on the next call and removes it in the same conversation", { timeout: 20 * 60_000 }, async ({ place, evidence }) => {
   const live = liveOpenAiEnabled();
-  needs({ optIn: ["OMNIRUSH_EVAL_E2E_TESTS"], ...(live ? { env: ["OPENAI_API_KEY"], daytona: true } : {}) });
+  needs({ optIn: ["MARS_EVAL_E2E_TESTS"], ...(live ? { env: ["OPENAI_API_KEY"], daytona: true } : {}) });
   const nonce = `REPORT-${Date.now()}`;
   await using den = await server({
     place,
@@ -67,23 +67,23 @@ test("v2 uses an MCP added through OmniRush.ai on the next call and removes it i
   const sessionId = data.id;
   if (live) {
     const catalog = (await api(`${v2}/api/mcp`)).json;
-    const cloud = record(catalog) && Array.isArray(catalog.data) ? catalog.data.find((item) => record(item) && item.name === "omnirush-cloud") : null;
+    const cloud = record(catalog) && Array.isArray(catalog.data) ? catalog.data.find((item) => record(item) && item.name === "mars-cloud") : null;
     expect(record(cloud) && record(cloud.status) ? cloud.status.status : null).toBe("connected");
     const discovery = await liveV2Turn(api, v2, sessionId,
-      "Use OmniRush.ai Cloud to discover whether connected Slack capabilities are available to me. "
+      "Use MarsAI Cloud to discover whether connected Slack capabilities are available to me. "
       + "Report SLACK_CONNECTED only if discovery confirms access, otherwise report SLACK_NOT_CONNECTED, followed by a brief explanation. "
       + "Check the connected integration before answering. Do not read Slack messages, send anything, or use files or shell commands.");
     const messages: unknown = JSON.parse(discovery.messages);
     const parts = Array.isArray(messages) ? messages.filter(record).flatMap((message) => Array.isArray(message.content) ? message.content.filter(record) : []) : [];
     expect(parts.some((part) => part.type === "tool" && part.name === "execute" && record(part.state)
       && part.state.status === "completed" && record(part.state.metadata) && Array.isArray(part.state.metadata.toolCalls)
-      && part.state.metadata.toolCalls.some((call) => record(call) && call.tool === "omnirush-cloud.search_capabilities" && call.status === "completed"
+      && part.state.metadata.toolCalls.some((call) => record(call) && call.tool === "mars-cloud.search_capabilities" && call.status === "completed"
         && record(call.input) && typeof call.input.query === "string" && /slack/i.test(call.input.query)))).toBe(true);
     // This fresh organization has no Slack connection or account credentials.
     expect(discovery.text).toContain("SLACK_NOT_CONNECTED");
     expect(discovery.text).not.toContain("SLACK_CONNECTED");
-    evidence.recordAssertionEvidence("the real model discovers OmniRush.ai Cloud capabilities through the managed connection",
-      `${modelId} received omnirush-cloud from normal sign-in, completed native Code Mode discovery with a Slack query, and correctly reported SLACK_NOT_CONNECTED for the fresh organization without a Slack account. This does not establish access to a real user's Slack; no Slack messages were read or sent.`, true);
+    evidence.recordAssertionEvidence("the real model discovers MarsAI Cloud capabilities through the managed connection",
+      `${modelId} received mars-cloud from normal sign-in, completed native Code Mode discovery with a Slack query, and correctly reported SLACK_NOT_CONNECTED for the fresh organization without a Slack account. This does not establish access to a real user's Slack; no Slack messages were read or sent.`, true);
   }
   let executions = 0;
   const toolCode = 'return await tools["reload-witness"].read_report({});';
@@ -152,7 +152,7 @@ test("v2 uses an MCP added through OmniRush.ai on the next call and removes it i
   const used = await turn("added", true);
   expect(used.messages).toContain(nonce);
   expect((await den.mocks.witness.toolCalls({ name: "read_report", sinceIso: used.sinceIso, atLeast: 1 })).length).toBeGreaterThan(0);
-  evidence.recordAssertionEvidence("a real OmniRush.ai connection becomes executable on the next v2 call without restarting", "The same session executed the report through native Code Mode and the mock MCP served its independent report nonce after POST /workspace/:id/mcp. The v2 pid remained unchanged.", true);
+  evidence.recordAssertionEvidence("a real MarsAI connection becomes executable on the next v2 call without restarting", "The same session executed the report through native Code Mode and the mock MCP served its independent report nonce after POST /workspace/:id/mcp. The v2 pid remained unchanged.", true);
   expect((await request(desktop, `${v2}/api/mcp/reload-witness`, "PUT", { config: mcpConfig })).status).toBe(403);
   expect((await request(desktop, `${root}/mcp`, "POST", { name: "reload-witness",
     config: { ...mcpConfig, headers: { Authorization: "Bearer eval-mcp-second" } } })).status).toBe(200);
@@ -179,7 +179,7 @@ test("v2 uses an MCP added through OmniRush.ai on the next call and removes it i
   expect(otherCatalog.status).toBe(200);
   expect(JSON.stringify(otherCatalog.json)).not.toContain("reload-witness");
   expect(JSON.stringify((await request(desktop, `${v2}/api/mcp`)).json)).toContain("reload-witness");
-  evidence.recordAssertionEvidence("credential replacement stays scoped to the original workspace", "Updating the existing connection through OmniRush.ai caused the next call to use only the replacement credential fingerprint. A separately created workspace did not receive this MCP, while the original workspace retained it and the same v2 process.", true);
+  evidence.recordAssertionEvidence("credential replacement stays scoped to the original workspace", "Updating the existing connection through MarsAI caused the next call to use only the replacement credential fingerprint. A separately created workspace did not receive this MCP, while the original workspace retained it and the same v2 process.", true);
   expect((await request(desktop, `${root}/mcp/reload-witness`, "DELETE")).status).toBe(200);
   const removed = await turn("removed", true);
   expect(await den.mocks.witness.toolCalls({ name: "read_report", sinceIso: removed.sinceIso })).toHaveLength(0);

@@ -1,5 +1,5 @@
 import * as crypto from "node:crypto";
-import { readOrganizationMetadata } from "@omnirush/types/den/managed-models-policy";
+import { readOrganizationMetadata } from "@mars/types/den/managed-models-policy";
 import { getInitialActiveOrganizationIdForUser } from "./active-organization.js";
 import { db } from "./db.js";
 import { resolveOrganizationMemberAuthority } from "./organization-team-roles.js";

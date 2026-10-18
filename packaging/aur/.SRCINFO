@@ -1,8 +1,8 @@
-pkgbase = omnirush
-	pkgdesc = omnirush desktop app: AI agents for every profession
+pkgbase = mars
+	pkgdesc = mars desktop app: AI agents for every profession
 	pkgver = 0.0.0
 	pkgrel = 1
-	url = https://github.com/omnirush-ai/omnirush-gui
+	url = https://github.com/mars-ai/mars-gui
 	arch = x86_64
 	arch = aarch64
 	license = MIT
@@ -22,11 +22,11 @@ pkgbase = omnirush
 	optdepends = gnome-keyring: Secret Service keyring for window-manager sessions (Hyprland, sway, i3)
 	options = !strip
 	options = !debug
-	source = omnirush-0.0.0-LICENSE::https://github.com/omnirush-ai/omnirush-gui/raw/v0.0.0/LICENSE
+	source = mars-0.0.0-LICENSE::https://github.com/mars-ai/mars-gui/raw/v0.0.0/LICENSE
 	sha256sums = SKIP
-	source_x86_64 = omnirush-0.0.0-x64.tar.gz::https://github.com/omnirush-ai/omnirush-gui/releases/download/v0.0.0/omnirush-linux-x64-0.0.0.tar.gz
+	source_x86_64 = mars-0.0.0-x64.tar.gz::https://github.com/mars-ai/mars-gui/releases/download/v0.0.0/mars-linux-x64-0.0.0.tar.gz
 	sha256sums_x86_64 = 0000000000000000000000000000000000000000000000000000000000000000
-	source_aarch64 = omnirush-0.0.0-arm64.tar.gz::https://github.com/omnirush-ai/omnirush-gui/releases/download/v0.0.0/omnirush-linux-arm64-0.0.0.tar.gz
+	source_aarch64 = mars-0.0.0-arm64.tar.gz::https://github.com/mars-ai/mars-gui/releases/download/v0.0.0/mars-linux-arm64-0.0.0.tar.gz
 	sha256sums_aarch64 = 0000000000000000000000000000000000000000000000000000000000000000
 
-pkgname = omnirush
+pkgname = mars

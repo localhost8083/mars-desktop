@@ -1,6 +1,6 @@
 ---
 title: "Sharing MCP connections with your team"
-description: "Share Notion, Linear, Stripe, Exa, or any MCP server in OmniRush.ai Cloud with Individual accounts by default, or One org account when everyone should act as the same account"
+description: "Share Notion, Linear, Stripe, Exa, or any MCP server in MarsAI Cloud with Individual accounts by default, or One org account when everyone should act as the same account"
 ---
 
 Use `Connectors` when you want the organization to manage an MCP integration once
@@ -16,9 +16,9 @@ Two ways to handle whose account the AI uses, chosen per connection:
 - **One org account** — an admin signs in once (a bot, service account, or API
   key). Every granted member's AI acts as that identity.
 
-## Publish the connection in OmniRush.ai Cloud
+## Publish the connection in MarsAI Cloud
 
-1. Open `Connectors` in the OmniRush.ai Cloud dashboard.
+1. Open `Connectors` in the MarsAI Cloud dashboard.
 2. Click `Add connection`.
 3. Pick a preset (Notion, Linear, Stripe, Sentry, Exa, Context7) or enter any
    MCP server URL.
@@ -28,7 +28,7 @@ Two ways to handle whose account the AI uses, chosen per connection:
 6. Click `Create`.
 
 <Frame>
-  ![MCP Connections admin screen in OmniRush.ai Cloud](/images/cloud-mcp-connections-admin.png)
+  ![MCP Connections admin screen in MarsAI Cloud](/images/cloud-mcp-connections-admin.png)
 </Frame>
 
 For a One org account connection, finish by clicking `Connect` and completing
@@ -60,13 +60,13 @@ New MCP connections on one Den instance share this redirect URL:
 <DEN_API_PUBLIC_URL>/v1/mcp-connections/oauth/callback
 ```
 
-omnirush.ai does not run a hosted Den, so there is no shared hosted redirect
+marsai.click does not run a hosted Den, so there is no shared hosted redirect
 URL. For a self-hosted instance whose public Den API is
-`https://api.omnirush.example.com`, register this exact redirect URL with the
+`https://api.mars.example.com`, register this exact redirect URL with the
 OAuth provider:
 
 ```text
-https://api.omnirush.example.com/v1/mcp-connections/oauth/callback
+https://api.mars.example.com/v1/mcp-connections/oauth/callback
 ```
 
 Use the exact scheme, hostname, optional path prefix, and port configured in
@@ -76,14 +76,14 @@ URL automatically; do not change it just to reconnect.
 
 ## Slack
 
-Slack's MCP server does not support automatic OAuth client registration, so a Slack admin creates a Slack app once and OmniRush.ai Cloud uses its credentials for every member.
+Slack's MCP server does not support automatic OAuth client registration, so a Slack admin creates a Slack app once and MarsAI Cloud uses its credentials for every member.
 
 1. Create or open a Slack app in [Slack API apps](https://api.slack.com/apps).
 2. Go to the `Agents` tab in the app settings and turn on the `MCP` toggle. Slack only serves MCP requests for apps that have this enabled.
 3. In `OAuth & Permissions`, add this Den instance's OAuth redirect URL (see above) to the redirect URLs.
 4. Add the `User Token Scopes` for the Slack MCP tools your team wants agents to use (see below).
 5. Install or approve the app for the workspace.
-6. In OmniRush.ai Cloud, add the Slack connection and paste the app's `Client ID` and `Client Secret` from `Basic Information` > `App Credentials`.
+6. In MarsAI Cloud, add the Slack connection and paste the app's `Client ID` and `Client Secret` from `Basic Information` > `App Credentials`.
 7. Members open `Your Connections` and connect their own Slack account.
 
 You do not need Slack bot tokens (`xoxb-...` or `xapp-...`) for this flow. Keep the client secret out of chats and source control.
@@ -129,7 +129,7 @@ If Slack says the redirect URL is invalid, add this Den instance's OAuth redirec
 
 ## What members see in the desktop app
 
-Granted members find the connection in `Settings` > `OmniRush.ai Connect`, grouped by what
+Granted members find the connection in `Settings` > `MarsAI Connect`, grouped by what
 they need to do:
 
 - **Needs your sign-in** — individual-account connections that require the
@@ -141,14 +141,14 @@ they need to do:
 
 ## Connect your account
 
-1. Sign in to OmniRush.ai, then open `Settings` > `OmniRush.ai Connect`.
+1. Sign in to MarsAI, then open `Settings` > `MarsAI Connect`.
 2. Find the service under `Needs your sign-in`, then click `Connect`.
 3. Your browser opens the provider's own sign-in page. Approve access.
-4. The browser shows `Connected` — return to OmniRush.ai.
+4. The browser shows `Connected` — return to MarsAI.
 5. The connection updates by itself, no reload needed, and moves to
    `Ready to use`.
 
-Your sign-in is stored in OmniRush.ai Cloud, not on this machine — connect once
+Your sign-in is stored in MarsAI Cloud, not on this machine — connect once
 and every device you use is connected.
 
 ## Your agent can use it immediately
@@ -157,7 +157,7 @@ No restart, no resync. Ask for something the tool can do:
 
 > Find the "Q3 launch" page in Notion and summarize it.
 
-The agent searches the live capabilities available through OmniRush.ai Connect,
+The agent searches the live capabilities available through MarsAI Connect,
 then executes an exact match with **your** account — your permissions, your
 audit trail on the provider's side.
 
@@ -166,11 +166,11 @@ audit trail on the provider's side.
 </Frame>
 
 If a connection needs attention, the agent should tell you which account needs
-action and direct you to `Settings` > `OmniRush.ai Connect`.
+action and direct you to `Settings` > `MarsAI Connect`.
 
 ## Expose a connection directly as an MCP server
 
-By default the agent reaches every connection through OmniRush.ai Connect's two
+By default the agent reaches every connection through MarsAI Connect's two
 discovery tools, `search_capabilities` and `execute_capability`, so the model
 sees a small, constant tool list no matter how many connections you publish.
 
@@ -179,19 +179,19 @@ For a connection the agent uses constantly, an admin can instead tick
 desktop apps then register that connection as its own MCP server in OpenCode,
 so the model sees the provider's real tool names and schemas up front and calls
 them without a search step. The same option is available from any MCP client
-that reads the OmniRush.ai Connect server index.
+that reads the MarsAI Connect server index.
 
 What stays the same:
 
-- Sign-in still happens in OmniRush.ai Cloud. The desktop app never receives the
+- Sign-in still happens in MarsAI Cloud. The desktop app never receives the
   provider's URL or token; it talks to Den's per-connection endpoint with the
-  member's own OmniRush.ai credential.
+  member's own MarsAI credential.
 - Access grants and the connection's tool policy, edited in **Manage → Tool Tester**, are enforced on every call.
 - Turning the option off, revoking a member's access, or removing the
   connection removes the server from every desktop on the next sync.
 - Member-added local MCP servers are never touched.
 
-Directly exposed connections appear in OpenCode as `omnirush-direct-<name>-…`.
+Directly exposed connections appear in OpenCode as `mars-direct-<name>-…`.
 
 ## Notes for admins
 
@@ -209,4 +209,4 @@ Directly exposed connections appear in OpenCode as `omnirush-direct-<name>-…`.
 [Add a custom MCP server](/start-here/connect-your-stack/add-an-mcp-server)
 still works without a cloud account. Use that advanced path for local tools or
 servers your organization does not provide. Use Connect for accounts and
-services managed through OmniRush.ai Cloud.
+services managed through MarsAI Cloud.

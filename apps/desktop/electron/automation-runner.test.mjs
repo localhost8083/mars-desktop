@@ -1057,7 +1057,7 @@ test("a work poll left hanging by a suspended machine times out and retries", as
   runner.stop()
 })
 
-test("desktop Automation execution creates a normal visible local OmniRush.ai thread", async () => {
+test("desktop Automation execution creates a normal visible local MarsAI thread", async () => {
   const requests = []
   const snapshotReads = new Map()
   const sessionPaths = opencodeSessionPaths("workspace-1", "session-1")
@@ -1110,7 +1110,7 @@ test("desktop Automation execution creates a normal visible local OmniRush.ai th
   assert.equal(result.resultSummary, "Desktop runner result")
   assert.deepEqual(result.usage, { inputTokens: 12, outputTokens: 7, costMicros: null })
   const localRequests = requests.filter((request) => request.path !== "/workspaces")
-  assert(localRequests.every((request) => new Headers(request.options.headers).get("x-omnirush-task-recovery") === "off"))
+  assert(localRequests.every((request) => new Headers(request.options.headers).get("x-mars-task-recovery") === "off"))
   assert.deepEqual(localRequests.slice(0, 2).map(({ path, method, body }) => ({ path, method, body })), [
     {
       path: sessionPaths.create,

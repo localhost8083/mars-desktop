@@ -34,7 +34,7 @@ import {
 } from "./recovery.mjs";
 
 const fakeApp = { getPath: (key) => (key === "home" ? "/Users/test" : `/Users/test/${key}`) };
-const STABLE_FEED = "https://github.com/omnirush-ai/omnirush-gui/releases/latest/download";
+const STABLE_FEED = "https://github.com/localhost8083/mars-desktop/releases/latest/download";
 const ALPHA_FEED = "https://updates.example.com/alpha";
 
 // Unpackaged builds resolve their version from package.json, so release bumps
@@ -85,7 +85,7 @@ function fakeUpdaterHarness({ version, files }) {
 }
 
 async function registerFakeUpdaterIpc({ version, files = undefined, ...options }) {
-  const tempDir = mkdtempSync(path.join(os.tmpdir(), "omnirush-updater-test-"));
+  const tempDir = mkdtempSync(path.join(os.tmpdir(), "mars-updater-test-"));
   const handlers = new Map();
   const harness = fakeUpdaterHarness({ version, files });
   const sent = [];
@@ -125,7 +125,7 @@ async function registerFakeUpdaterIpc({ version, files = undefined, ...options }
 describe("staleUpdaterStatePaths", () => {
   it("targets the ShipIt cache on macOS", { skip: process.platform !== "darwin" }, () => {
     assert.deepEqual(staleUpdaterStatePaths(fakeApp), [
-      "/Users/test/Library/Caches/ai.omnirush.desktop.ShipIt",
+      "/Users/test/Library/Caches/ai.marsai.desktop.ShipIt",
     ]);
   });
 
@@ -160,7 +160,7 @@ describe("targetedStableUpdaterFeed", () => {
   it("builds a fixed GitHub release feed from a strict stable version", () => {
     assert.equal(
       targetedStableUpdaterFeed("0.17.22", "0.17.23"),
-      "https://github.com/omnirush-ai/omnirush-gui/releases/download/v0.17.23",
+      "https://github.com/localhost8083/mars-desktop/releases/download/v0.17.23",
     );
   });
 
@@ -189,7 +189,7 @@ describe("targetedStableUpdaterFeed", () => {
   it("allows only an explicit exact recovery downgrade", () => {
     assert.equal(
       targetedStableUpdaterFeed("0.17.23", "0.17.22", true),
-      "https://github.com/omnirush-ai/omnirush-gui/releases/download/v0.17.22",
+      "https://github.com/localhost8083/mars-desktop/releases/download/v0.17.22",
     );
     assert.throws(
       () => targetedStableUpdaterFeed("0.17.23", "0.17.23", true),
@@ -227,7 +227,7 @@ describe("recovery metadata and candidates", () => {
   });
 
   it("atomically preserves the immediately prior healthy version", async () => {
-    const userData = await mkdtemp(path.join(os.tmpdir(), "omnirush-recovery-state-"));
+    const userData = await mkdtemp(path.join(os.tmpdir(), "mars-recovery-state-"));
     const app = { getPath: () => userData };
     try {
       await recordHealthyVersion(app, "public", "1.2.3");
@@ -264,9 +264,9 @@ describe("recovery metadata and candidates", () => {
 
   it("accepts only the exact platform, architecture, distribution release artifact", () => {
     const files = [
-      { url: "omnirush-mac-x64-1.2.3.dmg", sha512: "wrong-arch" },
-      { url: "https://tampered.invalid/omnirush-mac-arm64-1.2.3.dmg", sha512: "tampered" },
-      { url: "omnirush-mac-arm64-1.2.3.dmg", sha512: "verified" },
+      { url: "mars-mac-x64-1.2.3.dmg", sha512: "wrong-arch" },
+      { url: "https://tampered.invalid/mars-mac-arm64-1.2.3.dmg", sha512: "tampered" },
+      { url: "mars-mac-arm64-1.2.3.dmg", sha512: "verified" },
     ];
     assert.deepEqual(selectRecoveryArtifact(files, {
       version: "1.2.3",
@@ -278,7 +278,7 @@ describe("recovery metadata and candidates", () => {
       platform: "darwin",
       arch: "arm64",
       distribution: "public",
-      url: "https://github.com/omnirush-ai/omnirush-gui/releases/download/v1.2.3/omnirush-mac-arm64-1.2.3.dmg",
+      url: "https://github.com/localhost8083/mars-desktop/releases/download/v1.2.3/mars-mac-arm64-1.2.3.dmg",
       sha512: "verified",
     });
     assert.equal(selectRecoveryArtifact(files, {
@@ -291,15 +291,15 @@ describe("recovery metadata and candidates", () => {
 
   it("accepts each artifact flavor only for its matching distribution", () => {
     const artifacts = {
-      public: "omnirush-mac-arm64-1.2.3.dmg",
-      cloud: "omnirush-cloud-mac-arm64-1.2.3.dmg",
-      enterprise: "omnirush-enterprise-mac-arm64-1.2.3.dmg",
+      public: "mars-mac-arm64-1.2.3.dmg",
+      cloud: "mars-cloud-mac-arm64-1.2.3.dmg",
+      enterprise: "mars-enterprise-mac-arm64-1.2.3.dmg",
     };
     for (const [distribution, fileName] of Object.entries(artifacts)) {
       const files = [{ url: fileName, sha512: `${distribution}-checksum` }];
       assert.equal(selectRecoveryArtifact(files, {
         version: "1.2.3", platform: "darwin", arch: "arm64", distribution,
-      })?.url, `https://github.com/omnirush-ai/omnirush-gui/releases/download/v1.2.3/${fileName}`);
+      })?.url, `https://github.com/localhost8083/mars-desktop/releases/download/v1.2.3/${fileName}`);
       for (const otherDistribution of Object.keys(artifacts).filter((flavor) => flavor !== distribution)) {
         assert.equal(selectRecoveryArtifact(files, {
           version: "1.2.3", platform: "darwin", arch: "arm64", distribution: otherDistribution,
@@ -311,14 +311,14 @@ describe("recovery metadata and candidates", () => {
   it("parses representative builder manifests and selects published installer extensions", () => {
     const files = parseRecoveryManifest(`version: 1.2.3
 files:
-  - url: omnirush-mac-arm64-1.2.3.dmg
+  - url: mars-mac-arm64-1.2.3.dmg
     sha512: mac-checksum
     size: 100
-  - url: omnirush-cloud-win-x64-1.2.3.exe
+  - url: mars-cloud-win-x64-1.2.3.exe
     sha512: win-checksum
-  - url: omnirush-enterprise-linux-x86_64-1.2.3.AppImage
+  - url: mars-enterprise-linux-x86_64-1.2.3.AppImage
     sha512: linux-checksum
-path: omnirush-mac-arm64-1.2.3.zip
+path: mars-mac-arm64-1.2.3.zip
 sha512: updater-zip-checksum
 releaseDate: '2026-08-11T00:00:00.000Z'
 `);
@@ -337,12 +337,12 @@ releaseDate: '2026-08-11T00:00:00.000Z'
   });
 
   it("rejects a checksum mismatch without producing a cached installer", async () => {
-    const userData = await mkdtemp(path.join(os.tmpdir(), "omnirush-recovery-checksum-"));
+    const userData = await mkdtemp(path.join(os.tmpdir(), "mars-recovery-checksum-"));
     try {
       await assert.rejects(
         cacheVerifiedRecoveryArtifact({
           app: { getPath: () => userData },
-          artifact: { url: "https://github.com/omnirush-ai/omnirush-gui/releases/download/v1.2.3/omnirush.dmg", sha512: "invalid" },
+          artifact: { url: "https://github.com/localhost8083/mars-desktop/releases/download/v1.2.3/mars.dmg", sha512: "invalid" },
           fetchArtifact: async () => new Response("tampered"),
         }),
         /checksum did not match/,
@@ -353,7 +353,7 @@ releaseDate: '2026-08-11T00:00:00.000Z'
   });
 
   it("preserves a valid rollback cache across network and checksum replacement failures", async () => {
-    const userData = await mkdtemp(path.join(os.tmpdir(), "omnirush-recovery-cache-preserve-"));
+    const userData = await mkdtemp(path.join(os.tmpdir(), "mars-recovery-cache-preserve-"));
     const app = { getPath: () => userData };
     const bytes = Buffer.from("known-good");
     const artifact = {
@@ -361,7 +361,7 @@ releaseDate: '2026-08-11T00:00:00.000Z'
       platform: "darwin",
       arch: "arm64",
       distribution: "public",
-      url: "https://github.com/omnirush-ai/omnirush-gui/releases/download/v1.2.3/omnirush-mac-arm64-1.2.3.dmg",
+      url: "https://github.com/localhost8083/mars-desktop/releases/download/v1.2.3/mars-mac-arm64-1.2.3.dmg",
       sha512: createHash("sha512").update(bytes).digest("base64"),
     };
     try {
@@ -389,7 +389,7 @@ releaseDate: '2026-08-11T00:00:00.000Z'
   });
 
   it("rejects cached metadata with a modified URL or wrong installer filename", async () => {
-    const userData = await mkdtemp(path.join(os.tmpdir(), "omnirush-recovery-cache-identity-"));
+    const userData = await mkdtemp(path.join(os.tmpdir(), "mars-recovery-cache-identity-"));
     const app = { getPath: () => userData };
     const bytes = Buffer.from("known-good-identity");
     const artifact = {
@@ -397,7 +397,7 @@ releaseDate: '2026-08-11T00:00:00.000Z'
       platform: "darwin",
       arch: "arm64",
       distribution: "public",
-      url: "https://github.com/omnirush-ai/omnirush-gui/releases/download/v0.18.18/omnirush-mac-arm64-0.18.18.dmg",
+      url: "https://github.com/localhost8083/mars-desktop/releases/download/v0.18.18/mars-mac-arm64-0.18.18.dmg",
       sha512: createHash("sha512").update(bytes).digest("base64"),
     };
     const expected = { platform: "darwin", arch: "arm64", distribution: "public" };
@@ -405,9 +405,9 @@ releaseDate: '2026-08-11T00:00:00.000Z'
       await cacheVerifiedRecoveryArtifact({ app, artifact, fetchArtifact: async () => new Response(bytes) });
       const metadataPath = path.join(userData, "app-recovery-cache", "metadata.json");
       const metadata = JSON.parse(await readFile(metadataPath, "utf8"));
-      await writeFile(metadataPath, JSON.stringify({ ...metadata, url: "https://tampered.invalid/OmniRush.ai.dmg" }), "utf8");
+      await writeFile(metadataPath, JSON.stringify({ ...metadata, url: "https://tampered.invalid/MarsAI.dmg" }), "utf8");
       assert.equal(await readCachedRecoveryArtifact(app, expected), null);
-      await writeFile(metadataPath, JSON.stringify({ ...metadata, fileName: "OmniRush.ai.dmg" }), "utf8");
+      await writeFile(metadataPath, JSON.stringify({ ...metadata, fileName: "MarsAI.dmg" }), "utf8");
       assert.equal(await readCachedRecoveryArtifact(app, expected), null);
     } finally {
       await rm(userData, { recursive: true, force: true });
@@ -415,7 +415,7 @@ releaseDate: '2026-08-11T00:00:00.000Z'
   });
 
   it("discovers and opens a reverified cached healthy installer while offline", async () => {
-    const userData = await mkdtemp(path.join(os.tmpdir(), "omnirush-recovery-offline-"));
+    const userData = await mkdtemp(path.join(os.tmpdir(), "mars-recovery-offline-"));
     const quitCalls = [];
     const app = {
       isPackaged: true,
@@ -429,7 +429,7 @@ releaseDate: '2026-08-11T00:00:00.000Z'
       platform: "darwin",
       arch: "arm64",
       distribution: "public",
-      url: "https://github.com/omnirush-ai/omnirush-gui/releases/download/v1.9.0/omnirush-mac-arm64-1.9.0.dmg",
+      url: "https://github.com/localhost8083/mars-desktop/releases/download/v1.9.0/mars-mac-arm64-1.9.0.dmg",
       sha512: createHash("sha512").update(bytes).digest("base64"),
     };
     const handlers = new Map();
@@ -452,18 +452,18 @@ releaseDate: '2026-08-11T00:00:00.000Z'
         distribution: "public",
         isDeveloperIdSigned: async () => true,
       });
-      const listed = await handlers.get("omnirush:recovery:list")(null, {
+      const listed = await handlers.get("mars:recovery:list")(null, {
         versions: [], minimumVersion: "0.0.0",
       });
       assert.deepEqual(listed.releases, [{ id: "1.9.0", version: "1.9.0", marking: "previous" }]);
       assert.deepEqual(networkCalls, []);
-      assert.deepEqual(await handlers.get("omnirush:recovery:use")(null, "1.9.0"), {
+      assert.deepEqual(await handlers.get("mars:recovery:use")(null, "1.9.0"), {
         ok: false,
         reason: "installer blocked",
       });
       assert.deepEqual(quitCalls, []);
       openError = "";
-      assert.deepEqual(await handlers.get("omnirush:recovery:use")(null, "1.9.0"), {
+      assert.deepEqual(await handlers.get("mars:recovery:use")(null, "1.9.0"), {
         ok: true,
         action: "installer",
         message: "The verified installer is open. Follow the operating system steps to finish.",
@@ -475,11 +475,11 @@ releaseDate: '2026-08-11T00:00:00.000Z'
   });
 
   it("rejects a candidate whose fresh manifest changes without any destructive action", async () => {
-    const userData = await mkdtemp(path.join(os.tmpdir(), "omnirush-recovery-fresh-mismatch-"));
+    const userData = await mkdtemp(path.join(os.tmpdir(), "mars-recovery-fresh-mismatch-"));
     const handlers = new Map();
     const destructiveCalls = [];
     let candidateFetches = 0;
-    const manifest = (checksum) => `version: 1.9.0\nfiles:\n  - url: omnirush-mac-arm64-1.9.0.dmg\n    sha512: ${checksum}\n`;
+    const manifest = (checksum) => `version: 1.9.0\nfiles:\n  - url: mars-mac-arm64-1.9.0.dmg\n    sha512: ${checksum}\n`;
     try {
       isolatedUpdaterImportId += 1;
       const isolated = await import(`./updater.mjs?fresh-mismatch=${isolatedUpdaterImportId}`);
@@ -503,11 +503,11 @@ releaseDate: '2026-08-11T00:00:00.000Z'
         distribution: "public",
         isDeveloperIdSigned: async () => true,
       });
-      const listed = await handlers.get("omnirush:recovery:list")(null, {
+      const listed = await handlers.get("mars:recovery:list")(null, {
         versions: ["1.9.0"], minimumVersion: "0.0.0",
       });
       assert.deepEqual(listed.releases, [{ id: "1.9.0", version: "1.9.0", marking: null }]);
-      const result = await handlers.get("omnirush:recovery:use")(null, "1.9.0");
+      const result = await handlers.get("mars:recovery:use")(null, "1.9.0");
       assert.equal(result.ok, false);
       assert.match(result.reason, /could not be verified/);
       assert.deepEqual(destructiveCalls, []);
@@ -537,14 +537,14 @@ releaseDate: '2026-08-11T00:00:00.000Z'
         return "";
       } },
       env: {
-        OMNIRUSH_EVAL_RECOVERY_CANDIDATES: JSON.stringify([
-          { version: "1.2.2", verified: false, artifactUrl: "https://tampered.invalid/omnirush.dmg" },
+        MARS_EVAL_RECOVERY_CANDIDATES: JSON.stringify([
+          { version: "1.2.2", verified: false, artifactUrl: "https://tampered.invalid/mars.dmg" },
         ]),
       },
       isDeveloperIdSigned: async () => true,
     });
-    await handlers.get("omnirush:recovery:list")(null, {});
-    assert.equal((await handlers.get("omnirush:recovery:use")(null, "1.2.2")).ok, false);
+    await handlers.get("mars:recovery:list")(null, {});
+    assert.equal((await handlers.get("mars:recovery:use")(null, "1.2.2")).ok, false);
     assert.deepEqual(destructiveCalls, []);
   });
 });
@@ -558,7 +558,7 @@ describe("installAndRestart", () => {
       getMainWindow: () => null,
     });
 
-    const install = handlers.get("omnirush:updater:installAndRestart");
+    const install = handlers.get("mars:updater:installAndRestart");
     assert.equal(typeof install, "function");
     assert.deepEqual(await install(), {
       ok: false,
@@ -573,9 +573,9 @@ describe("downloaded update lifecycle", () => {
       version: "0.17.1",
     });
     try {
-      const check = handlers.get("omnirush:updater:check");
-      const download = handlers.get("omnirush:updater:download");
-      const install = handlers.get("omnirush:updater:installAndRestart");
+      const check = handlers.get("mars:updater:check");
+      const download = handlers.get("mars:updater:download");
+      const install = handlers.get("mars:updater:installAndRestart");
       assert.equal(typeof check, "function");
       assert.equal(typeof download, "function");
       assert.equal(typeof install, "function");
@@ -605,9 +605,9 @@ describe("downloaded update lifecycle", () => {
       version: "0.17.1",
     });
     try {
-      const check = handlers.get("omnirush:updater:check");
-      const download = handlers.get("omnirush:updater:download");
-      const install = handlers.get("omnirush:updater:installAndRestart");
+      const check = handlers.get("mars:updater:check");
+      const download = handlers.get("mars:updater:download");
+      const install = handlers.get("mars:updater:installAndRestart");
       assert.equal(typeof check, "function");
       assert.equal(typeof download, "function");
       assert.equal(typeof install, "function");
@@ -629,9 +629,9 @@ describe("downloaded update lifecycle", () => {
       version: "0.17.1",
     });
     try {
-      const check = handlers.get("omnirush:updater:check");
-      const download = handlers.get("omnirush:updater:download");
-      const install = handlers.get("omnirush:updater:installAndRestart");
+      const check = handlers.get("mars:updater:check");
+      const download = handlers.get("mars:updater:download");
+      const install = handlers.get("mars:updater:installAndRestart");
       assert.equal(typeof check, "function");
       assert.equal(typeof download, "function");
       assert.equal(typeof install, "function");
@@ -656,8 +656,8 @@ describe("downloaded update lifecycle", () => {
 describe("macOS code signature detection", () => {
   it("derives the bundle path from the running executable", () => {
     assert.equal(
-      macAppBundlePath("/Applications/OmniRush.ai.app/Contents/MacOS/OmniRush.ai"),
-      "/Applications/OmniRush.ai.app",
+      macAppBundlePath("/Applications/MarsAI.app/Contents/MacOS/MarsAI"),
+      "/Applications/MarsAI.app",
     );
     assert.equal(macAppBundlePath("/usr/local/bin/node"), null);
     assert.equal(macAppBundlePath(undefined), null);
@@ -665,49 +665,49 @@ describe("macOS code signature detection", () => {
 
   it("accepts only a Developer ID signature", () => {
     assert.equal(developerIdSignatureFromCodesignOutput(
-      "Identifier=ai.omnirush.desktop\nAuthority=Developer ID Application: OmniRush (TEAMID)\nAuthority=Developer ID Certification Authority",
+      "Identifier=ai.marsai.desktop\nAuthority=Developer ID Application: Mars (TEAMID)\nAuthority=Developer ID Certification Authority",
     ), true);
     assert.equal(developerIdSignatureFromCodesignOutput(
-      "Identifier=ai.omnirush.desktop\nSignature=adhoc\nAuthority=Developer ID Application: forged",
+      "Identifier=ai.marsai.desktop\nSignature=adhoc\nAuthority=Developer ID Application: forged",
     ), false);
-    assert.equal(developerIdSignatureFromCodesignOutput("Identifier=ai.omnirush.desktop\nSignature=adhoc"), false);
-    assert.equal(developerIdSignatureFromCodesignOutput("Identifier=ai.omnirush.desktop"), false);
+    assert.equal(developerIdSignatureFromCodesignOutput("Identifier=ai.marsai.desktop\nSignature=adhoc"), false);
+    assert.equal(developerIdSignatureFromCodesignOutput("Identifier=ai.marsai.desktop"), false);
     assert.equal(developerIdSignatureFromCodesignOutput(""), false);
   });
 
   it("treats spawn failures and non-bundle executables as ad-hoc", async () => {
-    const execPath = "/Applications/OmniRush.ai.app/Contents/MacOS/OmniRush.ai";
+    const execPath = "/Applications/MarsAI.app/Contents/MacOS/MarsAI";
     const failing = (_command, _args, _options, callback) => callback(new Error("spawn failed"), "", "");
     assert.equal(await detectDeveloperIdSignature(execPath, failing), false);
 
     const invocations = [];
     const signed = (command, args, _options, callback) => {
       invocations.push([command, ...args]);
-      callback(null, "", "Authority=Developer ID Application: OmniRush (TEAMID)\n");
+      callback(null, "", "Authority=Developer ID Application: Mars (TEAMID)\n");
     };
     assert.equal(await detectDeveloperIdSignature(execPath, signed), true);
-    assert.deepEqual(invocations, [["/usr/bin/codesign", "-dv", "--verbose=2", "/Applications/OmniRush.ai.app"]]);
+    assert.deepEqual(invocations, [["/usr/bin/codesign", "-dv", "--verbose=2", "/Applications/MarsAI.app"]]);
     assert.equal(await detectDeveloperIdSignature("/usr/local/bin/node", signed), false);
   });
 });
 
-const RELEASE_123 = "https://github.com/omnirush-ai/omnirush-gui/releases/download/v1.2.3";
+const RELEASE_123 = "https://github.com/localhost8083/mars-desktop/releases/download/v1.2.3";
 
 describe("manual installer artifacts", () => {
   const files = [
-    { url: "omnirush-mac-arm64-1.2.3.zip", sha512: "zip-checksum", size: 10 },
-    { url: "omnirush-mac-arm64-1.2.3.dmg", sha512: "arm64-checksum", size: 20 },
-    { url: "omnirush-mac-x64-1.2.3.dmg", sha512: "x64-checksum", size: 30 },
+    { url: "mars-mac-arm64-1.2.3.zip", sha512: "zip-checksum", size: 10 },
+    { url: "mars-mac-arm64-1.2.3.dmg", sha512: "arm64-checksum", size: 20 },
+    { url: "mars-mac-x64-1.2.3.dmg", sha512: "x64-checksum", size: 30 },
   ];
 
   it("selects the DMG for the running architecture relative to the feed directory", () => {
     assert.deepEqual(selectManualInstallerArtifact({ version: "1.2.3", files }, STABLE_FEED, "arm64"), {
       version: "1.2.3",
       // From the release the manifest names, not whatever is latest at download time.
-      url: `${RELEASE_123}/omnirush-mac-arm64-1.2.3.dmg`,
+      url: `${RELEASE_123}/mars-mac-arm64-1.2.3.dmg`,
       sha512: "arm64-checksum",
       size: 20,
-      fileName: "omnirush-mac-arm64-1.2.3.dmg",
+      fileName: "mars-mac-arm64-1.2.3.dmg",
     });
     assert.equal(selectManualInstallerArtifact({ version: "1.2.3", files }, STABLE_FEED, "x64")?.sha512, "x64-checksum");
   });
@@ -716,11 +716,11 @@ describe("manual installer artifacts", () => {
     assert.equal(selectManualInstallerArtifact({ version: "1.2.3", files: [files[0]] }, STABLE_FEED, "arm64"), null);
     assert.equal(selectManualInstallerArtifact({
       version: "1.2.3",
-      files: [{ url: "omnirush-mac-arm64-1.2.3.dmg", sha512: "", size: 20 }],
+      files: [{ url: "mars-mac-arm64-1.2.3.dmg", sha512: "", size: 20 }],
     }, STABLE_FEED, "arm64"), null);
     assert.equal(selectManualInstallerArtifact({
       version: "1.2.3",
-      files: [{ url: "https://tampered.invalid/omnirush-mac-arm64-1.2.3.dmg", sha512: "x", size: 20 }],
+      files: [{ url: "https://tampered.invalid/mars-mac-arm64-1.2.3.dmg", sha512: "x", size: 20 }],
     }, STABLE_FEED, "arm64"), null);
   });
 });
@@ -732,15 +732,15 @@ describe("macOS manual installer fallback", () => {
     const harness = await registerFakeUpdaterIpc({
       version: "0.17.1",
       files: [
-        { url: "omnirush-mac-arm64-0.17.1.zip", sha512: "zip-checksum", size: 1 },
-        { url: "omnirush-mac-arm64-0.17.1.dmg", sha512, size: bytes.length },
+        { url: "mars-mac-arm64-0.17.1.zip", sha512: "zip-checksum", size: 1 },
+        { url: "mars-mac-arm64-0.17.1.dmg", sha512, size: bytes.length },
       ],
       platform: "darwin",
       arch: "arm64",
       isDeveloperIdSigned: async () => false,
       // Gatekeeper runs a quarantined app opened from Downloads from a
       // read-only translocated copy: replacing that would change nothing.
-      getAppPath: () => "/private/var/folders/x/T/AppTranslocation/ABCD/d/OmniRush.ai.app/Contents/Resources/app.asar",
+      getAppPath: () => "/private/var/folders/x/T/AppTranslocation/ABCD/d/MarsAI.app/Contents/Resources/app.asar",
       electronNet: { fetch: async (url) => {
         fetched.push(url);
         return new Response(bytes);
@@ -759,10 +759,10 @@ describe("macOS manual installer fallback", () => {
     const bytes = Buffer.from("dmg-bytes-for-manual-install");
     const { tempDir, handlers, calls, sent, fetched, opened } = await manualInstallerHarness({ bytes });
     try {
-      const check = handlers.get("omnirush:updater:check");
-      const download = handlers.get("omnirush:updater:download");
-      const install = handlers.get("omnirush:updater:installAndRestart");
-      const getChannel = handlers.get("omnirush:updater:getChannel");
+      const check = handlers.get("mars:updater:check");
+      const download = handlers.get("mars:updater:download");
+      const install = handlers.get("mars:updater:installAndRestart");
+      const getChannel = handlers.get("mars:updater:getChannel");
 
       assert.equal((await getChannel()).installMode, "manual-dmg");
       const checked = await check(null, "stable");
@@ -770,15 +770,15 @@ describe("macOS manual installer fallback", () => {
       assert.equal(checked.installMode, "manual-dmg");
 
       assert.deepEqual(await download(), { ok: true, mode: "manual-dmg" });
-      assert.deepEqual(fetched, ["https://github.com/omnirush-ai/omnirush-gui/releases/download/v0.17.1/omnirush-mac-arm64-0.17.1.dmg"]);
+      assert.deepEqual(fetched, ["https://github.com/localhost8083/mars-desktop/releases/download/v0.17.1/mars-mac-arm64-0.17.1.dmg"]);
       assert.deepEqual(calls, [], "electron-updater's zip download must not run");
-      const progress = sent.filter((event) => event.channel === "omnirush:updater:download-progress");
+      const progress = sent.filter((event) => event.channel === "mars:updater:download-progress");
       assert.equal(progress.at(-1)?.data.transferred, bytes.length);
       assert.equal(progress.at(-1)?.data.total, bytes.length);
       assert.equal(progress.at(-1)?.data.percent, 100);
 
       const installed = await install();
-      const expectedPath = path.join(tempDir, "userData", "app-update-installer", "omnirush-mac-arm64-0.17.1.dmg");
+      const expectedPath = path.join(tempDir, "userData", "app-update-installer", "mars-mac-arm64-0.17.1.dmg");
       assert.deepEqual(installed, { ok: true, mode: "manual-dmg", path: expectedPath });
       assert.deepEqual(opened, [expectedPath]);
       assert.deepEqual(readFileSync(expectedPath), bytes);
@@ -793,9 +793,9 @@ describe("macOS manual installer fallback", () => {
     const bytes = Buffer.from("tampered-dmg");
     const { tempDir, handlers, calls, opened } = await manualInstallerHarness({ bytes, sha512: "expected-checksum" });
     try {
-      const check = handlers.get("omnirush:updater:check");
-      const download = handlers.get("omnirush:updater:download");
-      const install = handlers.get("omnirush:updater:installAndRestart");
+      const check = handlers.get("mars:updater:check");
+      const download = handlers.get("mars:updater:download");
+      const install = handlers.get("mars:updater:installAndRestart");
 
       assert.equal((await check(null, "stable")).available, true);
       const result = await download();
@@ -813,8 +813,8 @@ describe("macOS manual installer fallback", () => {
     const bytes = Buffer.from("x64-only");
     const { tempDir, handlers, fetched } = await manualInstallerHarness({ bytes, arch: "x64" });
     try {
-      const check = handlers.get("omnirush:updater:check");
-      const download = handlers.get("omnirush:updater:download");
+      const check = handlers.get("mars:updater:check");
+      const download = handlers.get("mars:updater:download");
       assert.equal((await check(null, "stable")).available, true);
       const result = await download();
       assert.equal(result.ok, false);
@@ -832,9 +832,9 @@ describe("macOS manual installer fallback", () => {
     ]) {
       const { tempDir, handlers, calls } = await registerFakeUpdaterIpc({ version: "0.17.1", ...options });
       try {
-        const check = handlers.get("omnirush:updater:check");
-        const download = handlers.get("omnirush:updater:download");
-        const install = handlers.get("omnirush:updater:installAndRestart");
+        const check = handlers.get("mars:updater:check");
+        const download = handlers.get("mars:updater:download");
+        const install = handlers.get("mars:updater:installAndRestart");
         assert.equal((await check(null, "stable")).installMode, "in-place");
         assert.deepEqual(await download(), { ok: true, mode: "in-place" });
         assert.deepEqual(await install(), { ok: true, mode: "in-place" });
@@ -856,7 +856,7 @@ describe("release channel changes", () => {
 
   it("pins enterprise builds to their parallel stable manifest channel", async () => {
     const handlers = new Map();
-    const userData = await mkdtemp(path.join(os.tmpdir(), "omnirush-enterprise-updater-"));
+    const userData = await mkdtemp(path.join(os.tmpdir(), "mars-enterprise-updater-"));
     try {
       registerUpdaterIpc({
         app: {
@@ -870,7 +870,7 @@ describe("release channel changes", () => {
         alphaFeedUrl: ALPHA_FEED,
       });
 
-      const setChannel = handlers.get("omnirush:updater:setChannel");
+      const setChannel = handlers.get("mars:updater:setChannel");
       assert.equal(typeof setChannel, "function");
       assert.deepEqual(await setChannel(null, "alpha"), {
         channel: "stable",
@@ -891,9 +891,9 @@ describe("release channel changes", () => {
       await mkdir(path.dirname(channelPath), { recursive: true });
       await writeFile(channelPath, JSON.stringify({ channel: "alpha" }), "utf8");
 
-      const check = handlers.get("omnirush:updater:check");
-      const setChannel = handlers.get("omnirush:updater:setChannel");
-      const getChannel = handlers.get("omnirush:updater:getChannel");
+      const check = handlers.get("mars:updater:check");
+      const setChannel = handlers.get("mars:updater:setChannel");
+      const getChannel = handlers.get("mars:updater:getChannel");
 
       const persisted = await getChannel();
       assert.equal(persisted.channel, "stable");
@@ -920,9 +920,9 @@ describe("release channel changes", () => {
       alphaFeedUrl: ALPHA_FEED,
     });
     try {
-      const check = handlers.get("omnirush:updater:check");
-      const setChannel = handlers.get("omnirush:updater:setChannel");
-      const getChannel = handlers.get("omnirush:updater:getChannel");
+      const check = handlers.get("mars:updater:check");
+      const setChannel = handlers.get("mars:updater:setChannel");
+      const getChannel = handlers.get("mars:updater:getChannel");
 
       const selected = await setChannel(null, "alpha");
       assert.equal(selected.channel, "alpha");
@@ -940,8 +940,8 @@ describe("release channel changes", () => {
       alphaFeedUrl: ALPHA_FEED,
     });
     try {
-      const check = handlers.get("omnirush:updater:check");
-      const download = handlers.get("omnirush:updater:download");
+      const check = handlers.get("mars:updater:check");
+      const download = handlers.get("mars:updater:download");
 
       assert.equal((await check(null, "alpha")).channel, "alpha");
       assert.deepEqual(await download(), { ok: true, mode: "in-place" });
@@ -966,9 +966,9 @@ describe("release channel changes", () => {
       });
     });
     try {
-      const check = handlers.get("omnirush:updater:check");
-      const setChannel = handlers.get("omnirush:updater:setChannel");
-      const getChannel = handlers.get("omnirush:updater:getChannel");
+      const check = handlers.get("mars:updater:check");
+      const setChannel = handlers.get("mars:updater:setChannel");
+      const getChannel = handlers.get("mars:updater:getChannel");
 
       const stableCheck = check(null, "stable");
       await stableCheckStarted;
@@ -1024,11 +1024,11 @@ describe("installing the newest published release", () => {
   it("downloads 2.2.3 and installs it when 2.2.1 is staged and 2.2.3 was published since", async () => {
     const { tempDir, handlers, feed, downloaded, installs, updater } = await publishingFeedHarness();
     try {
-      assert.equal((await handlers.get("omnirush:updater:check")(null, "stable")).latestVersion, "2.2.1");
-      assert.deepEqual(await handlers.get("omnirush:updater:download")(), { ok: true, mode: "in-place" });
+      assert.equal((await handlers.get("mars:updater:check")(null, "stable")).latestVersion, "2.2.1");
+      assert.deepEqual(await handlers.get("mars:updater:download")(), { ok: true, mode: "in-place" });
       assert.equal(updater.autoInstallOnAppQuit, false, "the staged 2.2.1 must not install behind the updater's back");
       feed.version = "2.2.3";
-      assert.deepEqual(await handlers.get("omnirush:updater:installAndRestart")(), { ok: true, mode: "in-place" });
+      assert.deepEqual(await handlers.get("mars:updater:installAndRestart")(), { ok: true, mode: "in-place" });
       assert.deepEqual(downloaded, ["2.2.1", "2.2.3"]);
       assert.deepEqual(installs, [{ version: "2.2.3", isSilent: false, isForceRunAfter: true }]);
     } finally {
@@ -1039,9 +1039,9 @@ describe("installing the newest published release", () => {
   it("installs the staged download without re-downloading when it is still the newest", async () => {
     const { tempDir, handlers, downloaded, installs } = await publishingFeedHarness();
     try {
-      await handlers.get("omnirush:updater:check")(null, "stable");
-      await handlers.get("omnirush:updater:download")();
-      assert.deepEqual(await handlers.get("omnirush:updater:installAndRestart")(), { ok: true, mode: "in-place" });
+      await handlers.get("mars:updater:check")(null, "stable");
+      await handlers.get("mars:updater:download")();
+      assert.deepEqual(await handlers.get("mars:updater:installAndRestart")(), { ok: true, mode: "in-place" });
       assert.deepEqual(downloaded, ["2.2.1"]);
       assert.deepEqual(installs.map((install) => install.version), ["2.2.1"]);
     } finally {
@@ -1053,13 +1053,13 @@ describe("installing the newest published release", () => {
     const { tempDir, handlers, feed, downloaded, installs } = await publishingFeedHarness();
     try {
       feed.version = "2.2.0";
-      const checked = await handlers.get("omnirush:updater:check")(null, "stable");
+      const checked = await handlers.get("mars:updater:check")(null, "stable");
       assert.equal(checked.available, false);
-      assert.deepEqual(await handlers.get("omnirush:updater:download")(), {
+      assert.deepEqual(await handlers.get("mars:updater:download")(), {
         ok: false,
         reason: "No update available: the update feed offers nothing newer than 2.2.0 (its newest release is 2.2.0).",
       });
-      assert.deepEqual(await handlers.get("omnirush:updater:installAndRestart")(), { ok: false, reason: "update-not-downloaded" });
+      assert.deepEqual(await handlers.get("mars:updater:installAndRestart")(), { ok: false, reason: "update-not-downloaded" });
       assert.deepEqual(downloaded, []);
       assert.deepEqual(installs, []);
     } finally {
@@ -1070,20 +1070,20 @@ describe("installing the newest published release", () => {
   it("never falls back to the stale download when the newer one fails to download", async () => {
     const { tempDir, handlers, feed, downloaded, installs } = await publishingFeedHarness();
     try {
-      await handlers.get("omnirush:updater:check")(null, "stable");
-      await handlers.get("omnirush:updater:download")();
+      await handlers.get("mars:updater:check")(null, "stable");
+      await handlers.get("mars:updater:download")();
       feed.version = "2.2.3";
       feed.failDownloadOf = "2.2.3";
-      const failed = await handlers.get("omnirush:updater:installAndRestart")();
+      const failed = await handlers.get("mars:updater:installAndRestart")();
       assert.equal(failed.ok, false);
       assert.match(failed.reason, /2\.2\.3 is available but could not be downloaded: HTTP 503/);
       assert.deepEqual(installs, [], "2.2.1 must not install once 2.2.3 is on the feed");
       // The renderer's retry path: nothing staged, so it re-checks and downloads again.
-      assert.deepEqual(await handlers.get("omnirush:updater:installAndRestart")(), { ok: false, reason: "update-not-downloaded" });
+      assert.deepEqual(await handlers.get("mars:updater:installAndRestart")(), { ok: false, reason: "update-not-downloaded" });
       feed.failDownloadOf = null;
-      assert.equal((await handlers.get("omnirush:updater:check")(null, "stable")).latestVersion, "2.2.3");
-      assert.deepEqual(await handlers.get("omnirush:updater:download")(), { ok: true, mode: "in-place" });
-      assert.deepEqual(await handlers.get("omnirush:updater:installAndRestart")(), { ok: true, mode: "in-place" });
+      assert.equal((await handlers.get("mars:updater:check")(null, "stable")).latestVersion, "2.2.3");
+      assert.deepEqual(await handlers.get("mars:updater:download")(), { ok: true, mode: "in-place" });
+      assert.deepEqual(await handlers.get("mars:updater:installAndRestart")(), { ok: true, mode: "in-place" });
       assert.deepEqual(downloaded, ["2.2.1", "2.2.3"]);
       assert.deepEqual(installs.map((install) => install.version), ["2.2.3"]);
     } finally {
@@ -1094,10 +1094,10 @@ describe("installing the newest published release", () => {
   it("installs the staged download when the feed cannot be reached", async () => {
     const { tempDir, handlers, feed, installs } = await publishingFeedHarness();
     try {
-      await handlers.get("omnirush:updater:check")(null, "stable");
-      await handlers.get("omnirush:updater:download")();
+      await handlers.get("mars:updater:check")(null, "stable");
+      await handlers.get("mars:updater:download")();
       feed.failCheck = true;
-      assert.deepEqual(await handlers.get("omnirush:updater:installAndRestart")(), { ok: true, mode: "in-place" });
+      assert.deepEqual(await handlers.get("mars:updater:installAndRestart")(), { ok: true, mode: "in-place" });
       assert.deepEqual(installs.map((install) => install.version), ["2.2.1"]);
     } finally {
       await rm(tempDir, { recursive: true, force: true });
@@ -1107,12 +1107,12 @@ describe("installing the newest published release", () => {
   it("a periodic check replaces the staged download with the newer release", async () => {
     const { tempDir, handlers, feed, downloaded, installs } = await publishingFeedHarness();
     try {
-      await handlers.get("omnirush:updater:check")(null, "stable");
-      await handlers.get("omnirush:updater:download")();
+      await handlers.get("mars:updater:check")(null, "stable");
+      await handlers.get("mars:updater:download")();
       feed.version = "2.2.2";
-      assert.equal((await handlers.get("omnirush:updater:check")(null, "stable")).latestVersion, "2.2.2");
-      await handlers.get("omnirush:updater:download")();
-      assert.deepEqual(await handlers.get("omnirush:updater:installAndRestart")(), { ok: true, mode: "in-place" });
+      assert.equal((await handlers.get("mars:updater:check")(null, "stable")).latestVersion, "2.2.2");
+      await handlers.get("mars:updater:download")();
+      assert.deepEqual(await handlers.get("mars:updater:installAndRestart")(), { ok: true, mode: "in-place" });
       assert.deepEqual(downloaded, ["2.2.1", "2.2.2"]);
       assert.deepEqual(installs.map((install) => install.version), ["2.2.2"]);
     } finally {
@@ -1126,8 +1126,8 @@ describe("installing the newest published release", () => {
     });
     try {
       assert.equal(await prepareInstallOnQuit(), null, "nothing staged: plain quit");
-      await handlers.get("omnirush:updater:check")(null, "stable");
-      await handlers.get("omnirush:updater:download")();
+      await handlers.get("mars:updater:check")(null, "stable");
+      await handlers.get("mars:updater:download")();
       feed.version = "2.2.3";
       const installAndQuit = await prepareInstallOnQuit();
       assert.equal(typeof installAndQuit, "function");
@@ -1146,8 +1146,8 @@ describe("installing the newest published release", () => {
       quitInstallFallbackMs: 0,
     });
     try {
-      await handlers.get("omnirush:updater:check")(null, "stable");
-      await handlers.get("omnirush:updater:download")();
+      await handlers.get("mars:updater:check")(null, "stable");
+      await handlers.get("mars:updater:download")();
       const installAndQuit = await prepareInstallOnQuit({ relaunch: true });
       assert.equal(typeof installAndQuit, "function");
       installAndQuit();
@@ -1161,8 +1161,8 @@ describe("installing the newest published release", () => {
   it("on quit, skips the stale download when the newer release cannot be fetched", async () => {
     const { tempDir, handlers, feed, installs, prepareInstallOnQuit } = await publishingFeedHarness();
     try {
-      await handlers.get("omnirush:updater:check")(null, "stable");
-      await handlers.get("omnirush:updater:download")();
+      await handlers.get("mars:updater:check")(null, "stable");
+      await handlers.get("mars:updater:download")();
       feed.version = "2.2.3";
       feed.failDownloadOf = "2.2.3";
       assert.equal(await prepareInstallOnQuit(), null);
@@ -1178,8 +1178,8 @@ describe("installing the newest published release", () => {
       installCheckTimeoutMs: 20,
     });
     try {
-      await handlers.get("omnirush:updater:check")(null, "stable");
-      await handlers.get("omnirush:updater:download")();
+      await handlers.get("mars:updater:check")(null, "stable");
+      await handlers.get("mars:updater:download")();
       updater.checkForUpdates = () => new Promise(() => {});
       assert.equal(await prepareInstallOnQuit(), null);
       assert.deepEqual(installs, []);
@@ -1204,13 +1204,13 @@ describe("older builds and the release marked Latest", () => {
     it(`${installed} downloads 3.4.3 from the Latest feed and installs it in place`, async () => {
       const { tempDir, handlers, feeds, downloaded, installs, updater } = await installedHarness(installed, "3.4.3");
       try {
-        const checked = await handlers.get("omnirush:updater:check")(null, "stable");
+        const checked = await handlers.get("mars:updater:check")(null, "stable");
         assert.equal(checked.available, true);
         assert.equal(checked.latestVersion, "3.4.3");
         assert.equal(feeds.at(-1).url, STABLE_FEED, "the public feed follows the release marked Latest");
         assert.equal(updater.allowDowngrade, false);
-        assert.deepEqual(await handlers.get("omnirush:updater:download")(), { ok: true, mode: "in-place" });
-        assert.deepEqual(await handlers.get("omnirush:updater:installAndRestart")(), { ok: true, mode: "in-place" });
+        assert.deepEqual(await handlers.get("mars:updater:download")(), { ok: true, mode: "in-place" });
+        assert.deepEqual(await handlers.get("mars:updater:installAndRestart")(), { ok: true, mode: "in-place" });
         assert.deepEqual(downloaded, ["3.4.3"]);
         assert.deepEqual(installs, [{ version: "3.4.3", isSilent: false, isForceRunAfter: true }]);
       } finally {
@@ -1222,10 +1222,10 @@ describe("older builds and the release marked Latest", () => {
   it("3.3.8 with 3.3.8 marked Latest has nothing to install and says why", async () => {
     const { tempDir, handlers, downloaded, installs } = await installedHarness("3.3.8", "3.3.8");
     try {
-      const checked = await handlers.get("omnirush:updater:check")(null, "stable");
+      const checked = await handlers.get("mars:updater:check")(null, "stable");
       assert.equal(checked.available, false);
       assert.equal(checked.latestVersion, "3.3.8");
-      const download = await handlers.get("omnirush:updater:download")();
+      const download = await handlers.get("mars:updater:download")();
       assert.equal(download.ok, false);
       assert.match(download.reason, /nothing newer than 3\.3\.8/);
       assert.deepEqual(downloaded, []);
@@ -1238,10 +1238,10 @@ describe("older builds and the release marked Latest", () => {
   it("a lower version marked Latest is never offered or downloaded as a downgrade", async () => {
     const { tempDir, handlers, downloaded, installs, updater } = await installedHarness("3.4.1", "3.3.8");
     try {
-      const checked = await handlers.get("omnirush:updater:check")(null, "stable");
+      const checked = await handlers.get("mars:updater:check")(null, "stable");
       assert.equal(checked.available, false);
       assert.equal(updater.allowDowngrade, false, "electron-updater itself must not treat 3.3.8 as installable");
-      const download = await handlers.get("omnirush:updater:download")();
+      const download = await handlers.get("mars:updater:download")();
       assert.equal(download.ok, false);
       assert.match(download.reason, /its newest release is 3\.3\.8/);
       assert.deepEqual(downloaded, []);
@@ -1254,10 +1254,10 @@ describe("older builds and the release marked Latest", () => {
   it("a staged update is dropped when the Latest release moves below this version", async () => {
     const { tempDir, handlers, feed, downloaded, installs } = await installedHarness("3.4.0", "3.4.1");
     try {
-      await handlers.get("omnirush:updater:check")(null, "stable");
-      assert.deepEqual(await handlers.get("omnirush:updater:download")(), { ok: true, mode: "in-place" });
+      await handlers.get("mars:updater:check")(null, "stable");
+      assert.deepEqual(await handlers.get("mars:updater:download")(), { ok: true, mode: "in-place" });
       feed.version = "3.3.8";
-      assert.deepEqual(await handlers.get("omnirush:updater:installAndRestart")(), { ok: false, reason: "update-not-downloaded" });
+      assert.deepEqual(await handlers.get("mars:updater:installAndRestart")(), { ok: false, reason: "update-not-downloaded" });
       assert.deepEqual(downloaded, ["3.4.1"]);
       assert.deepEqual(installs, []);
     } finally {
@@ -1278,12 +1278,12 @@ describe("dev update feed override", () => {
   });
 });
 
-const RELEASE_0171 = "https://github.com/omnirush-ai/omnirush-gui/releases/download/v0.17.1";
+const RELEASE_0171 = "https://github.com/localhost8083/mars-desktop/releases/download/v0.17.1";
 const sha512Of = (bytes) => createHash("sha512").update(bytes).digest("base64");
 const settle = (ms = 20) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe("macOS self-install without a Developer ID signature", () => {
-  const BUNDLE = "/Users/test/Applications/OmniRush.ai.app";
+  const BUNDLE = "/Users/test/Applications/MarsAI.app";
   const macSwapHarness = async ({ writable = true, swap = null } = {}) => {
     const zip = Buffer.from("zip-bytes-of-0.17.1");
     const fetched = [];
@@ -1292,8 +1292,8 @@ describe("macOS self-install without a Developer ID signature", () => {
     const harness = await registerFakeUpdaterIpc({
       version: "0.17.1",
       files: [
-        { url: "omnirush-mac-arm64-0.17.1.zip", sha512: sha512Of(zip), size: zip.length },
-        { url: "omnirush-mac-arm64-0.17.1.dmg", sha512: "dmg-checksum", size: 1 },
+        { url: "mars-mac-arm64-0.17.1.zip", sha512: sha512Of(zip), size: zip.length },
+        { url: "mars-mac-arm64-0.17.1.dmg", sha512: "dmg-checksum", size: 1 },
       ],
       platform: "darwin",
       arch: "arm64",
@@ -1306,9 +1306,9 @@ describe("macOS self-install without a Developer ID signature", () => {
       canReplace: async () => writable,
       stageMacUpdate: async ({ zipPath, version, currentBundle }) => {
         staged.push({ bytes: readFileSync(zipPath), version, currentBundle });
-        const directory = await mkdtemp(path.join(os.tmpdir(), "omnirush-staged-"));
-        await mkdir(path.join(directory, "OmniRush.ai.app"));
-        return { directory, bundle: path.join(directory, "OmniRush.ai.app"), version };
+        const directory = await mkdtemp(path.join(os.tmpdir(), "mars-staged-"));
+        await mkdir(path.join(directory, "MarsAI.app"));
+        return { directory, bundle: path.join(directory, "MarsAI.app"), version };
       },
       startMacSwap: async (request) => {
         swaps.push(request);
@@ -1323,19 +1323,19 @@ describe("macOS self-install without a Developer ID signature", () => {
   it("downloads the release zip, stages it and swaps the bundle on restart", async () => {
     const { tempDir, handlers, calls, fetched, staged, swaps, zip } = await macSwapHarness();
     try {
-      assert.equal((await handlers.get("omnirush:updater:getChannel")()).installMode, "in-place");
-      assert.equal((await handlers.get("omnirush:updater:check")(null, "stable")).available, true);
-      assert.deepEqual(await handlers.get("omnirush:updater:download")(), { ok: true, mode: "in-place" });
-      assert.deepEqual(fetched, [`${RELEASE_0171}/omnirush-mac-arm64-0.17.1.zip`]);
+      assert.equal((await handlers.get("mars:updater:getChannel")()).installMode, "in-place");
+      assert.equal((await handlers.get("mars:updater:check")(null, "stable")).available, true);
+      assert.deepEqual(await handlers.get("mars:updater:download")(), { ok: true, mode: "in-place" });
+      assert.deepEqual(fetched, [`${RELEASE_0171}/mars-mac-arm64-0.17.1.zip`]);
       assert.deepEqual(staged, [{ bytes: zip, version: "0.17.1", currentBundle: BUNDLE }]);
       assert.deepEqual(calls, [], "Squirrel never runs for an ad-hoc signed app");
 
-      assert.deepEqual(await handlers.get("omnirush:updater:installAndRestart")(), { ok: true, mode: "in-place" });
+      assert.deepEqual(await handlers.get("mars:updater:installAndRestart")(), { ok: true, mode: "in-place" });
       assert.equal(swaps.length, 1);
       assert.equal(swaps[0].targetBundle, BUNDLE);
       assert.equal(swaps[0].writable, true);
       assert.equal(swaps[0].relaunch, true);
-      assert.match(swaps[0].stagedBundle, /OmniRush\.ai\.app$/);
+      assert.match(swaps[0].stagedBundle, /Mars\.ai\.app$/);
       await settle();
       assert.deepEqual(calls, ["quit"]);
     } finally {
@@ -1352,9 +1352,9 @@ describe("macOS self-install without a Developer ID signature", () => {
       },
     });
     try {
-      await handlers.get("omnirush:updater:check")(null, "stable");
-      await handlers.get("omnirush:updater:download")();
-      const result = await handlers.get("omnirush:updater:installAndRestart")();
+      await handlers.get("mars:updater:check")(null, "stable");
+      await handlers.get("mars:updater:download")();
+      const result = await handlers.get("mars:updater:installAndRestart")();
       assert.equal(result.ok, false);
       assert.equal(result.fallback, "download-page");
       assert.match(result.reason, /administrator/);
@@ -1371,8 +1371,8 @@ describe("macOS self-install without a Developer ID signature", () => {
     for (const writable of [true, false]) {
       const { tempDir, handlers, swaps, prepareInstallOnQuit } = await macSwapHarness({ writable });
       try {
-        await handlers.get("omnirush:updater:check")(null, "stable");
-        await handlers.get("omnirush:updater:download")();
+        await handlers.get("mars:updater:check")(null, "stable");
+        await handlers.get("mars:updater:download")();
         const installAndQuit = await prepareInstallOnQuit();
         if (!writable) {
           assert.equal(installAndQuit, null);
@@ -1393,11 +1393,11 @@ describe("the swap helper script", { skip: process.platform === "win32" }, () =>
   it("waits for the app to exit, swaps the bundle and cleans up", async () => {
     const { MAC_SWAP_SCRIPT } = await import("./self-install.mjs");
     const { spawn, execFile } = await import("node:child_process");
-    const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-swap-"));
+    const root = await mkdtemp(path.join(os.tmpdir(), "mars-swap-"));
     try {
-      const target = path.join(root, "Applications", "OmniRush.ai.app");
+      const target = path.join(root, "Applications", "MarsAI.app");
       const staging = path.join(root, "staging");
-      const staged = path.join(staging, "OmniRush.ai.app");
+      const staged = path.join(staging, "MarsAI.app");
       await mkdir(path.join(target, "Contents"), { recursive: true });
       await writeFile(path.join(target, "Contents", "version"), "old");
       await mkdir(path.join(staged, "Contents"), { recursive: true });
@@ -1414,7 +1414,7 @@ describe("the swap helper script", { skip: process.platform === "win32" }, () =>
       assert.equal(await readFile(path.join(target, "Contents", "version"), "utf8"), "new");
       assert.equal(existsSync(staging), false, "the staging folder is removed");
       const leftovers = readdirSync(path.dirname(target));
-      assert.deepEqual(leftovers, ["OmniRush.ai.app"], "no backup bundle is left behind");
+      assert.deepEqual(leftovers, ["MarsAI.app"], "no backup bundle is left behind");
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -1423,8 +1423,8 @@ describe("the swap helper script", { skip: process.platform === "win32" }, () =>
 
 describe("Linux AppImage self-install", () => {
   const appImageHarness = async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-appimage-"));
-    const appImage = path.join(root, "Apps", "omnirush-linux-x86_64-0.17.0.AppImage");
+    const root = await mkdtemp(path.join(os.tmpdir(), "mars-appimage-"));
+    const appImage = path.join(root, "Apps", "mars-linux-x86_64-0.17.0.AppImage");
     await mkdir(path.dirname(appImage), { recursive: true });
     await writeFile(appImage, "old-appimage", { mode: 0o755 });
     const cache = path.join(root, "cache", "pending");
@@ -1440,7 +1440,7 @@ describe("Linux AppImage self-install", () => {
     });
     harness.updater.downloadUpdate = async () => {
       harness.calls.push("download");
-      const downloadedFile = path.join(cache, "omnirush-linux-x86_64-0.17.1.AppImage");
+      const downloadedFile = path.join(cache, "mars-linux-x86_64-0.17.1.AppImage");
       await writeFile(downloadedFile, "new-appimage");
       harness.listeners.get("update-downloaded")({ version: "0.17.1", downloadedFile });
     };
@@ -1450,9 +1450,9 @@ describe("Linux AppImage self-install", () => {
   it("replaces the AppImage file in place and relaunches it once this process exits", async () => {
     const { tempDir, root, handlers, calls, appImage, relaunches } = await appImageHarness();
     try {
-      assert.equal((await handlers.get("omnirush:updater:check")(null, "stable")).installMode, "in-place");
-      assert.deepEqual(await handlers.get("omnirush:updater:download")(), { ok: true, mode: "in-place" });
-      assert.deepEqual(await handlers.get("omnirush:updater:installAndRestart")(), { ok: true, mode: "in-place" });
+      assert.equal((await handlers.get("mars:updater:check")(null, "stable")).installMode, "in-place");
+      assert.deepEqual(await handlers.get("mars:updater:download")(), { ok: true, mode: "in-place" });
+      assert.deepEqual(await handlers.get("mars:updater:installAndRestart")(), { ok: true, mode: "in-place" });
       assert.equal(await readFile(appImage, "utf8"), "new-appimage", "same path, new contents");
       assert.equal(statSync(appImage).mode & 0o777, 0o755);
       assert.deepEqual(readdirSync(path.dirname(appImage)), [path.basename(appImage)]);
@@ -1469,8 +1469,8 @@ describe("Linux AppImage self-install", () => {
   it("replaces the AppImage on quit without relaunching", async () => {
     const { tempDir, root, handlers, calls, appImage, relaunches, prepareInstallOnQuit } = await appImageHarness();
     try {
-      await handlers.get("omnirush:updater:check")(null, "stable");
-      await handlers.get("omnirush:updater:download")();
+      await handlers.get("mars:updater:check")(null, "stable");
+      await handlers.get("mars:updater:download")();
       (await prepareInstallOnQuit())();
       await settle();
       assert.equal(await readFile(appImage, "utf8"), "new-appimage");
@@ -1486,15 +1486,15 @@ describe("Linux AppImage self-install", () => {
 describe("Linux package installs", () => {
   it("downloads the .deb to Downloads and gives the install command instead of restarting", async () => {
     const deb = Buffer.from("deb-bytes");
-    const resources = await mkdtemp(path.join(os.tmpdir(), "omnirush-resources-"));
+    const resources = await mkdtemp(path.join(os.tmpdir(), "mars-resources-"));
     await writeFile(path.join(resources, "package-type"), "deb\n");
     const fetched = [];
     const { tempDir, handlers, calls } = await registerFakeUpdaterIpc({
       version: "0.17.1",
       files: [
-        { url: "omnirush-linux-x86_64-0.17.1.AppImage", sha512: "appimage", size: 1 },
-        { url: "omnirush-linux-amd64-0.17.1.deb", sha512: sha512Of(deb), size: deb.length },
-        { url: "omnirush-linux-x86_64-0.17.1.rpm", sha512: "rpm", size: 1 },
+        { url: "mars-linux-x86_64-0.17.1.AppImage", sha512: "appimage", size: 1 },
+        { url: "mars-linux-amd64-0.17.1.deb", sha512: sha512Of(deb), size: deb.length },
+        { url: "mars-linux-x86_64-0.17.1.rpm", sha512: "rpm", size: 1 },
       ],
       platform: "linux",
       arch: "x64",
@@ -1506,11 +1506,11 @@ describe("Linux package installs", () => {
       } },
     });
     try {
-      const checked = await handlers.get("omnirush:updater:check")(null, "stable");
+      const checked = await handlers.get("mars:updater:check")(null, "stable");
       assert.equal(checked.installMode, "package");
       assert.equal(checked.packageKind, "deb");
-      const expectedPath = path.join(tempDir, "downloads", "omnirush-linux-amd64-0.17.1.deb");
-      const downloaded = await handlers.get("omnirush:updater:download")();
+      const expectedPath = path.join(tempDir, "downloads", "mars-linux-amd64-0.17.1.deb");
+      const downloaded = await handlers.get("mars:updater:download")();
       assert.deepEqual(downloaded, {
         ok: true,
         mode: "package",
@@ -1518,9 +1518,9 @@ describe("Linux package installs", () => {
         path: expectedPath,
         command: `sudo apt install ${expectedPath}`,
       });
-      assert.deepEqual(fetched, [`${RELEASE_0171}/omnirush-linux-amd64-0.17.1.deb`]);
+      assert.deepEqual(fetched, [`${RELEASE_0171}/mars-linux-amd64-0.17.1.deb`]);
       assert.deepEqual(readFileSync(expectedPath), deb);
-      const installed = await handlers.get("omnirush:updater:installAndRestart")();
+      const installed = await handlers.get("mars:updater:installAndRestart")();
       assert.equal(installed.ok, true);
       assert.equal(installed.mode, "package");
       await settle();
@@ -1535,18 +1535,18 @@ describe("Linux package installs", () => {
     const { relaunchAppImageAfterExit, environmentOutsideAppImage } = await import("./self-install.mjs");
     const spawned = [];
     relaunchAppImageAfterExit({
-      appImage: "/home/a/Apps/omnirush.AppImage",
+      appImage: "/home/a/Apps/mars.AppImage",
       pid: 4242,
       runtimePid: 4241,
       args: ["--no-sandbox"],
       env: {
         APPDIR: "/tmp/.mount_abc",
-        APPIMAGE: "/home/a/Apps/omnirush.AppImage",
+        APPIMAGE: "/home/a/Apps/mars.AppImage",
         LD_LIBRARY_PATH: "/tmp/.mount_abc/usr/lib",
         PATH: "/tmp/.mount_abc:/usr/local/bin:/usr/bin",
         HOME: "/home/a",
         DISPLAY: ":0",
-        OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT: "9223",
+        MARS_ELECTRON_REMOTE_DEBUG_PORT: "9223",
       },
       spawnProcess: (command, args, options) => {
         spawned.push({ command, args, options });
@@ -1554,7 +1554,7 @@ describe("Linux package installs", () => {
       },
     });
     assert.match(spawned[0].command, /^\/bin\/(ba)?sh$/);
-    assert.deepEqual(spawned[0].args.slice(3), ["4242", "4241", "/home/a/Apps/omnirush.AppImage", "--no-sandbox"]);
+    assert.deepEqual(spawned[0].args.slice(3), ["4242", "4241", "/home/a/Apps/mars.AppImage", "--no-sandbox"]);
     assert.equal(spawned[0].options.detached, true);
     // Nothing points into the old mount, which is gone once the app exits.
     assert.deepEqual(spawned[0].options.env, { PATH: "/usr/local/bin:/usr/bin", HOME: "/home/a", DISPLAY: ":0" });
@@ -1567,8 +1567,8 @@ describe("Linux package installs", () => {
     assert.equal(linuxInstallCommand("rpm", "/home/a/Downloads/x.rpm"), "sudo dnf install /home/a/Downloads/x.rpm");
     assert.equal(linuxInstallCommand("pacman", "/home/a/Downloads/x.pacman"), "sudo pacman -U /home/a/Downloads/x.pacman");
     assert.equal(
-      linuxInstallCommand("appimage", "/home/a/Downloads/x.AppImage", "/opt/OmniRush/omnirush.AppImage"),
-      "sudo install -m 755 /home/a/Downloads/x.AppImage /opt/OmniRush/omnirush.AppImage",
+      linuxInstallCommand("appimage", "/home/a/Downloads/x.AppImage", "/opt/Mars/mars.AppImage"),
+      "sudo install -m 755 /home/a/Downloads/x.AppImage /opt/Mars/mars.AppImage",
     );
     assert.equal(linuxInstallCommand(null, "/x"), null);
     assert.equal(shellQuote("/home/o'neil/My Downloads/x.deb"), "'/home/o'\\''neil/My Downloads/x.deb'");
@@ -1586,8 +1586,8 @@ describe("restart to update finishes or says why", () => {
       restoreQuitGuard: () => order.push("restoreQuitGuard"),
       ...options,
     });
-    assert.equal((await registered.handlers.get("omnirush:updater:check")(null, "stable")).available, true);
-    assert.deepEqual(await registered.handlers.get("omnirush:updater:download")(), { ok: true, mode: "in-place" });
+    assert.equal((await registered.handlers.get("mars:updater:check")(null, "stable")).available, true);
+    assert.deepEqual(await registered.handlers.get("mars:updater:download")(), { ok: true, mode: "in-place" });
     return { ...registered, order };
   }
 
@@ -1599,7 +1599,7 @@ describe("restart to update finishes or says why", () => {
         order.push("quitAndInstall");
         original(...args);
       };
-      assert.deepEqual(await handlers.get("omnirush:updater:installAndRestart")(), { ok: true, mode: "in-place" });
+      assert.deepEqual(await handlers.get("mars:updater:installAndRestart")(), { ok: true, mode: "in-place" });
       assert.deepEqual(order, ["allowQuit", "quitAndInstall"]);
       assert.deepEqual(calls, ["download", "quitAndInstall"]);
     } finally {
@@ -1616,7 +1616,7 @@ describe("restart to update finishes or says why", () => {
         // Squirrel.Mac answers asynchronously through the updater's error event.
         setTimeout(() => listeners.get("error")(new Error("Code signature at URL did not pass validation")), 5);
       };
-      const result = await handlers.get("omnirush:updater:installAndRestart")();
+      const result = await handlers.get("mars:updater:installAndRestart")();
       assert.equal(result.ok, false);
       assert.match(result.reason, /could not be installed: Code signature at URL did not pass validation/);
       assert.deepEqual(order, ["allowQuit", "restoreQuitGuard"], "a failed install re-arms the quit guard");
@@ -1625,7 +1625,7 @@ describe("restart to update finishes or says why", () => {
         attempts += 1;
         appEvents.emit("before-quit");
       };
-      assert.deepEqual(await handlers.get("omnirush:updater:installAndRestart")(), { ok: true, mode: "in-place" });
+      assert.deepEqual(await handlers.get("mars:updater:installAndRestart")(), { ok: true, mode: "in-place" });
       assert.equal(attempts, 2);
     } finally {
       await rm(tempDir, { recursive: true, force: true });
@@ -1636,7 +1636,7 @@ describe("restart to update finishes or says why", () => {
     const { tempDir, handlers, updater, listeners } = await stagedInPlace();
     try {
       updater.quitAndInstall = () => setTimeout(() => listeners.get("error")(new Error(READ_ONLY)), 5);
-      const result = await handlers.get("omnirush:updater:installAndRestart")();
+      const result = await handlers.get("mars:updater:installAndRestart")();
       assert.equal(result.ok, false);
       assert.match(result.reason, /drag it into Applications, open it from there and update again, or download the new version/);
     } finally {
@@ -1649,7 +1649,7 @@ describe("restart to update finishes or says why", () => {
     const { tempDir, handlers, updater } = await stagedInPlace({ nativeUpdater });
     try {
       updater.quitAndInstall = () => setTimeout(() => nativeUpdater.emit("before-quit-for-update"), 5);
-      assert.deepEqual(await handlers.get("omnirush:updater:installAndRestart")(), { ok: true, mode: "in-place" });
+      assert.deepEqual(await handlers.get("mars:updater:installAndRestart")(), { ok: true, mode: "in-place" });
       assert.equal(nativeUpdater.listenerCount("before-quit-for-update"), 0, "listeners are removed");
     } finally {
       await rm(tempDir, { recursive: true, force: true });
@@ -1660,7 +1660,7 @@ describe("restart to update finishes or says why", () => {
     const { tempDir, handlers, updater, order } = await stagedInPlace({ installStartTimeoutMs: 30 });
     try {
       updater.quitAndInstall = () => {};
-      const result = await handlers.get("omnirush:updater:installAndRestart")();
+      const result = await handlers.get("mars:updater:installAndRestart")();
       assert.equal(result.ok, false);
       assert.match(result.reason, /did not start within 0 seconds\. Quit .* and open it again to finish the update, or download the new version/);
       assert.deepEqual(order, ["allowQuit", "restoreQuitGuard"]);
@@ -1675,7 +1675,7 @@ describe("restart to update finishes or says why", () => {
       updater.quitAndInstall = () => {
         throw new Error("No update filepath provided, can't quit and install");
       };
-      const result = await handlers.get("omnirush:updater:installAndRestart")();
+      const result = await handlers.get("mars:updater:installAndRestart")();
       assert.equal(result.ok, false);
       assert.match(result.reason, /No update filepath provided/);
     } finally {
@@ -1685,8 +1685,8 @@ describe("restart to update finishes or says why", () => {
 });
 
 describe("macOS app outside Applications", () => {
-  const DMG_BUNDLE = "/Volumes/OmniRush.ai 3.3.2-arm64/OmniRush.ai.app";
-  const TRANSLOCATED = "/private/var/folders/xy/T/AppTranslocation/0A1B/d/OmniRush.ai.app";
+  const DMG_BUNDLE = "/Volumes/MarsAI 3.3.2-arm64/MarsAI.app";
+  const TRANSLOCATED = "/private/var/folders/xy/T/AppTranslocation/0A1B/d/MarsAI.app";
 
   async function stagedMac({ bundle = DMG_BUNDLE, readOnly = true, inApplications = false, answer = 1, move = () => true, ...options } = {}) {
     const order = [];
@@ -1696,7 +1696,7 @@ describe("macOS app outside Applications", () => {
       platform: "darwin",
       isDeveloperIdSigned: async () => true,
       getAppPath: () => `${bundle}/Contents/Resources/app.asar`,
-      execPath: `${bundle}/Contents/MacOS/OmniRush.ai`,
+      execPath: `${bundle}/Contents/MacOS/MarsAI`,
       isReadOnlyVolume: async () => readOnly,
       isInApplicationsFolder: () => inApplications,
       moveToApplicationsFolder: () => {
@@ -1713,15 +1713,15 @@ describe("macOS app outside Applications", () => {
       ...options,
     });
     registered.app.quit = () => order.push("quit");
-    assert.equal((await registered.handlers.get("omnirush:updater:check")(null, "stable")).installMode, "in-place");
-    assert.deepEqual(await registered.handlers.get("omnirush:updater:download")(), { ok: true, mode: "in-place" });
+    assert.equal((await registered.handlers.get("mars:updater:check")(null, "stable")).installMode, "in-place");
+    assert.deepEqual(await registered.handlers.get("mars:updater:download")(), { ok: true, mode: "in-place" });
     return { ...registered, order, dialogs };
   }
 
   it("from the DMG: asks to move instead of handing Squirrel an update it refuses", async () => {
     const { tempDir, handlers, calls, order, dialogs } = await stagedMac({ answer: 1 });
     try {
-      const result = await handlers.get("omnirush:updater:installAndRestart")();
+      const result = await handlers.get("mars:updater:installAndRestart")();
       assert.equal(result.ok, false);
       assert.equal(result.fallback, "move-to-applications");
       assert.match(result.reason, /disk image or the Downloads folder/);
@@ -1737,7 +1737,7 @@ describe("macOS app outside Applications", () => {
   it("from the DMG: Move to Applications moves the app and quits this copy", async () => {
     const { tempDir, handlers, calls, order } = await stagedMac({ answer: 0 });
     try {
-      assert.deepEqual(await handlers.get("omnirush:updater:installAndRestart")(), { ok: true, mode: "moving" });
+      assert.deepEqual(await handlers.get("mars:updater:installAndRestart")(), { ok: true, mode: "moving" });
       await new Promise((resolve) => setTimeout(resolve, 20));
       assert.deepEqual(order, ["allowQuit", "move", "allowQuit", "quit"]);
       assert.deepEqual(calls, ["download"]);
@@ -1754,7 +1754,7 @@ describe("macOS app outside Applications", () => {
       },
     });
     try {
-      const result = await handlers.get("omnirush:updater:installAndRestart")();
+      const result = await handlers.get("mars:updater:installAndRestart")();
       assert.equal(result.ok, false);
       assert.match(result.reason, /could not be moved to Applications: Failed to copy bundle/);
       assert.deepEqual(order, ["allowQuit", "move", "restoreQuitGuard"]);
@@ -1766,7 +1766,7 @@ describe("macOS app outside Applications", () => {
   it("App Translocation counts as outside Applications even when the check cannot see a read-only volume", async () => {
     const { tempDir, handlers, calls } = await stagedMac({ bundle: TRANSLOCATED, readOnly: false, answer: 1 });
     try {
-      const result = await handlers.get("omnirush:updater:installAndRestart")();
+      const result = await handlers.get("mars:updater:installAndRestart")();
       assert.equal(result.fallback, "move-to-applications");
       assert.deepEqual(calls, ["download"]);
     } finally {
@@ -1776,12 +1776,12 @@ describe("macOS app outside Applications", () => {
 
   it("in Applications (or any writable folder) installs in place", async () => {
     for (const setup of [
-      { bundle: "/Applications/OmniRush.ai.app", readOnly: false, inApplications: true },
-      { bundle: "/Users/test/Apps/OmniRush.ai.app", readOnly: false, inApplications: false },
+      { bundle: "/Applications/MarsAI.app", readOnly: false, inApplications: true },
+      { bundle: "/Users/test/Apps/MarsAI.app", readOnly: false, inApplications: false },
     ]) {
       const { tempDir, handlers, calls, dialogs } = await stagedMac(setup);
       try {
-        assert.deepEqual(await handlers.get("omnirush:updater:installAndRestart")(), { ok: true, mode: "in-place" });
+        assert.deepEqual(await handlers.get("mars:updater:installAndRestart")(), { ok: true, mode: "in-place" });
         assert.deepEqual(calls, ["download", "quitAndInstall"]);
         assert.equal(dialogs.length, 0);
       } finally {
@@ -1792,7 +1792,7 @@ describe("macOS app outside Applications", () => {
 
   it("asks at launch only when the app cannot update where it is", async () => {
     const blocked = await stagedMac({ answer: 1 });
-    const fine = await stagedMac({ bundle: "/Applications/OmniRush.ai.app", readOnly: false, inApplications: true });
+    const fine = await stagedMac({ bundle: "/Applications/MarsAI.app", readOnly: false, inApplications: true });
     try {
       const asked = await blocked.offerMoveAtLaunch();
       assert.equal(asked.offered, true);
@@ -1806,8 +1806,8 @@ describe("macOS app outside Applications", () => {
     }
   });
 
-  it("OMNIRUSH_UPDATER_MOVE_ANSWER answers without a dialog", async () => {
-    const { tempDir, offerMoveAtLaunch, dialogs, order } = await stagedMac({ env: { OMNIRUSH_UPDATER_MOVE_ANSWER: "move" } });
+  it("MARS_UPDATER_MOVE_ANSWER answers without a dialog", async () => {
+    const { tempDir, offerMoveAtLaunch, dialogs, order } = await stagedMac({ env: { MARS_UPDATER_MOVE_ANSWER: "move" } });
     try {
       assert.deepEqual(await offerMoveAtLaunch(), { offered: true, ok: true, mode: "moving" });
       assert.equal(dialogs.length, 0);
@@ -1835,11 +1835,11 @@ describe("read-only volume detection", async () => {
     throw error;
   };
   it("EROFS on the bundle's folder is a read-only volume", async () => {
-    assert.equal(await isOnReadOnlyVolume("/Volumes/X/OmniRush.ai.app", failing("EROFS")), true);
+    assert.equal(await isOnReadOnlyVolume("/Volumes/X/MarsAI.app", failing("EROFS")), true);
   });
   it("a folder this user cannot write is not", async () => {
-    assert.equal(await isOnReadOnlyVolume("/Applications/OmniRush.ai.app", failing("EACCES")), false);
-    assert.equal(await isOnReadOnlyVolume("/Applications/OmniRush.ai.app", async () => undefined), false);
+    assert.equal(await isOnReadOnlyVolume("/Applications/MarsAI.app", failing("EACCES")), false);
+    assert.equal(await isOnReadOnlyVolume("/Applications/MarsAI.app", async () => undefined), false);
     assert.equal(await isOnReadOnlyVolume(null), false);
   });
 });

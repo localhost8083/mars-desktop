@@ -40,7 +40,7 @@ const ELECTRON_UPDATER_CHANNEL_FILENAME = "electron-updater-channel.v1.json";
 const INSTALLER_CACHE_DIRECTORY = "app-update-installer";
 
 // In dev mode, app.getVersion() returns the Electron framework version
-// (e.g. "35.7.5") instead of the OmniRush.ai app version. Read from
+// (e.g. "35.7.5") instead of the MarsAI app version. Read from
 // package.json so the UI always shows the correct version.
 const __updater_dirname = path.dirname(fileURLToPath(import.meta.url));
 let _cachedAppVersion = null;
@@ -66,7 +66,7 @@ function resolveAppVersion(app) {
 // The public distribution reads `latest*.yml` from the latest GitHub release.
 // There is no public Alpha feed: the Alpha channel exists only when a
 // distribution ships its own feed directory (see updaterFeedOptions).
-export const STABLE_UPDATER_FEED_URL = "https://github.com/omnirush-ai/omnirush-gui/releases/latest/download";
+export const STABLE_UPDATER_FEED_URL = "https://github.com/localhost8083/mars-desktop/releases/latest/download";
 
 /**
  * Feed selection shared by every updater IPC handler. `manifestChannel` picks
@@ -89,7 +89,7 @@ export function updaterFeedOptions({
 }
 
 /**
- * OMNIRUSH_UPDATER_DEV_FEED_URL lets a local update rig serve latest*.yml to a
+ * MARS_UPDATER_DEV_FEED_URL lets a local update rig serve latest*.yml to a
  * packaged build. Only a loopback http(s) URL is honored, so the variable can
  * never point a real install at a remote feed.
  */
@@ -239,7 +239,7 @@ export function targetedStableUpdaterFeed(currentVersion, targetVersion, allowOl
       ? "Recovery target version must differ from the installed version."
       : "Target update version must be newer than the installed version.");
   }
-  return `https://github.com/omnirush-ai/omnirush-gui/releases/download/v${normalizedTarget}`;
+  return `https://github.com/localhost8083/mars-desktop/releases/download/v${normalizedTarget}`;
 }
 
 function updaterChannelState(app, channel, targetVersion, feedOptions) {
@@ -322,7 +322,7 @@ function runDefaults(args) {
 
 // Squirrel.Mac's `ShipIt` helper (which swaps the .app on macOS) reads its
 // options from this NSUserDefaults domain.
-const SHIP_IT_DEFAULTS_DOMAIN = "ai.omnirush.desktop.ShipIt";
+const SHIP_IT_DEFAULTS_DOMAIN = "ai.marsai.desktop.ShipIt";
 
 // Squirrel.Mac defaults to moving the *entire* app bundle through a temp
 // directory. On repeat installs that move can leave the staged bundle missing,
@@ -430,7 +430,7 @@ function installerAssetArch(arch) {
 export function releaseAssetDirectory(feedUrl, version) {
   const base = typeof feedUrl === "string" ? feedUrl.replace(/\/+$/, "") : "";
   if (base === STABLE_UPDATER_FEED_URL && typeof version === "string" && /^\d+\.\d+\.\d+/.test(version)) {
-    return `https://github.com/omnirush-ai/omnirush-gui/releases/download/v${version}`;
+    return `https://github.com/localhost8083/mars-desktop/releases/download/v${version}`;
   }
   return base;
 }
@@ -550,7 +550,7 @@ export function registerUpdaterIpc({
   const feedOptions = updaterFeedOptions({
     manifestChannel,
     alphaFeedUrl,
-    devFeedUrl: env.OMNIRUSH_UPDATER_DEV_FEED_URL,
+    devFeedUrl: env.MARS_UPDATER_DEV_FEED_URL,
   });
   let autoUpdaterInstance = null;
   let autoUpdaterLoadPromise = null;
@@ -663,9 +663,9 @@ export function registerUpdaterIpc({
 
   function appDisplayName() {
     try {
-      return (typeof app.getName === "function" && app.getName()) || "OmniRush.ai";
+      return (typeof app.getName === "function" && app.getName()) || "MarsAI";
     } catch {
-      return "OmniRush.ai";
+      return "MarsAI";
     }
   }
 
@@ -702,12 +702,12 @@ export function registerUpdaterIpc({
   /**
    * Offers to move the app into /Applications. Electron copies it there,
    * quits this copy and reopens the moved one, which can then update.
-   * OMNIRUSH_UPDATER_MOVE_ANSWER=move|cancel answers without the dialog
+   * MARS_UPDATER_MOVE_ANSWER=move|cancel answers without the dialog
    * (unattended update rigs).
    */
   async function offerMoveToApplications({ atLaunch = false } = {}) {
     const name = appDisplayName();
-    const preset = typeof env.OMNIRUSH_UPDATER_MOVE_ANSWER === "string" ? env.OMNIRUSH_UPDATER_MOVE_ANSWER.trim() : "";
+    const preset = typeof env.MARS_UPDATER_MOVE_ANSWER === "string" ? env.MARS_UPDATER_MOVE_ANSWER.trim() : "";
     let move = false;
     if (preset === "move" || preset === "cancel") {
       move = preset === "move";
@@ -885,7 +885,7 @@ export function registerUpdaterIpc({
             // Forward download progress to the renderer so the UI can show
             // incremental bytes instead of staying stuck at 0.
             autoUpdaterInstance.on("download-progress", (info) => {
-              sendToRenderer("omnirush:updater:download-progress", {
+              sendToRenderer("mars:updater:download-progress", {
                 bytesPerSecond: info.bytesPerSecond ?? 0,
                 percent: info.percent ?? 0,
                 transferred: info.transferred ?? 0,
@@ -930,7 +930,7 @@ export function registerUpdaterIpc({
     let transferred = 0;
     const reportProgress = (delta) => {
       const elapsedSeconds = Math.max((Date.now() - startedAt) / 1000, 0.001);
-      sendToRenderer("omnirush:updater:download-progress", {
+      sendToRenderer("mars:updater:download-progress", {
         bytesPerSecond: Math.round(transferred / elapsedSeconds),
         percent: total > 0 ? Math.min(100, (transferred / total) * 100) : 0,
         transferred,
@@ -976,7 +976,7 @@ export function registerUpdaterIpc({
   async function resolveRecoveryArtifact(version) {
     if (!electronNet?.fetch) return null;
     try {
-      const manifestUrl = `https://github.com/omnirush-ai/omnirush-gui/releases/download/v${version}/${recoveryManifestName(platform, arch, distribution)}`;
+      const manifestUrl = `https://github.com/localhost8083/mars-desktop/releases/download/v${version}/${recoveryManifestName(platform, arch, distribution)}`;
       const response = await electronNet.fetch(manifestUrl, { headers: { Accept: "text/yaml, text/plain, */*" } });
       if (!response.ok) return null;
       return selectRecoveryArtifact(parseRecoveryManifest(await response.text()), {
@@ -1009,13 +1009,13 @@ export function registerUpdaterIpc({
   }
 
   function evalRecoveryReleases() {
-    if (typeof env.OMNIRUSH_EVAL_RECOVERY_RELEASES === "string") {
+    if (typeof env.MARS_EVAL_RECOVERY_RELEASES === "string") {
       try {
-        const target = String(env.OMNIRUSH_EVAL_RECOVERY_TARGET ?? "").split("-");
+        const target = String(env.MARS_EVAL_RECOVERY_TARGET ?? "").split("-");
         const targetPlatform = target[0];
         const targetArch = target[1];
         const targetDistribution = target.slice(2).join("-");
-        const raw = JSON.parse(env.OMNIRUSH_EVAL_RECOVERY_RELEASES);
+        const raw = JSON.parse(env.MARS_EVAL_RECOVERY_RELEASES);
         const stable = Array.isArray(raw) ? raw.filter((release) =>
           stableVersion(release?.version)
           && release?.channel === "stable"
@@ -1036,9 +1036,9 @@ export function registerUpdaterIpc({
         return [];
       }
     }
-    if (typeof env.OMNIRUSH_EVAL_RECOVERY_CANDIDATES === "string") {
+    if (typeof env.MARS_EVAL_RECOVERY_CANDIDATES === "string") {
       try {
-        const raw = JSON.parse(env.OMNIRUSH_EVAL_RECOVERY_CANDIDATES);
+        const raw = JSON.parse(env.MARS_EVAL_RECOVERY_CANDIDATES);
         return Array.isArray(raw) ? raw.filter((candidate) =>
           candidate?.verified === true
           && stableVersion(candidate?.version)
@@ -1058,12 +1058,12 @@ export function registerUpdaterIpc({
     return null;
   }
 
-  ipcMain.handle("omnirush:recovery:recordHealthy", async () => {
+  ipcMain.handle("mars:recovery:recordHealthy", async () => {
     if (!app.isPackaged) return null;
     return recordHealthyVersion(app, distribution, resolveAppVersion(app));
   });
 
-  ipcMain.handle("omnirush:recovery:list", async (_event, policy = {}) => {
+  ipcMain.handle("mars:recovery:list", async (_event, policy = {}) => {
     const evalReleases = evalRecoveryReleases();
     if (evalReleases) {
       recoveryReleases = evalReleases;
@@ -1106,7 +1106,7 @@ export function registerUpdaterIpc({
     const release = id ? recoveryReleases.find((candidate) => candidate.id === id) : null;
     if (!release) return { ok: false, reason: "That recovery version is no longer available. Retry the release list." };
     if (release.eval) {
-      if (env.OMNIRUSH_EVAL_RECOVERY_CANDIDATES) {
+      if (env.MARS_EVAL_RECOVERY_CANDIDATES) {
         recoveryWitness.installRequests.push({ version: release.version, artifactUrl: release.artifact.url });
       } else {
         recoveryWitness.openedArtifactUrls.push(release.artifact.url);
@@ -1177,26 +1177,26 @@ export function registerUpdaterIpc({
     }
   }
 
-  ipcMain.handle("omnirush:recovery:use", async (_event, id) =>
+  ipcMain.handle("mars:recovery:use", async (_event, id) =>
     queueUpdaterOperation(() => useRecoveryRelease(id)));
-  ipcMain.handle("omnirush:recovery:restorePrevious", async () => {
+  ipcMain.handle("mars:recovery:restorePrevious", async () => {
     return queueUpdaterOperation(() => {
       const previous = recoveryReleases.find((release) => release.marking === "previous");
       return previous ? useRecoveryRelease(previous.id) : { ok: false, reason: "No verified previous version is available." };
     });
   });
-  ipcMain.handle("omnirush:recovery:evalSnapshot", async () => ({
+  ipcMain.handle("mars:recovery:evalSnapshot", async () => ({
     candidates: recoveryReleases,
     releases: recoveryReleases,
     ...recoveryWitness,
   }));
 
-  ipcMain.handle("omnirush:updater:getChannel", async () => queueUpdaterOperation(async () => {
+  ipcMain.handle("mars:updater:getChannel", async () => queueUpdaterOperation(async () => {
     const channel = await readElectronUpdaterChannel(app, feedOptions);
     return describeChannelState(channel);
   }));
 
-  ipcMain.handle("omnirush:updater:setChannel", async (_event, rawChannel) => queueUpdaterOperation(async () => {
+  ipcMain.handle("mars:updater:setChannel", async (_event, rawChannel) => queueUpdaterOperation(async () => {
     const channel = await writeElectronUpdaterChannel(app, rawChannel, feedOptions);
     clearCheckedUpdate();
     clearDownloadedUpdate();
@@ -1213,7 +1213,7 @@ export function registerUpdaterIpc({
     return describeChannelState(channel);
   }));
 
-  ipcMain.handle("omnirush:updater:check", async (_event, rawChannel, rawTargetVersion) => queueUpdaterOperation(async () => {
+  ipcMain.handle("mars:updater:check", async (_event, rawChannel, rawTargetVersion) => queueUpdaterOperation(async () => {
     // A check selects a feed for this operation only. The persisted preference
     // belongs exclusively to setChannel so a stale check cannot undo a choice.
     const channel = rawChannel === undefined
@@ -1265,7 +1265,7 @@ export function registerUpdaterIpc({
     }
   }));
 
-  ipcMain.handle("omnirush:updater:download", async () => queueUpdaterOperation(async () => {
+  ipcMain.handle("mars:updater:download", async () => queueUpdaterOperation(async () => {
     const updater = await ensureAutoUpdater();
     if (!updater) return { ok: false, reason: "unavailable" };
     const installMode = await resolveInstallMode();
@@ -1533,13 +1533,13 @@ export function registerUpdaterIpc({
 
   // Package installs: show the downloaded package (the path is the one this
   // process downloaded, never one the renderer names).
-  ipcMain.handle("omnirush:updater:showDownloaded", async () => {
+  ipcMain.handle("mars:updater:showDownloaded", async () => {
     if (!downloadedInstallerPath || !shell?.showItemInFolder) return { ok: false };
     shell.showItemInFolder(downloadedInstallerPath);
     return { ok: true };
   });
 
-  ipcMain.handle("omnirush:updater:installAndRestart", async () => queueUpdaterOperation(async () => {
+  ipcMain.handle("mars:updater:installAndRestart", async () => queueUpdaterOperation(async () => {
     if (!updateDownloaded) return { ok: false, reason: "update-not-downloaded" };
     const updater = await ensureAutoUpdater();
     if (!updater) return { ok: false, reason: "unavailable" };

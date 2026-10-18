@@ -5,7 +5,7 @@ import {
   normalizeDesktopPolicyDocument,
   normalizeDesktopPolicyValue,
   resolveDesktopPolicyDocumentWrite,
-} from "@omnirush/types/den/desktop-policies"
+} from "@mars/types/den/desktop-policies"
 
 describe("desktop policy JSON column strings", () => {
   test("normalizes policy value JSON strings", () => {

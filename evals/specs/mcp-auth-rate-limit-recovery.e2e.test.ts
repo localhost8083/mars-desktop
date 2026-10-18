@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { expect } from "vitest";
-import { requestDenLoopback, server, test } from "@omnirush/testkit";
+import { requestDenLoopback, server, test } from "@mars/testkit";
 
 function stringField(value: unknown, key: string): string {
   if (typeof value !== "object" || value === null || !(key in value)) throw new Error(`Missing ${key}`);
@@ -14,7 +14,7 @@ test("MCP requests keep valid credentials after the public auth rate limit is ex
     place,
     web: false,
     org: { name: "MCP Auth Regression", members: {} },
-    env: { OMNIRUSH_DEV_MODE: "0", DEN_TRUSTED_PROXIES: "192.0.2.10" },
+    env: { MARS_DEV_MODE: "0", DEN_TRUSTED_PROXIES: "192.0.2.10" },
   });
   const origin = den.ref.webUrl;
   const forwarded = { "x-forwarded-for": "198.51.100.10, 192.0.2.10" };

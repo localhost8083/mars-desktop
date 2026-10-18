@@ -1,11 +1,11 @@
 import { expect } from "vitest";
-import { needs, test } from "@omnirush/testkit";
+import { needs, test } from "@mars/testkit";
 import { reviewWorld } from "../worlds/evidence-review.ts";
 
 test("A reviewer can inspect two runs and a DocShot with honest results and private evidence", async ({
   evidence,
 }) => {
-  needs({ optIn: ["OMNIRUSH_EVAL_REVIEW"] });
+  needs({ optIn: ["MARS_EVAL_REVIEW"] });
   await using world = await reviewWorld();
   console.log(
     "placement: local (isolated production review app; no external services)",

@@ -21,7 +21,7 @@ import {
 } from "@/react-app/kernel/notification-store";
 import { useNavigate } from "react-router";
 import { requestOpenModelPicker } from "./new-providers-listener";
-import { useControlAction, type OmniRushControlAction } from "./control/control-provider";
+import { useControlAction, type MarsControlAction } from "./control/control-provider";
 import { openNotificationCenterEvent } from "./notifications";
 import { useReloadCoordinator } from "./reload-coordinator";
 import { useShellConfig } from "./shell-config";
@@ -67,7 +67,7 @@ export function NotificationBell({ variant = "icon" }: { variant?: "icon" | "sid
   const reloadCoordinator = useReloadCoordinator();
   const navigate = useNavigate();
 
-  const notificationsListAction = useMemo<OmniRushControlAction>(() => ({
+  const notificationsListAction = useMemo<MarsControlAction>(() => ({
     id: "notifications.list",
     label: "List notifications",
     description: "Return the current notification center entries.",
@@ -88,7 +88,7 @@ export function NotificationBell({ variant = "icon" }: { variant?: "icon" | "sid
   }), [notifications]);
   useControlAction(notificationsListAction);
 
-  const notificationToastAction = useMemo<OmniRushControlAction>(() => ({
+  const notificationToastAction = useMemo<MarsControlAction>(() => ({
     id: "notifications.show",
     label: "Show notification",
     description: "Show a short status notification in the desktop shell.",
@@ -97,7 +97,7 @@ export function NotificationBell({ variant = "icon" }: { variant?: "icon" | "sid
     requiresArgs: true,
     execute: (args) => {
       const value = args && typeof args === "object" ? args as Record<string, unknown> : {};
-      const title = typeof value.title === "string" ? value.title : "OmniRush";
+      const title = typeof value.title === "string" ? value.title : "Mars";
       const body = typeof value.body === "string" ? value.body : "";
       const severity = value.severity === "warning" || value.severity === "error" || value.severity === "success" ? value.severity : "info";
       const show = severity === "warning" ? toast.warning : severity === "error" ? toast.error : severity === "success" ? toast.success : toast.info;

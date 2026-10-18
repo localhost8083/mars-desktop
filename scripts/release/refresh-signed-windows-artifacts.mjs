@@ -43,9 +43,9 @@ async function regenerateBlockmap(installerPath) {
 }
 
 function manifestName(installerName) {
-  if (installerName.startsWith("omnirush-cloud-win-")) return "cloud.yml";
-  if (installerName.startsWith("omnirush-enterprise-win-")) return "enterprise.yml";
-  if (installerName.startsWith("omnirush-win-")) return "latest.yml";
+  if (installerName.startsWith("mars-cloud-win-")) return "cloud.yml";
+  if (installerName.startsWith("mars-enterprise-win-")) return "enterprise.yml";
+  if (installerName.startsWith("mars-win-")) return "latest.yml";
   throw new Error(`Unsupported Windows installer name: ${installerName}`);
 }
 
@@ -86,7 +86,7 @@ if (!existsSync(distRoot)) {
 }
 
 const installers = walk(distRoot).filter((file) =>
-  /^omnirush(?:-(?:cloud|enterprise))?-win-(?:x64|arm64)-.+\.exe$/i.test(basename(file)),
+  /^mars(?:-(?:cloud|enterprise))?-win-(?:x64|arm64)-.+\.exe$/i.test(basename(file)),
 );
 
 if (installers.length !== expectedCount) {

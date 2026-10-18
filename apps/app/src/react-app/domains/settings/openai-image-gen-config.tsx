@@ -41,7 +41,7 @@ const openAiImageGenConfigFactory = (ctx: ExtensionConfigContext) => (
   />
 );
 
-registerExtensionConfig("omnirush.imageGen.settings", openAiImageGenConfigFactory);
+registerExtensionConfig("mars.imageGen.settings", openAiImageGenConfigFactory);
 registerExtensionConfig("openai-image-gen", openAiImageGenConfigFactory);
 
 const DEFAULT_PROMPT =

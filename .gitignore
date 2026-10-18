@@ -56,10 +56,10 @@ vendor/opencode/
 .opencode/node_modules/
 .opencode/bun.lock
 
-# OmniRush.ai workspace-local artifacts
-.opencode/omnirush/
-.opencode/agents/omnirush.md
-.opencode/omnirush.json
+# MarsAI workspace-local artifacts
+.opencode/mars/
+.opencode/agents/mars.md
+.opencode/mars.json
 opencode.jsonc
 .vercel
 .env*.local

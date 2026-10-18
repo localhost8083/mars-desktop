@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { browserScript, spec } from "@omnirush/testkit";
+import { browserScript, spec } from "@mars/testkit";
 import { shimmerChat } from "../worlds/chat.ts";
 
 const test = spec.world(shimmerChat);
@@ -7,10 +7,10 @@ const test = spec.world(shimmerChat);
 test("a quota handoff waits for a choice, honors decline, and offers again after the allowance changes", async ({ user, probe, step, evidence }) => {
   const offer = (offerID: string, operation = "offer") => probe.eval(
     browserScript(async (inputOfferID: string, inputOperation: string) => {
-      const control = window.__omnirushControl;
+      const control = window.__marsControl;
       const connection = {
-        port: localStorage.getItem("omnirush.server.port"),
-        token: localStorage.getItem("omnirush.server.token"),
+        port: localStorage.getItem("mars.server.port"),
+        token: localStorage.getItem("mars.server.token"),
       };
       if (!control || !connection.port || !connection.token) throw new Error("Desktop control server unavailable");
       const response = await fetch(`http://127.0.0.1:${connection.port}/experimental/ui-control/request`, {
@@ -64,7 +64,7 @@ test("a quota handoff waits for a choice, honors decline, and offers again after
     await user.see({ testId: "budget-wrap-consent" });
     await user.reload();
     await probe.eventually(
-      () => probe.eval(() => window.__omnirushControl?.listActions().some((action) => action.id === "budget.wrap.update")),
+      () => probe.eval(() => window.__marsControl?.listActions().some((action) => action.id === "budget.wrap.update")),
       { within: 15_000, until: (value) => value === true, label: "wrap control after reload" },
     );
     await user.notSee({ testId: "budget-wrap-consent" });

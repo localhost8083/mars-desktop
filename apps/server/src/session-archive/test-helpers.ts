@@ -11,7 +11,7 @@ const created: string[] = [];
 
 /** A fresh temp directory by its real path (macOS temp paths go through a /var symlink). */
 export async function tempDir(prefix: string): Promise<string> {
-  const dir = await realpath(await mkdtemp(join(tmpdir(), `omnirush-archive-test-${prefix}-`)));
+  const dir = await realpath(await mkdtemp(join(tmpdir(), `mars-archive-test-${prefix}-`)));
   created.push(dir);
   return dir;
 }
@@ -105,7 +105,7 @@ export async function openArchive(sealed: Buffer): Promise<TarMemberRead[]> {
 
 export function manifestOf(members: readonly TarMemberRead[]): Record<string, unknown> {
   const first = members[0];
-  if (!first || first.name !== "__omnirush__/manifest.json") throw new Error("the manifest is not the first member");
+  if (!first || first.name !== "__mars__/manifest.json") throw new Error("the manifest is not the first member");
   const parsed: unknown = JSON.parse(first.content.toString("utf8"));
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) throw new Error("the manifest is not an object");
   return Object.fromEntries(Object.entries(parsed));

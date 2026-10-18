@@ -1,6 +1,6 @@
 ---
 name: browser-automation
-description: Local OmniRush.ai Electron browser automation with CDP. Use when driving a local Electron dev app, browser_list, browser_snapshot, browser_eval, composer automation, or local UI smoke tests.
+description: Local MarsAI Electron browser automation with CDP. Use when driving a local Electron dev app, browser_list, browser_snapshot, browser_eval, composer automation, or local UI smoke tests.
 ---
 
 # Browser Automation
@@ -9,7 +9,7 @@ For verdicts, do not drive CDP by hand — write or run an `evals/specs` test (`
 
 ## What I Do
 
-- Attach OpenCode browser tools to the OmniRush.ai Electron app during local development.
+- Attach OpenCode browser tools to the MarsAI Electron app during local development.
 - Drive the app UI through Electron's Chrome DevTools Protocol endpoint.
 - Send a task/session from the composer and confirm the response in the UI.
 
@@ -18,7 +18,7 @@ For verdicts, do not drive CDP by hand — write or run an `evals/specs` test (`
 `pnpm dev` enables Electron CDP by default:
 
 ```sh
-OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT=${OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT:-9823}
+MARS_ELECTRON_REMOTE_DEBUG_PORT=${MARS_ELECTRON_REMOTE_DEBUG_PORT:-9823}
 ```
 
 The default browser URL for OpenCode browser tools is:
@@ -36,13 +36,13 @@ http://localhost:5173/
 To use a different CDP port, launch with an override:
 
 ```sh
-OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT=9830 pnpm dev
+MARS_ELECTRON_REMOTE_DEBUG_PORT=9830 pnpm dev
 ```
 
 To disable Electron CDP for a run:
 
 ```sh
-OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT=0 pnpm dev
+MARS_ELECTRON_REMOTE_DEBUG_PORT=0 pnpm dev
 ```
 
 ## Background Launch
@@ -50,7 +50,7 @@ OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT=0 pnpm dev
 Use a detached launch when the user wants the app running in the background:
 
 ```sh
-nohup pnpm dev > /tmp/omnirush-dev.log 2>&1 &
+nohup pnpm dev > /tmp/mars-dev.log 2>&1 &
 ```
 
 Then wait for the CDP port:
@@ -62,7 +62,7 @@ lsof -nP -iTCP:9823 -sTCP:LISTEN
 ## Browser Tool Flow
 
 1. List targets with `browser_list` using `browser_url: "http://127.0.0.1:9823"`.
-2. Select the `OmniRush.ai` target ID.
+2. Select the `MarsAI` target ID.
 3. Read state with `browser_eval` or `browser_snapshot`.
 4. Fill the Lexical composer by targeting `[contenteditable="true"][data-lexical-editor="true"]`.
 5. Click the `Run task` button.
@@ -70,7 +70,7 @@ lsof -nP -iTCP:9823 -sTCP:LISTEN
 
 ## Send A Session
 
-Use this `browser_eval` pattern after selecting the OmniRush.ai target:
+Use this `browser_eval` pattern after selecting the MarsAI target:
 
 ```js
 (() => {
@@ -98,6 +98,6 @@ Use this `browser_eval` pattern after selecting the OmniRush.ai target:
 
 ## Notes
 
-- Electron CDP is used for development test tooling. User browser tasks should use the built-in OmniRush.ai Browser target.
-- A successful local attach should show an `OmniRush.ai` target at `http://127.0.0.1:9823`.
+- Electron CDP is used for development test tooling. User browser tasks should use the built-in MarsAI Browser target.
+- A successful local attach should show an `MarsAI` target at `http://127.0.0.1:9823`.
 - The known-good smoke prompt is `Say hello from the Electron browser test.` and the expected response is `Hello from the Electron browser test.`

@@ -5,8 +5,8 @@ import { join } from "node:path";
 import test from "node:test";
 import { publishPr, publishReviewPr } from "../src/publish-pr.ts";
 import { assembleReview } from "../src/review.ts";
-import { reviewSchema, summarizeReview } from "@omnirush/review";
-import { uploadReview } from "@omnirush/review/storage";
+import { reviewSchema, summarizeReview } from "@mars/review";
+import { uploadReview } from "@mars/review/storage";
 import { readFile, readdir } from "node:fs/promises";
 import type { CommandRunner } from "../src/publish-pr.ts";
 import type { TestRunRecord } from "../src/schema.ts";
@@ -74,7 +74,7 @@ function recordingExec(calls: RecordedCommand[], comments: object[] = [], attach
 }
 
 test("publishPr dry-run makes no gh calls", async () => {
-  const testRunDir = await mkdtemp(join(tmpdir(), "omnirush-test-artifacts-publish-"));
+  const testRunDir = await mkdtemp(join(tmpdir(), "mars-test-artifacts-publish-"));
   try {
     await writeFile(join(testRunDir, "test-run.json"), JSON.stringify(testRunRecord(testRunDir)));
     const calls: RecordedCommand[] = [];
@@ -93,7 +93,7 @@ test("publishPr dry-run makes no gh calls", async () => {
 });
 
 test("publishPr deletes a legacy sticky comment and posts attachments", async () => {
-  const testRunDir = await mkdtemp(join(tmpdir(), "omnirush-test-artifacts-current-"));
+  const testRunDir = await mkdtemp(join(tmpdir(), "mars-test-artifacts-current-"));
   try {
     await writeFile(join(testRunDir, "test-run.json"), JSON.stringify(testRunRecord(testRunDir)));
     await writeFile(join(testRunDir, "01-published.png"), Buffer.from("regular png"));
@@ -116,7 +116,7 @@ test("publishPr deletes a legacy sticky comment and posts attachments", async ()
 });
 
 test("publishPr publishes persisted legacy roll.json input", async () => {
-  const testRunDir = await mkdtemp(join(tmpdir(), "omnirush-test-artifacts-legacy-"));
+  const testRunDir = await mkdtemp(join(tmpdir(), "mars-test-artifacts-legacy-"));
   try {
     const current = testRunRecord(testRunDir);
     await writeFile(join(testRunDir, "roll.json"), JSON.stringify({
@@ -146,7 +146,7 @@ test("publishPr publishes persisted legacy roll.json input", async () => {
 });
 
 test("publishPr refuses a symlinked screenshot before any PR comment", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-test-artifacts-symlink-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-test-artifacts-symlink-"));
   const testRunDir = join(root, "test-run");
   try {
     await mkdir(testRunDir);
@@ -166,7 +166,7 @@ test("publishPr refuses a symlinked screenshot before any PR comment", async () 
 });
 
 test("publishPr posts a notice without attachments when gh lacks --attach", async () => {
-  const testRunDir = await mkdtemp(join(tmpdir(), "omnirush-test-artifacts-old-gh-"));
+  const testRunDir = await mkdtemp(join(tmpdir(), "mars-test-artifacts-old-gh-"));
   try {
     await writeFile(join(testRunDir, "test-run.json"), JSON.stringify(testRunRecord(testRunDir)));
     await writeFile(join(testRunDir, "01-published.png"), Buffer.from("regular png"));
@@ -205,7 +205,7 @@ async function reviewFixture(root: string, name: string) {
 }
 
 test("review composition preserves sources, deduplicates images, and validates evidence references", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-review-compose-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-review-compose-"));
   try {
     const first = await reviewFixture(root, "First behavior");
     const second = await reviewFixture(root, "Second behavior");
@@ -286,7 +286,7 @@ test("review composition preserves sources, deduplicates images, and validates e
 });
 
 test("review publication validates before uploading and preserves the comment when upload or head checks fail", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-review-publish-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-review-publish-"));
   try {
     const directory = await reviewFixture(root, "Publication");
     const options = {

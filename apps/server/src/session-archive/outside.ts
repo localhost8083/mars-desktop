@@ -55,8 +55,8 @@ const SYSTEM_PREFIXES = ["/proc", "/sys", "/dev", "/run", "/private/var/run", "/
  */
 const HOME_CACHE_DIRS = [
   ".cache", ".npm", ".pnpm-store", ".yarn", ".bun/install", ".cargo/registry", ".cargo/git", ".rustup", ".gradle", ".m2",
-  ".nuget", ".local/share/pnpm", ".local/share/opencode", ".local/state/opencode", ".config/opencode", ".omnirush", ".pi",
-  ".config/omnirush", ".config/OmniRush", "Library/Application Support/OmniRush", "AppData/Roaming/OmniRush",
+  ".nuget", ".local/share/pnpm", ".local/share/opencode", ".local/state/opencode", ".config/opencode", ".mars", ".pi",
+  ".config/mars", ".config/Mars", "Library/Application Support/Mars", "AppData/Roaming/Mars",
   "Library/Caches", "AppData/Local/Temp", "AppData/Local/npm-cache", "go/pkg/mod",
 ];
 const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;

@@ -50,7 +50,7 @@ describe("Den sign-out", () => {
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: {
-        __OMNIRUSH_ELECTRON__: {
+        __MARS_ELECTRON__: {
           invokeDesktop: async (command: string, url: string) => {
             expect(command).toBe("__fetch");
             requests.push(url);
@@ -74,7 +74,7 @@ describe("Den sign-out", () => {
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: {
-        __OMNIRUSH_ELECTRON__: {
+        __MARS_ELECTRON__: {
           invokeDesktop: async (command: string, url: string) => {
             expect(command).toBe("__fetch");
             requests.push(url);
@@ -97,7 +97,7 @@ describe("Den sign-out", () => {
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: {
-        __OMNIRUSH_ELECTRON__: {
+        __MARS_ELECTRON__: {
           invokeDesktop: async (command: string, url: string) => {
             expect(command).toBe("__fetch");
             requests.push(url);

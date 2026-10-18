@@ -1,6 +1,6 @@
 # Enterprise Mock Lab
 
-The Enterprise Mock Lab is a loopback-only development control plane for reusable enterprise simulation packages. Its first module is `@omnirush/enterprise-mcp-mock-server`.
+The Enterprise Mock Lab is a loopback-only development control plane for reusable enterprise simulation packages. Its first module is `@mars/enterprise-mcp-mock-server`.
 
 It intentionally keeps two trust boundaries separate:
 

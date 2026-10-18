@@ -1,7 +1,7 @@
-import type { OmniRushSessionGroupEvent } from "@/app/lib/omnirush-server";
+import type { MarsSessionGroupEvent } from "@/app/lib/mars-server";
 
 export type SessionGroupEventResponse = {
-  items: OmniRushSessionGroupEvent[];
+  items: MarsSessionGroupEvent[];
   gap?: boolean;
   reset?: boolean;
 };
@@ -19,7 +19,7 @@ export class SessionGroupEventPoller {
   async poll(
     key: string,
     request: (options: { since: number }) => Promise<SessionGroupEventResponse>,
-    apply: (items: OmniRushSessionGroupEvent[]) => Promise<void>,
+    apply: (items: MarsSessionGroupEvent[]) => Promise<void>,
   ): Promise<void> {
     const currentCursor = this.cursorByWorkspace.get(key) ?? 0;
     try {

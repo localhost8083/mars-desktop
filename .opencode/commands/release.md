@@ -1,5 +1,5 @@
 ---
-description: Publish an OmniRush.ai desktop release
+description: Publish an MarsAI desktop release
 ---
 
 Follow `.opencode/skills/release/SKILL.md` and `docs/RELEASING.md`.

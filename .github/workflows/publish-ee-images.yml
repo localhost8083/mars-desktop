@@ -140,7 +140,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image: omnirush-den-api
+          - image: mars-den-api
             dockerfile: packaging/docker/Dockerfile.den
             port: 8788
             health_path: /health
@@ -149,12 +149,12 @@ jobs:
               -e DEN_DB_ENCRYPTION_KEY=ci-den-db-encryption-key-value-123456
               -e BETTER_AUTH_SECRET=ci-better-auth-secret-value-123456
               -e BETTER_AUTH_URL=http://127.0.0.1:8788
-          - image: omnirush-den-web
+          - image: mars-den-web
             dockerfile: packaging/docker/Dockerfile.den-web
             port: 3005
             health_path: /api/health
             smoke_env: ""
-          - image: omnirush-inference
+          - image: mars-inference
             dockerfile: packaging/docker/Dockerfile.inference
             port: 8791
             health_path: /health
@@ -164,7 +164,7 @@ jobs:
               -e DEN_DB_ENCRYPTION_KEY=ci-den-db-encryption-key-value-123456
           # The gateway's own liveness lives at /__gw/health because /health is
           # proxied through to the user's instance.
-          - image: omnirush-den-gateway
+          - image: mars-den-gateway
             dockerfile: packaging/docker/Dockerfile.den-gateway
             port: 8788
             health_path: /__gw/health
@@ -243,7 +243,7 @@ jobs:
         # Build every image except the ones whose Sentry-enabled step below owns
         # them. Stated as an exclusion so a newly added matrix entry builds by
         # default instead of silently skipping and failing the smoke step.
-        if: ${{ !((matrix.image == 'omnirush-den-api' && steps.sentry_sourcemaps.outputs.den_api_upload == 'true') || (matrix.image == 'omnirush-den-web' && steps.sentry_sourcemaps.outputs.den_web_upload == 'true')) }}
+        if: ${{ !((matrix.image == 'mars-den-api' && steps.sentry_sourcemaps.outputs.den_api_upload == 'true') || (matrix.image == 'mars-den-web' && steps.sentry_sourcemaps.outputs.den_web_upload == 'true')) }}
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -256,13 +256,13 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
           build-args: |
-            ${{ matrix.image == 'omnirush-den-api' && format('DEN_API_VERSION={0}', needs.artifact-version.outputs.chart_version || github.sha) || '' }}
-            ${{ matrix.image == 'omnirush-den-gateway' && format('DEN_GATEWAY_VERSION={0}', needs.artifact-version.outputs.chart_version || github.sha) || '' }}
-            ${{ matrix.image == 'omnirush-den-api' && 'DEN_UPLOAD_SENTRY_SOURCEMAPS=0' || '' }}
-            ${{ matrix.image == 'omnirush-den-web' && 'DEN_WEB_UPLOAD_SENTRY_SOURCEMAPS=0' || '' }}
+            ${{ matrix.image == 'mars-den-api' && format('DEN_API_VERSION={0}', needs.artifact-version.outputs.chart_version || github.sha) || '' }}
+            ${{ matrix.image == 'mars-den-gateway' && format('DEN_GATEWAY_VERSION={0}', needs.artifact-version.outputs.chart_version || github.sha) || '' }}
+            ${{ matrix.image == 'mars-den-api' && 'DEN_UPLOAD_SENTRY_SOURCEMAPS=0' || '' }}
+            ${{ matrix.image == 'mars-den-web' && 'DEN_WEB_UPLOAD_SENTRY_SOURCEMAPS=0' || '' }}
 
       - name: Build and push with Sentry source-map upload
-        if: ${{ (matrix.image == 'omnirush-den-api' && steps.sentry_sourcemaps.outputs.den_api_upload == 'true') || (matrix.image == 'omnirush-den-web' && steps.sentry_sourcemaps.outputs.den_web_upload == 'true') }}
+        if: ${{ (matrix.image == 'mars-den-api' && steps.sentry_sourcemaps.outputs.den_api_upload == 'true') || (matrix.image == 'mars-den-web' && steps.sentry_sourcemaps.outputs.den_web_upload == 'true') }}
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -274,12 +274,12 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
           build-args: |
-            ${{ matrix.image == 'omnirush-den-api' && format('DEN_API_VERSION={0}', needs.artifact-version.outputs.chart_version || github.sha) || '' }}
-            ${{ matrix.image == 'omnirush-den-gateway' && format('DEN_GATEWAY_VERSION={0}', needs.artifact-version.outputs.chart_version || github.sha) || '' }}
-            ${{ matrix.image == 'omnirush-den-api' && 'DEN_UPLOAD_SENTRY_SOURCEMAPS=1' || '' }}
-            ${{ matrix.image == 'omnirush-den-web' && 'DEN_WEB_UPLOAD_SENTRY_SOURCEMAPS=1' || '' }}
-            ${{ matrix.image == 'omnirush-den-api' && format('DEN_SENTRY_UPLOAD_BUILD_ID={0}-{1}', github.run_id, github.run_attempt) || '' }}
-            ${{ matrix.image == 'omnirush-den-web' && format('DEN_WEB_SENTRY_UPLOAD_BUILD_ID={0}-{1}', github.run_id, github.run_attempt) || '' }}
+            ${{ matrix.image == 'mars-den-api' && format('DEN_API_VERSION={0}', needs.artifact-version.outputs.chart_version || github.sha) || '' }}
+            ${{ matrix.image == 'mars-den-gateway' && format('DEN_GATEWAY_VERSION={0}', needs.artifact-version.outputs.chart_version || github.sha) || '' }}
+            ${{ matrix.image == 'mars-den-api' && 'DEN_UPLOAD_SENTRY_SOURCEMAPS=1' || '' }}
+            ${{ matrix.image == 'mars-den-web' && 'DEN_WEB_UPLOAD_SENTRY_SOURCEMAPS=1' || '' }}
+            ${{ matrix.image == 'mars-den-api' && format('DEN_SENTRY_UPLOAD_BUILD_ID={0}-{1}', github.run_id, github.run_attempt) || '' }}
+            ${{ matrix.image == 'mars-den-web' && format('DEN_WEB_SENTRY_UPLOAD_BUILD_ID={0}-{1}', github.run_id, github.run_attempt) || '' }}
           secrets: |
             sentry_auth_token=${{ secrets.SENTRY_AUTH_TOKEN }}
             sentry_org=${{ secrets.SENTRY_ORG }}
@@ -289,7 +289,7 @@ jobs:
             sentry_dist=${{ secrets.SENTRY_DIST }}
 
       - name: Assert Den DB migration assets
-        if: ${{ github.event_name == 'pull_request' && matrix.image == 'omnirush-den-api' }}
+        if: ${{ github.event_name == 'pull_request' && matrix.image == 'mars-den-api' }}
         shell: bash
         env:
           IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
@@ -311,7 +311,7 @@ jobs:
           set -euo pipefail
 
           image_tag="${IMAGE_TAGS%%$'\n'*}"
-          container_name="omnirush-smoke-${{ matrix.image }}"
+          container_name="mars-smoke-${{ matrix.image }}"
           mysql_container=""
           network_name=""
 
@@ -344,9 +344,9 @@ jobs:
           }
           trap cleanup EXIT
 
-          if [ "${{ matrix.image }}" = "omnirush-den-api" ]; then
-            network_name="omnirush-den-api-smoke"
-            mysql_container="omnirush-den-api-smoke-mysql"
+          if [ "${{ matrix.image }}" = "mars-den-api" ]; then
+            network_name="mars-den-api-smoke"
+            mysql_container="mars-den-api-smoke-mysql"
             database_url="mysql://smoke:smoke@${mysql_container}:3306/smoke"
 
             docker network create "$network_name" >/dev/null

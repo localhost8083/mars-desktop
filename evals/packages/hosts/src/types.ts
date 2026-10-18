@@ -1,6 +1,6 @@
-import type { SurfaceHandle, SurfaceKind } from "@omnirush/cdp";
+import type { SurfaceHandle, SurfaceKind } from "@mars/cdp";
 
-export type { SurfaceHandle, SurfaceKind } from "@omnirush/cdp";
+export type { SurfaceHandle, SurfaceKind } from "@mars/cdp";
 
 export interface ElectronSurfaceOptions {
   profile?: "fresh" | "shared";
@@ -14,7 +14,7 @@ export interface ElectronSurfaceOptions {
     enterpriseActivation?: { activatedAt: string; denBaseUrl: string };
   };
   env?: Record<string, string>;
-  /** Root package script used for a source Electron launch. Setting this bypasses OMNIRUSH_EVAL_ELECTRON_BINARY. */
+  /** Root package script used for a source Electron launch. Setting this bypasses MARS_EVAL_ELECTRON_BINARY. */
   devCommand?: "dev" | "dev:electron";
   /** Skip host-side sidecar/helper preparation when the caller intentionally uses existing resources. */
   prepareSharedResources?: boolean;

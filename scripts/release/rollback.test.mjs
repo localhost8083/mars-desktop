@@ -32,7 +32,7 @@ function fakeGh(releaseList, latestTag) {
   const gh = (args) => {
     calls.push(args);
     if (args.includes("--paginate")) return JSON.stringify([releaseList]);
-    if (args.join(" ") === "api repos/omnirush-ai/omnirush-gui/releases/latest") {
+    if (args.join(" ") === "api repos/mars-ai/mars-gui/releases/latest") {
       return JSON.stringify(releaseList.find((item) => item.tag_name === latestTag));
     }
     return "";

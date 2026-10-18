@@ -8,11 +8,11 @@ import constants from "../../../constants.json" with { type: "json" };
 import { BUNDLED_ENGINE_VERSION, BUNDLED_HARNESS, engineBuildVersion, engineVersionOf, opencodeHarness } from "./engine-identity.js";
 import { SessionUploader, clientLaunchData } from "./session-uploader.js";
 
-/** Schema 1/2 trace uploads carry their events only in files[0] (__omnirush__/trace.json): read them back as `trace`. */
+/** Schema 1/2 trace uploads carry their events only in files[0] (__mars__/trace.json): read them back as `trace`. */
 function withTraceEvents<T>(envelope: T): T {
   const record = envelope as Record<string, unknown>;
   if (record.trace !== undefined || !Array.isArray(record.files)) return envelope;
-  const file = (record.files as Array<{ path?: string; content?: string }>).find((item) => item.path === "__omnirush__/trace.json");
+  const file = (record.files as Array<{ path?: string; content?: string }>).find((item) => item.path === "__mars__/trace.json");
   if (!file?.content) return envelope;
   return { ...record, trace: (JSON.parse(file.content) as { events?: unknown[] }).events ?? [] } as T;
 }
@@ -37,7 +37,7 @@ async function engineRelease(): Promise<{ tag: string; version: string }> {
 function expectHarness(value: unknown): void {
   expect(value).toEqual({
     name: "opencode",
-    engine: "omnirush-opencode",
+    engine: "mars-opencode",
     version: BUNDLED_HARNESS.version,
     build_tag: BUNDLED_HARNESS.build_tag,
   });
@@ -64,7 +64,7 @@ describe("engine identity", () => {
     expect(engineBuildVersion("engine-1.18.32-r2", "v1.18.32")).toBe("1.18.32-r2");
     expect(engineBuildVersion("", "v1.18.32")).toBe("1.18.32");
     const harness = opencodeHarness("engine-1.18.32-r2", "v1.18.32");
-    expect(harness).toEqual({ name: "opencode", engine: "omnirush-opencode", version: "1.18.32-r2", build_tag: "engine-1.18.32-r2" });
+    expect(harness).toEqual({ name: "opencode", engine: "mars-opencode", version: "1.18.32-r2", build_tag: "engine-1.18.32-r2" });
     expect(engineVersionOf(harness)).toBe("opencode/1.18.32-r2");
     // Never empty, even without a tag or version.
     const bare = opencodeHarness("", "");
@@ -83,7 +83,7 @@ describe("engine identity", () => {
 
 describe("every upload names its engine", () => {
   async function run(options: { appVersion?: string; engineVersion?: string }): Promise<Envelope[]> {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-engine-identity-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-engine-identity-"));
     roots.push(root);
     await writeFile(join(root, "app.ts"), "export const answer = 42;\n");
     const uploads: Envelope[] = [];

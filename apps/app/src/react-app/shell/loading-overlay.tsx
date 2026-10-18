@@ -25,9 +25,9 @@ async function loadRecoveryPolicy(
 let startFailureReported: Promise<StartFailureAnswer | null> | null = null;
 
 export const RESET_APP_DATA_CONFIRM =
-  "Reset app data?\n\nomnirush.ai moves its local settings (workspace list, local server data) into a backup folder, nothing is deleted, and restarts. Your chats, sign-in and project files stay. After the restart you can restore the previous data.";
+  "Reset app data?\n\nmarsai.click moves its local settings (workspace list, local server data) into a backup folder, nothing is deleted, and restarts. Your chats, sign-in and project files stay. After the restart you can restore the previous data.";
 export const RESET_APP_DATA_CONFIRM_WITH_CHATS =
-  "Reset app data?\n\nomnirush.ai's local chat database looks damaged. omnirush.ai moves its local data, including chat history, into a backup folder, nothing is deleted, and restarts. Your sign-in and project files stay. After the restart you can restore the previous data.";
+  "Reset app data?\n\nmarsai.click's local chat database looks damaged. marsai.click moves its local data, including chat history, into a backup folder, nothing is deleted, and restarts. Your sign-in and project files stay. After the restart you can restore the previous data.";
 
 /**
  * Quiet, opaque boot overlay. Solid surface fill so nothing bleeds through.
@@ -51,7 +51,7 @@ export function LoadingOverlay() {
 
   useEffect(() => {
     if (!error) return;
-    const report = window.__OMNIRUSH_ELECTRON__?.startup?.reportFailure;
+    const report = window.__MARS_ELECTRON__?.startup?.reportFailure;
     if (!report) return;
     let cancelled = false;
     startFailureReported ??= report({ message: error }).catch(() => null);
@@ -66,7 +66,7 @@ export function LoadingOverlay() {
   useEffect(() => {
     if (!error) return;
     let cancelled = false;
-    const bridge = window.__OMNIRUSH_ELECTRON__?.recovery;
+    const bridge = window.__MARS_ELECTRON__?.recovery;
     if (!bridge?.list) return;
     const cachedPolicy = {
       versions: [],
@@ -80,7 +80,7 @@ export function LoadingOverlay() {
         if (!cancelled && result.ok) setReleases(result.releases);
       })
       .catch(() => undefined);
-    if (window.__omnirushRecoveryControl) {
+    if (window.__marsRecoveryControl) {
       return () => {
         cancelled = true;
       };
@@ -115,9 +115,9 @@ export function LoadingOverlay() {
     }
   };
 
-  const useRelease = window.__OMNIRUSH_ELECTRON__?.recovery?.use;
-  const resetAppData = window.__OMNIRUSH_ELECTRON__?.startup?.resetAppData;
-  const repairStore = failureAnswer?.canRepairStore ? window.__OMNIRUSH_ELECTRON__?.startup?.repairStore : undefined;
+  const useRelease = window.__MARS_ELECTRON__?.recovery?.use;
+  const resetAppData = window.__MARS_ELECTRON__?.startup?.resetAppData;
+  const repairStore = failureAnswer?.canRepairStore ? window.__MARS_ELECTRON__?.startup?.repairStore : undefined;
   const hint = failureAnswer?.hint ?? null;
   const leadWithReset = failureAnswer?.leadWithReset === true;
   const resetButton = (primary: boolean) => (
@@ -161,7 +161,7 @@ export function LoadingOverlay() {
       <div className="flex w-full max-w-[320px] flex-col items-center gap-4 px-6 text-center">
         {error ? (
           <div className="flex w-full flex-col gap-3 text-[12px] leading-5">
-            <div className="text-base font-medium text-dls-primary">omnirush.ai couldn't start</div>
+            <div className="text-base font-medium text-dls-primary">marsai.click couldn't start</div>
             {hint ? (
               <div className="flex flex-col gap-1 rounded-md border border-dls-border px-3 py-2 text-left" data-testid="start-failure-hint">
                 <div className="font-medium text-dls-primary">{hint.title}</div>
@@ -177,7 +177,7 @@ export function LoadingOverlay() {
                 className="rounded-md bg-dls-accent px-3 py-2 font-medium text-[var(--dls-accent-fg)]"
                 data-testid="start-failure-repair-store"
                 onClick={() => {
-                  setActionState("Fixing access to omnirush.ai's local data and restarting…");
+                  setActionState("Fixing access to marsai.click's local data and restarting…");
                   void repairStore()
                     .then((result) => {
                       if (!result.ok) setActionState("Some files could not be changed. Restarting anyway; if it still can't start, use Reset app data.");
@@ -201,7 +201,7 @@ export function LoadingOverlay() {
               type="button"
               disabled={!releases.some((release) => release.marking === "previous")}
               className="rounded-md border border-dls-border px-3 py-2 font-medium text-dls-primary disabled:opacity-50"
-              onClick={() => void runRecovery(window.__OMNIRUSH_ELECTRON__?.recovery?.restorePrevious)}
+              onClick={() => void runRecovery(window.__MARS_ELECTRON__?.recovery?.restorePrevious)}
             >
               Restore previous version
             </button>

@@ -1,6 +1,6 @@
 # Den API deployment incident runbook
 
-Owner: OmniRush.ai platform on-call
+Owner: MarsAI platform on-call
 
 Service: production Den API on Render
 
@@ -21,8 +21,8 @@ cold-starts `dist/main.js` without development conditions in
 `evals/specs/den-api-production-package.test.ts`.
 
 Render must use the commands above or deploy the CI-validated
-`ghcr.io/omnirush-ai/omnirush-den-api` image. Promotion must require both the
-production-package spec and the `Publish EE Artifacts / Build omnirush-den-api`
+`ghcr.io/mars-ai/mars-den-api` image. Promotion must require both the
+production-package spec and the `Publish EE Artifacts / Build mars-den-api`
 image smoke check.
 
 ## Alert contract
@@ -40,7 +40,7 @@ Every alert must include:
 - commit SHA and deployment URL
 - Render deploy ID and failing phase
 - error excerpt
-- owner: OmniRush.ai platform on-call
+- owner: MarsAI platform on-call
 - this runbook URL
 - Render rollback and redeploy links
 

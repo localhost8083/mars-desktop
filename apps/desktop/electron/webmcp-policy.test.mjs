@@ -45,7 +45,7 @@ function fakeFrame(origin, parent = null) {
       assert.fail("Policy must never execute in the page's main world.");
     },
     send(channel, replyChannel, childIndex) {
-      assert.equal(channel, "omnirush:webmcp:read-policy");
+      assert.equal(channel, "mars:webmcp:read-policy");
       this.ipc.emit(replyChannel, { senderFrame: this }, {
         ...this.runtimePolicy,
         embedding: childIndex === null ? null : this.embedding,

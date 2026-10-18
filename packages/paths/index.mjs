@@ -87,7 +87,7 @@ function optionHomeDir(opts) {
   return fromEnv || homedir();
 }
 
-function defaultOmniRushConfigDir(opts) {
+function defaultMarsConfigDir(opts) {
   const env = optionEnv(opts);
   const platform = optionPlatform(opts);
   const paths = pathApi(platform);
@@ -95,38 +95,38 @@ function defaultOmniRushConfigDir(opts) {
   if (platform === "win32") {
     const appData = envValue(env, "APPDATA");
     const root = appData || paths.join(homeDir, "AppData", "Roaming");
-    return paths.join(root, "omnirush");
+    return paths.join(root, "mars");
   }
   const xdgConfigHome = envValue(env, "XDG_CONFIG_HOME");
   const root = xdgConfigHome || paths.join(homeDir, ".config");
-  return paths.join(root, "omnirush");
+  return paths.join(root, "mars");
 }
 
-export function omnirushConfigDir(opts) {
+export function marsConfigDir(opts) {
   const env = optionEnv(opts);
   const platform = optionPlatform(opts);
   const paths = pathApi(platform);
-  const override = envValue(env, "OMNIRUSH_SERVER_CONFIG");
+  const override = envValue(env, "MARS_SERVER_CONFIG");
   if (override) return paths.dirname(paths.resolve(override));
-  return defaultOmniRushConfigDir(opts);
+  return defaultMarsConfigDir(opts);
 }
 
-export function omnirushServerConfigPath(opts) {
+export function marsServerConfigPath(opts) {
   const env = optionEnv(opts);
   const platform = optionPlatform(opts);
   const paths = pathApi(platform);
-  const override = envValue(env, "OMNIRUSH_SERVER_CONFIG");
+  const override = envValue(env, "MARS_SERVER_CONFIG");
   if (override) return paths.resolve(override);
-  return paths.join(defaultOmniRushConfigDir(opts), "server.json");
+  return paths.join(defaultMarsConfigDir(opts), "server.json");
 }
 
-export function omnirushEnvStorePath(opts) {
+export function marsEnvStorePath(opts) {
   const env = optionEnv(opts);
   const platform = optionPlatform(opts);
   const paths = pathApi(platform);
-  const override = envValue(env, "OMNIRUSH_ENV_STORE");
+  const override = envValue(env, "MARS_ENV_STORE");
   if (override) return paths.resolve(override);
-  return paths.join(defaultOmniRushConfigDir(opts), "env.json");
+  return paths.join(defaultMarsConfigDir(opts), "env.json");
 }
 
 function safeConfigRoot(value, paths) {
@@ -195,12 +195,12 @@ export function desktopBootstrapPath(opts) {
   const env = optionEnv(opts);
   const platform = optionPlatform(opts);
   const paths = pathApi(platform);
-  const override = envValue(env, "OMNIRUSH_DESKTOP_BOOTSTRAP_PATH");
+  const override = envValue(env, "MARS_DESKTOP_BOOTSTRAP_PATH");
   if (override) return override;
-  if (envValue(env, "OMNIRUSH_DEV_MODE") === "1" && opts?.userDataDir) {
-    return paths.join(opts.userDataDir, "omnirush-dev-data", "home", ".config", "omnirush", "desktop-bootstrap.json");
+  if (envValue(env, "MARS_DEV_MODE") === "1" && opts?.userDataDir) {
+    return paths.join(opts.userDataDir, "mars-dev-data", "home", ".config", "mars", "desktop-bootstrap.json");
   }
-  return paths.join(desktopConfigDir(opts), "omnirush", "desktop-bootstrap.json");
+  return paths.join(desktopConfigDir(opts), "mars", "desktop-bootstrap.json");
 }
 
 export function legacyDesktopBootstrapPath(opts) {
@@ -210,7 +210,7 @@ export function legacyDesktopBootstrapPath(opts) {
   // Electron used os.homedir(). optionHomeDir accepts an explicit homeDir but
   // otherwise checks the same env variables before os.homedir(), so both legacy
   // locations continue to resolve for normal installs.
-  return paths.join(optionHomeDir(opts), ".config", "omnirush", "desktop-bootstrap.json");
+  return paths.join(optionHomeDir(opts), ".config", "mars", "desktop-bootstrap.json");
 }
 
 export function expandHomePath(value, opts) {
@@ -221,13 +221,13 @@ export function expandHomePath(value, opts) {
   return value;
 }
 
-export function omnirushServerDataDir(opts) {
+export function marsServerDataDir(opts) {
   const env = optionEnv(opts);
   const platform = optionPlatform(opts);
   const paths = pathApi(platform);
-  const override = envValue(env, "OMNIRUSH_DATA_DIR");
+  const override = envValue(env, "MARS_DATA_DIR");
   if (override) return expandHomePath(override, opts);
-  return paths.join(optionHomeDir(opts), ".omnirush", "omnirush-server");
+  return paths.join(optionHomeDir(opts), ".mars", "mars-server");
 }
 
 export function opencodeDataDirs(opts) {
@@ -252,7 +252,7 @@ function truthy(value) {
   return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
 }
 
-/** Candidate OpenCode databases in the same override/channel order used by OmniRush.ai. */
+/** Candidate OpenCode databases in the same override/channel order used by MarsAI. */
 export function opencodeDbCandidates(opts) {
   const env = optionEnv(opts);
   const platform = optionPlatform(opts);

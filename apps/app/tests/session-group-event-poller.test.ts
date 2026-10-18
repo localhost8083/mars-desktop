@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
-import type { OmniRushSessionGroupEvent } from "../src/app/lib/omnirush-server";
+import type { MarsSessionGroupEvent } from "../src/app/lib/mars-server";
 import { SessionGroupEventPoller } from "../src/react-app/shell/session-group-event-poller";
 
-function event(seq: number, workspaceId = "workspace-a"): OmniRushSessionGroupEvent {
+function event(seq: number, workspaceId = "workspace-a"): MarsSessionGroupEvent {
   return {
     id: `event-${seq}`,
     seq,
@@ -78,7 +78,7 @@ describe("session group event poller", () => {
     const request = async ({ since }: { since: number }) => ({
       items: events.filter((item) => item.seq > since),
     });
-    const apply = async (items: OmniRushSessionGroupEvent[]) => {
+    const apply = async (items: MarsSessionGroupEvent[]) => {
       applied.push(...items.map((item) => item.id));
     };
 

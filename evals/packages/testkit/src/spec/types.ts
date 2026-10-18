@@ -1,12 +1,12 @@
-import type { DenSession, DenFetchResult, FieldTypingOptions } from "@omnirush/behaviors";
-import type { BrowserEvaluation, Surface, Target } from "@omnirush/cdp";
+import type { DenSession, DenFetchResult, FieldTypingOptions } from "@mars/behaviors";
+import type { BrowserEvaluation, Surface, Target } from "@mars/cdp";
 import type {
   MockHandle,
   Place,
   Seed,
   TestNeeds,
-} from "@omnirush/env";
-import type { ScreenshotArtifact, StepRecord, TestEvidenceRecorder, TestOutcome, TraceEntry } from "@omnirush/test-evidence";
+} from "@mars/env";
+import type { ScreenshotArtifact, StepRecord, TestEvidenceRecorder, TestOutcome, TraceEntry } from "@mars/test-evidence";
 import type { TestAPI } from "vitest";
 import type { EventuallyOptions } from "../eventually.ts";
 
@@ -51,7 +51,7 @@ export interface User {
 }
 
 export interface Agent {
-  browserTask(input: import("@omnirush/behaviors").BrowserTaskInput): Promise<import("@omnirush/behaviors").BrowserTaskReply>;
+  browserTask(input: import("@mars/behaviors").BrowserTaskInput): Promise<import("@mars/behaviors").BrowserTaskReply>;
   browserRequest(input: { url: string; method?: string; body?: string }): Promise<{ reached: boolean; error?: string }>;
   desktopApi(path: string, input: { method: string; body?: unknown }): Promise<{ status: number; body: unknown }>;
   run(action: string, args?: unknown): Promise<unknown>;
@@ -63,14 +63,14 @@ export interface Agent {
 }
 
 export interface Probe {
-  browserState(): Promise<import("@omnirush/behaviors").BrowserState>;
-  browserTabMetrics(targetId: string): ReturnType<typeof import("@omnirush/behaviors").readBrowserTabMetrics>;
-  browserFixtureState(origin: string): Promise<import("@omnirush/env").BrowserFixtureState>;
+  browserState(): Promise<import("@mars/behaviors").BrowserState>;
+  browserTabMetrics(targetId: string): ReturnType<typeof import("@mars/behaviors").readBrowserTabMetrics>;
+  browserFixtureState(origin: string): Promise<import("@mars/env").BrowserFixtureState>;
   text(): Promise<string>;
   /** Fixed, read-only DOM projection for layout, focus and element presence assertions. */
-  dom(selector: string): ReturnType<typeof import("@omnirush/cdp").readDom>;
+  dom(selector: string): ReturnType<typeof import("@mars/cdp").readDom>;
   has(text: string): Promise<boolean>;
-  composer(): ReturnType<typeof import("@omnirush/behaviors").readComposerState>;
+  composer(): ReturnType<typeof import("@mars/behaviors").readComposerState>;
   storage(key: string): Promise<unknown>;
   storage<T>(key: string, pick: (value: unknown) => T): Promise<T>;
   hash(): Promise<string>;
@@ -127,4 +127,4 @@ export interface SpecWorldOptions {
   adapters?: SpecAdapters;
 }
 
-export type { OrgConnectionInput, Seed, SeedDesktopOptions, SeedWebOptions } from "@omnirush/env";
+export type { OrgConnectionInput, Seed, SeedDesktopOptions, SeedWebOptions } from "@mars/env";

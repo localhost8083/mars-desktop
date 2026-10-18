@@ -5,17 +5,17 @@ import { createServer as createNetServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect } from "vitest";
-import { needs, test, unmetNeeds } from "@omnirush/testkit";
-import type { TestNeeds } from "@omnirush/testkit";
+import { needs, test, unmetNeeds } from "@mars/testkit";
+import type { TestNeeds } from "@mars/testkit";
 import constants from "../../constants.json" with { type: "json" };
 
 /**
- * The case for OmniRush.ai owning thread approvals.
+ * The case for MarsAI owning thread approvals.
  *
  * "Allow for session" is an engine "always" reply. In the pinned engine that
  * grant lives in the memory of the per-directory instance, so it covers every
  * later matching call in that instance — until the instance is rebuilt, which
- * OmniRush.ai does on config, skill, and MCP reloads, idle eviction, and engine
+ * MarsAI does on config, skill, and MCP reloads, idle eviction, and engine
  * rollover. This spec drives the real engine with a scripted provider and
  * shows exactly that: the grant works, the instance is disposed, and the very
  * same thread asks again for a command the user already approved.
@@ -154,7 +154,7 @@ async function stop(child: ChildProcess): Promise<void> {
 }
 
 async function bootEngine(providerPort: number): Promise<Engine> {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-thread-approval-engine-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-thread-approval-engine-"));
   const workspace = join(root, "workspace");
   const xdg = join(root, "xdg");
   await Promise.all([mkdir(workspace, { recursive: true }), mkdir(join(xdg, "config", "opencode"), { recursive: true }), mkdir(join(root, "home"), { recursive: true })]);
@@ -187,7 +187,7 @@ async function bootEngine(providerPort: number): Promise<Engine> {
       XDG_DATA_HOME: join(xdg, "data"),
       XDG_CACHE_HOME: join(xdg, "cache"),
       XDG_STATE_HOME: join(xdg, "state"),
-      OPENCODE_CLIENT: "omnirush-test",
+      OPENCODE_CLIENT: "mars-test",
     },
   });
   let stderr = "";
@@ -340,7 +340,7 @@ test.skipIf(missingRequirements.length > 0)(
         true,
       );
 
-      // Rebuild the instance the way OmniRush.ai does on every reload, then ask
+      // Rebuild the instance the way MarsAI does on every reload, then ask
       // the very same thread for another covered command.
       await engine.request("POST", "/instance/dispose");
       const third = await runTurn(engine, thread, "printf 'grant three'");

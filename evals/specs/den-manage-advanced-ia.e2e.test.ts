@@ -1,4 +1,4 @@
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { expect } from "vitest";
 import { adminDashboardWeb } from "../worlds/den-admin-navigation.ts";
 

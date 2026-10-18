@@ -14,8 +14,8 @@ afterEach(async () => {
 
 async function fixture(engine: "v1" | "v2") {
   const root = await mkdtemp(join(tmpdir(), "task-recovery-"));
-  const previousDb = process.env.OMNIRUSH_RUNTIME_DB;
-  process.env.OMNIRUSH_RUNTIME_DB = join(root, "runtime.sqlite");
+  const previousDb = process.env.MARS_RUNTIME_DB;
+  process.env.MARS_RUNTIME_DB = join(root, "runtime.sqlite");
   const workspace = { id: "ws", name: "Work", path: root, preset: "starter", workspaceType: "local" as const };
   const config: ServerConfig = {
     host: "127.0.0.1", port: 1234, token: "test-token", hostToken: "test-host", configPath: join(root, "server.json"),
@@ -83,8 +83,8 @@ async function fixture(engine: "v1" | "v2") {
   recovery = await createTaskRecovery(config, request, beforeResume);
   cleanups.push(async () => {
     await recovery.stop();
-    if (previousDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-    else process.env.OMNIRUSH_RUNTIME_DB = previousDb;
+    if (previousDb === undefined) delete process.env.MARS_RUNTIME_DB;
+    else process.env.MARS_RUNTIME_DB = previousDb;
     await rm(root, { recursive: true, force: true });
   });
   let now = Date.now();
@@ -97,7 +97,7 @@ async function fixture(engine: "v1" | "v2") {
     loseAck() { loseAcknowledgement = true; },
     async send(id: string, stop = false, optOut = false) {
       return request(new Request(`http://localhost/workspace/ws${prefix}/session/${id}/${stop ? engine === "v2" ? "interrupt" : "abort" : engine === "v2" ? "prompt" : "prompt_async"}`, {
-        method: "POST", headers: { "content-type": "application/json", ...(optOut ? { "x-omnirush-task-recovery": "off" } : {}) }, body: JSON.stringify({ text: "Do the task" }),
+        method: "POST", headers: { "content-type": "application/json", ...(optOut ? { "x-mars-task-recovery": "off" } : {}) }, body: JSON.stringify({ text: "Do the task" }),
       }));
     },
     async restart(aborted = false) {
@@ -260,8 +260,8 @@ for (const engine of ["v1", "v2"] as const) {
 
 test("stop and delete never queue behind a session's long synchronous request", async () => {
   const root = await mkdtemp(join(tmpdir(), "task-recovery-"));
-  const previousDb = process.env.OMNIRUSH_RUNTIME_DB;
-  process.env.OMNIRUSH_RUNTIME_DB = join(root, "runtime.sqlite");
+  const previousDb = process.env.MARS_RUNTIME_DB;
+  process.env.MARS_RUNTIME_DB = join(root, "runtime.sqlite");
   const workspace = { id: "ws", name: "Work", path: root, preset: "starter", workspaceType: "local" as const };
   const config: ServerConfig = {
     host: "127.0.0.1", port: 1234, token: "test-token", hostToken: "test-host", configPath: join(root, "server.json"),
@@ -271,8 +271,8 @@ test("stop and delete never queue behind a session's long synchronous request", 
   const recovery = await createTaskRecovery(config, async () => new Response(null, { status: 204 }));
   cleanups.push(async () => {
     await recovery.stop();
-    if (previousDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-    else process.env.OMNIRUSH_RUNTIME_DB = previousDb;
+    if (previousDb === undefined) delete process.env.MARS_RUNTIME_DB;
+    else process.env.MARS_RUNTIME_DB = previousDb;
     await rm(root, { recursive: true, force: true });
   });
   const forward = (method: string, path: string, send: () => Promise<Response>) =>

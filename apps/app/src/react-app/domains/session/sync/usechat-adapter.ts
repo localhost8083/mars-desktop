@@ -2,7 +2,7 @@
 import type { UIMessage } from "ai";
 import type { FilePart, Part, TextPart, ToolPart } from "@opencode-ai/sdk/v2/client";
 
-import type { OmniRushSessionSnapshot } from "../../../../app/lib/omnirush-server";
+import type { MarsSessionSnapshot } from "../../../../app/lib/mars-server";
 import { SYNTHETIC_SESSION_ERROR_MESSAGE_PREFIX } from "../../../../app/types";
 import {
   parseDynamicToolUIPart,
@@ -123,7 +123,7 @@ function mapSnapshotToolParts(part: ToolPart): UIMessage["parts"] {
 /** Recover display-only attachments without sending unsupported binary parts to the model. */
 export function attachmentNoteToUIParts(part: TextPart): UIMessage["parts"] {
   if (!part.synthetic || part.ignored) return [];
-  const attachments = part.metadata?.omnirushAttachments;
+  const attachments = part.metadata?.marsAttachments;
   if (!Array.isArray(attachments)) return [];
   return attachments.flatMap<UIMessage["parts"][number]>((attachment: unknown, index) => {
     if (!attachment || typeof attachment !== "object"
@@ -148,7 +148,7 @@ export function isCompactionInfo(info: unknown): boolean {
   return value.role === "assistant" && (value.summary === true || value.mode === "compaction" || value.agent === "compaction");
 }
 
-export function snapshotToUIMessages(snapshot: OmniRushSessionSnapshot): UIMessage[] {
+export function snapshotToUIMessages(snapshot: MarsSessionSnapshot): UIMessage[] {
   return snapshot.messages.flatMap((message) => {
     const created = message.info.time?.created;
     const time = message.info.time;

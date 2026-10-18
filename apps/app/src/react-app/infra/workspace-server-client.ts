@@ -30,14 +30,14 @@ function normalizeLocalServer(localServer: LocalServerHandle): NormalizedLocalSe
 }
 
 function remoteBaseUrl(workspace: NonNullable<WorkspaceServerClientWorkspace>): string {
-  return trim(workspace.baseUrl) || trim(workspace.omnirushHostUrl);
+  return trim(workspace.baseUrl) || trim(workspace.marsHostUrl);
 }
 
 function remoteToken(workspace: NonNullable<WorkspaceServerClientWorkspace>): string {
   return (
-    trim(workspace.omnirushToken) ||
-    trim(workspace.omnirushClientToken) ||
-    trim(workspace.omnirushHostToken)
+    trim(workspace.marsToken) ||
+    trim(workspace.marsClientToken) ||
+    trim(workspace.marsHostToken)
   );
 }
 
@@ -70,10 +70,10 @@ export function createWorkspaceServerClientCacheKey(
 }
 
 /**
- * Workspace-scoped omnirush.ai server client resolver.
+ * Workspace-scoped marsai.click server client resolver.
  *
  * The returned endpoint includes the correctly mounted workspace URLs and a
- * memoized omnirush.ai server client. The cache is intentionally per resolver so
+ * memoized marsai.click server client. The cache is intentionally per resolver so
  * React routes/stores do not share mutable clients across workspace contexts.
  */
 export function createWorkspaceServerClientResolver(

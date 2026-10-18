@@ -1,9 +1,9 @@
 ---
 title: "GitHub connector for Helm"
-description: "Create a GitHub App and configure the OmniRush.ai EE Helm chart for repository connectors."
+description: "Create a GitHub App and configure the MarsAI EE Helm chart for repository connectors."
 ---
 
-The GitHub connector lets a self-hosted OmniRush.ai deployment install a GitHub App, list repositories the installation can read, discover plugin or marketplace manifests, import selected repositories, and keep imported content fresh from GitHub webhooks.
+The GitHub connector lets a self-hosted MarsAI deployment install a GitHub App, list repositories the installation can read, discover plugin or marketplace manifests, import selected repositories, and keep imported content fresh from GitHub webhooks.
 
 This is separate from GitHub social sign-in. Social sign-in uses `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` for Better Auth. The repository connector uses the `GITHUB_CONNECTOR_APP_*` settings below.
 
@@ -14,17 +14,17 @@ Use the same public hosts that you set in the Helm chart:
 ```yaml
 config:
   public:
-    webOrigin: "https://omnirush.example.com"
-    apiOrigin: "https://api.omnirush.example.com"
+    webOrigin: "https://mars.example.com"
+    apiOrigin: "https://api.mars.example.com"
 ```
 
-The GitHub App needs these OmniRush.ai URLs:
+The GitHub App needs these MarsAI URLs:
 
 | GitHub App field | Value |
 | --- | --- |
-| Homepage URL | `https://omnirush.example.com` |
-| Setup URL | `https://omnirush.example.com/dashboard/integrations/github` |
-| Webhook URL | `https://api.omnirush.example.com/v1/webhooks/connectors/github` |
+| Homepage URL | `https://mars.example.com` |
+| Setup URL | `https://mars.example.com/dashboard/integrations/github` |
+| Webhook URL | `https://api.mars.example.com/v1/webhooks/connectors/github` |
 
 Enable **Redirect on update** for the setup URL. GitHub redirects back to the setup URL with `installation_id` and `state`; Den web completes the installation by calling Den API.
 
@@ -37,9 +37,9 @@ In GitHub, create a new GitHub App for the account that should own the connector
 Use these settings:
 
 - **Webhook**: active.
-- **Webhook URL**: `https://api.omnirush.example.com/v1/webhooks/connectors/github`.
+- **Webhook URL**: `https://api.mars.example.com/v1/webhooks/connectors/github`.
 - **Webhook secret**: generate a strong random secret and keep it for Helm.
-- **Setup URL**: `https://omnirush.example.com/dashboard/integrations/github`.
+- **Setup URL**: `https://mars.example.com/dashboard/integrations/github`.
 - **Redirect on update**: enabled.
 - **Repository permissions**:
   - **Contents**: read-only.
@@ -103,9 +103,9 @@ Optional connector keys:
 
 The chart writes `GITHUB_CONNECTOR_APP_ID` and `GITHUB_CONNECTOR_APP_CLIENT_ID` through the shared ConfigMap, and writes `GITHUB_CONNECTOR_APP_PRIVATE_KEY`, `GITHUB_CONNECTOR_APP_WEBHOOK_SECRET`, and `GITHUB_CONNECTOR_APP_CLIENT_SECRET` through the shared Secret.
 
-## What OmniRush.ai does with it
+## What MarsAI does with it
 
-When an admin clicks **Connect GitHub** in OmniRush.ai:
+When an admin clicks **Connect GitHub** in MarsAI:
 
 1. Den API calls `/v1/connectors/github/install/start`.
 2. Den API reads the GitHub App metadata with the app ID and private key.
@@ -121,9 +121,9 @@ When GitHub sends a webhook to `/v1/webhooks/connectors/github`, Den API verifie
 After deploying the chart, sign in to Den web and open:
 
 ```text
-https://omnirush.example.com/dashboard/integrations
+https://mars.example.com/dashboard/integrations
 ```
 
-Choose GitHub, install the GitHub App on a test account or organization, select a repository, and start discovery. A working setup should return to OmniRush.ai, show repositories visible to the installation, and allow discovery on a selected repository.
+Choose GitHub, install the GitHub App on a test account or organization, select a repository, and start discovery. A working setup should return to MarsAI, show repositories visible to the installation, and allow discovery on a selected repository.
 
 For webhook validation, push to a connected repository and check Den API logs for an accepted or intentionally ignored GitHub webhook delivery. A `503` response from `/v1/webhooks/connectors/github` means the webhook secret is not configured in the Den API pod.

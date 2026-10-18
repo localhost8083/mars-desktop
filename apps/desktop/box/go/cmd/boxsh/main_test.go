@@ -54,9 +54,9 @@ func TestMapPathSame(t *testing.T) {
 }
 
 func TestForwardEnv(t *testing.T) {
-	t.Setenv("OMNIRUSH_BOX_PASS_ENV", "MY_FLAG")
-	got := forwardEnv([]string{"TERM=xterm", "OMNIRUSH_ACCESS_TOKEN=secret", "OPENAI_API_KEY=k", "PATH=/x", "HOME=/h", "OMNIRUSH_TURN=3", "MY_FLAG=1", "AWS_SECRET_ACCESS_KEY=s"})
-	want := map[string]string{"TERM": "xterm", "OMNIRUSH_TURN": "3", "MY_FLAG": "1"}
+	t.Setenv("MARS_BOX_PASS_ENV", "MY_FLAG")
+	got := forwardEnv([]string{"TERM=xterm", "MARS_ACCESS_TOKEN=secret", "OPENAI_API_KEY=k", "PATH=/x", "HOME=/h", "MARS_TURN=3", "MY_FLAG=1", "AWS_SECRET_ACCESS_KEY=s"})
+	want := map[string]string{"TERM": "xterm", "MARS_TURN": "3", "MY_FLAG": "1"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("%v", got)
 	}
@@ -72,7 +72,7 @@ func TestWindowsArgs(t *testing.T) {
 }
 
 func TestWindowsToBox(t *testing.T) {
-	if got := windowsToBox(`C:\Users\Sam\.omnirush\pkglog\raw\12-ab`); got != "/c/Users/Sam/.omnirush/pkglog/raw/12-ab" {
+	if got := windowsToBox(`C:\Users\Sam\.mars\pkglog\raw\12-ab`); got != "/c/Users/Sam/.mars/pkglog/raw/12-ab" {
 		t.Fatal(got)
 	}
 }
@@ -80,8 +80,8 @@ func TestWindowsToBox(t *testing.T) {
 // A box whose image is downloading is waited for past the start limit; the limit counts once it starts.
 func TestWaitReadyThroughDownload(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("OMNIRUSH_BOX_HOME", home)
-	t.Setenv("OMNIRUSH_BOX_WAIT_MS", "300")
+	t.Setenv("MARS_BOX_HOME", home)
+	t.Setenv("MARS_BOX_WAIT_MS", "300")
 	if err := os.MkdirAll(filepath.Join(home, "boxes"), 0o700); err != nil {
 		t.Fatal(err)
 	}

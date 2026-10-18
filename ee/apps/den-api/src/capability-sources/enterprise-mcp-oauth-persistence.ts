@@ -8,7 +8,7 @@ import {
   type EnterpriseMcpPersistenceContext,
   type StoredOAuthClientInformation,
   type StoredOAuthTokens,
-} from "@omnirush/enterprise-mcp-client"
+} from "@mars/enterprise-mcp-client"
 import type { OAuthDiscoveryState } from "@modelcontextprotocol/sdk/client/auth.js"
 import { and, eq } from "@omnirush-ee/den-db/drizzle"
 import {

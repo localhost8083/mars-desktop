@@ -1,14 +1,14 @@
-import { browserScript } from "@omnirush/cdp";
+import { browserScript } from "@mars/cdp";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { app as startApp, faultProxy as startFaultProxy, resolveEvalEngine, SkipError } from "@omnirush/env";
-import type { Den, MockHandle, Seed } from "@omnirush/env";
-import { denFetch, evalIn as rawEvalIn } from "@omnirush/behaviors";
-import type { DenFetchResult, DenSession } from "@omnirush/behaviors";
-import { allocateFreePort } from "@omnirush/cdp";
-import { startMockMcp } from "@omnirush/labs";
-import { captureExternalBrowserUrls, electronProfilePaths } from "@omnirush/hosts";
+import { app as startApp, faultProxy as startFaultProxy, resolveEvalEngine, SkipError } from "@mars/env";
+import type { Den, MockHandle, Seed } from "@mars/env";
+import { denFetch, evalIn as rawEvalIn } from "@mars/behaviors";
+import type { DenFetchResult, DenSession } from "@mars/behaviors";
+import { allocateFreePort } from "@mars/cdp";
+import { startMockMcp } from "@mars/labs";
+import { captureExternalBrowserUrls, electronProfilePaths } from "@mars/hosts";
 import { configureProvider } from "./chat.ts";
 
 export const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
@@ -49,7 +49,7 @@ async function activeOrganizationId(seed: Seed, session: DenSession): Promise<st
 async function mintMcpSession(seed: Seed, den: Den, organizationId: string): Promise<DenSession> {
   const result = await seed.api(den.admin, "/v1/mcp/token", {
     method: "POST",
-    headers: { "x-omnirush-org-id": organizationId },
+    headers: { "x-mars-org-id": organizationId },
     body: JSON.stringify({ scopes: ["mcp:read", "mcp:write"] }),
   });
   const token = stringField(result.body, "token");
@@ -161,9 +161,9 @@ export function mcpCallBody(id: number, name: string, args: Record<string, unkno
 }
 
 export const connectStateExpression = () => {
-  const port = localStorage.getItem("omnirush.server.port") ?? "";
+  const port = localStorage.getItem("mars.server.port") ?? "";
   const baseUrl = port ? "http://127.0.0.1:" + port : "";
-  const token = localStorage.getItem("omnirush.server.token") ?? "";
+  const token = localStorage.getItem("mars.server.token") ?? "";
   if (!baseUrl || !token) return { ok: false, status: null, connectEnabled: null };
   const request = new XMLHttpRequest();
   request.open("GET", baseUrl + "/experimental/connect/state", false);
@@ -174,9 +174,9 @@ export const connectStateExpression = () => {
 };
 
 export const runtimeGenerationExpression = async () => {
-  const invokeDesktop = window.__OMNIRUSH_ELECTRON__?.invokeDesktop;
+  const invokeDesktop = window.__MARS_ELECTRON__?.invokeDesktop;
   if (!invokeDesktop) return { running: false, baseUrl: "", generation: null };
-  const info = await invokeDesktop("omnirushServerInfo");
+  const info = await invokeDesktop("marsServerInfo");
   return {
     running: info?.running === true,
     baseUrl: String(info?.baseUrl ?? ""),
@@ -185,23 +185,23 @@ export const runtimeGenerationExpression = async () => {
 };
 
 export const cloudHealthExpression = (workspaceId: string) => {
-    const port = localStorage.getItem("omnirush.server.port");
-    const token = localStorage.getItem("omnirush.server.token");
+    const port = localStorage.getItem("mars.server.port");
+    const token = localStorage.getItem("mars.server.token");
     if (!port || !token) return { error: "missing local server credentials" };
     const request = new XMLHttpRequest();
-    request.open("GET", "http://127.0.0.1:" + port + "/workspace/" + encodeURIComponent(workspaceId) + "/mcp/omnirush-cloud/health?probe=1", false);
+    request.open("GET", "http://127.0.0.1:" + port + "/workspace/" + encodeURIComponent(workspaceId) + "/mcp/mars-cloud/health?probe=1", false);
     request.setRequestHeader("Authorization", "Bearer " + token);
     request.send();
     return JSON.parse(request.responseText || "{}");
   };
 
-export async function connectPolicyRuntimeRestart(seed: Seed, { place }: { place: import("@omnirush/env").Place }) {
+export async function connectPolicyRuntimeRestart(seed: Seed, { place }: { place: import("@mars/env").Place }) {
   const stamp = Date.now();
   const den = await seed.den({
     org: {
       name: "Connect Policy Convergence",
-      admin: { email: `connect-policy-admin-${stamp}@omnirush.test`, name: "Connect Policy Admin" },
-      members: { fresh: { email: `connect-policy-member-${stamp}@omnirush.test`, name: "Fresh Profile Member" } },
+      admin: { email: `connect-policy-admin-${stamp}@mars.test`, name: "Connect Policy Admin" },
+      members: { fresh: { email: `connect-policy-member-${stamp}@mars.test`, name: "Fresh Profile Member" } },
     },
   });
   const app = await startApp({ den, as: "fresh", place, localServerDelayMs: 5_000 });
@@ -214,9 +214,9 @@ export async function clearConnectStateFiles(app: Awaited<ReturnType<typeof star
   if (!app.handle.profileDir) throw new Error("The local desktop profile directory is unavailable.");
   const paths = electronProfilePaths(app.handle.profileDir);
   const candidates = [
-    `${paths.userDataDir}/omnirush-dev-data/xdg/config/omnirush/connect-state.json`,
-    `${paths.configHome}/omnirush/connect-state.json`,
-    `${paths.homeDir}/.config/omnirush/connect-state.json`,
+    `${paths.userDataDir}/mars-dev-data/xdg/config/mars/connect-state.json`,
+    `${paths.configHome}/mars/connect-state.json`,
+    `${paths.homeDir}/.config/mars/connect-state.json`,
   ];
   await Promise.all(candidates.map((path) => rm(path, { force: true })));
 }
@@ -226,8 +226,8 @@ export async function connectStateProvenance(seed: Seed) {
   const den = await seed.den({
     org: {
       name: "Connect State Provenance",
-      admin: { email: `connect-state-admin-${stamp}@omnirush.test`, name: "Connect State Admin" },
-      members: { fresh: { email: `connect-state-member-${stamp}@omnirush.test`, name: "Fresh Profile Member" } },
+      admin: { email: `connect-state-admin-${stamp}@mars.test`, name: "Connect State Admin" },
+      members: { fresh: { email: `connect-state-member-${stamp}@mars.test`, name: "Fresh Profile Member" } },
     },
   });
   const app = await seed.desktop({ den, signIn: false });
@@ -261,7 +261,7 @@ export async function preseededConnect(seed: Seed) {
   const organizationId = await activeOrganizationId(seed, den.admin);
   const createdSkill = await seed.api(den.admin, "/v1/plugins", {
     method: "POST",
-    headers: { "x-omnirush-org-id": organizationId },
+    headers: { "x-mars-org-id": organizationId },
     body: JSON.stringify({
       name: skillName,
       orgWide: true,
@@ -279,10 +279,10 @@ export async function preseededConnect(seed: Seed) {
   });
   const provider = await seed.api(den.admin, "/v1/llm-providers", {
     method: "POST",
-    headers: { "x-omnirush-org-id": organizationId },
+    headers: { "x-mars-org-id": organizationId },
     body: JSON.stringify({
       name: providerName, source: "custom", allMembers: true, memberIds: [], teamIds: [],
-      apiKey: "sk-omnirush-connect-eval-only",
+      apiKey: "sk-mars-connect-eval-only",
       customConfig: { id: "connect-discovery", name: providerName, npm: "@ai-sdk/openai-compatible",
         options: { baseURL: `${den.mocks.connector.url}/v1` }, env: ["CONNECT_EVAL_API_KEY"],
         models: [{ id: modelId, name: modelId, tool_call: true, limit: { context: 128000, output: 8192 } }],
@@ -321,10 +321,10 @@ export async function connectorBranding(seed: Seed) {
   const steps = (name: string) => engine === "v2" ? [{
     tool: "execute",
     arguments: { code: `
-      const found = await tools["omnirush-cloud"].search_capabilities(${JSON.stringify(search(name))});
+      const found = await tools["mars-cloud"].search_capabilities(${JSON.stringify(search(name))});
       const result = typeof found === "string" ? JSON.parse(found) : found;
       const catalog = result.matches ? result : JSON.parse(result.content[0].text);
-      return await tools["omnirush-cloud"].execute_capability({ name: catalog.matches[0].name, body: ${JSON.stringify(toolArguments)} });
+      return await tools["mars-cloud"].execute_capability({ name: catalog.matches[0].name, body: ${JSON.stringify(toolArguments)} });
     ` },
   }] : [
     { tool: "search_capabilities", arguments: search(name) },
@@ -376,11 +376,11 @@ export async function connectorBranding(seed: Seed) {
   const app = await seed.desktop({
     den, as: "admin", model: `${providerId}/${modelId}`,
     // The isolated Den fixture has no production trace-upload account.
-    env: { OMNIRUSH_DEV_MODE: "1", OMNIRUSH_SESSION_UPLOAD_OPTIONAL: "1" },
+    env: { MARS_DEV_MODE: "1", MARS_SESSION_UPLOAD_OPTIONAL: "1" },
   });
   const workspace = await seed.workspace(app, seed.tmpPath("connector-tool-call-branding"));
   await seed.evalIn(app, browserScript(async () => {
-    const info = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("omnirushServerInfo");
+    const info = await window.__MARS_ELECTRON__?.invokeDesktop?.("marsServerInfo");
     if (!info?.running || !info.baseUrl) throw new Error("Local server is unavailable");
     const baseUrl = String(info.baseUrl).replace(/\/+$/, "");
     const authorization = "Bearer " + String(info.ownerToken ?? info.clientToken ?? "");
@@ -530,7 +530,7 @@ export async function libraryConfigReadBudget(seed: Seed) {
       if (typeof target === "string" && (target.includes("/cloud-provider-sync/status") || target.includes("/opencode/config?") || target.endsWith("/mcp") || target.endsWith("/den-session"))) window.__libraryLifecycleReads += 1;
       return originalFetch.apply(this, args);
     };
-    const bridge = window.__OMNIRUSH_ELECTRON__;
+    const bridge = window.__MARS_ELECTRON__;
     if (bridge?.invokeDesktop) {
       const originalInvoke = bridge.invokeDesktop.bind(bridge);
       bridge.invokeDesktop = function (command, ...rest) {
@@ -578,7 +578,7 @@ export async function librarySignedInStability(seed: Seed) {
       window.__libraryStability.requests.push(String(target));
       return originalFetch.apply(this, args);
     };
-    window.addEventListener("omnirush-den-settings-changed", () => { window.__libraryStability.denEvents += 1; });
+    window.addEventListener("mars-den-settings-changed", () => { window.__libraryStability.denEvents += 1; });
     location.hash = "#/workspace/" + workspaceId + "/settings/general";
     return true;
   }, [workspace.workspaceId]));
@@ -666,7 +666,7 @@ export async function largeSkill(seed: Seed) {
   const unique = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`;
   const den = await seed.den({ org: { name: `SearchText Overflow ${unique}` } });
   const organizationId = await activeOrganizationId(seed, den.admin);
-  const headers = { "x-omnirush-org-id": organizationId };
+  const headers = { "x-mars-org-id": organizationId };
   const skillName = `grand-skill-multioctets-${unique}`;
   const skillV1 = buildSkillMarkdown(skillName, "Orchestrateur V1", 120_000);
   const created = await seed.api(den.admin, "/v1/config-objects", {
@@ -728,7 +728,7 @@ async function capabilityWorld(seed: Seed, extraToolCount: number) {
 
 export const capabilitySearchScale = (seed: Seed) => capabilityWorld(seed, 400);
 
-export async function capabilitySearchLatency(seed: Seed, { place }: { place: import("@omnirush/env").Place }) {
+export async function capabilitySearchLatency(seed: Seed, { place }: { place: import("@mars/env").Place }) {
   const healthy = await capabilityWorld(seed, 0);
   const flakyPort = await allocateFreePort();
   const loopback = `http://127.0.0.1:${flakyPort}`;
@@ -797,16 +797,16 @@ export async function pluginEditorWithConnector(seed: Seed) {
 }
 
 export async function libraryView(seed: Seed) {
-  const password = process.env.OMNIRUSH_EVAL_DEMO_PASSWORD?.trim() || "OmniRushDemo123!";
-  const caseyEmail = process.env.OMNIRUSH_EVAL_CREATOR_EMAIL?.trim() || "casey.spec@acme.test";
-  const novaEmail = process.env.OMNIRUSH_EVAL_MEMBER_EMAIL?.trim() || "nova.spec@acme.test";
+  const password = process.env.MARS_EVAL_DEMO_PASSWORD?.trim() || "MarsDemo123!";
+  const caseyEmail = process.env.MARS_EVAL_CREATOR_EMAIL?.trim() || "casey.spec@acme.test";
+  const novaEmail = process.env.MARS_EVAL_MEMBER_EMAIL?.trim() || "nova.spec@acme.test";
   const den = await seed.den({
     reuseMembers: {
       casey: { email: caseyEmail, password, name: "Casey Spec" },
       nova: { email: novaEmail, password, name: "Nova Spec" },
     },
     mocks: {
-      connector: seed.mock({ publicUrl: process.env.OMNIRUSH_EVAL_LIBRARY_MOCK_PUBLIC_URL?.trim() || undefined }),
+      connector: seed.mock({ publicUrl: process.env.MARS_EVAL_LIBRARY_MOCK_PUBLIC_URL?.trim() || undefined }),
     },
   });
   const organizationId = await activeOrganizationId(seed, den.admin);
@@ -823,7 +823,7 @@ export async function libraryView(seed: Seed) {
   const rawSourceText = `---\nname: ${skillName}\ndescription: Proves the member library view.\n---\n\nReturn the library proof phrase.`;
   const createdPlugin = await seed.api(den.members.casey, "/v1/plugins", {
     method: "POST",
-    headers: { "x-omnirush-org-id": organizationId },
+    headers: { "x-mars-org-id": organizationId },
     body: JSON.stringify({
       name: pluginName,
       sourceRepositoryUrl: "https://github.com/anthropics/knowledge-work-plugins",
@@ -832,7 +832,7 @@ export async function libraryView(seed: Seed) {
   });
   const pluginId = stringField(isRecord(createdPlugin.body) ? createdPlugin.body.item : null, "id");
   if (!pluginId) throw new Error("Could not create the Library view plugin.");
-  const org = await seed.api(den.admin, "/v1/org", { headers: { "x-omnirush-org-id": organizationId } });
+  const org = await seed.api(den.admin, "/v1/org", { headers: { "x-mars-org-id": organizationId } });
   const novaMember = isRecord(org.body)
     ? records(org.body.members).find((member) => isRecord(member.user) && member.user.email === novaEmail)
     : undefined;
@@ -841,20 +841,20 @@ export async function libraryView(seed: Seed) {
   const teamName = `Spec Library Provenance Team ${stamp}`;
   const createdTeam = await seed.api(den.admin, "/v1/teams", {
     method: "POST",
-    headers: { "x-omnirush-org-id": organizationId },
+    headers: { "x-mars-org-id": organizationId },
     body: JSON.stringify({ name: teamName }),
   });
   const teamId = stringField(isRecord(createdTeam.body) ? createdTeam.body.team : null, "id");
   if (!teamId) throw new Error("Could not create the Library provenance team.");
   await seed.api(den.admin, `/v1/teams/${encodeURIComponent(teamId)}`, {
     method: "PATCH",
-    headers: { "x-omnirush-org-id": organizationId },
+    headers: { "x-mars-org-id": organizationId },
     body: JSON.stringify({ memberIds: [novaMemberId] }),
   });
   for (const body of [{ orgMembershipId: novaMemberId, role: "viewer" }, { teamId, role: "viewer" }]) {
     await seed.api(den.members.casey, `/v1/plugins/${encodeURIComponent(pluginId)}/access`, {
       method: "POST",
-      headers: { "x-omnirush-org-id": organizationId },
+      headers: { "x-mars-org-id": organizationId },
       body: JSON.stringify(body),
     });
   }
@@ -877,7 +877,7 @@ export async function libraryView(seed: Seed) {
   }, async () => {
     const headers = {
       authorization: `Bearer ${den.members.casey.token}`,
-      "x-omnirush-org-id": organizationId,
+      "x-mars-org-id": organizationId,
     };
     await denFetch(den.members.casey, `/v1/plugins/${encodeURIComponent(pluginId)}/archive`, { method: "POST", headers }).catch(() => undefined);
     await denFetch(den.admin, `/v1/teams/${encodeURIComponent(teamId)}`, { method: "DELETE", headers: { ...headers, authorization: `Bearer ${den.admin.token}` } }).catch(() => undefined);
@@ -896,7 +896,7 @@ async function listen(server: Server): Promise<string> {
 }
 
 async function configureWorkspaceModel(seed: Seed, input: {
-  app: import("@omnirush/cdp").Surface;
+  app: import("@mars/cdp").Surface;
   workspaceId: string;
   providerId: string;
   modelId: string;
@@ -908,8 +908,8 @@ async function configureWorkspaceModel(seed: Seed, input: {
 }): Promise<void> {
   // TODO(primitive): seed.workspaceRuntimeConfig
   const result = await rawEvalIn(input.app, browserScript(async (inputWorkspaceId, providerId, value, modelId, inputValue, inputValue2, inputProviderId, inputModelId, inputValue3) => {
-    const port = localStorage.getItem("omnirush.server.port");
-    const token = localStorage.getItem("omnirush.server.token");
+    const port = localStorage.getItem("mars.server.port");
+    const token = localStorage.getItem("mars.server.token");
     if (!port || !token) return "missing local server credentials";
     const request = async (path: string, init?: RequestInit) => {
       const response = await fetch("http://127.0.0.1:" + port + path, {
@@ -938,23 +938,23 @@ async function configureWorkspaceModel(seed: Seed, input: {
     const reloaded = await request("/workspace/" + encodeURIComponent(workspaceId) + "/engine/reload", { method: "POST" });
     if (reloaded !== "ok" && !reloaded.includes("opencode_reload_timeout")) return reloaded;
     if (inputValue2) {
-      const reconcile = await request("/workspace/" + encodeURIComponent(workspaceId) + "/mcp/omnirush-cloud/reconcile", {
+      const reconcile = await request("/workspace/" + encodeURIComponent(workspaceId) + "/mcp/mars-cloud/reconcile", {
         method: "POST", body: JSON.stringify(inputValue2),
       });
       if (reconcile !== "ok") return reconcile;
     }
-    const raw = localStorage.getItem("omnirush.preferences");
+    const raw = localStorage.getItem("mars.preferences");
     let preferences: Record<string, unknown> = {};
     try { preferences = raw ? JSON.parse(raw) : {}; } catch {}
     if (!preferences || typeof preferences !== "object" || Array.isArray(preferences)) preferences = {};
-    localStorage.setItem("omnirush.preferences", JSON.stringify({
+    localStorage.setItem("mars.preferences", JSON.stringify({
       ...preferences,
       defaultModel: { providerID: inputProviderId, modelID: inputModelId },
       modelVariant: null,
       providerStepCompleted: true,
     }));
-    localStorage.setItem("omnirush.defaultModel", inputValue3);
-    localStorage.removeItem("omnirush.sessionModels." + workspaceId);
+    localStorage.setItem("mars.defaultModel", inputValue3);
+    localStorage.removeItem("mars.sessionModels." + workspaceId);
     return "ok";
   }, [input.workspaceId, input.providerId, `${input.fixtureUrl}/v1`, input.modelId, input.directMcp ? {
           [input.directMcp.name]: { type: "remote", url: input.directMcp.url, enabled: true, oauth: false },
@@ -969,12 +969,12 @@ async function configureWorkspaceModel(seed: Seed, input: {
   if (result !== "ok") throw new Error(`Configuring the fixture model failed: ${String(result)}`);
 }
 
-async function reloadConfiguredApp(app: import("@omnirush/cdp").Surface): Promise<void> {
+async function reloadConfiguredApp(app: import("@mars/cdp").Surface): Promise<void> {
   // TODO(primitive): seed.reloadConfiguredDesktop
   await rawEvalIn(app, () => { location.reload(); return true; }).catch(() => undefined);
   const deadline = Date.now() + 60_000;
   while (Date.now() < deadline) {
-    if (await rawEvalIn(app, () => (Boolean(window.__omnirushControl))).catch(() => false) === true) return;
+    if (await rawEvalIn(app, () => (Boolean(window.__marsControl))).catch(() => false) === true) return;
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   throw new Error("The configured desktop control did not return after reload.");
@@ -1036,7 +1036,7 @@ export async function connectionActionMcpApp(seed: Seed) {
   });
   const tokenResult = await seed.api(den.admin, "/v1/mcp/token", {
     method: "POST",
-    headers: { "x-omnirush-org-id": organizationId },
+    headers: { "x-mars-org-id": organizationId },
     body: JSON.stringify({ scopes: ["mcp:read", "mcp:write"] }),
   });
   const mcpToken = stringField(tokenResult.body, "token");
@@ -1053,7 +1053,7 @@ export async function connectionActionMcpApp(seed: Seed) {
   return { app, den, connection, organizationId, mcpSession: { ...den.admin, token: mcpToken }, appHostSession: { ...den.admin, token: appHostToken } };
 }
 
-export const skillCreatedResourceUri = "ui://omnirush/skill-created/v1/view.html";
+export const skillCreatedResourceUri = "ui://mars/skill-created/v1/view.html";
 export const skillCreatedReply = "The beautiful tomatoes skill is ready to use.";
 
 export async function skillCreatedMcpApp(seed: Seed) {
@@ -1132,7 +1132,7 @@ export async function skillCreatedMcpApp(seed: Seed) {
   }
 }
 
-export const inlineResourceUri = "ui://omnirush/artifacts/arv_eval_card/views/avr_eval_card/index.html";
+export const inlineResourceUri = "ui://mars/artifacts/arv_eval_card/views/avr_eval_card/index.html";
 export const inlineReply = "The interactive artifact card is ready.";
 
 export async function mcpAppInlineHost(seed: Seed) {
@@ -1253,7 +1253,7 @@ export async function remoteMcpApps(seed: Seed) {
   const state = { gatewayCapabilityName: "" };
   const builder = await import("../../ee/apps/den-api/src/generated-artifact-view-builder.js");
   const built = await builder.buildGeneratedArtifactViewInWorker({
-    reactSource: `export default function ProjectAtlas(props) { const app = props.data || { name: "Project Atlas", status: "Connected through OmniRush.ai Connect" }; return <main><h1>{app.name}</h1><p>{app.status}</p></main> }`,
+    reactSource: `export default function ProjectAtlas(props) { const app = props.data || { name: "Project Atlas", status: "Connected through MarsAI Connect" }; return <main><h1>{app.name}</h1><p>{app.status}</p></main> }`,
     cssSource: "body{margin:0;padding:18px;color:#172033;background:#f5f7fb;font-family:system-ui,sans-serif}main{padding:22px;border:1px solid #dbe4f0;border-radius:16px;background:white}",
     outputSchema: { type: "object", additionalProperties: true },
     title: "Project Atlas",
@@ -1267,7 +1267,7 @@ export async function remoteMcpApps(seed: Seed) {
       result: {
         protocolVersion: "2025-06-18",
         capabilities: { tools: { listChanged: false }, resources: { listChanged: false }, extensions: { "io.modelcontextprotocol/ui": { mimeTypes: ["text/html;profile=mcp-app"] } } },
-        serverInfo: { name: "project-atlas-connect-fixture", title: "Project Atlas Connect", version: "1.0.0", description: "A standard MCP App fixture served through OmniRush.ai Connect." },
+        serverInfo: { name: "project-atlas-connect-fixture", title: "Project Atlas Connect", version: "1.0.0", description: "A standard MCP App fixture served through MarsAI Connect." },
       },
     };
     if (message.method === "tools/list") return {
@@ -1314,8 +1314,8 @@ export async function remoteMcpApps(seed: Seed) {
           content: [{ type: "text", text: "Project Atlas opened." }],
           structuredContent: {
             schemaVersion: "1",
-            artifact: { title: "Project Atlas", description: "A standard MCP App served through OmniRush.ai Connect." },
-            data: { name: "Project Atlas", status: "Connected through OmniRush.ai Connect" },
+            artifact: { title: "Project Atlas", description: "A standard MCP App served through MarsAI Connect." },
+            data: { name: "Project Atlas", status: "Connected through MarsAI Connect" },
           },
           _meta: { source: "project-atlas-standard-mcp" },
         },
@@ -1377,7 +1377,7 @@ export async function remoteMcpApps(seed: Seed) {
     })().catch((error: unknown) => sendJson(response, 500, { error: String(error) }));
   });
   const fixtureUrl = await listen(fixture);
-  const profileDir = `/tmp/omnirush-remote-mcp-apps-profile-${Date.now()}`;
+  const profileDir = `/tmp/mars-remote-mcp-apps-profile-${Date.now()}`;
   try {
     const den = await seed.den({ org: { name: `Remote MCP Apps ${Date.now()}`, admin: { name: "Avery" } } });
     const organizationId = await activeOrganizationId(seed, den.admin);
@@ -1390,7 +1390,7 @@ export async function remoteMcpApps(seed: Seed) {
     });
     const tokenResult = await seed.api(den.admin, "/v1/mcp/token", {
       method: "POST",
-      headers: { "x-omnirush-org-id": organizationId },
+      headers: { "x-mars-org-id": organizationId },
       body: JSON.stringify({ scopes: ["mcp:read", "mcp:write"] }),
     });
     const mcpToken = stringField(tokenResult.body, "token");

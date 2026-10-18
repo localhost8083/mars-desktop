@@ -1,12 +1,12 @@
 import { unwrap } from "@/app/lib/opencode";
-import type { OmniRushServerClient } from "@/app/lib/omnirush-server";
+import type { MarsServerClient } from "@/app/lib/mars-server";
 import type { Client } from "@/app/types";
 
 type WorkspaceType = "local" | "remote" | string;
 
 export type UpdateManagedDisabledProvidersOptions = {
   opencodeClient: Client | null;
-  omnirushClient?: OmniRushServerClient | null;
+  marsClient?: MarsServerClient | null;
   workspaceId?: string | null;
   workspaceType?: WorkspaceType | null;
   disabledProviders: unknown;
@@ -59,13 +59,13 @@ export async function updateManagedDisabledProviders(
   const disabledProviders = normalizeDisabledProviders(options.disabledProviders);
   const workspaceId = options.workspaceId?.trim() ?? "";
 
-  if (options.omnirushClient && workspaceId && options.workspaceType === "local") {
-    const result = await options.omnirushClient.setRuntimeDisabledProviders(workspaceId, disabledProviders);
+  if (options.marsClient && workspaceId && options.workspaceType === "local") {
+    const result = await options.marsClient.setRuntimeDisabledProviders(workspaceId, disabledProviders);
     return { managedRuntime: true, disabledProviders: result.disabledProviders };
   }
 
   const client = options.opencodeClient;
-  if (!client) throw new Error("omnirush.ai client is not connected.");
+  if (!client) throw new Error("marsai.click client is not connected.");
   const currentConfig = options.currentConfig ?? unwrap(await client.config.get());
   await client.config.update({
     config: configWithDisabledProviders(

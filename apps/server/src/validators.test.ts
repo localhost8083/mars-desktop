@@ -73,11 +73,11 @@ describe("validateMcpName", () => {
 });
 
 describe("validateUserMcpName", () => {
-  test("reserves the OmniRush.ai Connect runtime name", () => {
-    expect(() => validateUserMcpName("omnirush-cloud")).toThrow("reserved for OmniRush.ai Connect");
-    expect(() => validateUserMcpName("OMNIRUSH-CLOUD")).toThrow("reserved for OmniRush.ai Connect");
-    expect(() => validateUserMcpName("omnirush-connect-1234")).toThrow("reserved for OmniRush.ai Connect");
-    expect(() => validateUserMcpName("omnirush-direct-linear-1234")).toThrow("reserved for OmniRush.ai Connect");
+  test("reserves the MarsAI Connect runtime name", () => {
+    expect(() => validateUserMcpName("mars-cloud")).toThrow("reserved for MarsAI Connect");
+    expect(() => validateUserMcpName("MARS-CLOUD")).toThrow("reserved for MarsAI Connect");
+    expect(() => validateUserMcpName("mars-connect-1234")).toThrow("reserved for MarsAI Connect");
+    expect(() => validateUserMcpName("mars-direct-linear-1234")).toThrow("reserved for MarsAI Connect");
   });
 
   test("allows ordinary workspace MCP names", () => {
@@ -144,12 +144,12 @@ describe("validateMcpConfig", () => {
     expect(() => validateMcpConfig({ type: "remote", url: "javascript:alert(1)" })).toThrow();
   });
 
-  test("rejects a registry launch of omnirush-ui-mcp with 400 unsafe_mcp_command", () => {
+  test("rejects a registry launch of mars-ui-mcp with 400 unsafe_mcp_command", () => {
     for (const command of [
-      ["npx", "-y", "omnirush-ui-mcp"],
-      ["bunx", "omnirush-ui-mcp@latest"],
-      ["pnpm", "dlx", "omnirush-ui-mcp"],
-      ["sh", "-c", "npx -y omnirush-ui-mcp"],
+      ["npx", "-y", "mars-ui-mcp"],
+      ["bunx", "mars-ui-mcp@latest"],
+      ["pnpm", "dlx", "mars-ui-mcp"],
+      ["sh", "-c", "npx -y mars-ui-mcp"],
     ]) {
       let error: unknown;
       try {
@@ -160,14 +160,14 @@ describe("validateMcpConfig", () => {
       expect(error).toMatchObject({ status: 400, code: "unsafe_mcp_command" });
     }
     // The command is checked whatever the declared type.
-    expect(() => validateMcpConfig({ type: "remote", url: "https://example.com", command: ["npx", "-y", "omnirush-ui-mcp"] }))
+    expect(() => validateMcpConfig({ type: "remote", url: "https://example.com", command: ["npx", "-y", "mars-ui-mcp"] }))
       .toThrow("not published on npm");
     // The bundled launch runs the file by path and stays valid.
     expect(() => validateMcpConfig({
       type: "local",
       command: [
-        "/Applications/OmniRush.ai.app/Contents/MacOS/OmniRush.ai",
-        "/Applications/OmniRush.ai.app/Contents/Resources/omnirush-ui-mcp/index.mjs",
+        "/Applications/MarsAI.app/Contents/MacOS/MarsAI",
+        "/Applications/MarsAI.app/Contents/Resources/mars-ui-mcp/index.mjs",
       ],
       environment: { ELECTRON_RUN_AS_NODE: "1" },
     })).not.toThrow();

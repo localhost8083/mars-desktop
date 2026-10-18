@@ -12,7 +12,7 @@ import {
   CONNECT_LINK_VERSION,
   type ConnectLinkClaims,
   type ConnectLinkVerifyResult,
-} from "@omnirush/types/connect-link"
+} from "@mars/types/connect-link"
 import { connectLinkClaimsSchema, findInsecureConnectLinkUrl, findRefusedConnectLinkUrl } from "./index"
 
 const DEFAULT_CLOCK_SKEW_SECONDS = 60

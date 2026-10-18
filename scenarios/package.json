@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/scenarios",
+  "name": "@mars/scenarios",
   "private": true,
   "type": "module",
   "scripts": {
@@ -7,11 +7,11 @@
     "onboarding:render": "node onboarding/render.mjs"
   },
   "dependencies": {
-    "@omnirush/behaviors": "workspace:*",
-    "@omnirush/cdp": "workspace:*",
-    "@omnirush/env": "workspace:*",
-    "@omnirush/testkit": "workspace:*",
-    "@omnirush/presentation": "link:../packages/presentation",
+    "@mars/behaviors": "workspace:*",
+    "@mars/cdp": "workspace:*",
+    "@mars/env": "workspace:*",
+    "@mars/testkit": "workspace:*",
+    "@mars/presentation": "link:../packages/presentation",
     "@remotion/bundler": "4.0.520",
     "@remotion/renderer": "4.0.520",
     "remotion": "4.0.520",

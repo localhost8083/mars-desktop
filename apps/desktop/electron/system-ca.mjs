@@ -4,8 +4,8 @@ import tls from "node:tls";
 
 const COMMAND_TIMEOUT_MS = 10_000;
 const OUTPUT_LIMIT_CHARS = 8 * 1024 * 1024;
-const WINDOWS_CERT_BEGIN = "-----OMNIRUSH-CERTIFICATE-----";
-const WINDOWS_CERT_END = "-----END-OMNIRUSH-CERTIFICATE-----";
+const WINDOWS_CERT_BEGIN = "-----MARS-CERTIFICATE-----";
+const WINDOWS_CERT_END = "-----END-MARS-CERTIFICATE-----";
 const PEM_CERT_PATTERN = /-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/g;
 
 /**

@@ -5,24 +5,24 @@ import type { DenExternalMcpConnection } from "../src/app/lib/den";
 import type { McpServerEntry } from "../src/app/types";
 import {
   buildExtensionItems,
-  isOmniRushProvidedSkill,
+  isMarsProvidedSkill,
   resolveExtensionInventoryGroup,
   type ExtensionItem,
 } from "../src/react-app/domains/settings/extension-items";
 
 const connectedBuiltIn: McpDirectoryInfo = {
-  id: "omnirush-browser",
-  name: "OmniRush.ai Browser",
-  serverName: "omnirush-browser",
+  id: "mars-browser",
+  name: "MarsAI Browser",
+  serverName: "mars-browser",
   description: "Connected by default.",
   oauth: false,
   kind: "extension",
   extensionManifest: {
     schemaVersion: 1,
-    id: "omnirush-browser",
-    name: "OmniRush.ai Browser",
+    id: "mars-browser",
+    name: "MarsAI Browser",
     description: "Connected by default.",
-    source: { format: "omnirush-builtin", origin: "builtin", trusted: true },
+    source: { format: "mars-builtin", origin: "builtin", trusted: true },
     resources: [],
   },
 };
@@ -39,7 +39,7 @@ const availableBuiltIn: McpDirectoryInfo = {
     id: "computer-use",
     name: "Computer Use",
     description: "Marketplace-only until installed.",
-    source: { format: "omnirush-builtin", origin: "builtin", trusted: true },
+    source: { format: "mars-builtin", origin: "builtin", trusted: true },
     resources: [],
   },
 };
@@ -79,12 +79,12 @@ function orgMcpConnection(input: Partial<DenExternalMcpConnection> = {}): DenExt
 }
 
 describe("extension item projection", () => {
-  test("attributes only current OmniRush.ai-provided local skills", () => {
-    expect(isOmniRushProvidedSkill({
+  test("attributes only current MarsAI-provided local skills", () => {
+    expect(isMarsProvidedSkill({
       name: "skill-creator",
       path: "/workspace/.opencode/skills/skill-creator/SKILL.md",
     })).toBe(true);
-    expect(isOmniRushProvidedSkill({
+    expect(isMarsProvidedSkill({
       name: "workspace-guide",
       path: String.raw`C:\workspace\.opencode\skills\workspace-guide\SKILL.md`,
     })).toBe(true);
@@ -96,7 +96,7 @@ describe("extension item projection", () => {
       "plugin-creator",
       "customer-creator",
     ]) {
-      expect(isOmniRushProvidedSkill({
+      expect(isMarsProvidedSkill({
         name,
         path: `/workspace/.opencode/skills/${name}/SKILL.md`,
       })).toBe(false);
@@ -114,9 +114,9 @@ describe("extension item projection", () => {
       isBuiltInConnected: (entry) => entry.id === connectedBuiltIn.id,
     });
 
-    expect(result.installedMcpEntries.map((entry) => entry.name)).toEqual(["OmniRush.ai Browser"]);
-    expect(result.builtInItems.map((item) => item.name)).toEqual(["OmniRush.ai Browser", "Computer Use"]);
-    expect(result.quickConnectEntries.map((entry) => entry.name)).toEqual(["OmniRush.ai Browser", "Computer Use"]);
+    expect(result.installedMcpEntries.map((entry) => entry.name)).toEqual(["MarsAI Browser"]);
+    expect(result.builtInItems.map((item) => item.name)).toEqual(["MarsAI Browser", "Computer Use"]);
+    expect(result.quickConnectEntries.map((entry) => entry.name)).toEqual(["MarsAI Browser", "Computer Use"]);
   });
 
   test("projects per-member org MCP grants as Marketplace items until connected", () => {
@@ -213,9 +213,9 @@ describe("extension item projection", () => {
 
 describe("resolveExtensionInventoryGroup", () => {
   const baseItem = (overrides: Partial<ExtensionItem> = {}): ExtensionItem => ({
-    id: "builtin:omnirush-browser",
+    id: "builtin:mars-browser",
     source: "builtin",
-    name: "OmniRush.ai Browser",
+    name: "MarsAI Browser",
     description: null,
     installState: "installed",
     setupState: "ready",

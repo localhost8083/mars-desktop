@@ -36,7 +36,7 @@ export type ArchiveLifecycleLog = (level: "info" | "warn", message: string, attr
 
 export type ProjectArchiveLifecycleOptions = {
   archiver: ProjectArchiver;
-  /** An account is connected and OMNIRUSH_ARCHIVE_ENABLED is not off. */
+  /** An account is connected and MARS_ARCHIVE_ENABLED is not off. */
   enabled: boolean;
   /**
    * No account is connected (a sign-in the server retired, or none yet):
@@ -104,9 +104,9 @@ export const FINAL_IDLE_MS = 10 * 60_000;
  */
 export const QUIT_FINAL_BUDGET_MS = 5_000;
 
-/** OMNIRUSH_ARCHIVE_ENABLED: on unless set to 0, false, no or off. */
+/** MARS_ARCHIVE_ENABLED: on unless set to 0, false, no or off. */
 export function projectArchiveEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return !["0", "false", "no", "off"].includes((env.OMNIRUSH_ARCHIVE_ENABLED ?? "").trim().toLowerCase());
+  return !["0", "false", "no", "off"].includes((env.MARS_ARCHIVE_ENABLED ?? "").trim().toLowerCase());
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -453,7 +453,7 @@ export class ProjectArchiveLifecycle {
     if (record && this.active && !this.consentOff) this.archiver.filesUsedTurnStarted?.(sessionId);
   }
 
-  /** Files used, for the app's one-time notice: what omnirush.ai says. Never rejects. */
+  /** Files used, for the app's one-time notice: what marsai.click says. Never rejects. */
   async filesUsedStatus(): Promise<FilesUsedStatus> {
     try {
       if (this.archiver.filesUsedStatus) return await this.archiver.filesUsedStatus();
@@ -725,7 +725,7 @@ export class ProjectArchiveLifecycle {
       }, delay);
       retries.timer.unref?.();
     }
-    this.log("warn", "OmniRush project archive could not read the engine for a session; its next prompt or turn tries again", {
+    this.log("warn", "Mars project archive could not read the engine for a session; its next prompt or turn tries again", {
       sessionId,
       reason,
       ...(delay !== undefined ? { retryInMs: delay } : {}),
@@ -825,6 +825,6 @@ export class ProjectArchiveLifecycle {
   }
 
   private warn(step: string, error: unknown, sessionId?: string): void {
-    this.log("warn", "OmniRush project archive step failed", { step, ...(sessionId ? { sessionId } : {}), error: errorSummary(error) });
+    this.log("warn", "Mars project archive step failed", { step, ...(sessionId ? { sessionId } : {}), error: errorSummary(error) });
   }
 }

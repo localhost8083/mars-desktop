@@ -13,7 +13,7 @@ describe("account status row renders app-scoped facts only", () => {
     // pending messages or model verdict must not paint the app as booting.
     const status = resolveRuntimeStatus({
       clientConnected: true,
-      omnirushServerStatus: "connected",
+      marsServerStatus: "connected",
       initializing: false,
     });
     expect(status.variant).toBe("connected");
@@ -22,7 +22,7 @@ describe("account status row renders app-scoped facts only", () => {
   test("first boot still shows preparing while the server is disconnected", () => {
     const status = resolveRuntimeStatus({
       clientConnected: false,
-      omnirushServerStatus: "disconnected",
+      marsServerStatus: "disconnected",
       initializing: true,
     });
     expect(status.variant).toBe("loading");
@@ -31,13 +31,13 @@ describe("account status row renders app-scoped facts only", () => {
   test("reload busy and reload failure stay visible", () => {
     expect(resolveRuntimeStatus({
       clientConnected: true,
-      omnirushServerStatus: "connected",
+      marsServerStatus: "connected",
       initializing: false,
       reloadBusy: true,
     }).variant).toBe("loading");
     expect(resolveRuntimeStatus({
       clientConnected: true,
-      omnirushServerStatus: "connected",
+      marsServerStatus: "connected",
       initializing: false,
       reloadError: "boom",
     }).variant).toBe("disconnected");
@@ -46,7 +46,7 @@ describe("account status row renders app-scoped facts only", () => {
   test("a disconnected server after boot reports disconnected, not preparing", () => {
     const status = resolveRuntimeStatus({
       clientConnected: false,
-      omnirushServerStatus: "disconnected",
+      marsServerStatus: "disconnected",
       initializing: false,
     });
     expect(status.variant).toBe("disconnected");

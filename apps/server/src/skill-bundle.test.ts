@@ -31,7 +31,7 @@ function codeOf(fn: () => unknown): string {
 
 let workspace: string;
 beforeEach(async () => {
-  workspace = await mkdtemp(join(tmpdir(), "omnirush-skill-bundle-"));
+  workspace = await mkdtemp(join(tmpdir(), "mars-skill-bundle-"));
   await mkdir(join(workspace, ".git"), { recursive: true });
 });
 afterEach(async () => {
@@ -239,7 +239,7 @@ describe("updateSkillFiles", () => {
 
   test("never writes through a linked folder inside the skill", async () => {
     const dir = await installed();
-    const outside = await mkdtemp(join(tmpdir(), "omnirush-skill-outside-"));
+    const outside = await mkdtemp(join(tmpdir(), "mars-skill-outside-"));
     try {
       await symlink(outside, join(dir, "linked"));
       const tree = await listSkillTree(dir);

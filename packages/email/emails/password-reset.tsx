@@ -5,5 +5,5 @@ export default function PasswordResetPreview(props: PasswordResetEmailProps) {
 }
 
 PasswordResetPreview.PreviewProps = {
-  resetLink: "https://omnirush.example.com/api/auth/reset-password/example-token?callbackURL=https%3A%2F%2Fomnirush.example.com%2Freset-password",
+  resetLink: "https://mars.example.com/api/auth/reset-password/example-token?callbackURL=https%3A%2F%2Fmars.example.com%2Freset-password",
 } satisfies PasswordResetEmailProps

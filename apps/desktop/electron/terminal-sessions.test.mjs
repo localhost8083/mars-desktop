@@ -102,11 +102,11 @@ test("tabs are separate shells in their workspace folder, owned by their window"
     ["/bin/sh", "/work/a", 20, 5],
     ["/bin/bash", "/work/b", 80, 24],
   ]);
-  assert.equal(spawned[0].options.env.OMNIRUSH_TERMINAL, "1");
+  assert.equal(spawned[0].options.env.MARS_TERMINAL, "1");
   assert.equal(b.shellLabel, "sh");
 
   spawned[0].emit("hello");
-  assert.deepEqual(sent.at(-1), ["omnirush:terminal:data", { terminalId: a.terminalId, data: "hello" }]);
+  assert.deepEqual(sent.at(-1), ["mars:terminal:data", { terminalId: a.terminalId, data: "hello" }]);
   // Another window cannot type into, resize or end a tab it does not own.
   sessions.write(2, a.terminalId, "rm -rf /\r");
   sessions.resize(2, a.terminalId, 200, 50);
@@ -119,7 +119,7 @@ test("tabs are separate shells in their workspace folder, owned by their window"
 
   // A shell the user exits tells its tab.
   spawned[1].exit(0);
-  assert.deepEqual(sent.at(-1), ["omnirush:terminal:exit", { terminalId: b.terminalId, exitCode: 0, signal: 0 }]);
+  assert.deepEqual(sent.at(-1), ["mars:terminal:exit", { terminalId: b.terminalId, exitCode: 0, signal: 0 }]);
   assert.deepEqual(sessions.list(1), [a.terminalId]);
 
   // A closed tab ends its shell with SIGHUP and sends nothing more.
@@ -209,7 +209,7 @@ test("real shell (macOS/Linux): closing a tab leaves no process it started behin
   } catch {
     return;
   }
-  const cwd = mkdtempSync(path.join(os.tmpdir(), "omnirush-terminal-"));
+  const cwd = mkdtempSync(path.join(os.tmpdir(), "mars-terminal-"));
   try {
     const sessions = createTerminalSessions({
       spawn: (file, args, options) => pty.spawn(file, args, options),
@@ -218,7 +218,7 @@ test("real shell (macOS/Linux): closing a tab leaves no process it started behin
       graceMs: 800,
     });
     let output = "";
-    const { terminalId } = await sessions.create({ ownerId: 1, workspaceId: "ws", cwd, send: (channel, payload) => { if (channel === "omnirush:terminal:data") output += payload.data; } });
+    const { terminalId } = await sessions.create({ ownerId: 1, workspaceId: "ws", cwd, send: (channel, payload) => { if (channel === "mars:terminal:data") output += payload.data; } });
     // A background job that ignores SIGHUP, and a foreground one.
     sessions.write(1, terminalId, "pwd; (trap '' HUP; exec sleep 3001) & echo BG=$!; sleep 3002 &\r");
     sessions.write(1, terminalId, "echo FG_START; exec 2>&1; sleep 3003\r");

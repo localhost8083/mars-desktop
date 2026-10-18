@@ -1,5 +1,5 @@
 config:
-  omnirushDevMode: "0"
+  marsDevMode: "0"
   denApiNodeOptions: --use-openssl-ca
   tenancy:
     mode: single_org
@@ -20,7 +20,7 @@ config:
     mode: stub
 secret:
   values:
-    databaseUrl: mysql://omnirush:omnirush@omnirush-mysql:3306/omnirush_den
+    databaseUrl: mysql://mars:mars@mars-mysql:3306/omnirush_den
     betterAuthSecret: local-dev-secret-not-for-production-use!!
     denDbEncryptionKey: local-dev-db-encryption-key-please-change-1234567890
 denApi:

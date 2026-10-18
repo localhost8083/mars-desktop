@@ -17,7 +17,7 @@ describe("Electron distribution configs", () => {
       await readFile(path.resolve(dirname, "..", "package.json"), "utf8"),
     );
     const config = await readConfig("electron-builder.base.yml");
-    assert.equal(packageMetadata.desktopName, "ai.omnirush.desktop");
+    assert.equal(packageMetadata.desktopName, "ai.marsai.desktop");
     assert.equal(config.npmRebuild, false);
     assert.deepEqual(config.files.at(-1), {
       from: ".electron-runtime/node_modules",
@@ -51,15 +51,15 @@ describe("Electron distribution configs", () => {
   it("keeps the public artifact and protocol unchanged", async () => {
     const config = await readConfig("electron-builder.yml");
     assert.equal(config.extends, "./electron-builder.base.yml");
-    assert.equal(config.appId, "ai.omnirush.desktop");
-    assert.equal(config.productName, "omnirush");
-    assert.equal(config.win.executableName, "OmniRush.ai");
-    assert.equal(config.protocols[0].schemes[0], "omnirush");
-    assert.equal(config.artifactName, "omnirush-${os}-${arch}-${version}.${ext}");
+    assert.equal(config.appId, "ai.marsai.desktop");
+    assert.equal(config.productName, "mars");
+    assert.equal(config.win.executableName, "MarsAI");
+    assert.equal(config.protocols[0].schemes[0], "mars");
+    assert.equal(config.artifactName, "mars-${os}-${arch}-${version}.${ext}");
     // Published package names, so upgrades replace the installed package.
-    assert.equal(config.deb.packageName, "omnirush.ai");
-    assert.equal(config.rpm.packageName, "OmniRush.ai");
-    assert.equal(config.pacman.packageName, "omnirush");
+    assert.equal(config.deb.packageName, "marsai.click");
+    assert.equal(config.rpm.packageName, "MarsAI");
+    assert.equal(config.pacman.packageName, "mars");
   });
 
   it("lays out the macOS installer window on a Retina-ready background", async () => {
@@ -83,31 +83,31 @@ describe("Electron distribution configs", () => {
   it("defines an enterprise flavor with the standard app identity and release provider", async () => {
     const config = await readConfig("electron-builder.enterprise.yml");
     assert.equal(config.extends, "./electron-builder.base.yml");
-    assert.equal(config.appId, "ai.omnirush.desktop");
-    assert.equal(config.productName, "OmniRush.ai Enterprise");
-    assert.equal(config.extraMetadata.omnirushDistribution, "enterprise");
-    assert.equal(config.protocols[0].schemes[0], "omnirush");
+    assert.equal(config.appId, "ai.marsai.desktop");
+    assert.equal(config.productName, "MarsAI Enterprise");
+    assert.equal(config.extraMetadata.marsDistribution, "enterprise");
+    assert.equal(config.protocols[0].schemes[0], "mars");
     assert.equal(config.publish[0].provider, "github");
-    assert.equal(config.publish[0].owner, "omnirush-ai");
-    assert.equal(config.publish[0].repo, "omnirush-gui");
+    assert.equal(config.publish[0].owner, "mars-ai");
+    assert.equal(config.publish[0].repo, "mars-gui");
     assert.equal(config.publish[0].channel, "enterprise");
     assert.equal(
       config.artifactName,
-      "omnirush-enterprise-${os}-${arch}-${version}.${ext}",
+      "mars-enterprise-${os}-${arch}-${version}.${ext}",
     );
   });
 
   it("defines a Cloud flavor with its own artifacts and updater channel", async () => {
     const config = await readConfig("electron-builder.cloud.yml");
     assert.equal(config.extends, "./electron-builder.base.yml");
-    assert.equal(config.appId, "ai.omnirush.desktop");
-    assert.equal(config.productName, "OmniRush.ai Cloud");
-    assert.equal(config.extraMetadata.omnirushDistribution, "cloud");
-    assert.equal(config.protocols[0].schemes[0], "omnirush");
+    assert.equal(config.appId, "ai.marsai.desktop");
+    assert.equal(config.productName, "MarsAI Cloud");
+    assert.equal(config.extraMetadata.marsDistribution, "cloud");
+    assert.equal(config.protocols[0].schemes[0], "mars");
     assert.equal(config.publish[0].channel, "cloud");
     assert.equal(
       config.artifactName,
-      "omnirush-cloud-${os}-${arch}-${version}.${ext}",
+      "mars-cloud-${os}-${arch}-${version}.${ext}",
     );
   });
 });

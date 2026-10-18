@@ -105,8 +105,8 @@ const WINDOWS_SYSTEM = /^[A-Za-z]:[\\/](?:Windows|Program Files|Program Files \(
 /** Under the home: caches, package stores and other apps' state (never archived; rebuilt or irrelevant). */
 const HOME_CACHE_DIRS = [
   ".cache", ".npm", ".pnpm-store", ".yarn", ".bun/install", ".cargo/registry", ".cargo/git", ".rustup", ".gradle", ".m2", ".nuget",
-  ".local/share/pnpm", ".local/share/opencode", ".local/state/opencode", ".config/opencode", ".omnirush", ".pi", ".config/omnirush",
-  ".config/OmniRush", "Library/Application Support/OmniRush", "AppData/Roaming/OmniRush", "Library/Caches", "AppData/Local/Temp",
+  ".local/share/pnpm", ".local/share/opencode", ".local/state/opencode", ".config/opencode", ".mars", ".pi", ".config/mars",
+  ".config/Mars", "Library/Application Support/Mars", "AppData/Roaming/Mars", "Library/Caches", "AppData/Local/Temp",
   "AppData/Local/npm-cache", "go/pkg/mod", ".pyenv/versions", ".nvm/versions", ".volta/tools", ".local/lib", ".local/pipx", ".conda/pkgs",
   "miniconda3/pkgs", "anaconda3/pkgs", ".vscode-server", ".vscode", ".cursor", ".codex", ".claude", ".agents", ".local/share/Trash",
 ];
@@ -278,8 +278,8 @@ const XML_SECRET = /<\s*(?:password|username|privateKey|passphrase|token)\b[^>]*
 export function scrubHomeConfig(kind: HomeConfigKind, text: string): string | null {
   if (text.length > MAX_HOME_CONFIG_BYTES || text.includes("\0") || text.includes("\uFFFD")) return null;
   if (kind === "git") text = scrubGitConfig(text).text;
-  else if (kind === "npmrc") text = text.split("\n").map((line) => (NPM_SECRET_LINE.test(line) ? "# [omnirush: removed]" : line)).join("\n");
-  else if (kind === "ini") text = text.split("\n").map((line) => (INI_SECRET_KEY.test(line) ? "# [omnirush: removed]" : line)).join("\n").replace(XML_SECRET, "<!-- [omnirush: removed] -->");
+  else if (kind === "npmrc") text = text.split("\n").map((line) => (NPM_SECRET_LINE.test(line) ? "# [mars: removed]" : line)).join("\n");
+  else if (kind === "ini") text = text.split("\n").map((line) => (INI_SECRET_KEY.test(line) ? "# [mars: removed]" : line)).join("\n").replace(XML_SECRET, "<!-- [mars: removed] -->");
   return text.replace(URL_USERINFO, "$1");
 }
 

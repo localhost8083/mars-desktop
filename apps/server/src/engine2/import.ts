@@ -2,23 +2,23 @@
  * One-time import of the sessions the opencode 2.x engine stored into the
  * 1.x engine's store.
  *
- * OmniRush.ai desktop 2.2.0 – 3.x ran the opencode 2.x engine, which kept its
+ * MarsAI desktop 2.2.0 – 3.x ran the opencode 2.x engine, which kept its
  * sessions in `<data>/opencode/opencode.db` (2.x tables: `session_v2`,
  * `session_message`; on its first start it had moved the 1.x sessions of
- * earlier releases in there too). The app now runs OmniRush.ai's build of the
- * 1.x engine (1.18.32), whose store is `<engine data>/omnirush/opencode.db` (engine-data-home.ts) and which
+ * earlier releases in there too). The app now runs MarsAI's build of the
+ * 1.x engine (1.18.32), whose store is `<engine data>/mars/opencode.db` (engine-data-home.ts) and which
  * cannot read the 2.x tables. So that no session is lost, each 2.x session is
  * copied once into the 1.x store:
  *
  *   - the 2.x store is opened read-only and never changed (engine2/store.ts),
- *     so an older OmniRush.ai still opens it;
+ *     so an older MarsAI still opens it;
  *   - each session becomes the 1.x export document `{info, messages:[{info, parts}]}`
  *     (engine2/shapes.ts) and is written by the engine itself, `opencode import <file>`,
  *     run in the session's folder (the 1.x engine keys sessions by project), with
  *     no plugins, no project config and no network;
  *   - the import keeps every id, so a session imported twice is written once;
  *   - what was imported, skipped (its folder is gone) or failed is recorded in
- *     `<engine data>/omnirush/desktop-engine2-import.json`; a failed session is tried again on
+ *     `<engine data>/mars/desktop-engine2-import.json`; a failed session is tried again on
  *     the next launches (at most MAX_ATTEMPTS times), a skipped one whenever its folder
  *     is back.
  *
@@ -87,12 +87,12 @@ export function engine1DataDir(env: NodeJS.ProcessEnv): string {
 }
 
 /**
- * Whether the import is switched off (OMNIRUSH_ENGINE2_IMPORT=0, or a test
- * run without OMNIRUSH_ENGINE2_IMPORT=1: tests never touch the real stores) or
+ * Whether the import is switched off (MARS_ENGINE2_IMPORT=0, or a test
+ * run without MARS_ENGINE2_IMPORT=1: tests never touch the real stores) or
  * cannot apply (an explicit OPENCODE_DB).
  */
 export function engine2ImportDisabled(env: NodeJS.ProcessEnv): boolean {
-  const flag = env.OMNIRUSH_ENGINE2_IMPORT?.trim();
+  const flag = env.MARS_ENGINE2_IMPORT?.trim();
   if (flag === "0" || env.OPENCODE_DB?.trim()) return true;
   return env.NODE_ENV === "test" && flag !== "1";
 }
@@ -228,7 +228,7 @@ function takeLock(path: string): (() => void) | null {
   };
 }
 
-const SECRET_ENV = /^(OPENCODE_SERVER_(USERNAME|PASSWORD)|OPENCODE_PASSWORD|OMNIRUSH_ENCRYPTION_KEY|OMNIRUSH_(ACCESS|REFRESH)_TOKEN)$/;
+const SECRET_ENV = /^(OPENCODE_SERVER_(USERNAME|PASSWORD)|OPENCODE_PASSWORD|MARS_ENCRYPTION_KEY|MARS_(ACCESS|REFRESH)_TOKEN)$/;
 
 /** The engine environment for `opencode import`: same stores, no plugins, project or user config, no network. */
 function importEnv(env: NodeJS.ProcessEnv, configDir: string): NodeJS.ProcessEnv {
@@ -303,7 +303,7 @@ export async function importEngine2Sessions(options: Engine2ImportOptions): Prom
     log("info", "engine2 session import already running elsewhere");
     return result;
   }
-  const work = mkdtempSync(join(tmpdir(), "omnirush-engine2-import-"));
+  const work = mkdtempSync(join(tmpdir(), "mars-engine2-import-"));
   try {
     const configDir = join(work, "config");
     mkdirSync(configDir, { recursive: true });
@@ -382,7 +382,7 @@ export async function importEngine2Sessions(options: Engine2ImportOptions): Prom
 /**
  * Provider and MCP sign-ins the opencode engine kept in its data directory
  * (`auth.json`, `mcp-auth.json` in `<data>/opencode`, shared with the earlier
- * 1.x and 2.x engines): copied once into OmniRush.ai's engine data directory,
+ * 1.x and 2.x engines): copied once into MarsAI's engine data directory,
  * where it now reads them. A file already there is never replaced.
  */
 export function adoptOpencodeCredentials(env: NodeJS.ProcessEnv, log?: Engine2ImportLog): string[] {

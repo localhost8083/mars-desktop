@@ -1,4 +1,4 @@
-import type { OmniRushMcpAppResource } from "@/app/lib/omnirush-server";
+import type { MarsMcpAppResource } from "@/app/lib/mars-server";
 import { DASHBOARD_TILE_CACHE_STORAGE_PREFIX } from "@/app/lib/dashboard-cache-storage";
 import type { PreservedMcpAppResult } from "@/components/chat/mcp-app-frame";
 
@@ -9,7 +9,7 @@ export const DASHBOARD_AUTO_REFRESH_INTERVAL_MS = 5 * 60 * 1_000;
 export type DashboardTileCache = {
   cachedAt: number;
   workspaceId: string;
-  app: OmniRushMcpAppResource;
+  app: MarsMcpAppResource;
   result: PreservedMcpAppResult;
 };
 
@@ -21,7 +21,7 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
-function parseApp(value: unknown): OmniRushMcpAppResource | null {
+function parseApp(value: unknown): MarsMcpAppResource | null {
   if (!isRecord(value) || !isRecord(value.csp)) return null;
   if (
     typeof value.serverName !== "string"

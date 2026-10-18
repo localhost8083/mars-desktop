@@ -353,7 +353,7 @@ export function parsedXmlText(xml: string, tagSeparator: string): string {
 }
 
 export function decodedXmlValue(value: string): string {
-  return parsedXmlText(`<omnirush-value>${value}</omnirush-value>`, "");
+  return parsedXmlText(`<mars-value>${value}</mars-value>`, "");
 }
 
 export function xmlText(xml: string): string {

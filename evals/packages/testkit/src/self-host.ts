@@ -5,12 +5,12 @@ import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { allocateFreePorts } from "@omnirush/cdp";
-import { SkipError, ephemeralDatabaseName, localMysqlIsRunning, localRedisIsRunning, trustedOrigins } from "@omnirush/env";
-import { freePort, killLocalPid } from "@omnirush/hosts";
+import { allocateFreePorts } from "@mars/cdp";
+import { SkipError, ephemeralDatabaseName, localMysqlIsRunning, localRedisIsRunning, trustedOrigins } from "@mars/env";
+import { freePort, killLocalPid } from "@mars/hosts";
 import type { ChildProcess } from "node:child_process";
-import type { DenRef } from "@omnirush/behaviors";
-import type { DbHandle, Place } from "@omnirush/env";
+import type { DenRef } from "@mars/behaviors";
+import type { DbHandle, Place } from "@mars/env";
 
 const execFileAsync = promisify(execFile);
 const REPO_ROOT = fileURLToPath(new URL("../../../..", import.meta.url));
@@ -58,7 +58,7 @@ function spawnService(
   logPath: string,
 ): SpawnedService {
   const logFd = openSync(logPath, "a");
-  const prepared = process.env.OMNIRUSH_EVAL_DEN_RUNTIME_PREPARED === "1";
+  const prepared = process.env.MARS_EVAL_DEN_RUNTIME_PREPARED === "1";
   const args = prepared
     ? label === "den-api"
       ? ["--filter", "@omnirush-ee/den-api", "exec", "tsx", "src/main.ts"]
@@ -113,7 +113,7 @@ async function waitForAuthProbe(ref: DenRef, service: SpawnedService): Promise<v
       const response = await fetch(url, {
         method: "POST",
         headers: { "content-type": "application/json", origin: ref.webUrl },
-        body: JSON.stringify({ email: `probe-${Date.now()}@omnirush.test`, password: "not-a-real-password" }),
+        body: JSON.stringify({ email: `probe-${Date.now()}@mars.test`, password: "not-a-real-password" }),
         signal: AbortSignal.timeout(5_000),
       });
       if (response.status !== 403 && response.status < 500) return;
@@ -129,7 +129,7 @@ async function waitForAuthProbe(ref: DenRef, service: SpawnedService): Promise<v
 // mirrored from server.ts (keep in sync)
 async function runDbPush(databaseUrl: string): Promise<void> {
   try {
-    const commands = process.env.OMNIRUSH_EVAL_DEN_RUNTIME_PREPARED === "1"
+    const commands = process.env.MARS_EVAL_DEN_RUNTIME_PREPARED === "1"
       ? [
           ["--filter", "@omnirush-ee/den-db", "exec", "node", "--import", "tsx", "./node_modules/drizzle-kit/bin.cjs", "push", "--config", "drizzle.config.ts"],
           ["--filter", "@omnirush-ee/den-db", "exec", "node", "--import", "tsx", "scripts/ensure-schema-repairs.ts"],
@@ -158,16 +158,16 @@ async function runDbPush(databaseUrl: string): Promise<void> {
 // mirrored from server.ts (keep in sync)
 async function stopServices(services: SpawnedService[]): Promise<void> {
   for (const service of services) {
-    await killLocalPid(service.pid, { log: (line) => console.error(`[omnirush/testkit] ${line}`) })
-      .catch((error: unknown) => console.error(`[omnirush/testkit] ${service.label} cleanup failed: ${messageText(error)}`));
+    await killLocalPid(service.pid, { log: (line) => console.error(`[mars/testkit] ${line}`) })
+      .catch((error: unknown) => console.error(`[mars/testkit] ${service.label} cleanup failed: ${messageText(error)}`));
     await freePort(service.port)
-      .catch((error: unknown) => console.error(`[omnirush/testkit] ${service.label} port cleanup failed: ${messageText(error)}`));
+      .catch((error: unknown) => console.error(`[mars/testkit] ${service.label} port cleanup failed: ${messageText(error)}`));
   }
 }
 
 export async function selfHostServer(options: SelfHostServerOptions): Promise<SelfHostDen & AsyncDisposable> {
   if (options.place.kind === "daytona") {
-    throw new SkipError("selfHostServer requires local placement; unset OMNIRUSH_EVAL_DAYTONA");
+    throw new SkipError("selfHostServer requires local placement; unset MARS_EVAL_DAYTONA");
   }
   if (!await localMysqlIsRunning()) {
     throw new Error("Local Den requires MySQL on 127.0.0.1:3306. Run: pnpm dev:den:mysql");
@@ -179,7 +179,7 @@ export async function selfHostServer(options: SelfHostServerOptions): Promise<Se
   const services: SpawnedService[] = [];
   let database: DbHandle | undefined;
   try {
-    database = await options.place.db(ephemeralDatabaseName("omnirush_selfhost_eval"));
+    database = await options.place.db(ephemeralDatabaseName("mars_selfhost_eval"));
     await runDbPush(database.url);
     const [apiPort, webPort] = await allocateFreePorts(2);
     if (apiPort === undefined || webPort === undefined) throw new Error("Could not allocate Den API/Web ports.");
@@ -210,7 +210,7 @@ export async function selfHostServer(options: SelfHostServerOptions): Promise<Se
       DEN_SINGLE_ORG_ALLOW_PUBLIC_SIGNUP: String(options.allowPublicSignup ?? false),
       DEN_REQUIRE_EMAIL_VERIFICATION: "false",
       DEN_PASSWORD_BREACH_SCREENING_ENABLED: "false",
-      OMNIRUSH_DEV_MODE: "1",
+      MARS_DEV_MODE: "1",
       PROVISIONER_MODE: "stub",
     };
 
@@ -242,7 +242,7 @@ export async function selfHostServer(options: SelfHostServerOptions): Promise<Se
         disposed = true;
         await stopServices(services);
         await database?.drop().catch((error: unknown) => {
-          console.error(`[omnirush/testkit] ephemeral database cleanup failed: ${messageText(error)}`);
+          console.error(`[mars/testkit] ephemeral database cleanup failed: ${messageText(error)}`);
         });
       },
     };

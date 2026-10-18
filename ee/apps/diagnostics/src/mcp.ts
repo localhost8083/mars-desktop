@@ -1,4 +1,4 @@
-import { EGRESS_DIAGNOSTIC_RUN_HEADER } from "@omnirush/types/den/egress-diagnostics"
+import { EGRESS_DIAGNOSTIC_RUN_HEADER } from "@mars/types/den/egress-diagnostics"
 import { diagnosticsConfig, validateProductionConfig } from "./config"
 import { mcpAuthorizationSubject } from "./auth"
 import {

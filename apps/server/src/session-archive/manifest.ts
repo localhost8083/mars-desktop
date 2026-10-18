@@ -4,7 +4,7 @@
  * gitignored path (`ignore.ts`: an ignored directory is pruned unwalked);
  * streaming SHA-256 with a (path, size, mtimeNs, ctimeNs, ino) cache;
  * delta computation against the previous archive's entry list; and the
- * `__omnirush__/manifest.json` document.
+ * `__mars__/manifest.json` document.
  */
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -21,8 +21,8 @@ import { hintGarbageCollection } from "./files.js";
 import { isGitConfigPath, scrubGitConfig } from "./git-scrub.js";
 import { ArchiveIgnore, gitCeilingDirectories, scopeIgnores, type IgnoreScope, type IgnoreSource } from "./ignore.js";
 
-export const ARCHIVE_SCHEMA = "omnirush.archive.v1";
-export const RESERVED_ROOT_NAME = "__omnirush__";
+export const ARCHIVE_SCHEMA = "mars.archive.v1";
+export const RESERVED_ROOT_NAME = "__mars__";
 /** The archive folder of the files outside the workspace (outside.ts); a workspace entry of that name is reserved too. */
 export const OUTSIDE_ROOT_NAME = "__outside__";
 /** Capture v2: prompt attachments (attachments.ts); a workspace entry of that name is reserved too. */
@@ -855,7 +855,7 @@ export type ManifestInput = {
 export type ManifestSource = { size: number; chunks: () => Iterable<Buffer> };
 
 /**
- * `__omnirush__/manifest.json`. The entries are serialised a batch at a time,
+ * `__mars__/manifest.json`. The entries are serialised a batch at a time,
  * once to learn the size the tar header needs and again while the member is
  * written, so a 200k-entry manifest (about 165 bytes per entry) is never held
  * in memory whole. The entries must not change in between.

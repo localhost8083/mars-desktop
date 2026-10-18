@@ -11,8 +11,8 @@ import {
   type ReactNode,
 } from "react";
 import { MCP_QUICK_CONNECT } from "../../../app/constants";
-import { isOmniRushExtensionEnabled, OMNIRUSH_EXTENSION_STATE_CHANGED } from "../settings/extension-state";
-import { desktopPolicyKeys } from "@omnirush/types/den/desktop-policies";
+import { isMarsExtensionEnabled, MARS_EXTENSION_STATE_CHANGED } from "../settings/extension-state";
+import { desktopPolicyKeys } from "@mars/types/den/desktop-policies";
 
 import {
   checkDesktopAppRestriction,
@@ -32,13 +32,13 @@ import {
   type DenDesktopConfig,
 } from "../../../app/lib/den";
 import { applyBrandAppName, applyBrandIcon, getBrandIconState } from "../../../app/lib/desktop";
-import { createOmniRushServerClient } from "../../../app/lib/omnirush-server";
+import { createMarsServerClient } from "../../../app/lib/mars-server";
 import {
   denSessionUpdatedEvent,
   denSettingsChangedEvent,
 } from "../../../app/lib/den-session-events";
 import { isDesktopRuntime } from "../../../app/lib/runtime-env";
-import { resolveOmniRushConnection } from "../../shell/omnirush-connection";
+import { resolveMarsConnection } from "../../shell/mars-connection";
 import {
   createConnectPolicyReconciler,
   type ConnectPolicyReconciler,
@@ -104,7 +104,7 @@ export function resolveConnectStateToPush(config: DenDesktopConfig): boolean | n
  * be reapplied to the new generation.
  */
 export async function resolveConnectPolicyTarget(): Promise<ConnectPolicyTarget | null> {
-  const connection = await resolveOmniRushConnection();
+  const connection = await resolveMarsConnection();
   if (!connection.normalizedBaseUrl || !connection.resolvedHostToken) return null;
   const { normalizedBaseUrl, resolvedToken, resolvedHostToken } = connection;
   // The desktop runtime reports a monotonic per-start generation; remote or
@@ -113,7 +113,7 @@ export async function resolveConnectPolicyTarget(): Promise<ConnectPolicyTarget 
   return {
     key: `${normalizedBaseUrl}\u0000${resolvedHostToken}\u0000${generation ?? ""}`,
     apply: async (connectEnabled) => {
-      await createOmniRushServerClient({
+      await createMarsServerClient({
         baseUrl: normalizedBaseUrl,
         token: resolvedToken,
         hostToken: resolvedHostToken,
@@ -240,13 +240,13 @@ export function DesktopConfigProvider({ children }: DesktopConfigProviderProps) 
 
   useEffect(() => {
     const syncBrowserControl = () => {
-      const browser = MCP_QUICK_CONNECT.find((item) => item.id === "omnirush-browser");
-      const enabled = !!browser && isOmniRushExtensionEnabled(browser) && config.allowBuiltInExtensions !== false;
-      void window.__OMNIRUSH_ELECTRON__?.browser?.setControlEnabled?.(enabled);
+      const browser = MCP_QUICK_CONNECT.find((item) => item.id === "mars-browser");
+      const enabled = !!browser && isMarsExtensionEnabled(browser) && config.allowBuiltInExtensions !== false;
+      void window.__MARS_ELECTRON__?.browser?.setControlEnabled?.(enabled);
     };
     syncBrowserControl();
-    window.addEventListener(OMNIRUSH_EXTENSION_STATE_CHANGED, syncBrowserControl);
-    return () => window.removeEventListener(OMNIRUSH_EXTENSION_STATE_CHANGED, syncBrowserControl);
+    window.addEventListener(MARS_EXTENSION_STATE_CHANGED, syncBrowserControl);
+    return () => window.removeEventListener(MARS_EXTENSION_STATE_CHANGED, syncBrowserControl);
   }, [config.allowBuiltInExtensions]);
 
   const applyDesktopConfigActions = useCallback((latestConfig: DenDesktopConfig) => {
@@ -274,7 +274,7 @@ export function DesktopConfigProvider({ children }: DesktopConfigProviderProps) 
     const brandAppNameAction = actions.find((action) => action.item === "brandAppName");
     if (brandAppNameAction) {
       const appName = typeof brandAppNameAction.nextValue === "string" ? brandAppNameAction.nextValue : null;
-      document.title = appName ?? "omnirush.ai";
+      document.title = appName ?? "marsai.click";
       void applyBrandAppName(appName).catch(() => null);
     }
 
@@ -452,7 +452,7 @@ export function DesktopConfigProvider({ children }: DesktopConfigProviderProps) 
   // Reconciler lifecycle: created once per mount and rearmed by runtime
   // observations. Every renderer path that (re)publishes the local server —
   // boot, engine reload, workspace reconnect, debug restart — dispatches
-  // "omnirush-server-settings-changed", which is the runtime-generation
+  // "mars-server-settings-changed", which is the runtime-generation
   // observation channel.
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -463,9 +463,9 @@ export function DesktopConfigProvider({ children }: DesktopConfigProviderProps) 
     });
     connectPolicyReconcilerRef.current = reconciler;
     const handleRuntimeChanged = () => reconciler.notifyTargetChanged();
-    window.addEventListener("omnirush-server-settings-changed", handleRuntimeChanged);
+    window.addEventListener("mars-server-settings-changed", handleRuntimeChanged);
     return () => {
-      window.removeEventListener("omnirush-server-settings-changed", handleRuntimeChanged);
+      window.removeEventListener("mars-server-settings-changed", handleRuntimeChanged);
       reconciler.dispose();
       if (connectPolicyReconcilerRef.current === reconciler) {
         connectPolicyReconcilerRef.current = null;
@@ -498,17 +498,17 @@ export function DesktopConfigProvider({ children }: DesktopConfigProviderProps) 
         normalizeDenDesktopConfig(configPayload),
       );
     };
-    Object.defineProperty(window, "__omnirushApplyDesktopConfig", { value: bridge, configurable: true });
+    Object.defineProperty(window, "__marsApplyDesktopConfig", { value: bridge, configurable: true });
     const refreshBridge = (configPayload: unknown) => {
       devRefreshDesktopConfigRef.current = normalizeDenDesktopConfig(configPayload);
     };
-    Object.defineProperty(window, "__omnirushSetDesktopConfigRefreshResult", {
+    Object.defineProperty(window, "__marsSetDesktopConfigRefreshResult", {
       value: refreshBridge,
       configurable: true,
     });
     return () => {
-      Object.defineProperty(window, "__omnirushApplyDesktopConfig", { value: undefined, configurable: true });
-      Object.defineProperty(window, "__omnirushSetDesktopConfigRefreshResult", { value: undefined, configurable: true });
+      Object.defineProperty(window, "__marsApplyDesktopConfig", { value: undefined, configurable: true });
+      Object.defineProperty(window, "__marsSetDesktopConfigRefreshResult", { value: undefined, configurable: true });
     };
   }, [applyDesktopConfigActions]);
 

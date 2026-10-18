@@ -13,17 +13,17 @@ import { externalFetch } from "./server-fetch.js";
 import type { ServerConfig, WorkspaceInfo } from "./types.js";
 import { createWorkspaceKvStore } from "./workspace-kv-store.js";
 
-export const CONNECT_MCP_SERVER_INDEX_URI = "omnirush://connect/mcp-servers/index.json";
-export const CONNECT_MCP_SERVER_INDEX_SCHEMA_VERSION = "omnirush.connect/mcp-servers/1";
-export const CONNECT_MCP_APP_HOST_NAME_PREFIX = "omnirush-app-host-connect-";
-export const CONNECT_MCP_SERVER_NAME_PREFIX = "omnirush-connect-";
+export const CONNECT_MCP_SERVER_INDEX_URI = "mars://connect/mcp-servers/index.json";
+export const CONNECT_MCP_SERVER_INDEX_SCHEMA_VERSION = "mars.connect/mcp-servers/1";
+export const CONNECT_MCP_APP_HOST_NAME_PREFIX = "mars-app-host-connect-";
+export const CONNECT_MCP_SERVER_NAME_PREFIX = "mars-connect-";
 /**
  * Model-facing OpenCode MCP entries for connections an administrator exposed
- * directly. Distinct from the legacy `omnirush-connect-` prefix, which every
+ * directly. Distinct from the legacy `mars-connect-` prefix, which every
  * projection filter still strips, so a stale legacy row can never resurface.
  */
-export const CONNECT_DIRECT_MCP_SERVER_NAME_PREFIX = "omnirush-direct-";
-export const CONNECT_MCP_APP_HOST_CAPABILITY_HEADER = "x-omnirush-mcp-client-capabilities";
+export const CONNECT_DIRECT_MCP_SERVER_NAME_PREFIX = "mars-direct-";
+export const CONNECT_MCP_APP_HOST_CAPABILITY_HEADER = "x-mars-mcp-client-capabilities";
 export const CONNECT_MCP_APP_HOST_CAPABILITY = "mcp-app-host-v1";
 
 const indexSchema = z.object({
@@ -42,16 +42,16 @@ const appHostCredentialSchema = z.object({
   origin: z.string().url(),
 });
 
-export type OmniRushConnectMcpServerIndex = z.output<typeof indexSchema>;
+export type MarsConnectMcpServerIndex = z.output<typeof indexSchema>;
 /** Index shape as Den publishes it; `exposeDirectly` is absent from older Den releases and defaults to false. */
-export type OmniRushConnectMcpServerIndexInput = z.input<typeof indexSchema>;
+export type MarsConnectMcpServerIndexInput = z.input<typeof indexSchema>;
 
-const emptyIndex = (): OmniRushConnectMcpServerIndex => ({
+const emptyIndex = (): MarsConnectMcpServerIndex => ({
   schemaVersion: CONNECT_MCP_SERVER_INDEX_SCHEMA_VERSION,
   servers: [],
 });
 
-const appHostCatalogStore = createWorkspaceKvStore<OmniRushConnectMcpServerIndex>({
+const appHostCatalogStore = createWorkspaceKvStore<MarsConnectMcpServerIndex>({
   tableName: "connect_mcp_app_host_catalogs",
   valueColumn: "catalog_json",
   parse: (json) => {
@@ -65,9 +65,9 @@ const appHostCatalogStore = createWorkspaceKvStore<OmniRushConnectMcpServerIndex
   serialize: (value) => JSON.stringify(value),
 });
 
-type OmniRushConnectMcpAppHostCredential = z.infer<typeof appHostCredentialSchema>;
+type MarsConnectMcpAppHostCredential = z.infer<typeof appHostCredentialSchema>;
 
-const appHostAuthorizationStore = createWorkspaceKvStore<OmniRushConnectMcpAppHostCredential | null>({
+const appHostAuthorizationStore = createWorkspaceKvStore<MarsConnectMcpAppHostCredential | null>({
   tableName: "connect_mcp_app_host_authorizations",
   valueColumn: "authorization_json",
   parse: (json) => {
@@ -99,7 +99,7 @@ function endpointOrigin(value: unknown): string | null {
 
 function normalizeAppHostProxyUrl(
   cloudMcpUrl: unknown,
-  server: OmniRushConnectMcpServerIndex["servers"][number],
+  server: MarsConnectMcpServerIndex["servers"][number],
 ): string | null {
   if (typeof cloudMcpUrl !== "string") return null;
   let cloudEndpoint: URL;
@@ -134,11 +134,11 @@ async function trustedAppHostCloudEndpoint(cloudMcp: Record<string, unknown>): P
     return false;
   }
   if (endpoint.username || endpoint.password || endpoint.search || endpoint.hash) return false;
-  // No built-in hosted origins: omnirush.ai runs no hosted Den and the
+  // No built-in hosted origins: marsai.click runs no hosted Den and the
   // retired hosted Den domains are not ours. Only loopback (development) and
   // the administrator-activated Den origin may receive the private App-host
   // credential.
-  if (process.env.OMNIRUSH_DEV_MODE === "1" && isLoopbackHostname(endpoint.hostname)) return true;
+  if (process.env.MARS_DEV_MODE === "1" && isLoopbackHostname(endpoint.hostname)) return true;
   const activatedEnterpriseOrigin = await readActivatedEnterpriseDenOrigin();
   return activatedEnterpriseOrigin !== null && endpoint.origin === activatedEnterpriseOrigin;
 }
@@ -170,15 +170,15 @@ function modelFacingHeaders(cloudMcp: Record<string, unknown>): Record<string, s
 /**
  * Model-facing runtime entries for the directly exposed connections in an
  * index. They reuse the ordinary member credential already carried by the
- * `omnirush-cloud` entry; the private App-host credential never leaves the
- * App host. `oauth: false` matches the `omnirush-cloud` entry so an expired
+ * `mars-cloud` entry; the private App-host credential never leaves the
+ * App host. `oauth: false` matches the `mars-cloud` entry so an expired
  * bearer token during rotation yields a plain 401 instead of the engine
  * starting an interactive OAuth flow. Without a member credential there is
  * nothing to project.
  */
 export function directConnectMcpRuntimeEntries(
   cloudMcp: Record<string, unknown>,
-  index: OmniRushConnectMcpServerIndex,
+  index: MarsConnectMcpServerIndex,
 ): Record<string, Record<string, unknown>> {
   const headers = modelFacingHeaders(cloudMcp);
   if (!headers) return {};
@@ -193,23 +193,23 @@ export function directConnectMcpRuntimeEntries(
     }]));
 }
 
-export async function readOmniRushConnectMcpAppHostCatalog(
+export async function readMarsConnectMcpAppHostCatalog(
   config: ServerConfig,
   workspaceId: string,
-): Promise<OmniRushConnectMcpServerIndex> {
+): Promise<MarsConnectMcpServerIndex> {
   return await appHostCatalogStore.get(config, workspaceId) ?? emptyIndex();
 }
 
-export async function writeOmniRushConnectMcpAppHostCatalog(
+export async function writeMarsConnectMcpAppHostCatalog(
   config: ServerConfig,
   workspaceId: string,
-  catalog: OmniRushConnectMcpServerIndexInput,
+  catalog: MarsConnectMcpServerIndexInput,
 ): Promise<void> {
   const parsed = indexSchema.safeParse(catalog);
   await appHostCatalogStore.set(config, workspaceId, parsed.success ? parsed.data : emptyIndex());
 }
 
-export async function readOmniRushConnectMcpAppHostAuthorization(
+export async function readMarsConnectMcpAppHostAuthorization(
   config: ServerConfig,
   workspaceId: string,
   endpointUrl: string,
@@ -220,7 +220,7 @@ export async function readOmniRushConnectMcpAppHostAuthorization(
   return privateAppHostAuthorization(credential.authorization);
 }
 
-export async function writeOmniRushConnectMcpAppHostAuthorization(
+export async function writeMarsConnectMcpAppHostAuthorization(
   config: ServerConfig,
   workspaceId: string,
   value: string,
@@ -235,23 +235,23 @@ export async function writeOmniRushConnectMcpAppHostAuthorization(
   );
 }
 
-export async function findOmniRushConnectMcpAppHostServer(
+export async function findMarsConnectMcpAppHostServer(
   config: ServerConfig,
   workspaceId: string,
   reference: { connectionId?: string; serverName?: string },
-): Promise<OmniRushConnectMcpServerIndex["servers"][number] | null> {
-  const catalog = await readOmniRushConnectMcpAppHostCatalog(config, workspaceId);
+): Promise<MarsConnectMcpServerIndex["servers"][number] | null> {
+  const catalog = await readMarsConnectMcpAppHostCatalog(config, workspaceId);
   return catalog.servers.find((server) => (
     (reference.connectionId !== undefined && server.connectionId === reference.connectionId)
     || (reference.serverName !== undefined && connectMcpAppHostName(server.connectionId) === reference.serverName)
   )) ?? null;
 }
 
-export async function readOmniRushConnectMcpServerIndex(
+export async function readMarsConnectMcpServerIndex(
   cloudMcp: Record<string, unknown>,
   appHostAuthorization: string,
   fetcher: McpFetch = externalFetch,
-): Promise<OmniRushConnectMcpServerIndex | null> {
+): Promise<MarsConnectMcpServerIndex | null> {
   if (!await trustedAppHostCloudEndpoint(cloudMcp)) return null;
   const text = await readMcpResourceText({
     config: {
@@ -263,12 +263,12 @@ export async function readOmniRushConnectMcpServerIndex(
     },
     uri: CONNECT_MCP_SERVER_INDEX_URI,
     fetcher,
-    clientName: "omnirush-server-connect-mcp-catalog",
+    clientName: "mars-server-connect-mcp-catalog",
   });
   if (text === null) return null;
   const parsed = indexSchema.safeParse(JSON.parse(text));
   if (!parsed.success) return null;
-  const servers: OmniRushConnectMcpServerIndex["servers"] = [];
+  const servers: MarsConnectMcpServerIndex["servers"] = [];
   for (const server of parsed.data.servers) {
     const url = normalizeAppHostProxyUrl(cloudMcp.url, server);
     if (!url) return null;
@@ -282,27 +282,27 @@ export async function readOmniRushConnectMcpServerIndex(
  * cached catalog may be stale. Unlike startup reconciliation, an unavailable
  * opportunistic refresh preserves the last known-good catalog.
  */
-export async function refreshOmniRushConnectMcpAppHostCatalog(
+export async function refreshMarsConnectMcpAppHostCatalog(
   config: ServerConfig,
   workspaceId: string,
   fetcher?: McpFetch,
 ): Promise<{ status: "synced" | "unavailable"; appHostNames: string[] }> {
-  const cloudMcp = await readGlobalRuntimeMcpConfig(config, "omnirush-cloud")
-    ?? await readRuntimeMcpConfig(config, workspaceId, "omnirush-cloud");
+  const cloudMcp = await readGlobalRuntimeMcpConfig(config, "mars-cloud")
+    ?? await readRuntimeMcpConfig(config, workspaceId, "mars-cloud");
   if (!cloudMcp || !await trustedAppHostCloudEndpoint(cloudMcp)) {
     return { status: "unavailable", appHostNames: [] };
   }
-  const appHostAuthorization = await readOmniRushConnectMcpAppHostAuthorization(
+  const appHostAuthorization = await readMarsConnectMcpAppHostAuthorization(
     config,
     workspaceId,
     String(cloudMcp.url),
   );
   if (!appHostAuthorization) return { status: "unavailable", appHostNames: [] };
 
-  const index = await readOmniRushConnectMcpServerIndex(cloudMcp, appHostAuthorization, fetcher).catch(() => null);
+  const index = await readMarsConnectMcpServerIndex(cloudMcp, appHostAuthorization, fetcher).catch(() => null);
   if (!index) return { status: "unavailable", appHostNames: [] };
 
-  await writeOmniRushConnectMcpAppHostCatalog(config, workspaceId, index);
+  await writeMarsConnectMcpAppHostCatalog(config, workspaceId, index);
   return {
     status: "synced",
     appHostNames: index.servers.map((server) => connectMcpAppHostName(server.connectionId)).sort(),
@@ -312,10 +312,10 @@ export async function refreshOmniRushConnectMcpAppHostCatalog(
 /**
  * Keeps provider descriptors private to the Desktop App host, projects only the
  * connections an administrator exposed directly into the model-facing runtime,
- * and removes any legacy OmniRush.ai-owned provider endpoints. User-authored MCP
+ * and removes any legacy MarsAI-owned provider endpoints. User-authored MCP
  * configurations and durable provider records are untouched.
  */
-export async function reconcileOmniRushConnectMcpServers(input: {
+export async function reconcileMarsConnectMcpServers(input: {
   config: ServerConfig;
   workspace: WorkspaceInfo;
   cloudMcp: Record<string, unknown>;
@@ -324,7 +324,7 @@ export async function reconcileOmniRushConnectMcpServers(input: {
 }): Promise<{ status: "synced" | "unavailable"; appHostNames: string[]; directNames: string[]; removedNames: string[] }> {
   const trustedCloudEndpoint = await trustedAppHostCloudEndpoint(input.cloudMcp);
   if (trustedCloudEndpoint && input.appHostAuthorization !== undefined) {
-    await writeOmniRushConnectMcpAppHostAuthorization(
+    await writeMarsConnectMcpAppHostAuthorization(
       input.config,
       input.workspace.id,
       input.appHostAuthorization,
@@ -332,17 +332,17 @@ export async function reconcileOmniRushConnectMcpServers(input: {
     );
   }
   const appHostAuthorization = trustedCloudEndpoint
-    ? await readOmniRushConnectMcpAppHostAuthorization(
+    ? await readMarsConnectMcpAppHostAuthorization(
       input.config,
       input.workspace.id,
       String(input.cloudMcp.url),
     )
     : null;
   const index = trustedCloudEndpoint && appHostAuthorization
-    ? await readOmniRushConnectMcpServerIndex(input.cloudMcp, appHostAuthorization, input.fetcher).catch(() => null)
+    ? await readMarsConnectMcpServerIndex(input.cloudMcp, appHostAuthorization, input.fetcher).catch(() => null)
     : null;
   const privateCatalog = index ?? emptyIndex();
-  await writeOmniRushConnectMcpAppHostCatalog(input.config, input.workspace.id, privateCatalog);
+  await writeMarsConnectMcpAppHostCatalog(input.config, input.workspace.id, privateCatalog);
 
   // Without a fresh index, fail closed: a connection whose direct exposure was
   // revoked must not linger in the model-facing runtime on a stale catalog.

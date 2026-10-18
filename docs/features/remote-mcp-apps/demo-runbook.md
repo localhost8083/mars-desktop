@@ -22,16 +22,16 @@ From a clean checkout of the exact branch under test:
 ```bash
 pnpm install --frozen-lockfile
 pnpm --dir evals install --frozen-lockfile
-pnpm --filter @omnirush/types build
+pnpm --filter @mars/types build
 pnpm --filter @omnirush-ee/den-db build
-pnpm --filter @omnirush/email build
+pnpm --filter @mars/email build
 pnpm dev:den:mysql
 ```
 
 ## Run the exact-head demo tape
 
 ```bash
-OMNIRUSH_EVAL_E2E_TESTS=1 pnpm evals:e2e remote-mcp-apps
+MARS_EVAL_E2E_TESTS=1 pnpm evals:e2e remote-mcp-apps
 ```
 
 A valid required proof ends with one passing test, zero failed tests, zero
@@ -106,5 +106,5 @@ ordinary Connect when Apps are disabled.
   failure.
 
 The hosted SOL gallery may be checked separately as an external observation,
-but its reachability is not OmniRush.ai compatibility proof and it is not part of
+but its reachability is not MarsAI compatibility proof and it is not part of
 this required demo.

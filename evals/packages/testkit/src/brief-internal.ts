@@ -1,4 +1,4 @@
-import { resolvePlace } from "@omnirush/env";
+import { resolvePlace } from "@mars/env";
 
 export interface TestContext {
   place: ReturnType<typeof resolvePlace>;
@@ -15,6 +15,6 @@ export function setBriefTestRegistrar(registrar: RegisterTest): void {
 }
 
 export function getBriefTestRegistrar(): RegisterTest {
-  if (!registerTest) throw new Error("briefTest must be imported from @omnirush/testkit.");
+  if (!registerTest) throw new Error("briefTest must be imported from @mars/testkit.");
   return registerTest;
 }

@@ -3,7 +3,7 @@ import { applyEnginePath } from "../engine-shell-path.js";
 // Plugin.define is the identity function in the pinned SDK. The structural
 // contract avoids loading either engine's SDK into the other engine.
 export default {
-  id: "omnirush.managed-policy",
+  id: "mars.managed-policy",
   async setup(ctx: {
     directory?: string;
     tool: { hook(name: "execute.before", callback: (event: { tool: string; input: unknown; callID?: string; sessionID?: string }) => Promise<void>): Promise<unknown> };

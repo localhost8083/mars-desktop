@@ -1,23 +1,23 @@
 ---
 title: "Enterprise desktop deployment"
-description: "Deploy the OmniRush.ai Enterprise binary with your existing software distribution, optionally pushing one configuration file through MDM."
+description: "Deploy the MarsAI Enterprise binary with your existing software distribution, optionally pushing one configuration file through MDM."
 ---
 
-Enterprise deployment is the standard **OmniRush.ai Enterprise binary** plus an optional MDM push of one configuration file. There is no customer-specific installer build, no wrapping, and no repackaging — the signed release artifacts are never modified, so normal macOS and Windows signature verification is preserved.
+Enterprise deployment is the standard **MarsAI Enterprise binary** plus an optional MDM push of one configuration file. There is no customer-specific installer build, no wrapping, and no repackaging — the signed release artifacts are never modified, so normal macOS and Windows signature verification is preserved.
 
 ## The enterprise binary
 
-OmniRush.ai ships a dedicated enterprise distribution alongside the public one. Both are published on [GitHub Releases](https://github.com/omnirush-ai/omnirush-gui/releases); enterprise artifacts follow the `enterprise` update channel.
+MarsAI ships a dedicated enterprise distribution alongside the public one. Both are published on [GitHub Releases](https://github.com/mars-ai/mars-gui/releases); enterprise artifacts follow the `enterprise` update channel.
 
 | Platform | Artifact |
 | --- | --- |
-| macOS (Apple Silicon / Intel) | `omnirush-enterprise-mac-arm64-<version>.dmg`, `omnirush-enterprise-mac-x64-<version>.dmg` |
-| Windows (x64 / ARM64) | `omnirush-enterprise-win-x64-<version>.exe`, `omnirush-enterprise-win-arm64-<version>.exe` |
-| Linux | `omnirush-enterprise-linux-x86_64-<version>.AppImage`, `omnirush-enterprise-linux-arm64-<version>.AppImage`, `.tar.gz` variants |
+| macOS (Apple Silicon / Intel) | `mars-enterprise-mac-arm64-<version>.dmg`, `mars-enterprise-mac-x64-<version>.dmg` |
+| Windows (x64 / ARM64) | `mars-enterprise-win-x64-<version>.exe`, `mars-enterprise-win-arm64-<version>.exe` |
+| Linux | `mars-enterprise-linux-x86_64-<version>.AppImage`, `mars-enterprise-linux-arm64-<version>.AppImage`, `.tar.gz` variants |
 
 The enterprise distribution differs from the public build in ways that are baked into the package metadata at build time — not toggled by configuration:
 
-- The product is named **OmniRush.ai Enterprise**.
+- The product is named **MarsAI Enterprise**.
 - Sign-in is always required.
 - **Activation is always required**: before an administrator-provisioned activation completes, the app exposes only the minimal surface needed to accept a connect link and read or write its bootstrap configuration. Chat, tools, and workspace access stay locked.
 - Auto-update follows the `enterprise` release channel, so enterprise installs never pick up public-channel artifacts.
@@ -30,15 +30,15 @@ If you manage the fleet with MDM (Jamf, Intune, or similar), distribute the ente
 
 | OS | Canonical path |
 | --- | --- |
-| Windows | `%LOCALAPPDATA%\omnirush\desktop-bootstrap.json` (`%XDG_CONFIG_HOME%\omnirush\desktop-bootstrap.json` wins if set) |
-| macOS / Linux | `$XDG_CONFIG_HOME/omnirush/desktop-bootstrap.json`, falling back to `~/.config/omnirush/desktop-bootstrap.json` |
+| Windows | `%LOCALAPPDATA%\mars\desktop-bootstrap.json` (`%XDG_CONFIG_HOME%\mars\desktop-bootstrap.json` wins if set) |
+| macOS / Linux | `$XDG_CONFIG_HOME/mars/desktop-bootstrap.json`, falling back to `~/.config/mars/desktop-bootstrap.json` |
 
 ```json
 {
-  "baseUrl": "https://omnirush.example.com",
-  "apiBaseUrl": "https://omnirush.example.com/api/den",
+  "baseUrl": "https://mars.example.com",
+  "apiBaseUrl": "https://mars.example.com/api/den",
   "requireSignin": true,
-  "brandAppName": "Example Corp OmniRush.ai",
+  "brandAppName": "Example Corp MarsAI",
   "writtenAt": "2026-08-20T12:00:00.000Z"
 }
 ```
@@ -54,14 +54,14 @@ If you manage the fleet with MDM (Jamf, Intune, or similar), distribute the ente
 
 Deployment details worth knowing:
 
-- Older builds read a legacy `~/.config/omnirush` path on every OS. Current builds still read it for compatibility; the newest `writtenAt` decides which file applies.
+- Older builds read a legacy `~/.config/mars` path on every OS. Current builds still read it for compatibility; the newest `writtenAt` decides which file applies.
 - Clearing cloud configuration in the app removes bootstrap files entirely, so a fresh MDM-dropped config wins on the next launch.
-- `OMNIRUSH_DESKTOP_BOOTSTRAP_PATH` points a machine at an isolated bootstrap file for testing; legacy global configuration never crosses that boundary.
+- `MARS_DESKTOP_BOOTSTRAP_PATH` points a machine at an isolated bootstrap file for testing; legacy global configuration never crosses that boundary.
 
 ## What you do not push through MDM
 
 - **Activation.** The app writes `enterpriseActivation` into `desktop-bootstrap.json` only after a signed activation claim verifies. Do not provision this record yourself; a hand-written entry is not proof of a provisioned tenant, and the app treats it as incomplete.
-- **Certificates.** The desktop builds its trust bundle from the OS trust stores — Windows machine and user Root/CA stores, and the macOS administrator-controlled System keychains. Deploy enterprise CAs the way you already do; no OmniRush.ai-specific certificate file exists. See [Certificate trust and proxies](/start-here/certificate-trust-and-proxies).
+- **Certificates.** The desktop builds its trust bundle from the OS trust stores — Windows machine and user Root/CA stores, and the macOS administrator-controlled System keychains. Deploy enterprise CAs the way you already do; no MarsAI-specific certificate file exists. See [Certificate trust and proxies](/start-here/certificate-trust-and-proxies).
 - **Desktop policies.** Version pinning and feature policies are delivered by your Den server after sign-in and enforced by the app automatically — no MDM scripting. Manage them in the organization dashboard.
 
 ## Choosing between install links and MDM

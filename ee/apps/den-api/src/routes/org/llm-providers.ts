@@ -1,6 +1,6 @@
 import { declarativeDeleteSchema, declarativeResponses, externalKeyParamsSchema, isDuplicateEntry, type ResourceActionContext, type ResourceOrganizationContext } from "./declarative.js"
 import { and, desc, eq, inArray, isNotNull, isNull, sql } from "@omnirush-ee/den-db/drizzle"
-import { ManagedModelsPolicyError } from "@omnirush/types/den/managed-models-policy"
+import { ManagedModelsPolicyError } from "@mars/types/den/managed-models-policy"
 import {
   AuthUserTable,
   InvitationTable,

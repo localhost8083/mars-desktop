@@ -32,7 +32,7 @@ concurrency:
 jobs:
   plan:
     if: >-
-      github.repository == 'omnirush-ai/omnirush-gui' &&
+      github.repository == 'mars-ai/mars-gui' &&
       (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' ||
       (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_repository.full_name == github.repository))
@@ -171,10 +171,10 @@ jobs:
         env:
           DAYTONA_API_KEY: ${{ secrets.DAYTONA_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          NIGHTLY_MODEL: ${{ vars.OMNIRUSH_EVAL_NIGHTLY_MODEL }}
+          NIGHTLY_MODEL: ${{ vars.MARS_EVAL_NIGHTLY_MODEL }}
           SPEC_SLUG: ${{ matrix.journey.spec }}
           MODEL_KIND: ${{ matrix.journey.model }}
-          OMNIRUSH_EVAL_REF: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          MARS_EVAL_REF: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
         run: |
           set -euo pipefail
 
@@ -183,7 +183,7 @@ jobs:
           else
             MODEL="big-pickle"
           fi
-          OMNIRUSH_EVAL_MODEL="${MODEL}" pnpm evals:e2e "${SPEC_SLUG}" --daytona 2>&1 | tee /tmp/daytona-e2e.log
+          MARS_EVAL_MODEL="${MODEL}" pnpm evals:e2e "${SPEC_SLUG}" --daytona 2>&1 | tee /tmp/daytona-e2e.log
 
       - name: Judge deferred vision claims
         id: vision
@@ -245,9 +245,9 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y xvfb x11-utils libgtk-3-0 libnss3 libasound2t64 libgbm1
-          pnpm --filter @omnirush/types build
+          pnpm --filter @mars/types build
           pnpm --filter @omnirush-ee/den-db build
-          pnpm --filter @omnirush/email build
+          pnpm --filter @mars/email build
           pnpm dev:den:mysql
       - name: Run user journey
         id: run

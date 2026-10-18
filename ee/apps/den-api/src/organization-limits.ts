@@ -1,6 +1,6 @@
 import { and, eq, isNull, sql } from "@omnirush-ee/den-db/drizzle"
 import { MemberTable, OrganizationTable, WorkerTable } from "@omnirush-ee/den-db/schema"
-import { ManagedModelsPolicyError, readOrganizationMetadata } from "@omnirush/types/den/managed-models-policy"
+import { ManagedModelsPolicyError, readOrganizationMetadata } from "@mars/types/den/managed-models-policy"
 import { db } from "./db.js"
 import { updateOrganizationMetadata } from "./organization-metadata.js"
 

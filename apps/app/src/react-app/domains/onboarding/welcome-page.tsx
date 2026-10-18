@@ -1,5 +1,5 @@
 /** @jsxImportSource react */
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Dithering } from "@paper-design/shaders-react";
 
 import { t } from "../../../i18n";
@@ -24,6 +24,17 @@ type WelcomePageProps = {
   showManualFolder?: boolean;
   onTeamSignIn?: () => void;
   onJoinOrganization: () => void;
+  /**
+   * Desktop sign-in gate: when present the app requires a connected MarsAI
+   * account before anything else, so only the two sign-in options are shown
+   * (device sign-in in the browser, or a pasted API key).
+   */
+  gate?: {
+    busy: boolean;
+    error: string | null;
+    onSignIn: () => void;
+    onApiKey: (key: string) => void;
+  } | null;
 };
 
 export function WelcomePage({
@@ -37,10 +48,12 @@ export function WelcomePage({
   showManualFolder,
   onTeamSignIn,
   onJoinOrganization,
+  gate,
 }: WelcomePageProps) {
   const { config: shellConfig } = useShellConfig();
   const appName = shellConfig.appName;
   const { markRouteReady } = useBootState();
+  const [apiKey, setApiKey] = useState("");
 
   // The boot splash overlay stays mounted (and swallows clicks) until the
   // first route marks itself ready. Welcome is a terminal route, so mark it
@@ -76,7 +89,7 @@ export function WelcomePage({
             <div className="relative z-10 w-full max-w-[720px] rounded-3xl border border-border bg-background px-8 pb-12 pt-10 sm:px-16 sm:pb-16 sm:pt-14">
               <div className="flex items-center gap-2.5">
                 <img
-                  src={resolveExtensionIconSrc("/omnirush-mark.png")}
+                  src={resolveExtensionIconSrc("/mars-mark.png")}
                   alt=""
                   width={26}
                   height={26}
@@ -98,48 +111,86 @@ export function WelcomePage({
               </div>
 
               <div className="mt-11 flex flex-col gap-3">
-                {onTeamSignIn ? (
-                  <Button
-                    type="button"
-                    size="lg"
-                    className="h-12 w-full text-[15px] font-semibold"
-                    onClick={onTeamSignIn}
-                    disabled={busy}
-                    data-testid="welcome-team-signin"
-                  >
-                    {t("welcome.sign_in_cloud")}
-                  </Button>
-                ) : null}
+                {gate ? (
+                  <>
+                    <div className="rounded-xl border border-dashed border-border p-3">
+                      <div className="grid gap-2">
+                        <label className="grid gap-2 text-xs font-medium text-muted-foreground">
+                          {t("welcome.mars.api_key")}
+                        </label>
+                        <input
+                          type="password"
+                          className="h-9 rounded-md border border-input bg-background px-3 text-sm font-normal text-foreground outline-none focus:border-ring"
+                          value={apiKey}
+                          onChange={(event) => setApiKey(event.target.value)}
+                          placeholder={t("welcome.mars.api_key_placeholder")}
+                          autoComplete="off"
+                          data-testid="welcome-mars-api-key-input"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {t("welcome.mars.api_key_hint")}
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={gate.busy || !apiKey.trim()}
+                          onClick={() => gate.onApiKey(apiKey.trim())}
+                          data-testid="welcome-mars-api-key-connect"
+                        >
+                          {t("welcome.mars.api_key_connect")}
+                        </Button>
+                      </div>
+                    </div>
+                    {gate.error ? (
+                      <p className="text-center text-xs text-destructive">{gate.error}</p>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    {onTeamSignIn ? (
+                      <Button
+                        type="button"
+                        size="lg"
+                        className="h-12 w-full text-[15px] font-semibold"
+                        onClick={onTeamSignIn}
+                        disabled={busy}
+                        data-testid="welcome-team-signin"
+                      >
+                        {t("welcome.sign_in_cloud")}
+                      </Button>
+                    ) : null}
 
-                <Button
-                  type="button"
-                  size="lg"
-                  variant={onTeamSignIn ? "outline" : "default"}
-                  className="h-12 w-full text-[15px] font-medium"
-                  onClick={onGetStarted}
-                  disabled={busy}
-                  data-testid="welcome-use-without-cloud"
-                >
-                  {busy
-                    ? t("welcome.creating_workspace")
-                    : (getStartedLabel || t("welcome.use_without_cloud"))}
-                </Button>
+                    <Button
+                      type="button"
+                      size="lg"
+                      variant={onTeamSignIn ? "outline" : "default"}
+                      className="h-12 w-full text-[15px] font-medium"
+                      onClick={onGetStarted}
+                      disabled={busy}
+                      data-testid="welcome-use-without-cloud"
+                    >
+                      {busy
+                        ? t("welcome.creating_workspace")
+                        : (getStartedLabel || t("welcome.use_without_cloud"))}
+                    </Button>
 
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-                    onClick={onJoinOrganization}
-                    data-testid="welcome-join-org"
-                  >
-                    <span className="font-medium text-foreground/90">
-                      {t("welcome.join_org")}
-                    </span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {t("welcome.join_org_subtitle")}
-                    </span>
-                  </button>
-                </div>
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        className="w-full rounded-lg px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                        onClick={onJoinOrganization}
+                        data-testid="welcome-join-org"
+                      >
+                        <span className="font-medium text-foreground/90">
+                          {t("welcome.join_org")}
+                        </span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                          {t("welcome.join_org_subtitle")}
+                        </span>
+                      </button>
+                    </div>
+                  </>
+                )}
 
                 {error ? (
                   <p className="text-center text-xs text-destructive">{error}</p>

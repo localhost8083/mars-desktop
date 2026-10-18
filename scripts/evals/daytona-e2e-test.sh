@@ -9,16 +9,16 @@ set -euo pipefail
 cd /workspace
 
 TEST="${1:?E2E test path relative to evals/ is required}"
-LOG_DIR="${OMNIRUSH_E2E_TEST_LOG_DIR:-/workspace/evals/results/e2e-test-run}"
+LOG_DIR="${MARS_E2E_TEST_LOG_DIR:-/workspace/evals/results/e2e-test-run}"
 mkdir -p "$LOG_DIR"
 LOG="$LOG_DIR/$(printf '%s' "$TEST" | tr '/' '-').log"
 exec > >(tee "$LOG") 2>&1
 
 export CI=true
 export DISPLAY="${DISPLAY:-:99}"   # the host component verifies it answers
-export OMNIRUSH_EVAL_E2E_TESTS=1
+export MARS_EVAL_E2E_TESTS=1
 if [ -x "$HOME/mark-verified.sh" ]; then
-  export OMNIRUSH_EVAL_MARK_VERIFIED_CMD="bash $HOME/mark-verified.sh {email}"
+  export MARS_EVAL_MARK_VERIFIED_CMD="bash $HOME/mark-verified.sh {email}"
 fi
 
 if compgen -G "/daytona-secrets/*.env" > /dev/null; then
@@ -30,7 +30,7 @@ fi
 
 # Den-dependent tests need the stack up. ensureDenStack is idempotent, so this is
 # safe to call repeatedly; it is skipped unless a test asks for it.
-if [ "${OMNIRUSH_E2E_TEST_NEEDS_DEN:-0}" = "1" ]; then
+if [ "${MARS_E2E_TEST_NEEDS_DEN:-0}" = "1" ]; then
   echo "==> Ensuring the Den stack is running"
   export PATH="$HOME/mariadb/bin:$HOME/mariadb/scripts:$PATH"
   node --input-type=module -e 'const m = await import("/workspace/evals/packages/hosts/src/den-stack.ts"); await m.ensureDenStack({ log: (line) => console.log("   " + line), cdpCandidates: [], skipApp: true });'
@@ -39,14 +39,14 @@ fi
 # Den env is only exported when a Den actually answers. Exporting it blindly
 # makes Den-gated tests run against nothing and fail with "fetch failed"
 # instead of skipping with their own honest reason.
-DEN_API_CANDIDATE="${OMNIRUSH_EVAL_DEN_API_URL:-http://127.0.0.1:8790}"
+DEN_API_CANDIDATE="${MARS_EVAL_DEN_API_URL:-http://127.0.0.1:8790}"
 if curl -sf -m 3 -o /dev/null "$DEN_API_CANDIDATE/health"; then
-  export OMNIRUSH_EVAL_DEN_API_URL="$DEN_API_CANDIDATE"
-  export OMNIRUSH_EVAL_DEN_WEB_URL="${OMNIRUSH_EVAL_DEN_WEB_URL:-http://localhost:3005}"
-  echo "==> Den answers at $OMNIRUSH_EVAL_DEN_API_URL"
+  export MARS_EVAL_DEN_API_URL="$DEN_API_CANDIDATE"
+  export MARS_EVAL_DEN_WEB_URL="${MARS_EVAL_DEN_WEB_URL:-http://localhost:3005}"
+  echo "==> Den answers at $MARS_EVAL_DEN_API_URL"
 else
-  unset OMNIRUSH_EVAL_DEN_API_URL OMNIRUSH_EVAL_DEN_WEB_URL
-  echo "==> No Den running; Den-gated tests will skip (set OMNIRUSH_E2E_TEST_NEEDS_DEN=1 to start one)"
+  unset MARS_EVAL_DEN_API_URL MARS_EVAL_DEN_WEB_URL
+  echo "==> No Den running; Den-gated tests will skip (set MARS_E2E_TEST_NEEDS_DEN=1 to start one)"
 fi
 
 pnpm --dir evals install

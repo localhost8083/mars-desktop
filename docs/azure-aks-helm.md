@@ -1,23 +1,23 @@
-# Deploy OmniRush.ai EE on Azure with AKS and Helm
+# Deploy MarsAI EE on Azure with AKS and Helm
 
 Status: self-host operator guide
 Related: `packaging/helm/omnirush-ee`, `packaging/helm/omnirush-ee/examples/values.azure-ingress.yaml`
 
-This is the recommended Azure path for a first production-like OmniRush.ai EE
+This is the recommended Azure path for a first production-like MarsAI EE
 self-host install. Use Helm on Azure Kubernetes Service with Azure Database for
 MySQL Flexible Server. For web/API exposure, use the AKS application routing
-add-on's managed NGINX Ingress controller so OmniRush.ai gets stable HTTPS host
+add-on's managed NGINX Ingress controller so MarsAI gets stable HTTPS host
 names through a standard Kubernetes `Ingress`.
 
 Azure is moving long-term L7 traffic management toward Gateway API, and
 Microsoft notes that AKS application routing NGINX remains supported for
-production workloads through November 2026. The current OmniRush.ai chart emits
+production workloads through November 2026. The current MarsAI chart emits
 Ingress resources, so managed NGINX application routing is the simplest
 supported Azure path today. Treat Gateway API support as a future chart/platform
 hardening item.
 
 Do not use raw Kubernetes `LoadBalancer` Services as the normal Azure path for
-OmniRush.ai. Azure Load Balancer is a layer 4 load balancer. It is useful for TCP
+MarsAI. Azure Load Balancer is a layer 4 load balancer. It is useful for TCP
 services and quick smoke tests, but it does not provide the browser-facing HTTPS
 and host routing experience customers expect for auth and SSO.
 
@@ -27,22 +27,22 @@ and host routing experience customers expect for auth and SSO.
 - Den Web on port `3005`
 - optional inference service, disabled by default
 - one Azure Database for MySQL Flexible Server database
-- one single-org OmniRush.ai deployment
+- one single-org MarsAI deployment
 - one managed NGINX Ingress entry point for web and API hosts
 
 Azure owns the AKS cluster, node lifecycle, VNet networking, managed ingress
 controller, DNS, TLS certificate storage, MySQL Flexible Server, managed
-identities, and network security groups. The OmniRush.ai Helm chart owns OmniRush.ai
+identities, and network security groups. The MarsAI Helm chart owns MarsAI
 Deployments, Services, ConfigMaps, Secrets, health probes, the optional Ingress,
 and the database migration Job.
 
 ## Use Helm or something else?
 
 Use Helm on AKS for Azure unless the customer explicitly cannot run Kubernetes.
-The OmniRush.ai EE release artifact is already a Helm chart, and AKS gives the
+The MarsAI EE release artifact is already a Helm chart, and AKS gives the
 cleanest fit for separate web/API services, migration Jobs, and later enterprise
 network controls. The gap to fill is Azure-specific infrastructure guidance,
-not a different OmniRush.ai packaging format.
+not a different MarsAI packaging format.
 
 ## Prerequisites
 
@@ -56,8 +56,8 @@ not a different OmniRush.ai packaging format.
   4-vCPU regional limit must either request more quota or intentionally start
   smaller.
 - A real admin email address for the first owner account.
-- A domain you control, such as `omnirush.example.com` and
-  `api.omnirush.example.com`.
+- A domain you control, such as `mars.example.com` and
+  `api.mars.example.com`.
 
 Azure docs used for this guide:
 
@@ -135,7 +135,7 @@ The output should include at least one tier such as `Burstable`,
 `RequestDisallowedByAzure` with `locationineligible`, the subscription cannot
 currently create MySQL Flexible Server in that region. Pick another region and
 rerun this preflight before creating the resource group, VNet, AKS cluster, or
-database. This is an Azure subscription/region eligibility issue, not OmniRush.ai
+database. This is an Azure subscription/region eligibility issue, not MarsAI
 quota usage.
 
 Check regional quota before creating AKS. `Current` shows existing usage and
@@ -217,7 +217,7 @@ production node pool.
 If AKS reports `Standard_DS2_v2 is not allowed` or
 `ErrCode_InsufficientVCPUQuota`, check `az vm list-usage` in the target region.
 Those errors usually mean Azure picked a default node SKU or node count that the
-subscription cannot use, not that OmniRush.ai has consumed quota. Pick an allowed
+subscription cannot use, not that MarsAI has consumed quota. Pick an allowed
 SKU from Azure's error output, lower `AKS_NODE_COUNT` for a disposable test, or
 request regional and VM-family quota increases before production.
 
@@ -232,7 +232,7 @@ platform requirements before following the rest of this guide:
   subnet if required by your design, and the delegated MySQL Flexible Server
   subnet.
 - Region capacity varies. If AKS Automatic reports SKU/capacity failures, retry
-  in a known-good region before debugging the OmniRush.ai chart.
+  in a known-good region before debugging the MarsAI chart.
 
 If you are using an existing AKS cluster, enable the add-on instead:
 
@@ -286,7 +286,7 @@ Azure's CLI can create a private-access server and delegate the MySQL subnet:
 
 ```bash
 export MYSQL_SERVER_NAME=REPLACE_GLOBALLY_UNIQUE_MYSQL_SERVER_NAME
-export MYSQL_ADMIN_USER=omnirush
+export MYSQL_ADMIN_USER=mars
 export MYSQL_ADMIN_PASSWORD=REPLACE_DB_PASSWORD
 
 az mysql flexible-server create \
@@ -333,7 +333,7 @@ az provider show \
 If the provider is `Registered` and the region is listed, repeated
 `InternalServerError`, `ProvisionNotSupportedForRegion`, or
 `locationineligible` responses from `list-skus` or `flexible-server create`
-indicate an Azure MySQL subscription/region eligibility issue before OmniRush.ai or
+indicate an Azure MySQL subscription/region eligibility issue before MarsAI or
 Helm is involved. Switch to a region where `list-skus` succeeds and create AKS
 and MySQL there, or open an Azure Support case with the tracking IDs. For
 disposable chart-only validation, you may temporarily use an in-cluster MySQL
@@ -344,16 +344,16 @@ documented Azure Database path.
 Example database URL:
 
 ```text
-mysql://omnirush:<password>@<server>.mysql.database.azure.com:3306/omnirush_den?sslaccept=accept
+mysql://mars:<password>@<server>.mysql.database.azure.com:3306/omnirush_den?sslaccept=accept
 ```
 
 Use `?sslaccept=accept` for the simple private-MySQL smoke path. This keeps TLS
-on without requiring a cloud CA bundle to be mounted into the OmniRush.ai image.
+on without requiring a cloud CA bundle to be mounted into the MarsAI image.
 Use strict certificate verification later, after you provide the required CA
 bundle, with a hardened value such as `sslmode=verify-ca` or
 `sslmode=verify-full`.
 
-Before installing OmniRush.ai, verify network access from the cluster:
+Before installing MarsAI, verify network access from the cluster:
 
 ```bash
 kubectl run mysql-client \
@@ -395,10 +395,10 @@ To send transactional email, configure SMTP in the same values file:
 ```yaml
 secret:
   values:
-    emailFrom: "OmniRush.ai <no-reply@example.com>"
+    emailFrom: "MarsAI <no-reply@example.com>"
     smtpHost: "smtp.example.com"
     smtpPort: "587"
-    smtpUser: "omnirush@example.com"
+    smtpUser: "mars@example.com"
     smtpPass: "REPLACE_SMTP_PASSWORD"
     smtpSecure: "false"
 ```
@@ -410,7 +410,7 @@ add those keys to the existing Kubernetes Secret referenced by
 `SMTP_HOST`; leave `smtpHost` blank only when SMTP-backed transactional email
 should be disabled.
 
-Use a values file, not a long list of `--set` flags. Several OmniRush.ai values are
+Use a values file, not a long list of `--set` flags. Several MarsAI values are
 comma-separated strings, such as `config.public.corsOrigins`, and plain `--set`
 parsing commonly breaks them.
 
@@ -423,12 +423,12 @@ Before installing, render the chart and verify the migration Job will use your
 Azure MySQL URL:
 
 ```bash
-helm template omnirush-ee oci://ghcr.io/omnirush-ai/charts/omnirush-ee \
-  --version REPLACE_OMNIRUSH_VERSION \
+helm template omnirush-ee oci://ghcr.io/mars-ai/charts/omnirush-ee \
+  --version REPLACE_MARS_VERSION \
   --namespace omnirush-ee \
-  -f values.azure.yaml > /tmp/omnirush-rendered.yaml
+  -f values.azure.yaml > /tmp/mars-rendered.yaml
 
-grep -E 'DATABASE_URL|DEN_BASE_URL|DEN_WEB_PUBLIC_ORIGIN|EMAIL_FROM|SMTP_HOST|SMTP_PORT|SMTP_SECURE' /tmp/omnirush-rendered.yaml
+grep -E 'DATABASE_URL|DEN_BASE_URL|DEN_WEB_PUBLIC_ORIGIN|EMAIL_FROM|SMTP_HOST|SMTP_PORT|SMTP_SECURE' /tmp/mars-rendered.yaml
 ```
 
 Redact secrets before sharing rendered manifests or terminal output.
@@ -443,7 +443,7 @@ ingress:
     - secretName: omnirush-ee-tls
 ```
 
-Create that secret from a certificate that covers both OmniRush.ai hosts:
+Create that secret from a certificate that covers both MarsAI hosts:
 
 ```bash
 kubectl create namespace omnirush-ee
@@ -459,13 +459,13 @@ AKS application routing with Azure DNS and Key Vault, cert-manager, or an
 existing ingress platform. Keep the Kubernetes secret name in the values file
 aligned with whichever controller creates the certificate.
 
-## 5. Install OmniRush.ai
+## 5. Install MarsAI
 
 Published chart releases live in GHCR:
 
 ```bash
-helm upgrade --install omnirush-ee oci://ghcr.io/omnirush-ai/charts/omnirush-ee \
-  --version REPLACE_OMNIRUSH_VERSION \
+helm upgrade --install omnirush-ee oci://ghcr.io/mars-ai/charts/omnirush-ee \
+  --version REPLACE_MARS_VERSION \
   --namespace omnirush-ee \
   --create-namespace \
   -f values.azure.yaml
@@ -518,8 +518,8 @@ migrations:
 Then run Helm and inspect the normal Job logs:
 
 ```bash
-helm upgrade --install omnirush-ee oci://ghcr.io/omnirush-ai/charts/omnirush-ee \
-  --version REPLACE_OMNIRUSH_VERSION \
+helm upgrade --install omnirush-ee oci://ghcr.io/mars-ai/charts/omnirush-ee \
+  --version REPLACE_MARS_VERSION \
   --namespace omnirush-ee \
   --create-namespace \
   -f values.azure.yaml \
@@ -549,8 +549,8 @@ kubectl get service -n app-routing-system nginx
 
 Create DNS records:
 
-- `omnirush.example.com` -> the application routing public IP.
-- `api.omnirush.example.com` -> the same application routing public IP.
+- `mars.example.com` -> the application routing public IP.
+- `api.mars.example.com` -> the same application routing public IP.
 
 For production domains, prefer HTTPS before testing SSO. Browser auth cookies
 and identity-provider callback policies are much easier to validate on stable
@@ -588,8 +588,8 @@ kubectl logs -n omnirush-ee deploy/omnirush-ee-den-web
 Check readiness from your machine:
 
 ```bash
-curl -fsS https://api.omnirush.example.com/ready
-curl -fsS https://omnirush.example.com/api/ready
+curl -fsS https://api.mars.example.com/ready
+curl -fsS https://mars.example.com/api/ready
 ```
 
 ## 9. Bootstrap the first owner
@@ -614,8 +614,8 @@ secret:
 For releases that include initial-administrator bootstrap, inject the
 release-documented one-time setup secret through the Kubernetes Secret referenced
 by `secret.existingSecret`. Do not store the code in the values file or a
-ConfigMap. Then open `https://omnirush.example.com/setup`, enter the configured
-owner email and one-time operator code, and create the first account. OmniRush.ai
+ConfigMap. Then open `https://mars.example.com/setup`, enter the configured
+owner email and one-time operator code, and create the first account. MarsAI
 creates the singleton organization, grants owner and configured platform-admin
 access, and signs the administrator in. Public signup remains disabled. After
 the first user exists, the setup code cannot bootstrap another account.
@@ -641,22 +641,22 @@ For the full Microsoft Entra SAML and SCIM setup flow, use
 Configure the IdP application with this callback URL:
 
 ```text
-https://omnirush.example.com/api/auth/sso/callback/omnirush-sso-<org-id>
+https://mars.example.com/api/auth/sso/callback/mars-sso-<org-id>
 ```
 
-In OmniRush.ai, sign in as the owner, open the organization SSO settings, and enter
+In MarsAI, sign in as the owner, open the organization SSO settings, and enter
 the IdP issuer/client details. After saving, the organization sign-in path is:
 
 ```text
-https://omnirush.example.com/sso/<singleOrgSlug>
+https://mars.example.com/sso/<singleOrgSlug>
 ```
 
-For SAML, OmniRush.ai shows the generated ACS URL and metadata URL after the SAML
+For SAML, MarsAI shows the generated ACS URL and metadata URL after the SAML
 connection is registered. Use those values in the IdP rather than guessing.
-OmniRush.ai rejects unsigned or weak SAML responses, so configure the IdP to sign
+MarsAI rejects unsigned or weak SAML responses, so configure the IdP to sign
 assertions. For Microsoft Entra ID specifically, also make sure the Entra
-**Identifier (Entity ID)** is the OmniRush.ai auth origin and the certificate saved
-in OmniRush.ai is the active Entra token-signing certificate.
+**Identifier (Entity ID)** is the MarsAI auth origin and the certificate saved
+in MarsAI is the active Entra token-signing certificate.
 
 After SSO is configured, root sign-in shows the SSO-only experience for the
 single organization. Password sign-in for that organization is rejected.
@@ -683,7 +683,7 @@ single organization. Password sign-in for that organization is rejected.
 | `az mysql flexible-server create` or `list-skus` returns `InternalServerError`, `ProvisionNotSupportedForRegion`, or `locationineligible` | The subscription cannot currently create MySQL Flexible Server in that region, or the regional SKU service is failing before Helm install | Pick a new `AZURE_LOCATION` where `list-skus` succeeds before creating AKS; capture tracking IDs and region for Azure Support if every acceptable region fails; only use temporary in-cluster MySQL for chart-only smoke tests |
 | `ImagePullBackOff` from GHCR | Private image or missing pull token | Add `imagePullSecrets` |
 | Browser auth loops or CORS errors | Public origins do not match DNS/TLS | Set `webOrigin`, `apiOrigin`, `corsOrigins`, `betterAuthTrustedOrigins`, and `authCallbackUrl` to the final HTTPS domains |
-| SSO callback rejected | IdP callback URL does not match OmniRush.ai | Use the callback/ACS URL shown by OmniRush.ai for that org/provider |
+| SSO callback rejected | IdP callback URL does not match MarsAI | Use the callback/ACS URL shown by MarsAI for that org/provider |
 | SSO settings show Enterprise gating | `DEN_PLAN_GATING_ENABLED=true` or org is not entitled | Leave plan gating off for self-host smoke tests, or grant enterprise entitlement |
 
 ## 12. Cleanup

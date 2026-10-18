@@ -5,7 +5,7 @@ import {
   MODEL_PREF_KEY,
   SESSION_MODEL_PREF_KEY,
   VARIANT_PREF_KEY,
-  isOmniRushModelID,
+  isMarsModelID,
 } from "../../app/constants";
 import type { ModelRef } from "../../app/types";
 import {
@@ -15,7 +15,7 @@ import {
 import { normalizeModelBehaviorValue } from "../../app/lib/model-behavior";
 import { isSupportedModelProvider } from "../../app/lib/provider-catalog";
 
-export const storedDefaultModelChangedEvent = "omnirush.defaultModelChanged";
+export const storedDefaultModelChangedEvent = "mars.defaultModelChanged";
 
 export type SessionChoiceOverride = {
   model?: ModelRef | null;
@@ -156,14 +156,14 @@ export function readStoredDefaultModel(): ModelRef {
   try {
     const stored = window.localStorage.getItem(MODEL_PREF_KEY);
     const parsed = parseModelRef(stored);
-    // Public OmniRush releases previously persisted a retired managed model.
-    // Keep external provider choices and every omnirush.ai catalog model
+    // Public Mars releases previously persisted a retired managed model.
+    // Keep external provider choices and every marsai.click catalog model
     // (the catalog is the server's, not a list compiled in here), but migrate
     // retired routes to the default model.
     // A default on a provider the pickers no longer list (another provider,
-    // hidden unless VITE_OMNIRUSH_ALLOW_OTHER_PROVIDERS=1) migrates the same way.
+    // hidden unless VITE_MARS_ALLOW_OTHER_PROVIDERS=1) migrates the same way.
     if (
-      (parsed?.providerID === "omnirush" && !isOmniRushModelID(parsed.modelID))
+      (parsed?.providerID === "mars" && !isMarsModelID(parsed.modelID))
       || (parsed && !isSupportedModelProvider(parsed.providerID))
     ) {
       writeStoredDefaultModel(DEFAULT_MODEL);

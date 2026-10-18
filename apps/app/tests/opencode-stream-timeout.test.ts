@@ -139,7 +139,7 @@ describe("OpenCode transport timeouts", () => {
 
   test.each(["web URL", "web Request", "desktop Request"])("bounds prompt_async acceptance at 30 seconds without resending (%s)", async (transport) => {
     jest.useFakeTimers();
-    installWindow(transport === "desktop Request" ? { __OMNIRUSH_ELECTRON__: {} } : undefined);
+    installWindow(transport === "desktop Request" ? { __MARS_ELECTRON__: {} } : undefined);
     const { cancel, observedSignal, attempts } = installControllableFetch();
     const fetchImpl = createCapturedFetch();
 
@@ -291,7 +291,7 @@ describe("OpenCode transport timeouts", () => {
   }, 15_000);
 
   test("leaves desktop OpenCode event streams untimed", async () => {
-    installWindow({ __OMNIRUSH_ELECTRON__: {} });
+    installWindow({ __MARS_ELECTRON__: {} });
     const { cancel, observedSignal } = installControllableFetch();
     const fetchImpl = createCapturedFetch();
 

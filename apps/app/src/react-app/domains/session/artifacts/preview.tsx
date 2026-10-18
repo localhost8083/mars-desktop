@@ -49,7 +49,7 @@ function mermaidSourceMarkdown(content: string) {
 
 export function MarkdownPreview({ content, mermaidSource = false, className, ...props }: MarkdownPreviewProps) {
   return (
-    <div data-omnirush-markdown-preview="" data-omnirush-mermaid-artifact={mermaidSource ? "" : undefined} className={cn("h-full overflow-auto p-4", className)} {...props}>
+    <div data-mars-markdown-preview="" data-mars-mermaid-artifact={mermaidSource ? "" : undefined} className={cn("h-full overflow-auto p-4", className)} {...props}>
       <MarkdownBlock text={mermaidSource ? mermaidSourceMarkdown(content) : content} />
     </div>
   );

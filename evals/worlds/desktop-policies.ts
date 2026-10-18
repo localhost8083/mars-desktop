@@ -1,5 +1,5 @@
-import { mcpMock } from "@omnirush/env";
-import type { Seed } from "@omnirush/env";
+import { mcpMock } from "@mars/env";
+import type { Seed } from "@mars/env";
 import { isRecord, records } from "./library.ts";
 
 /**
@@ -60,7 +60,7 @@ export async function defaultPolicyEditorAndMemberDesktop(seed: Seed) {
  * The admin starts at Team Access and Jordan starts in a real desktop. */
 export async function teamAccess(seed: Seed) {
   const nonce = `team-policy-${Date.now()}`;
-  const shellTool = process.env.OMNIRUSH_EVAL_ENGINE === "v2" ? "shell" : "bash";
+  const shellTool = process.env.MARS_EVAL_ENGINE === "v2" ? "shell" : "bash";
   const commandProofs = ["restricted", "control"].map((member) => ({
     marker: `${nonce}-${member}`, file: `${nonce}-${member}.txt`, reply: `${nonce}-${member}-finished`,
     command: `printf '${nonce}' > '${nonce}-${member}.txt'`,
@@ -93,7 +93,7 @@ export async function teamAccess(seed: Seed) {
         env: ["TEAM_ACCESS_EVAL_PROVIDER_API_KEY"],
         models: [{ id: "mock-agent-workload-model", name: "Team access model", tool_call: true }],
       },
-      apiKey: "sk-omnirush-team-access-eval-only",
+      apiKey: "sk-mars-team-access-eval-only",
       allMembers: true,
       memberIds: [],
       teamIds: [],

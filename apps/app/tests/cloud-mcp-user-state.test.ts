@@ -16,8 +16,8 @@ import {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const scope = {
-  denBaseUrl: "https://cloud.omnirush.test",
-  serverBaseUrl: "https://worker.omnirush.test",
+  denBaseUrl: "https://cloud.mars.test",
+  serverBaseUrl: "https://worker.mars.test",
   orgId: "organization_1",
   workspaceId: "workspace_1",
 };
@@ -64,13 +64,13 @@ describe("cloud MCP user state", () => {
 
   test("ignores corrupt stored values", () => {
     const backing = installStorageStub();
-    backing.set("omnirush.den.mcp.cloudControlUserState", "banana");
+    backing.set("mars.den.mcp.cloudControlUserState", "banana");
     expect(readCloudMcpUserState(scope)).toBeNull();
   });
 
   test("migrates legacy global intent to only the active scope", () => {
     const backing = installStorageStub();
-    backing.set("omnirush.den.mcp.cloudControlUserState", "disabled");
+    backing.set("mars.den.mcp.cloudControlUserState", "disabled");
     expect(readCloudMcpUserState(scope)).toBe("disabled");
     expect(readCloudMcpUserState(otherScope)).toBeNull();
   });
@@ -78,19 +78,19 @@ describe("cloud MCP user state", () => {
   test("rejects ambiguous legacy sync markers", () => {
     const backing = installStorageStub();
     const scope = {
-      denBaseUrl: "https://cloud.omnirush.test",
-      serverBaseUrl: "https://worker.omnirush.test",
+      denBaseUrl: "https://cloud.mars.test",
+      serverBaseUrl: "https://worker.mars.test",
       orgId: "organization_1",
       workspaceId: "workspace_1",
     };
 
-    backing.set("omnirush.den.mcp.sync", JSON.stringify({
+    backing.set("mars.den.mcp.sync", JSON.stringify({
       orgId: scope.orgId,
       expiresAt: "2026-07-20T00:00:00.000Z",
     }));
     expect(readCloudMcpSyncMarker(scope)).toBeNull();
 
-    backing.set("omnirush.den.mcp.sync", JSON.stringify({
+    backing.set("mars.den.mcp.sync", JSON.stringify({
       orgId: scope.orgId,
       workspaceId: scope.workspaceId,
       expiresAt: "2026-07-20T00:00:00.000Z",
@@ -100,8 +100,8 @@ describe("cloud MCP user state", () => {
 
   test("round-trips a fully scoped versioned sync marker", () => {
     const marker = {
-      denBaseUrl: "https://cloud.omnirush.test",
-      serverBaseUrl: "https://worker.omnirush.test",
+      denBaseUrl: "https://cloud.mars.test",
+      serverBaseUrl: "https://worker.mars.test",
       orgId: "organization_1",
       workspaceId: "workspace_1",
       expiresAt: "2026-07-20T00:00:00.000Z",
@@ -163,10 +163,10 @@ describe("isCloudMcpSyncMarkerFresh", () => {
 
 describe("isConnectDirectMcpServerName", () => {
   test("recognizes only the projected direct org connection entries", () => {
-    expect(isConnectDirectMcpServerName("omnirush-direct-linear-3f9a2c")).toBe(true);
-    expect(isConnectDirectMcpServerName("omnirush-direct-3f9a2c")).toBe(true);
-    expect(isConnectDirectMcpServerName("omnirush-cloud")).toBe(false);
-    expect(isConnectDirectMcpServerName("omnirush-connect-legacy")).toBe(false);
+    expect(isConnectDirectMcpServerName("mars-direct-linear-3f9a2c")).toBe(true);
+    expect(isConnectDirectMcpServerName("mars-direct-3f9a2c")).toBe(true);
+    expect(isConnectDirectMcpServerName("mars-cloud")).toBe(false);
+    expect(isConnectDirectMcpServerName("mars-connect-legacy")).toBe(false);
     expect(isConnectDirectMcpServerName("linear")).toBe(false);
   });
 });

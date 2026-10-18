@@ -1,12 +1,12 @@
 // Test-only TLS-intercepting proxy: the way antivirus HTTPS scanning or a
-// corporate proxy sits in front of omnirush.ai. It terminates TLS for the
+// corporate proxy sits in front of marsai.click. It terminates TLS for the
 // given host names with a leaf issued by its own root CA (served together
 // with that root, as those products do), and relays the bytes to the real
 // server over a verified TLS connection.
 //
 // Point the host names at 127.0.0.1 (hosts file or container /etc/hosts),
 // trust <dir>/root.pem in the throwaway system store, then run:
-//   node intercept-proxy.mjs --dir <dir> [--port 443] [--hosts omnirush.ai,www.omnirush.ai]
+//   node intercept-proxy.mjs --dir <dir> [--port 443] [--hosts marsai.click,www.marsai.click]
 //   node intercept-proxy.mjs --dir <dir> --certs-only
 // The upstream address is resolved with DNS directly (dns.resolve4), so the
 // hosts-file override does not loop back into the proxy.
@@ -23,7 +23,7 @@ function arg(name, fallback) {
 
 const dir = path.resolve(arg("dir", "intercept-ca"));
 const port = Number(arg("port", "443"));
-const hosts = String(arg("hosts", "omnirush.ai")).split(",").map((host) => host.trim()).filter(Boolean);
+const hosts = String(arg("hosts", "marsai.click")).split(",").map((host) => host.trim()).filter(Boolean);
 const openssl = process.env.OPENSSL_BIN || "openssl";
 
 function ensureCertificates() {
@@ -32,7 +32,7 @@ function ensureCertificates() {
   if (existsSync(root) && existsSync(path.join(dir, "chain.pem"))) return;
   const run = (...args) => execFileSync(openssl, args, { cwd: dir, stdio: "ignore" });
   writeFileSync(path.join(dir, "root.ext"), "basicConstraints=critical,CA:TRUE\nkeyUsage=critical,keyCertSign,cRLSign\nsubjectKeyIdentifier=hash\n");
-  run("req", "-new", "-newkey", "rsa:2048", "-nodes", "-keyout", "root.key", "-out", "root.csr", "-subj", "/CN=OmniRush.ai Test Interception Root/O=Test Only");
+  run("req", "-new", "-newkey", "rsa:2048", "-nodes", "-keyout", "root.key", "-out", "root.csr", "-subj", "/CN=MarsAI Test Interception Root/O=Test Only");
   run("x509", "-req", "-in", "root.csr", "-signkey", "root.key", "-out", "root.pem", "-days", "3", "-sha256", "-extfile", "root.ext");
   writeFileSync(path.join(dir, "leaf.ext"), `basicConstraints=CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\nsubjectAltName=${hosts.map((host) => `DNS:${host}`).join(",")}\n`);
   run("req", "-new", "-newkey", "rsa:2048", "-nodes", "-keyout", "leaf.key", "-out", "leaf.csr", "-subj", `/CN=${hosts[0]}`);

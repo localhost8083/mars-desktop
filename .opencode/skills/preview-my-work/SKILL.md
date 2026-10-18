@@ -1,6 +1,6 @@
 ---
 name: preview-my-work
-description: Boot, reopen, update, or reset an isolated OmniRush.ai PR preview inside Codex. Use Den in the in-app browser or the real Linux Electron app streamed through Daytona noVNC for hands-on testing.
+description: Boot, reopen, update, or reset an isolated MarsAI PR preview inside Codex. Use Den in the in-app browser or the real Linux Electron app streamed through Daytona noVNC for hands-on testing.
 ---
 
 # Preview my work
@@ -35,7 +35,7 @@ commit and use its full 40-character SHA so Daytona can fetch it. Both launch
 and update reject mutable branch names. Then:
 
 ```sh
-OMNIRUSH_EVAL_REF=<pushed-sha> infisical run --silent --env dev -- pnpm world up preview-den --stage pr-1234 --place daytona --detach --timeout 600000 -- --scenario fresh --lifetime 120
+MARS_EVAL_REF=<pushed-sha> infisical run --silent --env dev -- pnpm world up preview-den --stage pr-1234 --place daytona --detach --timeout 600000 -- --scenario fresh --lifetime 120
 ```
 
 Substitute `preview-desktop` and the desired scenario as needed. The existing

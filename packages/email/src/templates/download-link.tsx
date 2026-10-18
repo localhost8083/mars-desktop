@@ -9,17 +9,17 @@ export type DownloadLinkEmailProps = {
 
 export function DownloadLinkEmail({ organizationName, downloadUrl }: DownloadLinkEmailProps) {
   const intro = organizationName
-    ? `Here's your link to download the OmniRush.ai desktop app for ${organizationName}.`
-    : "Here's your link to download the OmniRush.ai desktop app."
+    ? `Here's your link to download the MarsAI desktop app for ${organizationName}.`
+    : "Here's your link to download the MarsAI desktop app."
 
   return (
     <Html>
       <Head />
-      <Preview>Your OmniRush.ai download link</Preview>
+      <Preview>Your MarsAI download link</Preview>
       <Body style={styles.body}>
         <Container style={styles.container}>
-          <Text style={styles.eyebrow}>OmniRush.ai desktop</Text>
-          <Heading style={styles.heading}>Download OmniRush.ai</Heading>
+          <Text style={styles.eyebrow}>MarsAI desktop</Text>
+          <Heading style={styles.heading}>Download MarsAI</Heading>
           <Text style={styles.text}>{intro}</Text>
 
           <Section style={styles.capabilitiesBox}>
@@ -30,7 +30,7 @@ export function DownloadLinkEmail({ organizationName, downloadUrl }: DownloadLin
             ))}
           </Section>
 
-          <Button href={downloadUrl} style={styles.button}>Download OmniRush.ai</Button>
+          <Button href={downloadUrl} style={styles.button}>Download MarsAI</Button>
           <Text style={styles.footer}>Signing in inside the app syncs your team&apos;s shared skills.</Text>
         </Container>
       </Body>

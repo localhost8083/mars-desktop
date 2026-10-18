@@ -463,7 +463,7 @@ function handleInitialize(context: McpRequestContext, rpc: JsonRpcRequest, token
     jsonRpcResult(responseId, {
       protocolVersion: negotiatedProtocolVersion,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "omnirush-enterprise-mcp-mock", version: "0.1.0" },
+      serverInfo: { name: "mars-enterprise-mcp-mock", version: "0.1.0" },
       instructions: `Synthetic ${profile.displayName} development server. No provider data or authority is present.`,
     }),
     { "mcp-session-id": sessionId, "mcp-protocol-version": negotiatedProtocolVersion },

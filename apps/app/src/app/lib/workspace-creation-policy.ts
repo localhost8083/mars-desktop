@@ -1,5 +1,5 @@
-import { isOmniRushGatewayRuntime } from "./gateway-runtime";
+import { isMarsGatewayRuntime } from "./gateway-runtime";
 
 export function canCreateWorkspaces() {
-  return !isOmniRushGatewayRuntime();
+  return !isMarsGatewayRuntime();
 }

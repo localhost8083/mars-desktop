@@ -6,18 +6,18 @@ import { AppBridge, PostMessageTransport } from "@modelcontextprotocol/ext-apps/
 import type { McpUiStyles, McpUiStyleVariableKey } from "@modelcontextprotocol/ext-apps"
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js"
 
-import { legacyConnectionActionAppResourceUri, connectorCatalogSchema } from "@omnirush/types/connection-action-app"
+import { legacyConnectionActionAppResourceUri, connectorCatalogSchema } from "@mars/types/connection-action-app"
 import { ConnectorCatalogCard } from "./connector-catalog"
 import { ConnectionCard } from "./connection-card"
 import { connectionCardPayloadFromChatToolResult, reconnectActionFromChatToolResult } from "@/components/tools/error-attribution"
 import { AppChatArtifact } from "@/react-app/domains/apps/app-chat-artifact"
 import { openDesktopUrl } from "@/app/lib/desktop"
 import {
-  OmniRushServerError,
-  type OmniRushMcpAppLaunchReference,
-  type OmniRushMcpAppResource,
-  type OmniRushMcpAppToolResult,
-} from "@/app/lib/omnirush-server"
+  MarsServerError,
+  type MarsMcpAppLaunchReference,
+  type MarsMcpAppResource,
+  type MarsMcpAppToolResult,
+} from "@/app/lib/mars-server"
 import { useWorkspace } from "@/react-app/shell/workspace-provider"
 import { cn } from "@/lib/utils"
 import {
@@ -64,12 +64,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function preservedResult(part: DynamicToolUIPart): PreservedMcpAppResult | null {
-  if (part.toolName === "omnirush-cloud_search_capabilities" && (!isRecord(part.input) || (part.input.intent !== "connect" && part.input.type !== "connectors"))) return null
-  const omnirush = isRecord(part.callProviderMetadata?.omnirush) ? part.callProviderMetadata.omnirush : null
-  const result = omnirush && isRecord(omnirush.mcpResult)
-    ? omnirush.mcpResult
-    : omnirush && isRecord(omnirush.mcpApp)
-      ? omnirush.mcpApp
+  if (part.toolName === "mars-cloud_search_capabilities" && (!isRecord(part.input) || (part.input.intent !== "connect" && part.input.type !== "connectors"))) return null
+  const mars = isRecord(part.callProviderMetadata?.mars) ? part.callProviderMetadata.mars : null
+  const result = mars && isRecord(mars.mcpResult)
+    ? mars.mcpResult
+    : mars && isRecord(mars.mcpApp)
+      ? mars.mcpApp
       : null
   if (!result || !Array.isArray(result.content)) return null
   const content = result.content.filter(isRecord) as Array<Record<string, unknown>>
@@ -87,7 +87,7 @@ export function hasPreservedMcpAppResult(part: DynamicToolUIPart): boolean {
 }
 
 export function connectorCatalogFromPart(part: DynamicToolUIPart) {
-  if (part.toolName !== "omnirush-cloud_search_capabilities" || part.state !== "output-available") return null
+  if (part.toolName !== "mars-cloud_search_capabilities" || part.state !== "output-available") return null
   if (!isRecord(part.input) || (part.input.intent !== "connect" && part.input.type !== "connectors")) return null
   let value: unknown = preservedResult(part)?.structuredContent ?? part.output
   if (typeof value === "string") {
@@ -99,9 +99,9 @@ export function connectorCatalogFromPart(part: DynamicToolUIPart) {
   return parsed.success ? parsed.data : null
 }
 
-export function gatewayMcpAppLaunch(meta: unknown): OmniRushMcpAppLaunchReference | null {
-  if (!isRecord(meta) || !isRecord(meta["omnirush/mcpApp"])) return null
-  const launch = meta["omnirush/mcpApp"]
+export function gatewayMcpAppLaunch(meta: unknown): MarsMcpAppLaunchReference | null {
+  if (!isRecord(meta) || !isRecord(meta["mars/mcpApp"])) return null
+  const launch = meta["mars/mcpApp"]
   if ((launch.connectionId !== undefined && typeof launch.connectionId !== "string")
     || typeof launch.toolName !== "string"
     || typeof launch.resourceUri !== "string"
@@ -114,7 +114,7 @@ export function gatewayMcpAppLaunch(meta: unknown): OmniRushMcpAppLaunchReferenc
   }
 }
 
-export function buildMcpAppCsp(app: OmniRushMcpAppResource): string {
+export function buildMcpAppCsp(app: MarsMcpAppResource): string {
   const resources = app.csp.resourceDomains.join(" ")
   const withResources = (source: string) => resources ? `${source} ${resources}` : source
   const sourceList = (values: string[]) => values.length ? values.join(" ") : "'none'"
@@ -137,7 +137,7 @@ function escapeAttribute(value: string): string {
   return value.replaceAll("&", "&amp;").replaceAll('"', "&quot;")
 }
 
-export function secureMcpAppHtml(app: OmniRushMcpAppResource): string {
+export function secureMcpAppHtml(app: MarsMcpAppResource): string {
   const meta = `<meta http-equiv="Content-Security-Policy" content="${escapeAttribute(buildMcpAppCsp(app))}">`
   const html = /<html(?:\s[^>]*)?>/i.exec(app.html)
   if (html?.index !== undefined) {
@@ -163,7 +163,7 @@ export function secureMcpAppHtml(app: OmniRushMcpAppResource): string {
   return `<!doctype html><html><head>${meta}</head><body>${app.html}</body></html>`
 }
 
-function mcpToolResult(result: OmniRushMcpAppToolResult): CallToolResult {
+function mcpToolResult(result: MarsMcpAppToolResult): CallToolResult {
   return result as CallToolResult
 }
 
@@ -213,7 +213,7 @@ function hostStyleVariables(): McpUiStyles {
 }
 
 export function isActionableMcpAppResolutionError(cause: unknown): boolean {
-  return cause instanceof OmniRushServerError && ACTIONABLE_MCP_APP_RESOLUTION_CODES.has(cause.code)
+  return cause instanceof MarsServerError && ACTIONABLE_MCP_APP_RESOLUTION_CODES.has(cause.code)
 }
 
 const CHAT_MCP_APP_UNAVAILABLE_NOTICE = "Interactive view unavailable. The normal tool result is still available."
@@ -246,7 +246,7 @@ export function McpAppDiagnosticNotice({ error, notice }: { error: McpAppDiagnos
 }
 
 export type McpAppSandboxViewProps = {
-  app: OmniRushMcpAppResource
+  app: MarsMcpAppResource
   /** Tool name used for host diagnostics and the iframe title. */
   toolName: string
   /** Arguments the host reports to the app as its launch input. */
@@ -270,7 +270,7 @@ export type McpAppSandboxViewProps = {
  * share this exact pipeline so rendering and diagnostics stay identical.
  */
 export function McpAppSandboxView({ app, toolName, inputArguments, result, unavailableNotice, onRequestTeardown, initialHeight, onHeightChange, readOnly = false }: McpAppSandboxViewProps) {
-  const { omnirushServerClient, workspaceId } = useWorkspace()
+  const { marsServerClient, workspaceId } = useWorkspace()
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [height, setHeightState] = useState(initialHeight ?? DEFAULT_HEIGHT)
   const [error, setError] = useState<McpAppDiagnostic | null>(null)
@@ -285,7 +285,7 @@ export function McpAppSandboxView({ app, toolName, inputArguments, result, unava
 
   useEffect(() => {
     const iframe = iframeRef.current
-    if (!iframe || !iframe.contentWindow || !omnirushServerClient || !workspaceId) return
+    if (!iframe || !iframe.contentWindow || !marsServerClient || !workspaceId) return
     let disposed = false
     let lastSizeEventAt = 0
     const startedAt = performance.now()
@@ -313,24 +313,24 @@ export function McpAppSandboxView({ app, toolName, inputArguments, result, unava
         checkpoints: [...checkpoints],
         ...(sandboxDocument ? { sandboxDocument } : {}),
       }
-      console.error(`[omnirush.ai MCP App] ${code}`, diagnostic)
+      console.error(`[marsai.click MCP App] ${code}`, diagnostic)
       setError(diagnostic)
     }
     checkpoint("resource-resolved")
-    const sandbox = omnirushServerClient.mcpAppSandbox(app, window.location.origin)
+    const sandbox = marsServerClient.mcpAppSandbox(app, window.location.origin)
     if (sandbox.expectedOrigin === window.location.origin) {
       fail(
         "MCP_APP_SANDBOX_ORIGIN_INVALID",
         "sandbox-proxy",
         null,
-        "The sandbox resolved to the same origin as the omnirush.ai host.",
+        "The sandbox resolved to the same origin as the marsai.click host.",
         sandbox.expectedOrigin,
       )
       return
     }
     const bridge = new AppBridge(
       null,
-      { name: "omnirush.ai", version: "1.0.0" },
+      { name: "marsai.click", version: "1.0.0" },
       readOnly ? {} : { serverTools: {} },
       {
         hostContext: {
@@ -346,7 +346,7 @@ export function McpAppSandboxView({ app, toolName, inputArguments, result, unava
         await openDesktopUrl(url)
         return {}
       } catch (cause) {
-        console.error("[omnirush.ai MCP App] MCP_APP_OPEN_LINK_BLOCKED", {
+        console.error("[marsai.click MCP App] MCP_APP_OPEN_LINK_BLOCKED", {
           toolName,
           message: safeMcpAppDiagnosticMessage(cause, "The link could not be opened."),
         })
@@ -396,12 +396,12 @@ export function McpAppSandboxView({ app, toolName, inputArguments, result, unava
       if (readOnly) throw new Error("This app displays results and cannot call tools.")
       const request = { serverName: app.serverName, name, resourceUri: app.resourceUri, arguments: args }
       try {
-        return mcpToolResult(await omnirushServerClient.callMcpAppTool(workspaceId, request))
+        return mcpToolResult(await marsServerClient.callMcpAppTool(workspaceId, request))
       } catch (cause) {
-        if (!(cause instanceof OmniRushServerError) || cause.code !== "tool_requires_approval") throw cause
+        if (!(cause instanceof MarsServerError) || cause.code !== "tool_requires_approval") throw cause
         const approved = window.confirm(`Allow this MCP App to call ${name} on ${app.serverName}?`)
         if (!approved) throw new Error("The user declined the MCP App tool call.")
-        return mcpToolResult(await omnirushServerClient.callMcpAppTool(workspaceId, { ...request, approved: true }))
+        return mcpToolResult(await marsServerClient.callMcpAppTool(workspaceId, { ...request, approved: true }))
       }
     }
     bridge.oninitialized = () => {
@@ -554,7 +554,7 @@ export function McpAppSandboxView({ app, toolName, inputArguments, result, unava
         new Promise<void>((resolve) => window.setTimeout(resolve, 500)),
       ]).catch(() => undefined).finally(() => bridge.close().catch(() => undefined))
     }
-  }, [app, inputArguments, omnirushServerClient, result, toolName, workspaceId, readOnly])
+  }, [app, inputArguments, marsServerClient, result, toolName, workspaceId, readOnly])
 
   if (error) return <McpAppDiagnosticNotice error={error} notice={unavailableNotice} />
   return (
@@ -587,13 +587,13 @@ export function McpAppFrame({ part }: { part: DynamicToolUIPart }) {
   // First-party connection UI is native, including historical app launches.
   // Never route an unsupported connection response back into the old iframe.
   const launch = gatewayMcpAppLaunch(result?._meta)
-  if (part.toolName === "omnirush-cloud_connection_action"
-    || (part.toolName.startsWith("omnirush-cloud_") && !launch?.connectionId && launch?.resourceUri === legacyConnectionActionAppResourceUri)) return null
+  if (part.toolName === "mars-cloud_connection_action"
+    || (part.toolName.startsWith("mars-cloud_") && !launch?.connectionId && launch?.resourceUri === legacyConnectionActionAppResourceUri)) return null
   return <EmbeddedMcpAppFrame part={part} />
 }
 
 function EmbeddedMcpAppFrame({ part }: { part: DynamicToolUIPart }) {
-  const { omnirushServerClient, workspaceId } = useWorkspace()
+  const { marsServerClient, workspaceId } = useWorkspace()
   const nextResult = preservedResult(part)
   const nextResultSignature = JSON.stringify(nextResult)
   const resultCache = useRef<{ signature: string; value: PreservedMcpAppResult | null }>({
@@ -606,13 +606,13 @@ function EmbeddedMcpAppFrame({ part }: { part: DynamicToolUIPart }) {
   const result = resultCache.current.value
   const draft = useMemo(() => {
     if (part.toolName !== "save_artifact_view" && !part.toolName.endsWith("_save_artifact_view")) return null
-    const reference = result?._meta?.["omnirush/appDraft"]
+    const reference = result?._meta?.["mars/appDraft"]
     if (!isRecord(reference) || typeof reference.appId !== "string" || typeof reference.revisionId !== "string"
       || typeof reference.title !== "string" || (reference.receiptId !== undefined && typeof reference.receiptId !== "string")) return null
     return { appId: reference.appId, revisionId: reference.revisionId, title: reference.title, receiptId: reference.receiptId }
   }, [part.toolName, result])
   const launch = useMemo(() => gatewayMcpAppLaunch(result?._meta), [result])
-  const [app, setApp] = useState<OmniRushMcpAppResource | null>(null)
+  const [app, setApp] = useState<MarsMcpAppResource | null>(null)
   const [error, setError] = useState<McpAppDiagnostic | null>(null)
   // The sandbox view unmounts on every preserved-result change; keep the last
   // measured height here so the rebuilt iframe does not snap back to default.
@@ -626,9 +626,9 @@ function EmbeddedMcpAppFrame({ part }: { part: DynamicToolUIPart }) {
     let cancelled = false
     setApp(null)
     setError(null)
-    if (draft || !result || !omnirushServerClient || !workspaceId) return () => { cancelled = true }
+    if (draft || !result || !marsServerClient || !workspaceId) return () => { cancelled = true }
     const startedAt = performance.now()
-    void omnirushServerClient.resolveMcpApp(workspaceId, part.toolName, launch ?? undefined)
+    void marsServerClient.resolveMcpApp(workspaceId, part.toolName, launch ?? undefined)
       .then(({ app: resolved }) => {
         if (cancelled) return
         // A preserved MCP result is neutral transport data. A null resolution
@@ -641,26 +641,26 @@ function EmbeddedMcpAppFrame({ part }: { part: DynamicToolUIPart }) {
         if (!cancelled && isActionableMcpAppResolutionError(cause)) {
           const diagnostic: McpAppDiagnostic = {
             code: "MCP_APP_RESOURCE_RESOLUTION_FAILED",
-            ...(cause instanceof OmniRushServerError ? { causeCode: cause.code } : {}),
+            ...(cause instanceof MarsServerError ? { causeCode: cause.code } : {}),
             stage: "resource-resolution",
             message: safeMcpAppDiagnosticMessage(cause, "The interactive view resource could not be resolved."),
             toolName: part.toolName,
             elapsedMs: Math.round(performance.now() - startedAt),
             checkpoints: ["resolve-started"],
           }
-          console.error(`[omnirush.ai MCP App] ${diagnostic.code}`, diagnostic)
+          console.error(`[marsai.click MCP App] ${diagnostic.code}`, diagnostic)
           setError(diagnostic)
         }
       })
     return () => { cancelled = true }
-  }, [draft, launch, omnirushServerClient, part.toolName, result, workspaceId])
+  }, [draft, launch, marsServerClient, part.toolName, result, workspaceId])
 
   // A completed build opens a native artifact tab. Rendering still goes
   // through the authorized Apps API and the shared sandbox inside that tab.
   if (draft) return <AppChatArtifact key={`${draft.appId}:${draft.revisionId}:${draft.receiptId}`} {...draft} />
   const viewId = result?._meta?.artifactViewId
   const revisionId = result?._meta?.viewRevisionId
-  if (app && typeof viewId === "string" && typeof revisionId === "string" && app.resourceUri === `ui://omnirush/artifacts/${viewId}/views/${revisionId}/index.html`) {
+  if (app && typeof viewId === "string" && typeof revisionId === "string" && app.resourceUri === `ui://mars/artifacts/${viewId}/views/${revisionId}/index.html`) {
     const artifact = result?.structuredContent?.artifact
     const title = typeof result?._meta?.appTitle === "string" ? result._meta.appTitle : isRecord(artifact) && typeof artifact.title === "string" ? artifact.title : "App preview"
     const receiptId = isRecord(artifact) && typeof artifact.receiptId === "string" ? artifact.receiptId : undefined

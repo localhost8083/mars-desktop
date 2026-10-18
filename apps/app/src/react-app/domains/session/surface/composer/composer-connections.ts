@@ -27,8 +27,8 @@ export function orgMcpConnectionToComposerEntry(connection: DenExternalMcpConnec
     id: `org-mcp:${connection.id}`,
     name: connection.name,
     config: { type: "remote", url: connection.url },
-    origin: "omnirush-connect",
-    marketplaceName: provider ?? "omnirush.ai Cloud",
+    origin: "mars-connect",
+    marketplaceName: provider ?? "marsai.click Cloud",
     orgMcpConnectionId: connection.id,
   };
 }

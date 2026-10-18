@@ -5,7 +5,7 @@ const mintlifyOrigin = "https://docs.omnirush.ai";
 
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@omnirush/email", "@omnirush/ui"],
+  transpilePackages: ["@mars/email", "@mars/ui"],
   // Lets evals build/serve a production instance beside next dev without clobbering .next.
   distDir: process.env.LANDING_DIST_DIR || ".next",
   // Bake VERCEL_ENV at build time so the PostHog gates (app/layout.tsx and

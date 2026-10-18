@@ -1,0 +1,57 @@
+name: Release
+
+# Tag push (v*) -> upload pinned engine assets -> build + publish installers
+# for Windows, macOS, and Linux to the GitHub release. electron-updater picks
+# up latest.yml / latest-mac.yml / latest-linux.yml from the same release.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  engine:
+    name: Upload engine assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Repack and upload engine archives
+        run: node scripts/upload-engine-release.mjs
+        working-directory: apps/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build:
+    name: ${{ matrix.os }}
+    needs: engine
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare desktop build
+        run: pnpm --filter @mars/desktop run build:electron
+
+      - name: Package and publish
+        run: pnpm --filter @mars/desktop exec electron-builder --config electron-builder.yml --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # No Developer ID certificate: electron-after-sign.cjs ad-hoc signs
+          # the mac app so Gatekeeper reports "unidentified developer" instead
+          # of "damaged". Notarization stays off (MACOS_NOTARIZE unset).
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"

@@ -1,6 +1,6 @@
 import { expect } from "vitest";
-import { denFetch } from "@omnirush/behaviors";
-import { server, test } from "@omnirush/testkit";
+import { denFetch } from "@mars/behaviors";
+import { server, test } from "@mars/testkit";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -46,7 +46,7 @@ test("an Automation can return to an earlier definition as a new revision", asyn
 
   const headers = {
     authorization: `Bearer ${den.admin.token}`,
-    "x-omnirush-org-id": organizationId,
+    "x-mars-org-id": organizationId,
   };
   const schedule = { kind: "daily", timezone: "UTC", hour: 9, minute: 0 };
   const model = { providerId: "opencode", modelId: "big-pickle", variant: null };

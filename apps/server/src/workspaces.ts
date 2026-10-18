@@ -20,12 +20,12 @@ export function workspaceIdForRemote(baseUrl: string, directory?: string | null)
   return workspaceIdForKey(key);
 }
 
-export function workspaceIdForOmniRush(hostUrl: string, workspaceId?: string | null): string {
+export function workspaceIdForMars(hostUrl: string, workspaceId?: string | null): string {
   const normalizedHostUrl = hostUrl.trim();
   const normalizedWorkspaceId = workspaceId?.trim() ?? "";
   const key = normalizedWorkspaceId
-    ? `omnirush::${normalizedHostUrl}::${normalizedWorkspaceId}`
-    : `omnirush::${normalizedHostUrl}`;
+    ? `mars::${normalizedHostUrl}::${normalizedWorkspaceId}`
+    : `mars::${normalizedHostUrl}`;
   return workspaceIdForKey(key);
 }
 
@@ -40,13 +40,13 @@ export function buildWorkspaceInfos(
     const remoteType = workspace.remoteType;
     const id = workspace.id?.trim()
       || (workspaceType === "remote"
-        ? remoteType === "omnirush"
-          ? workspaceIdForOmniRush(workspace.omnirushHostUrl ?? workspace.baseUrl ?? "", workspace.omnirushWorkspaceId)
+        ? remoteType === "mars"
+          ? workspaceIdForMars(workspace.marsHostUrl ?? workspace.baseUrl ?? "", workspace.marsWorkspaceId)
           : workspaceIdForRemote(workspace.baseUrl ?? "", workspace.directory)
         : workspaceIdForPath(resolvedPath));
     const name = workspace.name?.trim()
       || workspace.displayName?.trim()
-      || workspace.omnirushWorkspaceName?.trim()
+      || workspace.marsWorkspaceName?.trim()
       || basename(resolvedPath || workspace.directory?.trim() || workspace.baseUrl?.trim() || "Workspace");
     return {
       id,
@@ -58,10 +58,10 @@ export function buildWorkspaceInfos(
       baseUrl: workspace.baseUrl,
       directory: workspace.directory,
       displayName: workspace.displayName,
-      omnirushHostUrl: workspace.omnirushHostUrl,
-      omnirushToken: workspace.omnirushToken,
-      omnirushWorkspaceId: workspace.omnirushWorkspaceId,
-      omnirushWorkspaceName: workspace.omnirushWorkspaceName,
+      marsHostUrl: workspace.marsHostUrl,
+      marsToken: workspace.marsToken,
+      marsWorkspaceId: workspace.marsWorkspaceId,
+      marsWorkspaceName: workspace.marsWorkspaceName,
       sandboxBackend: workspace.sandboxBackend,
       sandboxRunId: workspace.sandboxRunId,
       sandboxContainerName: workspace.sandboxContainerName,

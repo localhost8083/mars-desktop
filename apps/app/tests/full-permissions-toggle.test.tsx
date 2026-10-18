@@ -4,7 +4,7 @@ import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { OmniRushApprovalMode, OmniRushRuntimeApprovals } from "../src/app/lib/omnirush-server";
+import type { MarsApprovalMode, MarsRuntimeApprovals } from "../src/app/lib/mars-server";
 import type { ApprovalsClient } from "../src/react-app/domains/settings/approval-mode";
 
 // The composer switch reads the organization policy through the desktop-config
@@ -41,7 +41,7 @@ const [
 
 function fakeClient(
   baseUrl: string,
-  initial: OmniRushRuntimeApprovals,
+  initial: MarsRuntimeApprovals,
   options: { reloadError?: Error; setError?: Error; holdSet?: boolean } = {},
 ) {
   const calls: string[] = [];
@@ -54,7 +54,7 @@ function fakeClient(
       gets += 1;
       return approvals;
     },
-    setRuntimeApprovals: async (mode: OmniRushApprovalMode) => {
+    setRuntimeApprovals: async (mode: MarsApprovalMode) => {
       calls.push(`set:${mode}`);
       if (options.holdSet) await new Promise<void>((resolve) => { release = resolve; });
       if (options.setError) throw options.setError;
@@ -114,7 +114,7 @@ async function click(button: HTMLElement) {
   });
 }
 
-const guardedByDefault: OmniRushRuntimeApprovals = { mode: "guarded", source: "default", setting: null };
+const guardedByDefault: MarsRuntimeApprovals = { mode: "guarded", source: "default", setting: null };
 
 test("shows the current mode on load and reads as active while full permissions are on", async () => {
   const guarded = fakeClient("http://guarded.test", guardedByDefault);
@@ -148,7 +148,7 @@ test("is disabled with a tooltip while the environment or the organisation force
   await waitFor(() => toggleIn(container).getAttribute("aria-checked") === "true", "the environment mode to load");
   const button = toggleIn(container);
   expect(button.getAttribute("aria-disabled")).toBe("true");
-  expect(button.dataset.lockReason).toBe("Set by environment (OMNIRUSH_APPROVALS=full); change it where the app is launched.");
+  expect(button.dataset.lockReason).toBe("Set by environment (MARS_APPROVALS=full); change it where the app is launched.");
   await click(button);
   expect(env.calls).toEqual([]);
   expect(toasts).toEqual([]);
@@ -158,7 +158,7 @@ test("is disabled with a tooltip while the environment or the organisation force
     button.dispatchEvent(new MouseEvent("mouseenter"));
   });
   await waitFor(
-    () => document.querySelector('[data-slot="tooltip-content"]')?.textContent?.includes("Set by environment (OMNIRUSH_APPROVALS=full)") === true,
+    () => document.querySelector('[data-slot="tooltip-content"]')?.textContent?.includes("Set by environment (MARS_APPROVALS=full)") === true,
     "the environment tooltip",
   );
 

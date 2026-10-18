@@ -25,9 +25,9 @@ export const denSkillEditor = shot("den-skill-editor", {
   out: "packages/docs/images/cloud-skill-editor.png",
 });
 
-export const denOmniRushWeb = shot("den-omnirush-web", {
+export const denMarsWeb = shot("den-mars-web", {
   use: browser,
   at: "/dashboard/web",
-  expect: ["OmniRush.ai Web", "Open OmniRush.ai Web"],
-  out: "packages/docs/images/cloud-omnirush-web.png",
+  expect: ["MarsAI Web", "Open MarsAI Web"],
+  out: "packages/docs/images/cloud-mars-web.png",
 });

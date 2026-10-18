@@ -3,10 +3,10 @@ import { lstat, mkdir, mkdtemp, open, readFile, readdir, realpath, rename, rm, s
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { WorkspaceFileError, omniRushspaceFileForReading, omniRushspaceFileForWriting, proveHandleInPlace, sameFile } from "./workspace-file-identity.js";
+import { WorkspaceFileError, marsspaceFileForReading, marsspaceFileForWriting, proveHandleInPlace, sameFile } from "./workspace-file-identity.js";
 
 async function withRoot(fn: (root: string) => Promise<void>) {
-  const root = await realpath(await mkdtemp(join(tmpdir(), "omnirush-file-identity-")));
+  const root = await realpath(await mkdtemp(join(tmpdir(), "mars-file-identity-")));
   try {
     await fn(root);
   } finally {
@@ -21,7 +21,7 @@ describe("workspace file identity", () => {
       const path = join(root, "reports", "q3.xlsx");
       await writeFile(path, "old");
       const expected = await lstat(path);
-      const opened = await omniRushspaceFileForWriting(root, path, expected, "Destination");
+      const opened = await marsspaceFileForWriting(root, path, expected, "Destination");
       try {
         expect(opened.created).toBe(false);
         expect(sameFile(opened.info, expected)).toBe(true);
@@ -38,7 +38,7 @@ describe("workspace file identity", () => {
 
   test("a folder moved and replaced by a link to the moved copy fails the proof even though the file inode still matches", async () => {
     await withRoot(async (root) => {
-      const outside = await realpath(await mkdtemp(join(tmpdir(), "omnirush-file-identity-outside-")));
+      const outside = await realpath(await mkdtemp(join(tmpdir(), "mars-file-identity-outside-")));
       try {
         await mkdir(join(root, "reports"));
         const path = join(root, "reports", "q3.xlsx");
@@ -58,8 +58,8 @@ describe("workspace file identity", () => {
           await handle.close();
         }
         // The same state refuses a fresh open for writing and for reading.
-        await expect(omniRushspaceFileForWriting(root, path, expected, "Destination")).rejects.toThrow("passes through a symbolic link");
-        await expect(omniRushspaceFileForReading(root, path, "Workbook")).rejects.toThrow("passes through a symbolic link");
+        await expect(marsspaceFileForWriting(root, path, expected, "Destination")).rejects.toThrow("passes through a symbolic link");
+        await expect(marsspaceFileForReading(root, path, "Workbook")).rejects.toThrow("passes through a symbolic link");
         expect(await readFile(join(outside, "reports", "q3.xlsx"), "utf8")).toBe("user data");
       } finally {
         await rm(outside, { recursive: true, force: true });
@@ -69,14 +69,14 @@ describe("workspace file identity", () => {
 
   test("an exclusive create through a linked folder is refused and leaves nothing behind", async () => {
     await withRoot(async (root) => {
-      const outside = await realpath(await mkdtemp(join(tmpdir(), "omnirush-file-identity-outside-")));
+      const outside = await realpath(await mkdtemp(join(tmpdir(), "mars-file-identity-outside-")));
       try {
         await symlink(outside, join(root, "linked"), "dir");
         const path = join(root, "linked", "new.xlsx");
-        await expect(omniRushspaceFileForWriting(root, path, null, "Destination")).rejects.toThrow("passes through a symbolic link");
+        await expect(marsspaceFileForWriting(root, path, null, "Destination")).rejects.toThrow("passes through a symbolic link");
         await expect(readdir(outside)).resolves.toEqual([]);
-        await expect(omniRushspaceFileForWriting(root, join(root, "missing", "new.xlsx"), null, "Destination")).rejects.toMatchObject({ code: "folder-missing" });
-        await expect(omniRushspaceFileForReading(root, join(root, "missing.xlsx"), "Workbook")).rejects.toBeInstanceOf(WorkspaceFileError);
+        await expect(marsspaceFileForWriting(root, join(root, "missing", "new.xlsx"), null, "Destination")).rejects.toMatchObject({ code: "folder-missing" });
+        await expect(marsspaceFileForReading(root, join(root, "missing.xlsx"), "Workbook")).rejects.toBeInstanceOf(WorkspaceFileError);
       } finally {
         await rm(outside, { recursive: true, force: true });
       }
@@ -86,7 +86,7 @@ describe("workspace file identity", () => {
   test("a new file is created empty, proven in place, and only then written", async () => {
     await withRoot(async (root) => {
       const path = join(root, "new.xlsx");
-      const opened = await omniRushspaceFileForWriting(root, path, null, "Destination");
+      const opened = await marsspaceFileForWriting(root, path, null, "Destination");
       try {
         expect(opened.created).toBe(true);
         expect(opened.info.size).toBe(0);
@@ -96,7 +96,7 @@ describe("workspace file identity", () => {
       }
       expect(await readFile(path, "utf8")).toBe("bytes");
       // A second exclusive create of the same path is refused rather than replacing it.
-      await expect(omniRushspaceFileForWriting(root, path, null, "Destination")).rejects.toMatchObject({ code: "exists" });
+      await expect(marsspaceFileForWriting(root, path, null, "Destination")).rejects.toMatchObject({ code: "exists" });
       expect(await readFile(path, "utf8")).toBe("bytes");
     });
   });

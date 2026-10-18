@@ -114,25 +114,25 @@ function forward(incoming, client, faulted) {
 }
 
 async function control(incoming, response, path) {
-  if (path === "/__omnirush_faults/health" && incoming.method === "GET") {
+  if (path === "/__mars_faults/health" && incoming.method === "GET") {
     json(response, 200, { ok: true, issuer });
     return;
   }
-  if (incoming.headers["x-omnirush-fault-token"] !== controlToken) {
+  if (incoming.headers["x-mars-fault-token"] !== controlToken) {
     json(response, 401, { error: "Unauthorized" });
     return;
   }
-  if (path === "/__omnirush_faults/requests" && incoming.method === "GET") {
+  if (path === "/__mars_faults/requests" && incoming.method === "GET") {
     json(response, 200, { requests });
     return;
   }
-  if (path === "/__omnirush_faults/clear" && incoming.method === "POST") {
+  if (path === "/__mars_faults/clear" && incoming.method === "POST") {
     rules.length = 0;
     response.writeHead(204);
     response.end();
     return;
   }
-  if (path === "/__omnirush_faults/rules" && incoming.method === "POST") {
+  if (path === "/__mars_faults/rules" && incoming.method === "POST") {
     try {
       const body = await readJson(incoming);
       const remaining = faultTimes(body.times);
@@ -156,7 +156,7 @@ async function control(incoming, response, path) {
 const server = createServer((incoming, response) => {
   void (async () => {
     const path = incoming.url ?? "/";
-    if (path.startsWith("/__omnirush_faults")) {
+    if (path.startsWith("/__mars_faults")) {
       await control(incoming, response, path);
       return;
     }

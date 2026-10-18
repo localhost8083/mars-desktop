@@ -1,7 +1,7 @@
 import { relations, sql } from "drizzle-orm"
 import { index, json, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core"
-import type { DesktopAppRestrictions } from "@omnirush/types/den/desktop-app-restrictions"
-import type { ConnectLinkClaims } from "@omnirush/types/connect-link"
+import type { DesktopAppRestrictions } from "@mars/types/den/desktop-app-restrictions"
+import type { ConnectLinkClaims } from "@mars/types/connect-link"
 import { denTypeIdColumn, mediumBlobColumn } from "../columns"
 
 export const DesktopHandoffGrantTable = mysqlTable(

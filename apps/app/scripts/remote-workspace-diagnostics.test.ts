@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { OmniRushServerClient } from "../src/app/lib/omnirush-server";
+import type { MarsServerClient } from "../src/app/lib/mars-server";
 import type { WorkspaceInfo } from "../src/app/lib/desktop";
 import { getWorkspaceTaskLoadErrorDisplay } from "../src/app/utils";
 import {
@@ -18,14 +18,14 @@ function workspace(overrides: Partial<WorkspaceInfo> = {}): WorkspaceInfo {
     path: "",
     preset: "remote",
     workspaceType: "remote",
-    remoteType: "omnirush",
-    omnirushHostUrl: "https://worker.example.com/w/ws_remote",
-    omnirushToken: "ow-token",
+    remoteType: "mars",
+    marsHostUrl: "https://worker.example.com/w/ws_remote",
+    marsToken: "ow-token",
     ...overrides,
   };
 }
 
-function client(overrides: Partial<OmniRushServerClient> = {}): OmniRushServerClient {
+function client(overrides: Partial<MarsServerClient> = {}): MarsServerClient {
   return {
     baseUrl: "https://worker.example.com/w/ws_remote",
     token: "ow-token",
@@ -52,7 +52,7 @@ function client(overrides: Partial<OmniRushServerClient> = {}): OmniRushServerCl
       tokenSource: { client: "file", host: "file" },
     }),
     capabilities: async () => ({
-      skills: { read: true, write: true, source: "omnirush" },
+      skills: { read: true, write: true, source: "mars" },
       plugins: { read: true, write: true },
       mcp: { read: true, write: true },
       commands: { read: true, write: true },
@@ -71,7 +71,7 @@ function client(overrides: Partial<OmniRushServerClient> = {}): OmniRushServerCl
       activeId: "ws_remote",
     }),
     ...overrides,
-  } as OmniRushServerClient;
+  } as MarsServerClient;
 }
 
 function serverError(status: number, code: string, message: string) {
@@ -79,11 +79,11 @@ function serverError(status: number, code: string, message: string) {
 }
 
 describe("resolveRemoteWorkspaceConnectionTarget", () => {
-  test("builds a host-scoped OmniRush.ai target from saved worker credentials", () => {
+  test("builds a host-scoped MarsAI target from saved worker credentials", () => {
     const target = resolveRemoteWorkspaceConnectionTarget(
       workspace({
-        omnirushHostUrl: "https://worker.example.com",
-        omnirushWorkspaceId: "ws_remote",
+        marsHostUrl: "https://worker.example.com",
+        marsWorkspaceId: "ws_remote",
       }),
     );
 
@@ -106,7 +106,7 @@ describe("resolveRemoteWorkspaceConnectionTarget", () => {
   test("fails fast when a remote worker has no endpoint", () => {
     const target = resolveRemoteWorkspaceConnectionTarget(
       workspace({
-        omnirushHostUrl: "",
+        marsHostUrl: "",
         baseUrl: "",
       }),
     );
@@ -120,7 +120,7 @@ describe("resolveRemoteWorkspaceConnectionTarget", () => {
   test("fails fast when a remote worker endpoint is invalid", () => {
     const target = resolveRemoteWorkspaceConnectionTarget(
       workspace({
-        omnirushHostUrl: "not a url",
+        marsHostUrl: "not a url",
       }),
     );
 
@@ -130,12 +130,12 @@ describe("resolveRemoteWorkspaceConnectionTarget", () => {
     expect(target.state.message).toContain("URL is invalid");
   });
 
-  test("does not run OmniRush.ai probes against non-OmniRush.ai remote workspaces", () => {
+  test("does not run MarsAI probes against non-MarsAI remote workspaces", () => {
     const target = resolveRemoteWorkspaceConnectionTarget(
       workspace({
         remoteType: "opencode",
-        omnirushHostUrl: "",
-        omnirushToken: "",
+        marsHostUrl: "",
+        marsToken: "",
         baseUrl: "https://opencode.example.com",
       }),
     );
@@ -143,22 +143,22 @@ describe("resolveRemoteWorkspaceConnectionTarget", () => {
     expect(target.ok).toBe(false);
     if (target.ok) return;
     expect(target.state.status).toBe("error");
-    expect(target.state.message).toContain("omnirush.ai remote workers");
+    expect(target.state.message).toContain("marsai.click remote workers");
   });
 
-  test("does not run OmniRush.ai probes against stale OmniRush.ai fields on non-OmniRush.ai remotes", () => {
+  test("does not run MarsAI probes against stale MarsAI fields on non-MarsAI remotes", () => {
     const target = resolveRemoteWorkspaceConnectionTarget(
       workspace({
         remoteType: "opencode",
-        omnirushHostUrl: "https://worker.example.com/w/ws_remote",
-        omnirushToken: "owt_secret",
+        marsHostUrl: "https://worker.example.com/w/ws_remote",
+        marsToken: "owt_secret",
         baseUrl: "https://opencode.example.com",
       }),
     );
 
     expect(target.ok).toBe(false);
     if (target.ok) return;
-    expect(target.state.message).toContain("omnirush.ai remote workers");
+    expect(target.state.message).toContain("marsai.click remote workers");
   });
 });
 
@@ -178,15 +178,15 @@ describe("testRemoteWorkspaceConnection", () => {
   });
 
   test("reports a missing token after proving the worker endpoint is reachable", async () => {
-    const result = await testRemoteWorkspaceConnection(workspace({ omnirushToken: "" }), {
+    const result = await testRemoteWorkspaceConnection(workspace({ marsToken: "" }), {
       createClient: () => client(),
     });
 
     expect(result.ok).toBe(false);
     expect(result.state.status).toBe("error");
     expect(result.state.message).toContain("Token is missing");
-    expect(result.state.message).toContain("Upgrade the omnirush.ai host");
-    expect(result.state.message).toContain("https://github.com/omnirush-ai/omnirush-gui/issues");
+    expect(result.state.message).toContain("Upgrade the marsai.click host");
+    expect(result.state.message).toContain("https://github.com/mars-ai/mars-gui/issues");
   });
 
   test("reports unhealthy health responses as endpoint failures", async () => {
@@ -200,15 +200,15 @@ describe("testRemoteWorkspaceConnection", () => {
     expect(result.ok).toBe(false);
     expect(result.state.status).toBe("error");
     expect(result.state.message).toContain("unhealthy response");
-    expect(result.state.message).toContain("Upgrade the omnirush.ai host");
-    expect(result.state.message).toContain("https://github.com/omnirush-ai/omnirush-gui/issues");
+    expect(result.state.message).toContain("Upgrade the marsai.click host");
+    expect(result.state.message).toContain("https://github.com/mars-ai/mars-gui/issues");
   });
 
-  test("uses fallback OmniRush.ai tokens saved on older workspace records", async () => {
+  test("uses fallback MarsAI tokens saved on older workspace records", async () => {
     const result = await testRemoteWorkspaceConnection(
       workspace({
-        omnirushToken: "",
-        omnirushClientToken: "legacy-client-token",
+        marsToken: "",
+        marsClientToken: "legacy-client-token",
       }),
       {
         createClient: (target) => {
@@ -234,8 +234,8 @@ describe("testRemoteWorkspaceConnection", () => {
     expect(result.ok).toBe(false);
     expect(result.state.status).toBe("error");
     expect(result.state.message).toContain("Token was rejected by worker.example.com");
-    expect(result.state.message).toContain("Upgrade the omnirush.ai host");
-    expect(result.state.message).toContain("https://github.com/omnirush-ai/omnirush-gui/issues");
+    expect(result.state.message).toContain("Upgrade the marsai.click host");
+    expect(result.state.message).toContain("https://github.com/mars-ai/mars-gui/issues");
   });
 
   test("reports a missing workspace separately from a dead worker", async () => {
@@ -251,15 +251,15 @@ describe("testRemoteWorkspaceConnection", () => {
     expect(result.ok).toBe(false);
     expect(result.state.status).toBe("error");
     expect(result.state.message).toContain("Workspace ws_remote was not found");
-    expect(result.state.message).toContain("Upgrade the omnirush.ai host");
-    expect(result.state.message).toContain("https://github.com/omnirush-ai/omnirush-gui/issues");
+    expect(result.state.message).toContain("Upgrade the marsai.click host");
+    expect(result.state.message).toContain("https://github.com/mars-ai/mars-gui/issues");
   });
 
   test("uses workspace list when the saved remote target is not workspace-scoped", async () => {
     const result = await testRemoteWorkspaceConnection(
       workspace({
-        omnirushHostUrl: "https://worker.example.com",
-        omnirushWorkspaceId: "",
+        marsHostUrl: "https://worker.example.com",
+        marsWorkspaceId: "",
         baseUrl: "",
       }),
       {
@@ -282,8 +282,8 @@ describe("testRemoteWorkspaceConnection", () => {
   test("reports rejected credentials from the workspace list fallback", async () => {
     const result = await testRemoteWorkspaceConnection(
       workspace({
-        omnirushHostUrl: "https://worker.example.com",
-        omnirushWorkspaceId: "",
+        marsHostUrl: "https://worker.example.com",
+        marsWorkspaceId: "",
         baseUrl: "",
       }),
       {
@@ -299,8 +299,8 @@ describe("testRemoteWorkspaceConnection", () => {
     expect(result.ok).toBe(false);
     expect(result.state.status).toBe("error");
     expect(result.state.message).toContain("Token was rejected by worker.example.com");
-    expect(result.state.message).toContain("Upgrade the omnirush.ai host");
-    expect(result.state.message).toContain("https://github.com/omnirush-ai/omnirush-gui/issues");
+    expect(result.state.message).toContain("Upgrade the marsai.click host");
+    expect(result.state.message).toContain("https://github.com/mars-ai/mars-gui/issues");
   });
 
   test("reports unauthorized workspace status separately from bad credentials", async () => {
@@ -316,8 +316,8 @@ describe("testRemoteWorkspaceConnection", () => {
     expect(result.ok).toBe(false);
     expect(result.state.status).toBe("error");
     expect(result.state.message).toContain("is not authorized");
-    expect(result.state.message).toContain("Upgrade the omnirush.ai host");
-    expect(result.state.message).toContain("https://github.com/omnirush-ai/omnirush-gui/issues");
+    expect(result.state.message).toContain("Upgrade the marsai.click host");
+    expect(result.state.message).toContain("https://github.com/mars-ai/mars-gui/issues");
   });
 
   test("reports endpoint reachability failures from the health probe", async () => {
@@ -333,8 +333,8 @@ describe("testRemoteWorkspaceConnection", () => {
     expect(result.ok).toBe(false);
     expect(result.state.status).toBe("error");
     expect(result.state.message).toContain("Cannot reach worker.example.com");
-    expect(result.state.message).toContain("Upgrade the omnirush.ai host");
-    expect(result.state.message).toContain("https://github.com/omnirush-ai/omnirush-gui/issues");
+    expect(result.state.message).toContain("Upgrade the marsai.click host");
+    expect(result.state.message).toContain("https://github.com/mars-ai/mars-gui/issues");
   });
 
   test("redacts token-like values from diagnostic error messages", async () => {
@@ -370,8 +370,8 @@ describe("remote diagnostic identity", () => {
   });
 
   test("changes when connection credentials change", () => {
-    const before = getRemoteWorkspaceConnectionKey(workspace({ omnirushToken: "old-token" }));
-    const after = getRemoteWorkspaceConnectionKey(workspace({ omnirushToken: "new-token" }));
+    const before = getRemoteWorkspaceConnectionKey(workspace({ marsToken: "old-token" }));
+    const after = getRemoteWorkspaceConnectionKey(workspace({ marsToken: "new-token" }));
 
     expect(before).not.toBe(after);
   });

@@ -1,6 +1,6 @@
 import { configureProvider } from "./chat.ts";
 import { streamedMarkdownAnswer, streamedMarkdownMarker, streamedMarkdownReasoning } from "./chat.ts";
-import type { Seed } from "@omnirush/env";
+import type { Seed } from "@mars/env";
 
 export async function auditMarkdown(seed: Seed) {
   const providerId = "audit-streamed-markdown-mock";

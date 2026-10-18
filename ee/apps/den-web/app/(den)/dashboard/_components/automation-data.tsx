@@ -6,8 +6,8 @@ import {
   automationListSchema,
   automationRunReceiptSchema,
   automationRunSchema,
-} from "@omnirush/types/automations";
-import { workflowArtifactSnapshotSchema } from "@omnirush/types/workflows";
+} from "@mars/types/automations";
+import { workflowArtifactSnapshotSchema } from "@mars/types/workflows";
 import { getErrorMessage, requestJson } from "../../_lib/den-flow";
 
 async function payload(path: string, init: RequestInit = { method: "GET" }) {

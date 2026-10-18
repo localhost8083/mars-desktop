@@ -27,7 +27,7 @@ export type ChatToolReconnectCallbacks = {
 
 /**
  * Reconnect/Retry state for a chat tool call, shared between the generic
- * Tool card and the sentence-style failure line. Only omnirush.ai Cloud
+ * Tool card and the sentence-style failure line. Only marsai.click Cloud
  * capability tools can produce a reconnect action (see error-attribution).
  */
 export function useChatToolReconnect(

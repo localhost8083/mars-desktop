@@ -1,7 +1,7 @@
 import { expect } from "vitest";
-import { denFetch } from "@omnirush/behaviors";
-import { mcpMock, needs, server, test } from "@omnirush/testkit";
-import { isRecord } from "../worlds/omnirush-server-cli.ts";
+import { denFetch } from "@mars/behaviors";
+import { mcpMock, needs, server, test } from "@mars/testkit";
+import { isRecord } from "../worlds/mars-server-cli.ts";
 
 // Journey: a member clicks Connect in the Den web dashboard. The browser sends
 // a credentialed cross-origin GET to den-api's OAuth-start route. Every outcome
@@ -55,16 +55,16 @@ test("Den OAuth-start answers browser preflights, successes and handshake failur
     headers: {
       origin: webOrigin,
       "access-control-request-method": "GET",
-      "access-control-request-headers": "authorization,x-omnirush-org-id,accept",
+      "access-control-request-headers": "authorization,x-mars-org-id,accept",
     },
   });
   expect(preflight.response.status, preflight.text).toBe(204);
   expectReadableFor(preflight.response, "preflight");
   const allowHeaders = (preflight.response.headers.get("access-control-allow-headers") ?? "").toLowerCase();
   expect(allowHeaders).toContain("authorization");
-  expect(allowHeaders).toContain("x-omnirush-org-id");
+  expect(allowHeaders).toContain("x-mars-org-id");
   expect((preflight.response.headers.get("access-control-allow-methods") ?? "").toUpperCase()).toContain("GET");
-  evidence.recordAssertionEvidence("Preflight for OAuth start is answered for the trusted web origin", `OPTIONS returned HTTP 204 with allow-origin ${webOrigin}, credentials, Authorization and X-OmniRush-Org-Id allowed.`, true);
+  evidence.recordAssertionEvidence("Preflight for OAuth start is answered for the trusted web origin", `OPTIONS returned HTTP 204 with allow-origin ${webOrigin}, credentials, Authorization and X-Mars-Org-Id allowed.`, true);
 
   // 2. Success: the authorize URL response is readable.
   const started = await denFetch(den.admin, startPath(reachableId), { headers: { ...headers, origin: webOrigin } });

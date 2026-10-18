@@ -18,13 +18,13 @@ function stripTrailingSlashes(value: string): string {
 export type HeadlessRuntimePids = {
   launcher: number;
   web: number | null;
-  omnirushServer: number | null;
+  marsServer: number | null;
 };
 
 export type HeadlessRuntimeManifest = {
   mode: "local-server";
   webUrl: string;
-  omnirushUrl: string;
+  marsUrl: string;
   healthUrl: string;
   workspace: string;
   token: string;
@@ -51,15 +51,15 @@ export function buildDetachedRespawnArgs(argv: string[]): string[] {
 }
 
 /**
- * Reduce a Den proxy target to its origin. There is no default: omnirush.ai
+ * Reduce a Den proxy target to its origin. There is no default: marsai.click
  * runs no hosted Den, so callers must pass the Den web origin explicitly
- * (OMNIRUSH_DEV_DEN_PROXY_TARGET for the headless web launcher).
+ * (MARS_DEV_DEN_PROXY_TARGET for the headless web launcher).
  */
 export function normalizeDenTarget(value: string | undefined): string {
   const raw = (value ?? "").trim();
   if (!raw) {
     throw new Error(
-      "A Den proxy target is required (set OMNIRUSH_DEV_DEN_PROXY_TARGET to your Den web origin, e.g. http://127.0.0.1:3005). omnirush.ai runs no hosted Den, so there is no default.",
+      "A Den proxy target is required (set MARS_DEV_DEN_PROXY_TARGET to your Den web origin, e.g. http://127.0.0.1:3005). marsai.click runs no hosted Den, so there is no default.",
     );
   }
   const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
@@ -68,7 +68,7 @@ export function normalizeDenTarget(value: string | undefined): string {
 
 export function isHeadlessStackCommand(command: string): boolean {
   return command.includes("dev-headless-web")
-    || command.includes("omnirush-server")
+    || command.includes("mars-server")
     || command.includes("apps/server/src/cli.ts")
     || command.includes("packages/world")
     || command.includes("vite");
@@ -158,7 +158,7 @@ export function buildHeadlessCorsOrigins(input: {
   ]));
 }
 
-export function buildOmniRushServerArgs(input: {
+export function buildMarsServerArgs(input: {
   host: string;
   port: number;
   configPath: string;
@@ -181,7 +181,7 @@ export function buildOmniRushServerArgs(input: {
 
 export function buildHeadlessRuntimeManifest(input: {
   webUrl: string;
-  omnirushUrl: string;
+  marsUrl: string;
   workspace: string;
   token: string;
   hostToken: string;
@@ -192,7 +192,7 @@ export function buildHeadlessRuntimeManifest(input: {
   denTarget?: string | null;
   pid?: number;
   webPid?: number | null;
-  omnirushServerPid?: number | null;
+  marsServerPid?: number | null;
   startedAt?: string;
   supervisorPid?: number | null;
   world?: { name: string; state: HeadlessWebState; launchId?: string };
@@ -202,8 +202,8 @@ export function buildHeadlessRuntimeManifest(input: {
   return {
     mode: "local-server",
     webUrl: input.webUrl,
-    omnirushUrl: input.omnirushUrl,
-    healthUrl: `${stripTrailingSlashes(input.omnirushUrl)}/health`,
+    marsUrl: input.marsUrl,
+    healthUrl: `${stripTrailingSlashes(input.marsUrl)}/health`,
     workspace: path.resolve(input.workspace),
     token: input.token,
     hostToken: input.hostToken,
@@ -213,13 +213,13 @@ export function buildHeadlessRuntimeManifest(input: {
     headlessLogPath: input.headlessLogPath,
     denTarget,
     denApiUrl: denTarget ? `${stripTrailingSlashes(input.webUrl)}/api/den` : null,
-    notes: "Local omnirush-server session. Workspace auth uses token/hostToken; the server config and state selection are owned by the selected world. Den/Cloud API calls go same-origin through denApiUrl (Vite proxies them to denTarget; the app is pinned there via VITE_DEN_API_BASE_URL).",
+    notes: "Local mars-server session. Workspace auth uses token/hostToken; the server config and state selection are owned by the selected world. Den/Cloud API calls go same-origin through denApiUrl (Vite proxies them to denTarget; the app is pinned there via VITE_DEN_API_BASE_URL).",
     startedAt: input.startedAt ?? new Date().toISOString(),
     pid: launcherPid,
     pids: {
       launcher: launcherPid,
       web: input.webPid ?? null,
-      omnirushServer: input.omnirushServerPid ?? null,
+      marsServer: input.marsServerPid ?? null,
     },
     ...(input.supervisorPid === undefined ? {} : { supervisorPid: input.supervisorPid }),
     ...(input.world ? { world: input.world } : {}),

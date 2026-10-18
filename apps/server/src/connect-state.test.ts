@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { OMNIRUSH_CLOUD_EXPECTED_TOOLS, OMNIRUSH_CLOUD_PLUGIN_CANARIES } from "./cloud-mcp-health.js";
+import { MARS_CLOUD_EXPECTED_TOOLS, MARS_CLOUD_PLUGIN_CANARIES } from "./cloud-mcp-health.js";
 import { resolveConnectWorkspace } from "./connect-state.js";
 import { writeRuntimeOpencodeConfig } from "./runtime-opencode-config-store.js";
 import { startServer } from "./server.js";
@@ -11,15 +11,15 @@ import type { ServerConfig, WorkspaceInfo } from "./types.js";
 
 const CLIENT_TOKEN = "owt_connect_state_client";
 const HOST_TOKEN = "owt_connect_state_host";
-const previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
+const previousRuntimeDb = process.env.MARS_RUNTIME_DB;
 const stops: Array<() => void | Promise<void>> = [];
 const roots: string[] = [];
 
 afterEach(async () => {
   while (stops.length) await stops.pop()?.();
   while (roots.length) await rm(roots.pop() ?? "", { recursive: true, force: true });
-  if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-  else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
+  if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+  else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
 });
 
 async function createRoot(prefix: string): Promise<string> {
@@ -35,7 +35,7 @@ function startMockOpencode() {
     async fetch(request) {
       const url = new URL(request.url);
       if (url.pathname === "/global/health") return Response.json({ healthy: true, version: "1.17.11" });
-      if (url.pathname === "/mcp" && request.method === "GET") return Response.json({ "omnirush-cloud": { status: "connected" } });
+      if (url.pathname === "/mcp" && request.method === "GET") return Response.json({ "mars-cloud": { status: "connected" } });
       if ((url.pathname === "/cloud-mcp" || url.pathname === "/cloud-mcp/mcp/agent") && request.method === "POST") {
         const body: unknown = await request.json();
         const id = isRecord(body) && (typeof body.id === "string" || typeof body.id === "number" || body.id === null) ? body.id : 1;
@@ -47,7 +47,7 @@ function startMockOpencode() {
             result: {
               capabilities: { tools: {} },
               protocolVersion: "2025-06-18",
-              serverInfo: { name: "omnirush-cloud-test", version: "1.0.0" },
+              serverInfo: { name: "mars-cloud-test", version: "1.0.0" },
             },
           });
         }
@@ -65,7 +65,7 @@ function startMockOpencode() {
         }
         return Response.json({ id, jsonrpc: "2.0", result: {} });
       }
-      if (url.pathname === "/experimental/tool/ids") return Response.json([...OMNIRUSH_CLOUD_EXPECTED_TOOLS, ...OMNIRUSH_CLOUD_PLUGIN_CANARIES]);
+      if (url.pathname === "/experimental/tool/ids") return Response.json([...MARS_CLOUD_EXPECTED_TOOLS, ...MARS_CLOUD_PLUGIN_CANARIES]);
       return Response.json({ code: "not_found" }, { status: 404 });
     },
   });
@@ -77,8 +77,8 @@ function workspace(id: string, path: string, baseUrl: string): WorkspaceInfo {
   return { id, name: id, path, preset: "starter", workspaceType: "local", baseUrl };
 }
 
-async function startOmniRush(workspaces: WorkspaceInfo[], runtimeRoot: string): Promise<{ base: string; config: ServerConfig }> {
-  process.env.OMNIRUSH_RUNTIME_DB = join(runtimeRoot, "runtime.sqlite");
+async function startMars(workspaces: WorkspaceInfo[], runtimeRoot: string): Promise<{ base: string; config: ServerConfig }> {
+  process.env.MARS_RUNTIME_DB = join(runtimeRoot, "runtime.sqlite");
   const config: ServerConfig = {
     host: "127.0.0.1",
     port: 0,
@@ -106,7 +106,7 @@ function clientHeaders(): Record<string, string> {
 }
 
 function hostHeaders(): Record<string, string> {
-  return { "X-OmniRush-Host-Token": HOST_TOKEN, "Content-Type": "application/json" };
+  return { "X-Mars-Host-Token": HOST_TOKEN, "Content-Type": "application/json" };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -153,25 +153,25 @@ describe("connect state Cloud health scoping", () => {
   });
 
   test("uses verified health for the exact requested directory without borrowing another workspace", async () => {
-    const rootA = await createRoot("omnirush-connect-state-a-");
-    const rootB = await createRoot("omnirush-connect-state-b-");
+    const rootA = await createRoot("mars-connect-state-a-");
+    const rootB = await createRoot("mars-connect-state-b-");
     const engine = startMockOpencode();
     const baseUrl = `http://127.0.0.1:${engine.port}`;
-    const omnirush = await startOmniRush([
+    const mars = await startMars([
       workspace("ws_a", rootA, baseUrl),
       workspace("ws_b", rootB, baseUrl),
     ], rootA);
 
-    await fetch(`${omnirush.base}/experimental/connect/state`, {
+    await fetch(`${mars.base}/experimental/connect/state`, {
       method: "PUT",
       headers: hostHeaders(),
       body: JSON.stringify({ connectEnabled: true }),
     });
-    await writeRuntimeOpencodeConfig(omnirush.config, "ws_b", (current) => ({
+    await writeRuntimeOpencodeConfig(mars.config, "ws_b", (current) => ({
       ...current,
       mcp: {
         ...current.mcp,
-        "omnirush-cloud": {
+        "mars-cloud": {
           type: "remote",
           url: `${baseUrl}/cloud-mcp/mcp/agent`,
           enabled: true,
@@ -181,17 +181,17 @@ describe("connect state Cloud health scoping", () => {
       },
     }));
 
-    const first = await responseRecord(await fetch(`${omnirush.base}/experimental/connect/state?directory=${encodeURIComponent(rootA)}`, { headers: clientHeaders() }));
+    const first = await responseRecord(await fetch(`${mars.base}/experimental/connect/state?directory=${encodeURIComponent(rootA)}`, { headers: clientHeaders() }));
     expect(first.cloudMcpPresent).toBe(false);
     expect(requireRecord(first.workspace, "workspace").id).toBe("ws_a");
     expect(requireRecord(requireRecord(first.cloudHealth, "cloudHealth").desired, "desired").present).toBe(false);
 
-    const second = await responseRecord(await fetch(`${omnirush.base}/experimental/connect/state?directory=${encodeURIComponent(rootB)}`, { headers: clientHeaders() }));
+    const second = await responseRecord(await fetch(`${mars.base}/experimental/connect/state?directory=${encodeURIComponent(rootB)}`, { headers: clientHeaders() }));
     expect(second.cloudMcpPresent).toBe(true);
     expect(requireRecord(second.workspace, "workspace").id).toBe("ws_b");
     expect(requireRecord(second.cloudHealth, "cloudHealth").usable).toBe(true);
 
-    const unknown = await responseRecord(await fetch(`${omnirush.base}/experimental/connect/state?directory=${encodeURIComponent(join(rootA, "other"))}`, { headers: clientHeaders() }));
+    const unknown = await responseRecord(await fetch(`${mars.base}/experimental/connect/state?directory=${encodeURIComponent(join(rootA, "other"))}`, { headers: clientHeaders() }));
     expect(unknown.cloudMcpPresent).toBe(false);
     expect(unknown.cloudHealth).toBeNull();
     expect(requireRecord(unknown.workspace, "workspace").resolution).toBe("unknown");

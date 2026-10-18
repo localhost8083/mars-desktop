@@ -1,6 +1,6 @@
 import { expect } from "vitest";
-import { browserImageTarget, eventually, spec } from "@omnirush/testkit";
-import type { BrowserTaskInput, Target } from "@omnirush/testkit";
+import { browserImageTarget, eventually, spec } from "@mars/testkit";
+import type { BrowserTaskInput, Target } from "@mars/testkit";
 import { browserTabHandle, createBuiltinBrowserWorld, transcriptLinkWorld } from "../worlds/browser-panel.ts";
 import { browserBackgroundWorld } from "../worlds/browser-webmcp.ts";
 
@@ -38,7 +38,7 @@ lifecycleTest("the global tab limit rejects new pages without disturbing live ta
 
   await step("The new-tab button explains how to make room without allocating a page", async () => {
     await user.click({ role: "button", label: "New tab" });
-    await user.see({ text: /OmniRush.ai has 12 browser tabs open\. Close an unused browser tab in any conversation, then try again\./ });
+    await user.see({ text: /MarsAI has 12 browser tabs open\. Close an unused browser tab in any conversation, then try again\./ });
     const rejected = await world.readBrowserState();
     expect(rejected.tabs).toEqual(full.tabs);
     expect(rejected).toMatchObject({ activeTabId: readingTab.tabId, visibleSessionId: reading.sessionId,
@@ -346,7 +346,7 @@ test("a background conversation reads its owned page silently and requests atten
 
   await step("Closing the panel removes all native overlays while background observation continues", async () => {
     await user.click({ role: "button", label: "Close side panel" });
-    const hidden = await probe.eventually(() => probe.browserState(), { within: 15_000, until: (state) => state.nativeViews.every((view) => !view.aboveApp), label: "no browser view covers OmniRush.ai" });
+    const hidden = await probe.eventually(() => probe.browserState(), { within: 15_000, until: (state) => state.nativeViews.every((view) => !view.aboveApp), label: "no browser view covers MarsAI" });
     expect(hidden.nativeViews.find((view) => view.tabId === readingTab.tabId)?.attached).toBe(false);
     expect(hidden).toMatchObject({ visibleWindowCount: 1, backgroundWindowVisible: false });
     expect(hidden.nativeViews.find((view) => view.tabId === researchTab.tabId)).toMatchObject({ attached: false, aboveApp: false });
@@ -468,7 +468,7 @@ linkTest("a transcript link's menu copies its exact address and opens only its o
 
   await step("Right-click and Escape leave the transcript and every browser page unchanged", async () => {
     await menuShown(true);
-    for (const label of ["Open in OmniRush.ai", "Open in Default Browser", "Copy Link Address"]) {
+    for (const label of ["Open in MarsAI", "Open in Default Browser", "Copy Link Address"]) {
       await menu.see(menuItem(label));
     }
     // TargetRole excludes menu; keep its container semantics as a DOM observation.
@@ -495,17 +495,17 @@ linkTest("a transcript link's menu copies its exact address and opens only its o
     await user.rightClick({ text: world.note });
     await user.see(menuItem("Edit message"));
     await user.see(menuItem("Copy"));
-    await user.notSee(menuItem("Open in OmniRush.ai"));
+    await user.notSee(menuItem("Open in MarsAI"));
     expect(await world.menuShown(overlay)).toBe(false);
     await user.press("Escape");
     await user.notSee(menuItem("Edit message"));
     await unchanged();
   });
 
-  const opened = await step("Open in OmniRush.ai creates exactly one tab owned by the link's conversation", async () => {
+  const opened = await step("Open in MarsAI creates exactly one tab owned by the link's conversation", async () => {
     await user.rightClick(link);
     await menuShown(true);
-    await menu.click(menuItem("Open in OmniRush.ai"));
+    await menu.click(menuItem("Open in MarsAI"));
     await menuShown(false);
     const state = await eventually(() => world.readBrowserState(), {
       within: 30_000,

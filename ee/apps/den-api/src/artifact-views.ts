@@ -1,7 +1,7 @@
 import { and, desc, eq, isNull, isNotNull } from "@omnirush-ee/den-db/drizzle"
 import { ArtifactViewRevisionTable, ArtifactViewTable, DashboardAppTable } from "@omnirush-ee/den-db/schema"
 import { createDenTypeId, normalizeDenTypeId, type DenTypeId } from "@omnirush-ee/utils/typeid"
-import type { GeneratedArtifactView, GeneratedArtifactViewRevision } from "@omnirush/types/workflows"
+import type { GeneratedArtifactView, GeneratedArtifactViewRevision } from "@mars/types/workflows"
 import { db } from "./db.js"
 import { getWorkflowDetail } from "./workflows.js"
 import { buildGeneratedArtifactView } from "./generated-artifact-view-builder.js"

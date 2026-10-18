@@ -5,7 +5,7 @@ import {
   workspaceUpdateRemote,
   type WorkspaceInfo,
 } from "../../../app/lib/desktop";
-import { buildOmniRushWorkspaceBaseUrl, type OmniRushServerClient } from "../../../app/lib/omnirush-server";
+import { buildMarsWorkspaceBaseUrl, type MarsServerClient } from "../../../app/lib/mars-server";
 import { isDesktopRuntime } from "../../../app/lib/runtime-env";
 import { t } from "../../../i18n";
 import type { RemoteWorkspaceInput } from "./types";
@@ -23,7 +23,7 @@ function describeEditorError(error: unknown) {
 
 export function useRemoteWorkspaceConnectionEditor<TWorkspace extends WorkspaceInfo>(input: {
   workspaces: TWorkspace[];
-  client: OmniRushServerClient | null;
+  client: MarsServerClient | null;
   onSaved: (workspaceId: string) => void | Promise<void>;
 }) {
   const { client, onSaved, workspaces } = input;
@@ -44,16 +44,16 @@ export function useRemoteWorkspaceConnectionEditor<TWorkspace extends WorkspaceI
 
   const initialValues = useMemo(
     () => {
-      const hostUrl = workspace?.omnirushHostUrl ?? workspace?.baseUrl ?? "";
-      const mountedUrl = workspace?.remoteType === "omnirush"
-        ? buildOmniRushWorkspaceBaseUrl(hostUrl, workspace.omnirushWorkspaceId) ?? hostUrl
+      const hostUrl = workspace?.marsHostUrl ?? workspace?.baseUrl ?? "";
+      const mountedUrl = workspace?.remoteType === "mars"
+        ? buildMarsWorkspaceBaseUrl(hostUrl, workspace.marsWorkspaceId) ?? hostUrl
         : hostUrl;
       return {
-        omnirushHostUrl: mountedUrl,
-        omnirushToken:
-          workspace?.omnirushToken ??
-          workspace?.omnirushClientToken ??
-          workspace?.omnirushHostToken ??
+        marsHostUrl: mountedUrl,
+        marsToken:
+          workspace?.marsToken ??
+          workspace?.marsClientToken ??
+          workspace?.marsHostToken ??
           "",
         directory: workspace?.directory ?? workspace?.path ?? "",
         displayName: workspace?.displayName ?? workspace?.name ?? "",
@@ -81,7 +81,7 @@ export function useRemoteWorkspaceConnectionEditor<TWorkspace extends WorkspaceI
   const save = useCallback(
     async (fields: RemoteWorkspaceInput) => {
       const id = workspaceId?.trim() ?? "";
-      const baseUrl = fields.omnirushHostUrl?.trim() ?? "";
+      const baseUrl = fields.marsHostUrl?.trim() ?? "";
       if (!id || !baseUrl) {
         setError(t("dashboard.remote_base_url_required"));
         return;
@@ -92,33 +92,33 @@ export function useRemoteWorkspaceConnectionEditor<TWorkspace extends WorkspaceI
       try {
         const displayName = fields.displayName?.trim() || null;
         const directory = fields.directory?.trim() || null;
-        const omnirushToken = fields.omnirushToken?.trim() ?? "";
+        const marsToken = fields.marsToken?.trim() ?? "";
         if (isDesktopRuntime()) {
           await workspaceUpdateRemote({
             workspaceId: id,
             baseUrl,
-            omnirushHostUrl: baseUrl,
-            omnirushToken,
-            omnirushClientToken: "",
-            omnirushHostToken: "",
+            marsHostUrl: baseUrl,
+            marsToken,
+            marsClientToken: "",
+            marsHostToken: "",
             displayName,
             directory,
-            remoteType: "omnirush",
+            remoteType: "mars",
           });
           await onSaved(id);
         } else {
           if (!client) throw new Error(t("app.error_connect_first"));
-          const connectionChanged = baseUrl !== (initialValues.omnirushHostUrl?.trim() ?? "") ||
-            omnirushToken !== (initialValues.omnirushToken?.trim() ?? "") ||
+          const connectionChanged = baseUrl !== (initialValues.marsHostUrl?.trim() ?? "") ||
+            marsToken !== (initialValues.marsToken?.trim() ?? "") ||
             directory !== (initialValues.directory?.trim() || null);
           if (connectionChanged) {
             const result = await client.createRemoteWorkspace({
               baseUrl,
-              omnirushHostUrl: baseUrl,
-              omnirushToken: omnirushToken || null,
+              marsHostUrl: baseUrl,
+              marsToken: marsToken || null,
               displayName,
               directory,
-              remoteType: "omnirush",
+              remoteType: "mars",
             });
             await onSaved(result.activeId ?? id);
           } else {
@@ -133,7 +133,7 @@ export function useRemoteWorkspaceConnectionEditor<TWorkspace extends WorkspaceI
         setBusy(false);
       }
     },
-    [client, initialValues.directory, initialValues.omnirushHostUrl, initialValues.omnirushToken, onSaved, workspaceId],
+    [client, initialValues.directory, initialValues.marsHostUrl, initialValues.marsToken, onSaved, workspaceId],
   );
 
   return {

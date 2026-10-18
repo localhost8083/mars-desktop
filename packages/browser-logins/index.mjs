@@ -1,4 +1,4 @@
-// @omnirush/browser-logins — browser-safe core.
+// @mars/browser-logins — browser-safe core.
 //
 // Turning a pile of cookies into the thing a person decides about: "the sites
 // I am signed in to". Grouping by site, deciding which sites should stay
@@ -9,7 +9,7 @@
 import { getDomain } from "tldts";
 
 /** Cookies with this owner are the user's own logins in the built-in browser. */
-export const BUILTIN_BROWSER_PARTITION = "persist:omnirush-browser";
+export const BUILTIN_BROWSER_PARTITION = "persist:mars-browser";
 
 export const SITE_CATEGORIES = Object.freeze(["ordinary", "finance", "email", "identity"]);
 

@@ -1,4 +1,4 @@
-import { browserScript, evaluate, type Surface } from "@omnirush/cdp";
+import { browserScript, evaluate, type Surface } from "@mars/cdp";
 
 type SurfaceExpectation = {
   sessionId?: string;
@@ -165,7 +165,7 @@ export function chatContinuity(app: Surface, workspaceId: string) {
     async holdHistory(sessionId: string, ...otherSessionIds: string[]) {
       const endpoint = app.client.webSocketDebuggerUrl;
       if (!endpoint) throw new Error("History fault requires the desktop CDP endpoint");
-      const origin = await evaluate(app.client, () => "http://127.0.0.1:" + localStorage.getItem("omnirush.server.port"));
+      const origin = await evaluate(app.client, () => "http://127.0.0.1:" + localStorage.getItem("mars.server.port"));
       const sessionIds = [sessionId, ...otherSessionIds];
       const paths = sessionIds.flatMap(id => ["workspace", "w"].flatMap(mount => ["opencode", "opencode2/api"].map(engine =>
         `/${mount}/${encodeURIComponent(workspaceId)}/${engine}/session/${encodeURIComponent(id)}/message`)));

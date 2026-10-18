@@ -217,7 +217,7 @@ export type WorkspaceConnectionState = {
   checkedAt?: number | null;
 };
 
-export type ResetOmniRushMode = "onboarding" | "all";
+export type ResetMarsMode = "onboarding" | "all";
 
 export type WorkspaceBlueprintStarterKind = "prompt" | "session" | "action";
 
@@ -270,7 +270,7 @@ export type WorkspaceBlueprint = {
   } | null;
 };
 
-export type WorkspaceOmniRushConfig = {
+export type WorkspaceMarsConfig = {
   version: number;
   workspace?: {
     name?: string | null;
@@ -285,7 +285,7 @@ export type WorkspaceOmniRushConfig = {
   } | null;
 };
 
-export type CapabilityOrigin = "local" | "omnirush-connect";
+export type CapabilityOrigin = "local" | "mars-connect";
 
 export type SkillCard = {
   name: string;
@@ -428,7 +428,7 @@ export type ModelOption = {
   modelID: string;
   title: string;
   description?: string;
-  /** Picker group for an omnirush.ai model of another family (e.g. "Meta Muse"); others group by provider. */
+  /** Picker group for an marsai.click model of another family (e.g. "Meta Muse"); others group by provider. */
   group?: string;
   footer?: string;
   behaviorTitle: string;

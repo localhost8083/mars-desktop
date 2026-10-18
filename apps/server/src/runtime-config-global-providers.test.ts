@@ -3,7 +3,7 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { omnirushRuntimeConfigFilePath, writeOmniRushRuntimeConfigFile } from "./omnirush-runtime-config.js";
+import { marsRuntimeConfigFilePath, writeMarsRuntimeConfigFile } from "./mars-runtime-config.js";
 import {
   mergeRuntimeProviderUpdate,
   readGlobalRuntimeOpencodeConfig,
@@ -33,7 +33,7 @@ function clientHeaders() {
 }
 
 function hostHeaders() {
-  return { "x-omnirush-host-token": HOST_TOKEN, "content-type": "application/json" };
+  return { "x-mars-host-token": HOST_TOKEN, "content-type": "application/json" };
 }
 
 async function readJsonObject(response: Response): Promise<Record<string, unknown>> {
@@ -43,10 +43,10 @@ async function readJsonObject(response: Response): Promise<Record<string, unknow
 }
 
 async function createTempRoot() {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-global-providers-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-global-providers-"));
   roots.push(root);
-  previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
-  process.env.OMNIRUSH_RUNTIME_DB = join(root, "runtime.sqlite");
+  previousRuntimeDb = process.env.MARS_RUNTIME_DB;
+  process.env.MARS_RUNTIME_DB = join(root, "runtime.sqlite");
   return root;
 }
 
@@ -76,8 +76,8 @@ afterEach(async () => {
     const root = roots.pop();
     if (root) await rm(root, { recursive: true, force: true });
   }
-  if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-  else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
+  if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+  else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
 });
 
 describe("global runtime providers", () => {
@@ -99,8 +99,8 @@ describe("global runtime providers", () => {
     const globalRuntime = await readGlobalRuntimeOpencodeConfig(config);
     expect(runtimeProviderMap(globalRuntime)).toEqual({ lpr_openrouter: openrouter });
 
-    const { path } = await writeOmniRushRuntimeConfigFile(config);
-    expect(path).toBe(omnirushRuntimeConfigFilePath(config));
+    const { path } = await writeMarsRuntimeConfigFile(config);
+    expect(path).toBe(marsRuntimeConfigFilePath(config));
     const raw = await readFile(path, "utf8");
     const parsed: unknown = JSON.parse(raw);
     if (!isRecord(parsed)) throw new Error("Expected runtime config object");
@@ -123,7 +123,7 @@ describe("global runtime providers", () => {
           return new Response(JSON.stringify({ ok: true }), { headers: { "content-type": "application/json" } });
         }
         if (request.method === "GET" && url.pathname === "/config") {
-          const content = await readFile(omnirushRuntimeConfigFilePath(config), "utf8");
+          const content = await readFile(marsRuntimeConfigFilePath(config), "utf8");
           return new Response(content, { headers: { "content-type": "application/json" } });
         }
         return new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers: { "content-type": "application/json" } });
@@ -162,7 +162,7 @@ describe("global runtime providers", () => {
     expect(await readJsonObject(identicalAttempt)).toMatchObject({ ok: true, changed: false, reload: "skipped" });
     expect(engineRequests.filter((request) => request === "POST /instance/dispose")).toHaveLength(1);
 
-    await rm(omnirushRuntimeConfigFilePath(config));
+    await rm(marsRuntimeConfigFilePath(config));
     const missingFileAttempt = await fetch(`${base}/runtime-config/providers`, {
       method: "PATCH",
       headers: hostHeaders(),
@@ -171,13 +171,13 @@ describe("global runtime providers", () => {
     expect(missingFileAttempt.status).toBe(200);
     expect(await readJsonObject(missingFileAttempt)).toMatchObject({ ok: true, changed: false, reload: "reloaded" });
     expect(engineRequests.filter((request) => request === "POST /instance/dispose")).toHaveLength(2);
-    const restoredFile: unknown = JSON.parse(await readFile(omnirushRuntimeConfigFilePath(config), "utf8"));
+    const restoredFile: unknown = JSON.parse(await readFile(marsRuntimeConfigFilePath(config), "utf8"));
     if (!isRecord(restoredFile)) throw new Error("Expected restored runtime config object");
     expect(providerFromPayload(restoredFile)).toEqual({
       lpr_anthropic: provider,
     });
 
-    await writeFile(omnirushRuntimeConfigFilePath(config), "{}", "utf8");
+    await writeFile(marsRuntimeConfigFilePath(config), "{}", "utf8");
     const staleFileAttempt = await fetch(`${base}/runtime-config/providers`, {
       method: "PATCH",
       headers: hostHeaders(),

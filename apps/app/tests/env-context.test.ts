@@ -1,27 +1,27 @@
 import { describe, expect, test } from "bun:test";
 
-import type { OmniRushServerClient } from "../src/app/lib/omnirush-server";
+import type { MarsServerClient } from "../src/app/lib/mars-server";
 import {
-  buildOmniRushEnvSystemContext,
-  buildOmniRushSessionSystemContext,
-  clearOmniRushEnvSystemContextCache,
+  buildMarsEnvSystemContext,
+  buildMarsSessionSystemContext,
+  clearMarsEnvSystemContextCache,
 } from "../src/react-app/domains/session/sync/env-context";
 
-function client(keys: string[], calls: { count: number }): OmniRushServerClient {
+function client(keys: string[], calls: { count: number }): MarsServerClient {
   return {
     baseUrl: "http://127.0.0.1:3000",
     listUserEnvKeys: async () => {
       calls.count += 1;
       return { keys };
     },
-  } as OmniRushServerClient;
+  } as MarsServerClient;
 }
 
-describe("buildOmniRushEnvSystemContext", () => {
+describe("buildMarsEnvSystemContext", () => {
   test("lists configured key names without inventing secret values", async () => {
-    clearOmniRushEnvSystemContextCache();
+    clearMarsEnvSystemContextCache();
     const calls = { count: 0 };
-    const context = await buildOmniRushEnvSystemContext(
+    const context = await buildMarsEnvSystemContext(
       client(["NBA_LIVE_KEY", "bad-key", "ANTHROPIC_API_KEY", "NBA_LIVE_KEY"], calls),
       {
         cacheKey: "session-a",
@@ -37,19 +37,19 @@ describe("buildOmniRushEnvSystemContext", () => {
   });
 
   test("caches key context per session", async () => {
-    clearOmniRushEnvSystemContextCache();
+    clearMarsEnvSystemContextCache();
     const calls = { count: 0 };
     const server = client(["OPENROUTER_API_KEY"], calls);
 
-    await buildOmniRushEnvSystemContext(server, {
+    await buildMarsEnvSystemContext(server, {
       cacheKey: "session-a",
       readPendingChanges: () => false,
     });
-    await buildOmniRushEnvSystemContext(server, {
+    await buildMarsEnvSystemContext(server, {
       cacheKey: "session-a",
       readPendingChanges: () => false,
     });
-    await buildOmniRushEnvSystemContext(server, {
+    await buildMarsEnvSystemContext(server, {
       cacheKey: "session-b",
       readPendingChanges: () => false,
     });
@@ -58,10 +58,10 @@ describe("buildOmniRushEnvSystemContext", () => {
   });
 
   test("does not truncate long key lists", async () => {
-    clearOmniRushEnvSystemContextCache();
+    clearMarsEnvSystemContextCache();
     const calls = { count: 0 };
     const keys = Array.from({ length: 90 }, (_, index) => `KEY_${index}`);
-    const context = await buildOmniRushEnvSystemContext(client(keys, calls), {
+    const context = await buildMarsEnvSystemContext(client(keys, calls), {
       cacheKey: "session-a",
       readPendingChanges: () => false,
     });
@@ -72,9 +72,9 @@ describe("buildOmniRushEnvSystemContext", () => {
   });
 
   test("skips context while environment changes are pending", async () => {
-    clearOmniRushEnvSystemContextCache();
+    clearMarsEnvSystemContextCache();
     const calls = { count: 0 };
-    const context = await buildOmniRushEnvSystemContext(client(["ANTHROPIC_API_KEY"], calls), {
+    const context = await buildMarsEnvSystemContext(client(["ANTHROPIC_API_KEY"], calls), {
       cacheKey: "session-a",
       readPendingChanges: () => true,
     });
@@ -84,11 +84,11 @@ describe("buildOmniRushEnvSystemContext", () => {
   });
 });
 
-describe("buildOmniRushSessionSystemContext", () => {
+describe("buildMarsSessionSystemContext", () => {
   test("always carries the user's time zone context and appends env keys when present", async () => {
-    clearOmniRushEnvSystemContextCache();
+    clearMarsEnvSystemContextCache();
     const calls = { count: 0 };
-    const context = await buildOmniRushSessionSystemContext(client(["ANTHROPIC_API_KEY"], calls), {
+    const context = await buildMarsSessionSystemContext(client(["ANTHROPIC_API_KEY"], calls), {
       cacheKey: "session-a",
       readPendingChanges: () => false,
     });
@@ -98,21 +98,21 @@ describe("buildOmniRushSessionSystemContext", () => {
     expect(runtime).toContain(`- Time zone: ${Intl.DateTimeFormat().resolvedOptions().timeZone} (UTC`);
     expect(runtime).toContain("- Today's date in that time zone: ");
     expect(runtime).toContain("Resolve \"today\", \"tomorrow\", \"this week\"");
-    expect(env).toContain("omnirush.ai environment variables configured:");
+    expect(env).toContain("marsai.click environment variables configured:");
     expect(env).toContain("- ANTHROPIC_API_KEY");
   });
 
   test("still returns the user context when there are no env keys, no client, or pending changes", async () => {
-    clearOmniRushEnvSystemContextCache();
+    clearMarsEnvSystemContextCache();
     const calls = { count: 0 };
 
-    const noKeys = await buildOmniRushSessionSystemContext(client([], calls), { cacheKey: "s1", readPendingChanges: () => false });
-    const noClient = await buildOmniRushSessionSystemContext(null, { cacheKey: "s2", readPendingChanges: () => false });
-    const pending = await buildOmniRushSessionSystemContext(client(["KEY"], calls), { cacheKey: "s3", readPendingChanges: () => true });
+    const noKeys = await buildMarsSessionSystemContext(client([], calls), { cacheKey: "s1", readPendingChanges: () => false });
+    const noClient = await buildMarsSessionSystemContext(null, { cacheKey: "s2", readPendingChanges: () => false });
+    const pending = await buildMarsSessionSystemContext(client(["KEY"], calls), { cacheKey: "s3", readPendingChanges: () => true });
 
     for (const context of [noKeys, noClient, pending]) {
       expect(context.startsWith("User context:")).toBe(true);
-      expect(context).not.toContain("omnirush.ai environment variables configured:");
+      expect(context).not.toContain("marsai.click environment variables configured:");
       expect(context).not.toContain("- KEY");
     }
   });

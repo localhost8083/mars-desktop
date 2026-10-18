@@ -2,8 +2,8 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { expect } from "vitest";
-import { denFetch } from "@omnirush/behaviors";
-import { server, test } from "@omnirush/testkit";
+import { denFetch } from "@mars/behaviors";
+import { server, test } from "@mars/testkit";
 import { parseTeamAdminContext } from "./helpers/team-admin-context.ts";
 import { enableScimFixtureSso } from "./helpers/scim-fixture.ts";
 
@@ -24,7 +24,7 @@ test("SCIM projection ownership is atomic and detached manual teams reject later
   const login = await denFetch(den.admin, "/api/auth/sign-in/email", { method: "POST", body: JSON.stringify({ email: den.admin.email, password: den.admin.password }) });
   const cookie = login.response.headers.get("set-cookie")?.split(";")[0];
   if (!cookie) throw new Error("Missing cookie");
-  const privilegedHeaders = { ...headers, cookie, "x-omnirush-org-id": context.organization.id };
+  const privilegedHeaders = { ...headers, cookie, "x-mars-org-id": context.organization.id };
   const sso = await denFetch(den.admin, "/v1/sso/saml", { method: "POST", headers: privilegedHeaders, body: JSON.stringify({ issuer: `http://127.0.0.1/atomic-${Date.now()}`, domain: "atomic-scim.test", entryPoint: "https://idp.example.test/sso", cert: "test-signing-certificate", audience: den.ref.apiUrl }) });
   expect(sso.response.status, sso.text).toBe(201);
   await enableScimFixtureSso(den.database, context.organization.id);
@@ -39,11 +39,11 @@ test("SCIM projection ownership is atomic and detached manual teams reject later
     import assert from 'node:assert/strict';
     import { createRequire } from 'node:module';
     import { setTimeout as delay } from 'node:timers/promises';
-    const { createPool } = createRequire(import.meta.resolve('@omnirush/env'))('mysql2/promise');
+    const { createPool } = createRequire(import.meta.resolve('@mars/env'))('mysql2/promise');
     const db = createPool(process.env.DATABASE_URL);
     const input = JSON.parse(process.env.SCIM_ATOMICITY_INPUT);
     const http = async (path, method = 'GET', body, token = input.token) => {
-      const response = await fetch(input.apiUrl + path, { method, headers: { authorization: 'Bearer ' + token, 'x-omnirush-org-id': input.orgId, origin: input.webUrl, 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(30000) });
+      const response = await fetch(input.apiUrl + path, { method, headers: { authorization: 'Bearer ' + token, 'x-mars-org-id': input.orgId, origin: input.webUrl, 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(30000) });
       const text = await response.text();
       return { status: response.status, body: text ? JSON.parse(text) : null, text };
     };

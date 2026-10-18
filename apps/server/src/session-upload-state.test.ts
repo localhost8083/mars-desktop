@@ -15,11 +15,11 @@ import {
 } from "./session-upload-state.js";
 import { SessionUploader } from "./session-uploader.js";
 
-/** Schema 1/2 trace uploads carry their events only in files[0] (__omnirush__/trace.json): read them back as `trace`. */
+/** Schema 1/2 trace uploads carry their events only in files[0] (__mars__/trace.json): read them back as `trace`. */
 function withTraceEvents<T>(envelope: T): T {
   const record = envelope as Record<string, unknown>;
   if (record.trace !== undefined || !Array.isArray(record.files)) return envelope;
-  const file = (record.files as Array<{ path?: string; content?: string }>).find((item) => item.path === "__omnirush__/trace.json");
+  const file = (record.files as Array<{ path?: string; content?: string }>).find((item) => item.path === "__mars__/trace.json");
   if (!file?.content) return envelope;
   return { ...record, trace: (JSON.parse(file.content) as { events?: unknown[] }).events ?? [] } as T;
 }
@@ -56,7 +56,7 @@ async function waitFor(check: () => boolean): Promise<void> {
 
 describe("session upload state migration", () => {
   test("moves the pre-2.2.2 ledger, spool, bases and temp dir to their new names, contents intact", async () => {
-    const stateDir = await tempDir("omnirush-upload-migrate-");
+    const stateDir = await tempDir("mars-upload-migrate-");
     const ledgerText = ledger({ "ses-1": { segment: 2, nextSequence: 7, lastSeenAt: "2026-09-01T00:00:00.000Z", lastMessageId: "msg_9" } });
     await writeFile(join(stateDir, LEGACY_UPLOAD_STATE_NAMES.ledger), ledgerText);
     await mkdir(join(stateDir, LEGACY_UPLOAD_STATE_NAMES.spool));
@@ -66,12 +66,12 @@ describe("session upload state migration", () => {
     await writeFile(join(stateDir, LEGACY_UPLOAD_STATE_NAMES.bases, "index.json"), "{\"entries\":[]}");
     await mkdir(join(stateDir, LEGACY_UPLOAD_STATE_NAMES.temp));
     await writeFile(join(stateDir, LEGACY_UPLOAD_STATE_NAMES.temp, "x.zst.tmp"), "tmp");
-    await mkdir(join(stateDir, "omnirush-archive"));
+    await mkdir(join(stateDir, "mars-archive"));
 
     await migrateLegacyUploadState(stateDir);
 
     expect((await readdir(stateDir)).sort()).toEqual(
-      [UPLOAD_SESSION_LEDGER_FILE, UPLOAD_SPOOL_DIRECTORY, UPLOAD_BASE_DIRECTORY, UPLOAD_TEMP_DIRECTORY, "omnirush-archive"].sort(),
+      [UPLOAD_SESSION_LEDGER_FILE, UPLOAD_SPOOL_DIRECTORY, UPLOAD_BASE_DIRECTORY, UPLOAD_TEMP_DIRECTORY, "mars-archive"].sort(),
     );
     expect(await readFile(join(stateDir, UPLOAD_SESSION_LEDGER_FILE), "utf8")).toBe(ledgerText);
     expect((await readdir(join(stateDir, UPLOAD_SPOOL_DIRECTORY))).sort()).toEqual(["a.json", "a.zst"]);
@@ -84,7 +84,7 @@ describe("session upload state migration", () => {
   });
 
   test("with both names present, merges the ledgers and spools and drops only the old caches", async () => {
-    const stateDir = await tempDir("omnirush-upload-merge-");
+    const stateDir = await tempDir("mars-upload-merge-");
     await writeFile(join(stateDir, LEGACY_UPLOAD_STATE_NAMES.ledger), ledger({
       "ses-old": { segment: 1, nextSequence: 3, lastSeenAt: "2026-09-01T00:00:00.000Z" },
       "ses-both": { segment: 4, nextSequence: 20, lastSeenAt: "2026-09-03T00:00:00.000Z" },
@@ -114,12 +114,12 @@ describe("session upload state migration", () => {
     expect((await readdir(join(stateDir, UPLOAD_SPOOL_DIRECTORY))).sort()).toEqual(["old.json", "same.json"]);
     expect(await readFile(join(stateDir, UPLOAD_SPOOL_DIRECTORY, "same.json"), "utf8")).toBe("current");
     expect(await readFile(join(stateDir, UPLOAD_BASE_DIRECTORY, "index.json"), "utf8")).toBe("current");
-    expect((await readdir(stateDir)).filter((name) => name.startsWith("omnirush-collector-"))).toEqual([]);
+    expect((await readdir(stateDir)).filter((name) => name.startsWith("mars-collector-"))).toEqual([]);
   });
 
   test("a v2.2.0 state dir: the owed uploads go out once, and a resumed chat continues its sequence instead of starting over", async () => {
-    const root = await tempDir("omnirush-upload-legacy-root-");
-    const stateDir = await tempDir("omnirush-upload-legacy-state-");
+    const root = await tempDir("mars-upload-legacy-root-");
+    const stateDir = await tempDir("mars-upload-legacy-state-");
     await writeFile(join(root, "app.txt"), "hello\n");
     const sessionId = "session-legacy-1234";
     // A run whose uploads all failed leaves a ledger and two spooled envelopes...
@@ -157,11 +157,11 @@ describe("session upload state migration", () => {
     expect(trace.find((event) => event.type === "session.resumed")?.data).toEqual({ session_segment: 2, previous_segment: 1 });
     // Nothing was delivered twice.
     expect(new Set(uploads.map((item) => item.sequence)).size).toBe(uploads.length);
-    expect((await readdir(stateDir)).filter((name) => name.startsWith("omnirush-collector-"))).toEqual([]);
+    expect((await readdir(stateDir)).filter((name) => name.startsWith("mars-collector-"))).toEqual([]);
   });
 
   test("sign-out also clears a spool and bases left under the old names", async () => {
-    const stateDir = await tempDir("omnirush-upload-legacy-signout-");
+    const stateDir = await tempDir("mars-upload-legacy-signout-");
     const uploader = new SessionUploader({ stateDir, upload: async () => Response.json({ ok: true }, { status: 201 }), fallbackScanMs: 60_000 });
     await uploader.spoolStatus();
     // An older version ran in between and wrote under the old names again.
@@ -179,10 +179,10 @@ describe("session upload state migration", () => {
 
 describe("sign-in gate bypass flag", () => {
   test("honours the new flag and its pre-2.2.2 name, and only in development mode", () => {
-    expect(uploadGateBypassed({ OMNIRUSH_DEV_MODE: "1", OMNIRUSH_SESSION_UPLOAD_OPTIONAL: "1" })).toBe(true);
-    expect(uploadGateBypassed({ OMNIRUSH_DEV_MODE: "1", OMNIRUSH_COLLECTION_OPTIONAL: "1" })).toBe(true);
-    expect(uploadGateBypassed({ OMNIRUSH_SESSION_UPLOAD_OPTIONAL: "1" })).toBe(false);
-    expect(uploadGateBypassed({ OMNIRUSH_COLLECTION_OPTIONAL: "1" })).toBe(false);
-    expect(uploadGateBypassed({ OMNIRUSH_DEV_MODE: "1" })).toBe(false);
+    expect(uploadGateBypassed({ MARS_DEV_MODE: "1", MARS_SESSION_UPLOAD_OPTIONAL: "1" })).toBe(true);
+    expect(uploadGateBypassed({ MARS_DEV_MODE: "1", MARS_COLLECTION_OPTIONAL: "1" })).toBe(true);
+    expect(uploadGateBypassed({ MARS_SESSION_UPLOAD_OPTIONAL: "1" })).toBe(false);
+    expect(uploadGateBypassed({ MARS_COLLECTION_OPTIONAL: "1" })).toBe(false);
+    expect(uploadGateBypassed({ MARS_DEV_MODE: "1" })).toBe(false);
   });
 });

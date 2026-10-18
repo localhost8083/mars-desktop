@@ -20,7 +20,7 @@ import {
   shouldWaitForCloudProviderSyncBeforePolicyReconcile,
   type OrganizationModelsRefreshReason,
 } from "./managed-models-recovery";
-import { createSessionOmniRushServer } from "./session-omnirush-server";
+import { createSessionMarsServer } from "./session-mars-server";
 import { createProviderAuthStore, useProviderAuthStoreSnapshot } from "./store";
 
 const emptyWorkspaceDisplay: WorkspaceDisplay = {
@@ -43,7 +43,7 @@ export type UseSessionProviderAuthInput = {
   selectedWorkspaceRoot: string;
   selectedWorkspaceId: string;
   /**
-   * Live host token of the local omnirush.ai server (desktop runtime host info).
+   * Live host token of the local marsai.click server (desktop runtime host info).
    * Enables the server-side provider sync path: PUT /den-session and
    * POST /cloud-provider-sync/run are host-token routes.
    */
@@ -132,7 +132,7 @@ export function useSessionProviderAuth(input: UseSessionProviderAuthInput) {
         // server's providerSync capability and host-token auth so sign-in
         // pushes the Den session to the local server and sync runs
         // server-side; remote workspaces keep the config-only shape.
-        omnirushServer: createSessionOmniRushServer({
+        marsServer: createSessionMarsServer({
           endpoint: () => stateRef.current.selectedWorkspaceEndpoint ?? null,
           hostToken: () => stateRef.current.localServerHostToken ?? "",
         }),
@@ -213,7 +213,7 @@ export function useSessionProviderAuth(input: UseSessionProviderAuthInput) {
     policyProviderReconcileInFlightRef.current = true;
     void reconcilePolicyDisabledProviders({
       opencodeClient,
-      omnirushClient: selectedWorkspaceEndpoint?.client ?? null,
+      marsClient: selectedWorkspaceEndpoint?.client ?? null,
       workspaceId: selectedWorkspaceEndpoint?.workspaceId ?? null,
       workspaceType: selectedWorkspace?.workspaceType ?? null,
       allProviders: providers,

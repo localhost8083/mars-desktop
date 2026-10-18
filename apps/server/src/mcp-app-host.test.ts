@@ -16,9 +16,9 @@ import { addMcp, listMcp } from "./mcp.js";
 import {
   CONNECT_MCP_SERVER_INDEX_URI,
   connectMcpAppHostName,
-  readOmniRushConnectMcpAppHostCatalog,
-  writeOmniRushConnectMcpAppHostAuthorization,
-  writeOmniRushConnectMcpAppHostCatalog,
+  readMarsConnectMcpAppHostCatalog,
+  writeMarsConnectMcpAppHostAuthorization,
+  writeMarsConnectMcpAppHostCatalog,
 } from "./connect-mcp-server-catalog.js";
 import { readRuntimeOpencodeConfig, runtimeMcpMap, writeRuntimeOpencodeConfig, writeGlobalRuntimeOpencodeConfig } from "./runtime-opencode-config-store.js";
 import {
@@ -210,7 +210,7 @@ async function startFixtureMcp(
               uri: CONNECT_MCP_SERVER_INDEX_URI,
               mimeType: "application/json",
               text: JSON.stringify({
-                schemaVersion: "omnirush.connect/mcp-servers/1",
+                schemaVersion: "mars.connect/mcp-servers/1",
                 servers: [{
                   connectionId,
                   name: "Fixture provider",
@@ -267,15 +267,15 @@ async function configuredFixture(
   catalogReads: () => number;
 }> {
   const root = await mkdtemp(join(tmpdir(), prefix));
-  const previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
-  const previousDevMode = process.env.OMNIRUSH_DEV_MODE;
-  process.env.OMNIRUSH_RUNTIME_DB = join(root, "runtime.sqlite");
-  process.env.OMNIRUSH_DEV_MODE = "1";
+  const previousRuntimeDb = process.env.MARS_RUNTIME_DB;
+  const previousDevMode = process.env.MARS_DEV_MODE;
+  process.env.MARS_RUNTIME_DB = join(root, "runtime.sqlite");
+  process.env.MARS_DEV_MODE = "1";
   stops.push(async () => {
-    if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-    else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
-    if (previousDevMode === undefined) delete process.env.OMNIRUSH_DEV_MODE;
-    else process.env.OMNIRUSH_DEV_MODE = previousDevMode;
+    if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+    else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
+    if (previousDevMode === undefined) delete process.env.MARS_DEV_MODE;
+    else process.env.MARS_DEV_MODE = previousDevMode;
     await rm(root, { recursive: true, force: true });
   });
   await mkdir(join(root, ".git"), { recursive: true });
@@ -292,18 +292,18 @@ async function configuredFixture(
       ...current,
       mcp: {
         ...runtimeMcpMap(current),
-        "omnirush-cloud": {
+        "mars-cloud": {
           ...mcpConfig,
           url: fixture.catalogUrl,
           headers: { Authorization: "Bearer member-token" },
         },
       },
     }));
-    await writeOmniRushConnectMcpAppHostCatalog(config, WORKSPACE_ID, {
-      schemaVersion: "omnirush.connect/mcp-servers/1",
+    await writeMarsConnectMcpAppHostCatalog(config, WORKSPACE_ID, {
+      schemaVersion: "mars.connect/mcp-servers/1",
       servers: [{ connectionId, name: "Fixture provider", description: null, url: fixture.url }],
     });
-    await writeOmniRushConnectMcpAppHostAuthorization(
+    await writeMarsConnectMcpAppHostAuthorization(
       config,
       WORKSPACE_ID,
       "Bearer app-host-token",
@@ -327,7 +327,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("negotiates and resolves one fixed remote MCP App fixture", async () => {
-    const { config, root } = await configuredFixture("omnirush-mcp-app-host-");
+    const { config, root } = await configuredFixture("mars-mcp-app-host-");
 
     const app = await resolveMcpAppResource({
       serverConfig: config,
@@ -347,7 +347,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("lists cold-launchable MCP Apps with their input requirements", async () => {
-    const { config, root } = await configuredFixture("omnirush-mcp-app-catalog-");
+    const { config, root } = await configuredFixture("mars-mcp-app-catalog-");
 
     const servers = await listMcpAppCatalog({
       serverConfig: config,
@@ -382,7 +382,7 @@ describe("MCP Apps host transport", () => {
     const connectionId = "emc_01mcpappcatalogfixture";
     const serverName = connectMcpAppHostName(connectionId);
     const { config, root } = await configuredFixture(
-      "omnirush-mcp-app-catalog-connect-",
+      "mars-mcp-app-catalog-connect-",
       undefined,
       serverName,
       connectionId,
@@ -412,7 +412,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("reports an unreachable server in the MCP App catalog instead of failing it", async () => {
-    const { config, root } = await configuredFixture("omnirush-mcp-app-catalog-ghost-");
+    const { config, root } = await configuredFixture("mars-mcp-app-catalog-ghost-");
     await addMcp(config, WORKSPACE_ID, "ghost", { type: "remote", url: "http://127.0.0.1:9/", enabled: true });
 
     const servers = await listMcpAppCatalog({
@@ -432,7 +432,7 @@ describe("MCP Apps host transport", () => {
     const connectionId = "emc_01mcpappgatewayfixture";
     const serverName = connectMcpAppHostName(connectionId);
     const { config, root, catalogReads } = await configuredFixture(
-      "omnirush-mcp-app-host-gateway-",
+      "mars-mcp-app-host-gateway-",
       undefined,
       serverName,
       connectionId,
@@ -455,7 +455,7 @@ describe("MCP Apps host transport", () => {
       resourceUri: RESOURCE_URI,
       html: RESOURCE_HTML,
     });
-    expect(Object.keys(runtimeMcpMap(await readRuntimeOpencodeConfig(config, WORKSPACE_ID)))).toEqual(["omnirush-cloud"]);
+    expect(Object.keys(runtimeMcpMap(await readRuntimeOpencodeConfig(config, WORKSPACE_ID)))).toEqual(["mars-cloud"]);
     expect(catalogReads()).toBe(0);
   });
 
@@ -463,13 +463,13 @@ describe("MCP Apps host transport", () => {
     const connectionId = "emc_01mcpappgatewayrefresh";
     const serverName = connectMcpAppHostName(connectionId);
     const { config, root, catalogReads } = await configuredFixture(
-      "omnirush-mcp-app-host-gateway-refresh-",
+      "mars-mcp-app-host-gateway-refresh-",
       undefined,
       serverName,
       connectionId,
     );
-    await writeOmniRushConnectMcpAppHostCatalog(config, WORKSPACE_ID, {
-      schemaVersion: "omnirush.connect/mcp-servers/1",
+    await writeMarsConnectMcpAppHostCatalog(config, WORKSPACE_ID, {
+      schemaVersion: "mars.connect/mcp-servers/1",
       servers: [],
     });
 
@@ -490,20 +490,20 @@ describe("MCP Apps host transport", () => {
       resourceUri: RESOURCE_URI,
       html: RESOURCE_HTML,
     });
-    expect((await readOmniRushConnectMcpAppHostCatalog(config, WORKSPACE_ID)).servers[0]?.connectionId).toBe(connectionId);
+    expect((await readMarsConnectMcpAppHostCatalog(config, WORKSPACE_ID)).servers[0]?.connectionId).toBe(connectionId);
     expect(catalogReads()).toBe(1);
   });
 
   test("rejects a stale private catalog endpoint outside the credential's trusted origin", async () => {
     const connectionId = "emc_01mcpappcrossorigin";
     const { config, root } = await configuredFixture(
-      "omnirush-mcp-app-host-cross-origin-",
+      "mars-mcp-app-host-cross-origin-",
       undefined,
       connectMcpAppHostName(connectionId),
       connectionId,
     );
-    await writeOmniRushConnectMcpAppHostCatalog(config, WORKSPACE_ID, {
-      schemaVersion: "omnirush.connect/mcp-servers/1",
+    await writeMarsConnectMcpAppHostCatalog(config, WORKSPACE_ID, {
+      schemaVersion: "mars.connect/mcp-servers/1",
       servers: [{
         connectionId,
         name: "Untrusted provider",
@@ -525,7 +525,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("resolves a same-server MCP App through its capability gateway", async () => {
-    const { config, root } = await configuredFixture("omnirush-mcp-app-host-same-server-");
+    const { config, root } = await configuredFixture("mars-mcp-app-host-same-server-");
     const app = await resolveSameServerMcpAppResource({
       serverConfig: config,
       workspaceId: WORKSPACE_ID,
@@ -545,16 +545,16 @@ describe("MCP Apps host transport", () => {
   });
 
   test("resolves and calls account-scoped gateway Apps from the effective runtime configuration", async () => {
-    const { config, root, activateUpdatedResource } = await configuredFixture("omnirush-mcp-app-global-gateway-");
+    const { config, root, activateUpdatedResource } = await configuredFixture("mars-mcp-app-global-gateway-");
     const fixture = (await listMcp(config, WORKSPACE_ID, root)).find(item => item.name === "fixture");
     if (!fixture) throw new Error("Fixture server missing");
-    await writeGlobalRuntimeOpencodeConfig(config, () => ({ mcp: { "omnirush-cloud": fixture.config } }));
+    await writeGlobalRuntimeOpencodeConfig(config, () => ({ mcp: { "mars-cloud": fixture.config } }));
     const app = await resolveSameServerMcpAppResource({
       serverConfig: config, workspaceId: WORKSPACE_ID, workspaceRoot: root,
-      projectedToolName: "omnirush-cloud_model_only_fixture",
+      projectedToolName: "mars-cloud_model_only_fixture",
       launch: { toolName: "read_bound_detail", resourceUri: RESOURCE_URI },
     });
-    expect(app).toMatchObject({ serverName: "omnirush-cloud", html: RESOURCE_HTML });
+    expect(app).toMatchObject({ serverName: "mars-cloud", html: RESOURCE_HTML });
     await activateUpdatedResource();
     expect(await callMcpAppTool({
       serverConfig: config, workspaceId: WORKSPACE_ID, workspaceRoot: root,
@@ -571,7 +571,7 @@ describe("MCP Apps host transport", () => {
   test("rejects a stale gateway launch when the native tool changes its resource binding", async () => {
     const connectionId = "emc_01mcpappgatewaystale";
     const { config, root, activateUpdatedResource } = await configuredFixture(
-      "omnirush-mcp-app-host-gateway-stale-",
+      "mars-mcp-app-host-gateway-stale-",
       undefined,
       connectMcpAppHostName(connectionId),
       connectionId,
@@ -591,7 +591,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("treats a management tool without a UI resource as a normal result", async () => {
-    const { config, root } = await configuredFixture("omnirush-mcp-app-host-management-");
+    const { config, root } = await configuredFixture("mars-mcp-app-host-management-");
 
     expect(await resolveMcpAppResource({
       serverConfig: config,
@@ -602,7 +602,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("refreshes the current tool definition before reading its exact resource", async () => {
-    const { config, root, activateUpdatedResource } = await configuredFixture("omnirush-mcp-app-host-refresh-");
+    const { config, root, activateUpdatedResource } = await configuredFixture("mars-mcp-app-host-refresh-");
 
     const first = await resolveMcpAppResource({
       serverConfig: config,
@@ -623,7 +623,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("reports an advertised resource that resources/read cannot load", async () => {
-    const { config, root } = await configuredFixture("omnirush-mcp-app-host-missing-");
+    const { config, root } = await configuredFixture("mars-mcp-app-host-missing-");
 
     await expect(resolveMcpAppResource({
       serverConfig: config,
@@ -634,7 +634,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("decodes a stable-spec blob-backed HTML resource", async () => {
-    const { config, root } = await configuredFixture("omnirush-mcp-app-host-blob-", {
+    const { config, root } = await configuredFixture("mars-mcp-app-host-blob-", {
       blob: Buffer.from(RESOURCE_HTML, "utf8").toString("base64"),
     });
 
@@ -648,7 +648,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("rejects non-UTF-8 blob-backed HTML", async () => {
-    const invalidUtf8 = await configuredFixture("omnirush-mcp-app-host-bad-utf8-", {
+    const invalidUtf8 = await configuredFixture("mars-mcp-app-host-bad-utf8-", {
       blob: Buffer.from([0xff]).toString("base64"),
     });
     await expect(resolveMcpAppResource({
@@ -660,7 +660,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("preserves an unreachable provider error for host diagnostics", async () => {
-    const { config, root } = await configuredFixture("omnirush-mcp-app-host-unreachable-");
+    const { config, root } = await configuredFixture("mars-mcp-app-host-unreachable-");
     await stops.pop()?.();
 
     await expect(resolveMcpAppResource({
@@ -672,7 +672,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("mediates explicitly read-only same-server tool calls", async () => {
-    const { config, root } = await configuredFixture("omnirush-mcp-app-call-");
+    const { config, root } = await configuredFixture("mars-mcp-app-call-");
 
     const result = await callMcpAppTool({
       serverConfig: config,
@@ -689,7 +689,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("surfaces a provider argument rejection as a typed host error, not an unhandled failure", async () => {
-    const { config, root } = await configuredFixture("omnirush-mcp-app-call-rejected-");
+    const { config, root } = await configuredFixture("mars-mcp-app-call-rejected-");
 
     // A dashboard tile launched with input that omits a required argument must
     // show the provider's rejection, which names the missing key, instead of
@@ -719,7 +719,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("mediates a resource-bound same-server tool for its exact MCP App", async () => {
-    const { config, root } = await configuredFixture("omnirush-mcp-app-bound-call-");
+    const { config, root } = await configuredFixture("mars-mcp-app-bound-call-");
 
     const result = await callMcpAppTool({
       serverConfig: config,
@@ -737,7 +737,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("rejects a resource-bound tool call from a different MCP App", async () => {
-    const { config, root } = await configuredFixture("omnirush-mcp-app-cross-resource-");
+    const { config, root } = await configuredFixture("mars-mcp-app-cross-resource-");
 
     await expect(callMcpAppTool({
       serverConfig: config,
@@ -750,7 +750,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("prevents sandboxed Apps from calling model-only tools", async () => {
-    const { config, root } = await configuredFixture("omnirush-mcp-app-model-only-");
+    const { config, root } = await configuredFixture("mars-mcp-app-model-only-");
     await expect(callMcpAppTool({
       serverConfig: config,
       workspaceId: WORKSPACE_ID,
@@ -761,7 +761,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("rejects same-server tools that require approval", async () => {
-    const { config, root } = await configuredFixture("omnirush-mcp-app-write-");
+    const { config, root } = await configuredFixture("mars-mcp-app-write-");
     await expect(callMcpAppTool({
       serverConfig: config,
       workspaceId: WORKSPACE_ID,
@@ -772,7 +772,7 @@ describe("MCP Apps host transport", () => {
   });
 
   test("calls an approved write tool on the exact originating server", async () => {
-    const { config, root } = await configuredFixture("omnirush-mcp-app-approved-write-");
+    const { config, root } = await configuredFixture("mars-mcp-app-approved-write-");
     const result = await callMcpAppTool({
       serverConfig: config,
       workspaceId: WORKSPACE_ID,
@@ -789,8 +789,8 @@ describe("MCP Apps host transport", () => {
   });
 
   test("rejects private MCP egress outside explicit development mode", async () => {
-    const { config, root } = await configuredFixture("omnirush-mcp-app-private-");
-    delete process.env.OMNIRUSH_DEV_MODE;
+    const { config, root } = await configuredFixture("mars-mcp-app-private-");
+    delete process.env.MARS_DEV_MODE;
 
     await expect(resolveMcpAppResource({
       serverConfig: config,

@@ -9,7 +9,7 @@ provider key, Docker daemon, or running Den database is required.
 
 ## What blocks a merge
 
-The `omnirush-tests-required` check keeps its existing name and fails closed.
+The `mars-tests-required` check keeps its existing name and fails closed.
 For ordinary code changes it requires two independent Linux jobs:
 
 - **Core regressions:** session admission, streaming and reconnects, permission
@@ -39,13 +39,13 @@ until green or silently ignored.
 
 ## Broader coverage
 
-The same OmniRush.ai Tests workflow runs the broad app, server, Den, desktop,
+The same MarsAI Tests workflow runs the broad app, server, Den, desktop,
 release, test-framework, PR-spec, and engine-smoke suites on Linux and macOS at
 07:37 UTC daily, or through **Run workflow** on a selected branch. Each suite
 reports even if an earlier suite fails; failures still make that run red.
 `pnpm test:extended` runs those test suites locally. Packaging can be reproduced
-with `pnpm --filter omnirush-server build` and
-`pnpm --filter @omnirush/desktop typecheck:electron`.
+with `pnpm --filter mars-server build` and
+`pnpm --filter @mars/desktop typecheck:electron`.
 
 Use the full package test command when changing its internals, and
 `pnpm test:eval-runner` when changing the test framework. These tests remain in
@@ -59,28 +59,28 @@ Do not describe a run containing skips as full proof.
 
 ## Why this changed
 
-An audit of OmniRush.ai Tests runs created August 28–September 3, 2026 (UTC)
+An audit of MarsAI Tests runs created August 28–September 3, 2026 (UTC)
 found 159 failures among 632 runs, including 17 awaiting approval. Among the
 615 success/failure results, 25.9% failed. These are run counts, including
 repeated branch updates, not a measured flake rate.
 
 Sampled failure logs show different problems that need different fixes:
 
-- [September 3](https://github.com/omnirush-ai/omnirush-gui/actions/runs/33814401384):
+- [September 3](https://github.com/mars-ai/mars-gui/actions/runs/33814401384):
   `spec-impact` and `spec-quarantine` inventory assertions failed on both OSes
   while 115/116 other spec files passed. Those specific specs have since been
   removed; keeping test-framework bookkeeping out of the default gate prevents
   rebuilding the same barrier elsewhere.
-- [August 28](https://github.com/omnirush-ai/omnirush-gui/actions/runs/33215552704):
+- [August 28](https://github.com/mars-ai/mars-gui/actions/runs/33215552704):
   a compatibility spec spawned another test runner, obscuring the underlying
   failure behind a wrapper assertion.
-- [PR #4442](https://github.com/omnirush-ai/omnirush-gui/pull/4442): the shared suite
+- [PR #4442](https://github.com/mars-ai/mars-gui/pull/4442): the shared suite
   failed on the same engine-retirement timing assertion seen in a
-  [dev run](https://github.com/omnirush-ai/omnirush-gui/actions/runs/33907568505).
-  [PR #4439](https://github.com/omnirush-ai/omnirush-gui/pull/4439) independently
+  [dev run](https://github.com/mars-ai/mars-gui/actions/runs/33907568505).
+  [PR #4439](https://github.com/mars-ai/mars-gui/pull/4439) independently
   repairs that race. Core coverage still exercises real engine eviction and
   reload behavior; the broad test is retained.
-- The separate [SDK check on #4442](https://github.com/omnirush-ai/omnirush-gui/actions/runs/33916924365)
+- The separate [SDK check on #4442](https://github.com/mars-ai/mars-gui/actions/runs/33916924365)
   failed when schema generation connected to MySQL at `127.0.0.1:3306` without a
   database. That is a setup dependency to fix in the SDK change, not a reason
   to suppress schema-drift validation. This CI cleanup does not fix that branch.

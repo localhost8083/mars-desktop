@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/paths",
+  "name": "@mars/paths",
   "private": true,
   "type": "module",
   "exports": {

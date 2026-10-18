@@ -7,7 +7,7 @@ import { join } from "node:path";
  * any other host is trusted on faith: some pnpm versions drop its `integrity`
  * field when rewriting the lockfile, and the host can change the bytes at will.
  * The last such dependency (SheetJS from cdn.sheetjs.com) was replaced by
- * @omnirush/workbook; this canary keeps the door shut.
+ * @mars/workbook; this canary keeps the door shut.
  */
 describe("root pnpm lockfile supply chain", () => {
   test("no dependency resolves from a tarball outside the npm registry", async () => {

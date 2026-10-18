@@ -1,7 +1,7 @@
 import { expect } from "vitest";
-import { createAndSelectWorkspace, evalIn, waitFor } from "@omnirush/behaviors";
-import { browserScript } from "@omnirush/testkit";
-import { spec } from "@omnirush/testkit";
+import { createAndSelectWorkspace, evalIn, waitFor } from "@mars/behaviors";
+import { browserScript } from "@mars/testkit";
+import { spec } from "@mars/testkit";
 import { portableComputerUseWorld, toolState } from "../worlds/computer-use.ts";
 // Mirrors COMPUTER_USE_PAUSED in apps/app/src/app/constants.ts and apps/desktop/electron/computer-use.mjs.
 const COMPUTER_USE_PAUSED = true;
@@ -21,7 +21,7 @@ test.skipIf(COMPUTER_USE_PAUSED)("Windows and Linux X11 Computer Use keeps nativ
   const session = await step("Only a person can approve a particular native window", async () => {
     const pending = world.call("computer_open_session", { app_id: world.appId, pid: world.pid, mode: "control", purpose: "Increment a disposable counter and edit a disposable draft." });
     await expect.poll(async () => JSON.stringify(await world.hostState())).toContain('"phase":"approval"');
-    await expect(world.raw("omnirush/ui", { action: "approve" })).rejects.toThrow("Method not available to the agent");
+    await expect(world.raw("mars/ui", { action: "approve" })).rejects.toThrow("Method not available to the agent");
     expect(toolState(await world.peerCall("computer_open_session", { app_id: world.appId, mode: "observe", purpose: "Peer request" })).code).toBe("session_busy");
     expect(await world.state()).toEqual([{ count: 0, draft: "Initial draft" }, { count: 0, draft: "Initial draft" }]);
     await world.approve();
@@ -57,8 +57,8 @@ test.skipIf(COMPUTER_USE_PAUSED)("Windows and Linux X11 Computer Use keeps nativ
     const point = await world.point(observed, 150, 180);
     expect(toolState(await world.call("computer_act", { session_id: session, observation_id: observed.observation_id, request_id: "focus-draft", action: { type: "click", ...point } })).ok).toBe(true);
     await act("select-draft", { type: "key", key: "a", modifiers: ["ctrl"] });
-    await act("write-draft", { type: "type", text: "OmniRush 123!" });
-    await expect.poll(() => world.state()).toEqual([{ count: 1, draft: "OmniRush 123!" }, { count: 0, draft: "Initial draft" }]);
+    await act("write-draft", { type: "type", text: "Mars 123!" });
+    await expect.poll(() => world.state()).toEqual([{ count: 1, draft: "Mars 123!" }, { count: 0, draft: "Initial draft" }]);
   });
   await step("Native double-click, scroll and drag affect only the selected window and release input", async () => {
     const act = async (request: string, actionFor: (observation: Record<string, unknown>) => Promise<object>) => {
@@ -76,7 +76,7 @@ test.skipIf(COMPUTER_USE_PAUSED)("Windows and Linux X11 Computer Use keeps nativ
       { doubles: 0, scrolled: false, dragged: false, released: true },
     ]);
     await act("restore-draft-focus", async (observed) => ({ type: "click", ...await world.point(observed, 150, 180) }));
-    expect(await world.state()).toEqual([{ count: 1, draft: "OmniRush 123!" }, { count: 0, draft: "Initial draft" }]);
+    expect(await world.state()).toEqual([{ count: 1, draft: "Mars 123!" }, { count: 0, draft: "Initial draft" }]);
   });
   await step("Changed pixels and out-of-window coordinates cannot dispatch input", async () => {
     const observed = toolState(await world.call("computer_observe", { session_id: session }));
@@ -114,7 +114,7 @@ test.skipIf(COMPUTER_USE_PAUSED)("Windows and Linux X11 Computer Use keeps nativ
     await world.previewAction("pause");
     await expect.poll(async () => toolState(await world.call("computer_session_status", { session_id: session })).state).toBe("paused");
     expect(toolState(await world.call("computer_act", { session_id: session, observation_id: observed.observation_id, request_id: "paused-input", action: { type: "type", text: "Forbidden" } })).code).toBe("session_paused");
-    await expect(world.raw("omnirush/ui", { action: "resume" })).rejects.toThrow("Method not available to the agent");
+    await expect(world.raw("mars/ui", { action: "resume" })).rejects.toThrow("Method not available to the agent");
     await world.approve("resume");
     expect(toolState(await world.call("computer_session_status", { session_id: session })).state).toBe("active");
     expect(toolState(await world.call("computer_act", { session_id: session, observation_id: observed.observation_id, request_id: "invalidated-input", action: { type: "type", text: "Forbidden" } })).code).toBe("stale_observation");
@@ -169,8 +169,8 @@ test.skipIf(COMPUTER_USE_PAUSED)("Computer Use setup and approval work from the 
     await evalIn(app, () => [...document.querySelectorAll("button")].find((button) => button.textContent.trim() === "Enable Computer Use")?.click());
     await waitFor(app, () => document.body.innerText.includes("Ready · app access is approved when a session starts"), { timeoutMs: 60_000 });
   });
-  const command = await evalIn(app, () => window.__OMNIRUSH_ELECTRON__.invokeDesktop("getComputerUseMcpCommand"));
-  const environment = await evalIn(app, () => window.__OMNIRUSH_ELECTRON__.invokeDesktop("getComputerUseMcpEnvironment"));
+  const command = await evalIn(app, () => window.__MARS_ELECTRON__.invokeDesktop("getComputerUseMcpCommand"));
+  const environment = await evalIn(app, () => window.__MARS_ELECTRON__.invokeDesktop("getComputerUseMcpEnvironment"));
   await step("Copy CLI connection produces a usable local command without the discovery secret", async () => {
     await evalIn(app, () => [...document.querySelectorAll("button")].find((button) => button.textContent.trim() === "Copy CLI connection")?.click());
     await waitFor(app, () => document.body.innerText.includes("CLI connection copied"));
@@ -199,9 +199,9 @@ test.skipIf(COMPUTER_USE_PAUSED)("Computer Use setup and approval work from the 
   await step("Stop stays available in the main app when the preview is hidden", async () => {
     expect(toolState(await client.call("computer_observe", { session_id: session })).ok).toBe(true);
     await evalIn(app, async () => {
-      const states = await window.__OMNIRUSH_ELECTRON__.invokeDesktop("getComputerUseState");
+      const states = await window.__MARS_ELECTRON__.invokeDesktop("getComputerUseState");
       if (!Array.isArray(states) || !states[0]) throw new Error("No active desktop session");
-      await window.__OMNIRUSH_ELECTRON__.invokeDesktop("computerUseAction", { connectionId: states[0].connectionId, id: states[0].id, action: "hide" });
+      await window.__MARS_ELECTRON__.invokeDesktop("computerUseAction", { connectionId: states[0].connectionId, id: states[0].id, action: "hide" });
     }, { awaitPromise: true });
     expect(toolState(await client.call("computer_session_status", { session_id: session }))).toMatchObject({ state: "active", panel_visible: false });
     await waitFor(app, () => Boolean([...document.querySelectorAll('aside[aria-label="Computer Use controls"] button')].find((button) => button.textContent.trim() === "Stop")));

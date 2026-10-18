@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { DaytonaExec } from "@omnirush/hosts";
+import type { DaytonaExec } from "@mars/hosts";
 import {
   createDaytonaK3sCluster,
   exposeK3sService,
@@ -29,7 +29,7 @@ const OFFICIAL_VERSION = "v1.31.6+k3s1";
 const OFFICIAL_URL = "https://github.com/k3s-io/k3s/releases/download/v1.31.6%2Bk3s1/k3s";
 const OFFICIAL_SHA256 = "9f82f06b4cf318fcf4eeda3f4fedaa10c0cebc418b1a047e72b104f5ea7874c5";
 const placement = createPlacement({ id: "unit-cluster", provider: "daytona-k3s" });
-const root = "/tmp/omnirush-world-k3s/unit-cluster";
+const root = "/tmp/mars-world-k3s/unit-cluster";
 
 function remoteScript(call: ExecCall): string {
   if (call.args[0] !== "exec") return "";
@@ -177,7 +177,7 @@ test("root lifecycle downloads only the hardcoded official binary and deletes it
   const start = observed.find((script) => script.includes("'server'")) ?? "";
   assert(start.includes(`'nohup' '${root}/bin/k3s' 'server' '--data-dir' '${root}/data' '--write-kubeconfig' '${root}/kubeconfig.yaml' '--write-kubeconfig-mode' '0600'`));
   assert.doesNotMatch(start, /'--write-kubeconfig-mode' '0644'/);
-  assert(start.includes("'--node-name' 'omnirush-unit-cluster'"));
+  assert(start.includes("'--node-name' 'mars-unit-cluster'"));
   assert(start.includes("'--snapshotter' 'native'"));
   const readiness = observed.find((script) => script.includes("'--raw=/readyz'")) ?? "";
   assert(readiness.includes(`'${root}/bin/k3s' 'kubectl' '--kubeconfig' '${root}/kubeconfig.yaml' 'get' '--raw=/readyz'`));

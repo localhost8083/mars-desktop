@@ -17,10 +17,10 @@ import {
 import {
   desktopBootstrapPath,
   normalizeWorkspaceRootPath,
-  omnirushEnvStorePath,
-  omnirushServerConfigPath,
+  marsEnvStorePath,
+  marsServerConfigPath,
   resolveWorkspaceOpencodeConfigPath,
-} from "@omnirush/paths";
+} from "@mars/paths";
 import {
   dedupeCertificates,
   extendDefaultCaCertificates,
@@ -32,8 +32,8 @@ import {
 const __runtimeDir = path.dirname(fileURLToPath(import.meta.url));
 
 const DIRECT_RUNTIME = "direct";
-const OMNIRUSH_SERVER_PORT_RANGE_START = 48_000;
-const OMNIRUSH_SERVER_PORT_RANGE_END = 51_000;
+const MARS_SERVER_PORT_RANGE_START = 48_000;
+const MARS_SERVER_PORT_RANGE_END = 51_000;
 const MAX_BOOTSTRAP_BYTES = 256 * 1024;
 const MAX_CHAIN_REPAIR_BODY_BYTES = 64 * 1024;
 const MAX_CHAIN_REPAIR_ORIGINS = 3;
@@ -189,7 +189,7 @@ function normalizeServerCredentials(value) {
   };
 }
 
-export function migrateOmniRushServerTokenStore(value) {
+export function migrateMarsServerTokenStore(value) {
   const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
   const sourceWorkspaces = source.workspaces && typeof source.workspaces === "object" && !Array.isArray(source.workspaces)
     ? source.workspaces
@@ -262,15 +262,15 @@ export async function prepareRuntimeWorkspaceRoot(projectDir, options = {}) {
   }
 }
 
-export function resolveOmniRushServerConfigPath(env = process.env) {
-  return omnirushServerConfigPath({ env });
+export function resolveMarsServerConfigPath(env = process.env) {
+  return marsServerConfigPath({ env });
 }
 
 export function seedWorkspacePathsForEmbeddedServer(workspacePaths, serverConfigExists) {
   return serverConfigExists ? [] : workspacePaths;
 }
 
-export function selectStickyOmniRushPortWorkspace(requestedWorkspacePaths = [], serverWorkspacePaths = []) {
+export function selectStickyMarsPortWorkspace(requestedWorkspacePaths = [], serverWorkspacePaths = []) {
   for (const value of [...requestedWorkspacePaths, ...serverWorkspacePaths]) {
     const workspacePath = String(value ?? "").trim();
     if (workspacePath) return workspacePath;
@@ -279,7 +279,7 @@ export function selectStickyOmniRushPortWorkspace(requestedWorkspacePaths = [], 
 }
 
 export function resolveEvalLocalServerDelayMs(env = process.env) {
-  const delayMs = Number(env.OMNIRUSH_EVAL_LOCAL_SERVER_DELAY_MS);
+  const delayMs = Number(env.MARS_EVAL_LOCAL_SERVER_DELAY_MS);
   return Number.isFinite(delayMs) && delayMs > 0 ? delayMs : 0;
 }
 
@@ -387,9 +387,9 @@ export function snapshotEngineState(state) {
 }
 
 /**
- * Where the in-process omnirush-server persists its structured log. Packaged
+ * Where the in-process mars-server persists its structured log. Packaged
  * apps have no visible stdout, so without this file every engine rollover
- * reason and reload trigger is lost. An explicit OMNIRUSH_SERVER_LOG_FILE wins.
+ * reason and reload trigger is lost. An explicit MARS_SERVER_LOG_FILE wins.
  */
 /**
  * Set by a user's sign-out, cleared once a server started with it: that
@@ -397,22 +397,22 @@ export function snapshotEngineState(state) {
  * before the next start still clears them at the one after.
  */
 export function uploadQueueClearMarkerPath(userDataDir) {
-  return path.join(userDataDir, "omnirush-upload-queue-clear");
+  return path.join(userDataDir, "mars-upload-queue-clear");
 }
 
-export function resolveOmniRushServerLogFile(userDataDir, env = process.env) {
-  const explicit = String(env.OMNIRUSH_SERVER_LOG_FILE ?? "").trim();
+export function resolveMarsServerLogFile(userDataDir, env = process.env) {
+  const explicit = String(env.MARS_SERVER_LOG_FILE ?? "").trim();
   if (explicit) return explicit;
-  return path.join(userDataDir, "logs", "omnirush-server.log");
+  return path.join(userDataDir, "logs", "mars-server.log");
 }
 
-function createOmniRushServerState() {
+function createMarsServerState() {
   return {
     child: null,
     childExited: true,
     inProcess: false,
     logFilePath: null,
-    // Monotonic per-start identity assigned by startOmniRushServerInner.
+    // Monotonic per-start identity assigned by startMarsServerInner.
     // Sticky ports and persisted tokens make the connection details identical
     // across restarts, so clients need this to observe a new server lifetime.
     generation: null,
@@ -434,7 +434,7 @@ function createOmniRushServerState() {
   };
 }
 
-export function snapshotOmniRushServerState(state) {
+export function snapshotMarsServerState(state) {
   const child = state.childExited ? null : state.child;
   const running = state.inProcess || Boolean(child && child.exitCode === null && !child.killed);
   return {
@@ -470,7 +470,7 @@ export function snapshotOmniRushServerState(state) {
  * explicit forceRestart or a host rebind (remote access change) gives up the
  * running server.
  */
-export function resolveOmniRushServerReuse({
+export function resolveMarsServerReuse({
   forceRestart,
   inProcess,
   lifecycleState,
@@ -490,19 +490,19 @@ export function resolveOmniRushServerReuse({
 
 /**
  * A failed server start must not leave the state objects describing the
- * runtime it already stopped: snapshotOmniRushServerState would report
- * running:true with a dead baseUrl and assertOmniRushServerReady would pass
+ * runtime it already stopped: snapshotMarsServerState would report
+ * running:true with a dead baseUrl and assertMarsServerReady would pass
  * against it. Keeps accumulated output for diagnostics and the project dir so
  * a retry via engineRestart still knows its workspace. The engine state only
  * resets when this start owned the engine (manageOpencode) — an external
  * engine keeps running regardless of the server's fate.
  */
-export function resetRuntimeStatesAfterFailedServerStart(omnirushServerStateRef, engineStateRef, options = {}) {
-  const serverStdout = omnirushServerStateRef.lastStdout;
-  const serverStderr = omnirushServerStateRef.lastStderr;
-  Object.assign(omnirushServerStateRef, createOmniRushServerState());
-  omnirushServerStateRef.lastStdout = serverStdout;
-  omnirushServerStateRef.lastStderr = serverStderr;
+export function resetRuntimeStatesAfterFailedServerStart(marsServerStateRef, engineStateRef, options = {}) {
+  const serverStdout = marsServerStateRef.lastStdout;
+  const serverStderr = marsServerStateRef.lastStderr;
+  Object.assign(marsServerStateRef, createMarsServerState());
+  marsServerStateRef.lastStdout = serverStdout;
+  marsServerStateRef.lastStderr = serverStderr;
   if (options.manageOpencode === true) {
     const engineStdout = engineStateRef.lastStdout;
     const engineStderr = engineStateRef.lastStderr;
@@ -514,15 +514,15 @@ export function resetRuntimeStatesAfterFailedServerStart(omnirushServerStateRef,
   }
 }
 
-function assertOmniRushServerReady(snapshot) {
+function assertMarsServerReady(snapshot) {
   if (!snapshot?.running) {
-    throw new Error("OmniRush.ai server did not stay running after startup.");
+    throw new Error("MarsAI server did not stay running after startup.");
   }
   if (!snapshot.baseUrl) {
-    throw new Error("OmniRush.ai server did not report a base URL after startup.");
+    throw new Error("MarsAI server did not report a base URL after startup.");
   }
   if (!snapshot.ownerToken && !snapshot.clientToken) {
-    throw new Error("OmniRush.ai server did not report an access token after startup.");
+    throw new Error("MarsAI server did not report an access token after startup.");
   }
   return snapshot;
 }
@@ -742,14 +742,14 @@ async function fetchJson(url, options = {}, timeoutMs = 3000) {
 }
 
 export function resolveUserEnvFilePath(env = process.env) {
-  return omnirushEnvStorePath({ env });
+  return marsEnvStorePath({ env });
 }
 
 const USER_ENV_KEY_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
-const USER_ENV_RESERVED_PREFIXES = ["OMNIRUSH_", "OPENCODE_"];
+const USER_ENV_RESERVED_PREFIXES = ["MARS_", "OPENCODE_"];
 
 // Synchronous, best-effort; absent or malformed returns {}. Reserved prefixes
-// are stripped so a tampered file can never shadow OMNIRUSH_* / OPENCODE_*.
+// are stripped so a tampered file can never shadow MARS_* / OPENCODE_*.
 function loadUserEnvFile(env = process.env) {
   try {
     const raw = readFileSync(resolveUserEnvFilePath(env), "utf8");
@@ -1169,7 +1169,7 @@ async function resolveChainRepairOrigins(options) {
   const env = options.parentEnv ?? {};
   const chainRepair = options.chainRepair ?? {};
   if (chainRepair.origins) return normalizeRepairOrigins(chainRepair.origins);
-  const envOrigins = typeof env.OMNIRUSH_CHAIN_REPAIR_ORIGINS === "string" ? env.OMNIRUSH_CHAIN_REPAIR_ORIGINS : "";
+  const envOrigins = typeof env.MARS_CHAIN_REPAIR_ORIGINS === "string" ? env.MARS_CHAIN_REPAIR_ORIGINS : "";
   if (envOrigins.trim()) return normalizeRepairOrigins(envOrigins.split(","));
   const bootstrapPath = chainRepair.bootstrapPath ?? desktopBootstrapPath({ env });
   const origin = await readActivatedEnterpriseOrigin(bootstrapPath);
@@ -1184,15 +1184,15 @@ async function repairIncompleteChains(options) {
   const env = options.parentEnv ?? {};
   const chainRepair = options.chainRepair ?? {};
   const logInfo = options.logInfo;
-  if (chainRepair.disabled === true || String(env.OMNIRUSH_DISABLE_CHAIN_REPAIR ?? "").trim() === "1") {
-    if (typeof logInfo === "function") logInfo("OmniRush.ai runtime: chain repair disabled by OMNIRUSH_DISABLE_CHAIN_REPAIR.");
+  if (chainRepair.disabled === true || String(env.MARS_DISABLE_CHAIN_REPAIR ?? "").trim() === "1") {
+    if (typeof logInfo === "function") logInfo("MarsAI runtime: chain repair disabled by MARS_DISABLE_CHAIN_REPAIR.");
     return { pems: [], timedOut: false };
   }
 
   const origins = await resolveChainRepairOrigins(options);
   if (origins.length === 0) {
-    if (!chainRepair.origins && !String(env.OMNIRUSH_CHAIN_REPAIR_ORIGINS ?? "").trim() && typeof logInfo === "function") {
-      logInfo("OmniRush.ai runtime: chain repair skipped: no activation record.");
+    if (!chainRepair.origins && !String(env.MARS_CHAIN_REPAIR_ORIGINS ?? "").trim() && typeof logInfo === "function") {
+      logInfo("MarsAI runtime: chain repair skipped: no activation record.");
     }
     return { pems: [], timedOut: false };
   }
@@ -1200,7 +1200,7 @@ async function repairIncompleteChains(options) {
   const fetchImpl = chainRepair.fetchImpl ?? globalThis.fetch;
   const tlsModule = options.tlsModule ?? tls;
   const tlsConnectImpl = chainRepair.tlsConnectImpl ?? tls.connect;
-  const totalTimeoutValue = Number(env.OMNIRUSH_CHAIN_REPAIR_TIMEOUT_MS);
+  const totalTimeoutValue = Number(env.MARS_CHAIN_REPAIR_TIMEOUT_MS);
   const totalTimeoutMs =
     Number.isFinite(totalTimeoutValue) && totalTimeoutValue >= 1000 && totalTimeoutValue <= 120000
       ? totalTimeoutValue
@@ -1213,7 +1213,7 @@ async function repairIncompleteChains(options) {
 
   if (typeof fetchImpl !== "function") {
     if (typeof logInfo === "function") {
-      for (const origin of origins) logInfo(`OmniRush.ai runtime: chain repair skipped for ${origin}: fetch unavailable`);
+      for (const origin of origins) logInfo(`MarsAI runtime: chain repair skipped for ${origin}: fetch unavailable`);
     }
     return { pems: [], timedOut: false };
   }
@@ -1223,27 +1223,27 @@ async function repairIncompleteChains(options) {
     for (const origin of origins) {
       const strictError = await strictProbeChainRepair(origin, tlsConnectImpl);
       if (strictError === null) {
-        if (typeof logInfo === "function") logInfo(`OmniRush.ai runtime: chain ok for ${origin}`);
+        if (typeof logInfo === "function") logInfo(`MarsAI runtime: chain ok for ${origin}`);
         continue;
       }
       if (strictError !== "UNABLE_TO_VERIFY_LEAF_SIGNATURE") {
-        if (typeof logInfo === "function") logInfo(`OmniRush.ai runtime: chain repair skipped for ${origin}: ${strictError}`);
+        if (typeof logInfo === "function") logInfo(`MarsAI runtime: chain repair skipped for ${origin}: ${strictError}`);
         continue;
       }
 
       const leafState = await introspectLeafCertificate(origin, tlsConnectImpl);
       if (!leafState) {
-        if (typeof logInfo === "function") logInfo(`OmniRush.ai runtime: chain repair skipped for ${origin}: certificate introspection failed`);
+        if (typeof logInfo === "function") logInfo(`MarsAI runtime: chain repair skipped for ${origin}: certificate introspection failed`);
         continue;
       }
       if (!leafState.leafOnly) {
-        if (typeof logInfo === "function") logInfo(`OmniRush.ai runtime: chain repair skipped for ${origin}: served chain includes an intermediate`);
+        if (typeof logInfo === "function") logInfo(`MarsAI runtime: chain repair skipped for ${origin}: served chain includes an intermediate`);
         continue;
       }
 
       const issuerUrls = caIssuerUrls(leafState.leaf);
       if (issuerUrls.length === 0) {
-        if (typeof logInfo === "function") logInfo(`OmniRush.ai runtime: chain repair skipped for ${origin}: no CA Issuers AIA URL`);
+        if (typeof logInfo === "function") logInfo(`MarsAI runtime: chain repair skipped for ${origin}: no CA Issuers AIA URL`);
         continue;
       }
 
@@ -1258,18 +1258,18 @@ async function repairIncompleteChains(options) {
         if (!intermediate) continue;
         const reason = refusalReason(leafState.leaf, intermediate, rootsProvider);
         if (reason) {
-          if (typeof logInfo === "function") logInfo(`OmniRush.ai runtime: chain repair refused for ${origin}: ${reason}`);
+          if (typeof logInfo === "function") logInfo(`MarsAI runtime: chain repair refused for ${origin}: ${reason}`);
           continue;
         }
         pems.push(intermediate.toString());
         repaired = true;
         if (typeof logInfo === "function") {
-          logInfo(`OmniRush.ai runtime: chain repaired for ${origin}: added "${certificateCommonName(intermediate)}"`);
+          logInfo(`MarsAI runtime: chain repaired for ${origin}: added "${certificateCommonName(intermediate)}"`);
         }
         break;
       }
       if (!repaired && typeof logInfo === "function") {
-        logInfo(`OmniRush.ai runtime: chain repair skipped for ${origin}: no usable AIA issuer certificate`);
+        logInfo(`MarsAI runtime: chain repair skipped for ${origin}: no usable AIA issuer certificate`);
       }
     }
     return { pems, timedOut: false };
@@ -1287,8 +1287,8 @@ async function repairIncompleteChains(options) {
   }
 }
 
-const CONFIGURED_EXTRA_CA_MESSAGE = "OmniRush.ai runtime: NODE_EXTRA_CA_CERTS is already set; child processes get it merged with the OS trust store.";
-const UNREADABLE_EXTRA_CA_MESSAGE = "OmniRush.ai runtime: NODE_EXTRA_CA_CERTS is set but unreadable; child processes keep it as is.";
+const CONFIGURED_EXTRA_CA_MESSAGE = "MarsAI runtime: NODE_EXTRA_CA_CERTS is already set; child processes get it merged with the OS trust store.";
+const UNREADABLE_EXTRA_CA_MESSAGE = "MarsAI runtime: NODE_EXTRA_CA_CERTS is set but unreadable; child processes keep it as is.";
 
 /**
  * @param {ResolveSystemCaEnvOptions} options
@@ -1338,7 +1338,7 @@ async function resolveSystemCa({
       },
       platform: platformLoader,
     });
-    info(`OmniRush.ai runtime: system CA bundle sources ${summarizeSystemCaSources(bundle.sources)}`);
+    info(`MarsAI runtime: system CA bundle sources ${summarizeSystemCaSources(bundle.sources)}`);
     const trustedCertificates = dedupeCertificates([...configuredCertificates, ...bundle.certificates]);
     let repairedPems = [];
     try {
@@ -1354,7 +1354,7 @@ async function resolveSystemCa({
         chainRepair,
       });
       repairedPems = repaired.pems;
-      if (repaired.timedOut) info("OmniRush.ai runtime: chain repair skipped: timed out");
+      if (repaired.timedOut) info("MarsAI runtime: chain repair skipped: timed out");
     } catch {
       repairedPems = [];
     }
@@ -1363,9 +1363,9 @@ async function resolveSystemCa({
 
     const trust = extendDefaultCaCertificates(tlsModule, certificates);
     if (trust.applied) {
-      info(`OmniRush.ai runtime: main-process TLS trusts ${trust.certificates.length} OS certificates${trust.rejected ? ` (skipped ${trust.rejected} the TLS library cannot parse)` : ""}`);
+      info(`MarsAI runtime: main-process TLS trusts ${trust.certificates.length} OS certificates${trust.rejected ? ` (skipped ${trust.rejected} the TLS library cannot parse)` : ""}`);
     } else if (typeof tlsModule?.setDefaultCACertificates === "function") {
-      info(`OmniRush.ai runtime: main-process TLS trust unchanged: ${trust.error ?? "unknown error"}`);
+      info(`MarsAI runtime: main-process TLS trust unchanged: ${trust.error ?? "unknown error"}`);
     }
     if (configuredPath !== null && !configuredReadable) {
       info(UNREADABLE_EXTRA_CA_MESSAGE);
@@ -1420,9 +1420,9 @@ export function createRuntimeManager({
   desktopRoot,
   listLocalWorkspacePaths,
   localManagedMcpVaultKey,
-  omnirushGatewayCredentials = null,
+  marsGatewayCredentials = null,
   appVersion = null,
-  omnirushUiMcpLaunch = () => null,
+  marsUiMcpLaunch = () => null,
   workspaceMkdir = mkdir,
   workspacePlatform = process.platform,
   // Chromium-backed fetch for requests off the machine (see external-fetch.mjs).
@@ -1436,11 +1436,11 @@ export function createRuntimeManager({
   const inheritedProcessEnv = { ...process.env };
   let injectedUserEnvKeys = new Set();
   const engineState = createEngineState();
-  const omnirushServerState = createOmniRushServerState();
+  const marsServerState = createMarsServerState();
   // Monotonic across this Electron process. Never reset with the server
   // state: each successful server start must be observable as a new
   // generation even when ports and tokens are reused.
-  let omnirushServerGenerationCounter = 0;
+  let marsServerGenerationCounter = 0;
 
   // Serialize engine lifecycle operations. Without this, concurrent renderer
   // invocations of engineStart/engineStop/engineRestart race: each call's
@@ -1482,16 +1482,16 @@ export function createRuntimeManager({
     return systemCaPromise;
   }
 
-  function omnirushServerTokenStorePath() {
-    const override = process.env.OMNIRUSH_SERVER_TOKEN_STORE_PATH?.trim();
+  function marsServerTokenStorePath() {
+    const override = process.env.MARS_SERVER_TOKEN_STORE_PATH?.trim();
     if (override) return path.resolve(override);
-    return path.join(userDataDir, "omnirush-server-tokens.json");
+    return path.join(userDataDir, "mars-server-tokens.json");
   }
 
-  function omnirushServerStatePath() {
-    const override = process.env.OMNIRUSH_SERVER_STATE_PATH?.trim();
+  function marsServerStatePath() {
+    const override = process.env.MARS_SERVER_STATE_PATH?.trim();
     if (override) return path.resolve(override);
-    return path.join(userDataDir, "omnirush-server-state.json");
+    return path.join(userDataDir, "mars-server-state.json");
   }
 
   function managedOpencodeWorkdir() {
@@ -1499,8 +1499,8 @@ export function createRuntimeManager({
   }
 
   async function loadTokenStore() {
-    const stored = await readJsonFile(omnirushServerTokenStorePath(), { version: 1, workspaces: {} });
-    const migrated = migrateOmniRushServerTokenStore(stored);
+    const stored = await readJsonFile(marsServerTokenStorePath(), { version: 1, workspaces: {} });
+    const migrated = migrateMarsServerTokenStore(stored);
     if (JSON.stringify(stored) !== JSON.stringify(migrated)) {
       await saveTokenStore(migrated);
     }
@@ -1508,13 +1508,13 @@ export function createRuntimeManager({
   }
 
   async function saveTokenStore(store) {
-    const filePath = omnirushServerTokenStorePath();
+    const filePath = marsServerTokenStorePath();
     await mkdir(path.dirname(filePath), { recursive: true });
     await writeFile(filePath, `${JSON.stringify(store, null, 2)}\n`, "utf8");
   }
 
   async function loadPortState() {
-    return readJsonFile(omnirushServerStatePath(), {
+    return readJsonFile(marsServerStatePath(), {
       version: 4,
       workspacePorts: {},
       preferredPort: null,
@@ -1522,7 +1522,7 @@ export function createRuntimeManager({
   }
 
   async function savePortState(state) {
-    const filePath = omnirushServerStatePath();
+    const filePath = marsServerStatePath();
     await mkdir(path.dirname(filePath), { recursive: true });
     await writeFile(filePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
   }
@@ -1539,7 +1539,7 @@ export function createRuntimeManager({
     await saveTokenStore(store);
   }
 
-  async function readPreferredOmniRushPort(workspaceKey) {
+  async function readPreferredMarsPort(workspaceKey) {
     const state = await loadPortState();
     const normalized = normalizeWorkspaceKey(workspaceKey, workspacePlatform);
     if (normalized && state.workspacePorts?.[normalized]) {
@@ -1548,7 +1548,7 @@ export function createRuntimeManager({
     return state.preferredPort ?? null;
   }
 
-  async function persistPreferredOmniRushPort(workspaceKey, port) {
+  async function persistPreferredMarsPort(workspaceKey, port) {
     const state = await loadPortState();
     const normalized = normalizeWorkspaceKey(workspaceKey, workspacePlatform);
     state.version = 4;
@@ -1571,8 +1571,8 @@ export function createRuntimeManager({
     return portAvailable(host, port);
   }
 
-  async function resolveOmniRushPort(host, workspaceKey, currentPort = null) {
-    const preferredPort = await readPreferredOmniRushPort(workspaceKey);
+  async function resolveMarsPort(host, workspaceKey, currentPort = null) {
+    const preferredPort = await readPreferredMarsPort(workspaceKey);
     if (currentPort && (await waitForPortAvailable(host, currentPort))) {
       return { port: currentPort, preferredPort };
     }
@@ -1583,7 +1583,7 @@ export function createRuntimeManager({
   }
 
   async function ensureDevModePaths() {
-    const root = path.join(userDataDir, "omnirush-dev-data");
+    const root = path.join(userDataDir, "mars-dev-data");
     const paths = {
       homeDir: path.join(root, "home"),
       xdgConfigHome: path.join(root, "xdg", "config"),
@@ -1605,7 +1605,7 @@ export function createRuntimeManager({
     // User env is layered first so process.env + any caller overrides always
     // win. See apps/server/src/env-file.ts — all loaders must agree on path +
     // reserved-keys policy.
-    const devPaths = process.env.OMNIRUSH_DEV_MODE === "1" && process.env.OMNIRUSH_DEV_SHARED_STATE !== "1"
+    const devPaths = process.env.MARS_DEV_MODE === "1" && process.env.MARS_DEV_SHARED_STATE !== "1"
       ? await ensureDevModePaths()
       : null;
     const userEnvPathEnv = devPaths
@@ -1642,7 +1642,7 @@ export function createRuntimeManager({
       env[pathKey] = pathEnv;
     }
     if (devPaths) {
-      env.OMNIRUSH_DEV_MODE = "1";
+      env.MARS_DEV_MODE = "1";
       env.HOME = devPaths.homeDir;
       env.USERPROFILE = devPaths.homeDir;
       env.XDG_CONFIG_HOME = devPaths.xdgConfigHome;
@@ -1706,7 +1706,7 @@ export function createRuntimeManager({
     const candidates = [];
     const seen = new Set();
 
-    for (const key of ["OMNIRUSH_DOCKER_BIN", "OPENWRK_DOCKER_BIN", "DOCKER_BIN"]) {
+    for (const key of ["MARS_DOCKER_BIN", "OPENWRK_DOCKER_BIN", "DOCKER_BIN"]) {
       const value = process.env[key]?.trim();
       if (value && !seen.has(value)) {
         seen.add(value);
@@ -1759,13 +1759,13 @@ export function createRuntimeManager({
     }
 
     throw new Error(
-      `Failed to run docker: ${errors.join("; ")} (Set OMNIRUSH_DOCKER_BIN to your docker binary if needed)`,
+      `Failed to run docker: ${errors.join("; ")} (Set MARS_DOCKER_BIN to your docker binary if needed)`,
     );
   }
 
-  const legacyOmniRushContainerPrefix = `${["omnirush", "orchestrator"].join("-")}-`;
+  const legacyMarsContainerPrefix = `${["mars", "orchestrator"].join("-")}-`;
 
-  async function listOmniRushManagedContainers() {
+  async function listMarsManagedContainers() {
     const result = runDockerCommandDetailed(["ps", "-a", "--format", "{{.Names}}"], 8000);
     if (result.status !== 0) {
       const combined = `${result.stdout.trim()}\n${result.stderr.trim()}`.trim();
@@ -1774,7 +1774,7 @@ export function createRuntimeManager({
     return result.stdout
       .split(/\r?\n/)
       .map((line) => line.trim())
-      .filter((name) => name && (name.startsWith(legacyOmniRushContainerPrefix) || name.startsWith("omnirush-dev-") || name.startsWith("openwrk-")))
+      .filter((name) => name && (name.startsWith(legacyMarsContainerPrefix) || name.startsWith("mars-dev-") || name.startsWith("openwrk-")))
       .sort();
   }
 
@@ -1804,7 +1804,7 @@ export function createRuntimeManager({
         resolvedSource: null,
         version: null,
         supportsServe: false,
-        notes: ["OmniRush binary not found in bundled sidecars or PATH."],
+        notes: ["Mars binary not found in bundled sidecars or PATH."],
         serveHelpStatus: null,
         serveHelpStdout: null,
         serveHelpStderr: null,
@@ -1815,10 +1815,10 @@ export function createRuntimeManager({
     const helpResult = spawnSync(resolved.path, ["serve", "--help"], { encoding: "utf8" });
     const notes = [`Using ${resolved.source}: ${resolved.path}`];
     if (versionResult.status !== 0) {
-      notes.push("OmniRush version probe failed.");
+      notes.push("Mars version probe failed.");
     }
     if (helpResult.status !== 0) {
-      notes.push("OmniRush serve --help probe failed.");
+      notes.push("Mars serve --help probe failed.");
     }
 
     return {
@@ -1915,9 +1915,9 @@ export function createRuntimeManager({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-OmniRush-Host-Token": hostToken,
+          "X-Mars-Host-Token": hostToken,
         },
-        body: JSON.stringify({ scope: "owner", label: "OmniRush.ai desktop owner token" }),
+        body: JSON.stringify({ scope: "owner", label: "MarsAI desktop owner token" }),
       },
       5000,
     );
@@ -1940,13 +1940,13 @@ export function createRuntimeManager({
   let nextStartReason = null;
 
   function restartLogFile() {
-    return omnirushServerState.logFilePath ?? resolveOmniRushServerLogFile(userDataDir);
+    return marsServerState.logFilePath ?? resolveMarsServerLogFile(userDataDir);
   }
 
   function recordRestart(record) {
     appendRuntimeRestartRecord({
       serverLogFile: restartLogFile(),
-      record: { kind: "server", generation: omnirushServerState.generation ?? null, ...record },
+      record: { kind: "server", generation: marsServerState.generation ?? null, ...record },
     });
   }
 
@@ -1957,7 +1957,7 @@ export function createRuntimeManager({
   }
 
   async function probeRunningServer() {
-    const baseUrl = omnirushServerState.baseUrl;
+    const baseUrl = marsServerState.baseUrl;
     if (!inProcessServer || !baseUrl) return { running: false, healthy: false };
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
@@ -2082,9 +2082,9 @@ export function createRuntimeManager({
       };
       await (pending.action === "engine-restart"
         ? withRuntimeLifecycle(() => engineRestart(options))
-        : withRuntimeLifecycle(() => omnirushServerRestart(options))
+        : withRuntimeLifecycle(() => marsServerRestart(options))
       ).catch((error) => {
-        appendOutput(omnirushServerState, "lastStderr", `Deferred restart failed: ${error instanceof Error ? error.message : String(error)}\n`);
+        appendOutput(marsServerState, "lastStderr", `Deferred restart failed: ${error instanceof Error ? error.message : String(error)}\n`);
       });
     } finally {
       pendingRestartChecking = false;
@@ -2109,35 +2109,35 @@ export function createRuntimeManager({
     recordRestart({ action: "stopping", reason: request.reason, source: request.source });
   }
 
-  async function startOmniRushServer(options) {
+  async function startMarsServer(options) {
     // The inner start stops any previous runtime before mutating state, so a
     // throw below always happens with nothing left running.
     try {
-      return await startOmniRushServerInner(options);
+      return await startMarsServerInner(options);
     } catch (error) {
-      resetRuntimeStatesAfterFailedServerStart(omnirushServerState, engineState, options);
+      resetRuntimeStatesAfterFailedServerStart(marsServerState, engineState, options);
       throw error;
     }
   }
 
-  async function startOmniRushServerInner(options) {
+  async function startMarsServerInner(options) {
     const evalDelayMs = resolveEvalLocalServerDelayMs();
     if (evalDelayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, evalDelayMs));
     }
-    const currentPort = omnirushServerState.port;
+    const currentPort = marsServerState.port;
     // Stop any previously running in-process server
     if (inProcessServer) {
       try { await inProcessServer.stop(); } catch { /* ignore */ }
       inProcessServer = null;
     }
-    await stopChild(omnirushServerState);
+    await stopChild(marsServerState);
 
     const host = options.remoteAccessEnabled ? "0.0.0.0" : "127.0.0.1";
 
     const managedOpencode = options.manageOpencode ? resolveOpencodeBinary(options.opencodeBinPath) : null;
-    omnirushServerState.managedOpencodeBinPath = managedOpencode?.path ?? null;
-    omnirushServerState.managedOpencodeBinSource = managedOpencode?.source ?? null;
+    marsServerState.managedOpencodeBinPath = managedOpencode?.path ?? null;
+    marsServerState.managedOpencodeBinSource = managedOpencode?.source ?? null;
     if (options.manageOpencode) {
       engineState.opencodeBinPath = managedOpencode?.path ?? null;
       engineState.opencodeBinSource = managedOpencode?.source ?? null;
@@ -2146,30 +2146,30 @@ export function createRuntimeManager({
     // Load the desktop account before creating the embedded broker. Account
     // tokens stay in the Electron main process and are never serialized into
     // OpenCode config or passed to the renderer.
-    const gatewayCredentials = await omnirushGatewayCredentials?.load?.() ?? null;
+    const gatewayCredentials = await marsGatewayCredentials?.load?.() ?? null;
 
     // Inject user env vars so the server and managed OpenCode inherit them.
     // The embedded server runs in this process and reads process.env, so an
-    // OMNIRUSH_APPROVALS=full|guarded from the launching shell reaches it
-    // here (the user env file cannot set OMNIRUSH_* keys, see
+    // MARS_APPROVALS=full|guarded from the launching shell reaches it
+    // here (the user env file cannot set MARS_* keys, see
     // loadUserEnvFile) and forces the engine approval mode.
     const serverEnv = await buildChildEnv({});
     Object.assign(process.env, serverEnv);
-    if (omnirushGatewayCredentials) {
+    if (marsGatewayCredentials) {
       // The desktop account store is authoritative. Clear inherited or stale
       // account variables before every restart so sign-out cannot recreate a
       // broker from process-global credentials. Current credentials are passed
       // directly to the embedded server below and never reach OpenCode.
-      delete process.env.OMNIRUSH_GATEWAY_URL;
-      delete process.env.OMNIRUSH_ACCESS_TOKEN;
-      delete process.env.OMNIRUSH_REFRESH_TOKEN;
+      delete process.env.MARS_GATEWAY_URL;
+      delete process.env.MARS_ACCESS_TOKEN;
+      delete process.env.MARS_REFRESH_TOKEN;
     }
 
     // Once the embedded server has a persisted registry, it is the source of
     // truth. Do not pass Electron's legacy workspace list as CLI workspaces or
     // the server config loader will ignore server.json and lose server-created
     // workspaces after restart.
-    const serverConfigPath = resolveOmniRushServerConfigPath(process.env);
+    const serverConfigPath = resolveMarsServerConfigPath(process.env);
     const requestedWorkspacePaths = prioritizeWorkspacePaths("", options.workspacePaths, {
       platform: workspacePlatform,
     });
@@ -2177,8 +2177,8 @@ export function createRuntimeManager({
       requestedWorkspacePaths,
       existsSync(serverConfigPath),
     );
-    const activeWorkspace = selectStickyOmniRushPortWorkspace(requestedWorkspacePaths, workspacePaths);
-    const portSelection = await resolveOmniRushPort(host, activeWorkspace, currentPort);
+    const activeWorkspace = selectStickyMarsPortWorkspace(requestedWorkspacePaths, workspacePaths);
+    const portSelection = await resolveMarsPort(host, activeWorkspace, currentPort);
     const tokens = await loadServerCredentials();
 
     // One call: resolve config, spawn managed OpenCode, start HTTP server.
@@ -2189,20 +2189,20 @@ export function createRuntimeManager({
       path.resolve(__runtimeDir, "..", "server", "dist", "embedded.js"),
       ...(process.resourcesPath ? [path.resolve(process.resourcesPath, "server", "dist", "embedded.js")] : []),
     ];
-    const candidates = process.env.OMNIRUSH_DEV_MODE === "1"
+    const candidates = process.env.MARS_DEV_MODE === "1"
       ? [devPath, ...packagedPaths]
       : [...packagedPaths, devPath];
     const embeddedPath = candidates.find((candidate) => existsSync(candidate));
     if (!embeddedPath) {
-      throw new Error(`Cannot find OmniRush.ai embedded server bundle. Checked: ${candidates.join(", ")}`);
+      throw new Error(`Cannot find MarsAI embedded server bundle. Checked: ${candidates.join(", ")}`);
     }
     // Must be set before the bundle loads: the server memoizes its file sink
     // from process.env the first time it creates a logger.
-    const logFilePath = resolveOmniRushServerLogFile(userDataDir);
-    process.env.OMNIRUSH_SERVER_LOG_FILE = logFilePath;
+    const logFilePath = resolveMarsServerLogFile(userDataDir);
+    process.env.MARS_SERVER_LOG_FILE = logFilePath;
     // The project archive never archives this folder, or one inside or above it.
-    process.env.OMNIRUSH_DESKTOP_USER_DATA_DIR = userDataDir;
-    omnirushServerState.logFilePath = logFilePath;
+    process.env.MARS_DESKTOP_USER_DATA_DIR = userDataDir;
+    marsServerState.logFilePath = logFilePath;
     const { startEmbeddedServer } = await import(embeddedServerImportUrl(embeddedPath));
     const clearUploadQueue = existsSync(uploadQueueClearMarkerPath(userDataDir));
     // startEmbeddedServer falls back to an OS-assigned port if `port` races
@@ -2229,22 +2229,22 @@ export function createRuntimeManager({
       clearUploadQueue,
       ...(typeof onTurnActivity === "function" ? { onTurnActivity } : {}),
       // Bundled UI-control MCP launch for the startup migration of persisted
-      // `npx -y omnirush-ui-mcp` entries; null removes those entries instead.
-      omnirushUiMcp: omnirushUiMcpLaunch() ?? null,
-      omnirushGatewayCredentials: gatewayCredentials
+      // `npx -y mars-ui-mcp` entries; null removes those entries instead.
+      marsUiMcp: marsUiMcpLaunch() ?? null,
+      marsGatewayCredentials: gatewayCredentials
         ? {
             ...gatewayCredentials,
             // The account store is the one owner of the refresh token: the
             // broker asks it after a 401 and never refreshes on its own, so
             // no superseded refresh token is ever sent.
-            refresh: (rejectedAccessToken) => omnirushGatewayCredentials.refresh(rejectedAccessToken),
-            invalidate: () => omnirushGatewayCredentials.clear({ revokeRemote: false }),
-            latest: () => omnirushGatewayCredentials.load(),
+            refresh: (rejectedAccessToken) => marsGatewayCredentials.refresh(rejectedAccessToken),
+            invalidate: () => marsGatewayCredentials.clear({ revokeRemote: false }),
+            latest: () => marsGatewayCredentials.load(),
             ...(typeof onUpdateSignal === "function" ? { onUpdateSignal } : {}),
             // Name and email for the git commit identity default; the account
             // store owns the profile lookup and its token refresh.
             profile: async () => {
-              const status = await omnirushGatewayCredentials.status?.();
+              const status = await marsGatewayCredentials.status?.();
               return status?.connected && status.email
                 ? { email: status.email, displayName: status.displayName ?? null }
                 : null;
@@ -2254,7 +2254,7 @@ export function createRuntimeManager({
     });
     inProcessServer = handle;
     if (clearUploadQueue) await rm(uploadQueueClearMarkerPath(userDataDir), { force: true }).catch(() => undefined);
-    omnirushServerState.managedOpencodeExecution = handle.managedOpencodeExecution ?? null;
+    marsServerState.managedOpencodeExecution = handle.managedOpencodeExecution ?? null;
     engineState.managedByServer = Boolean(handle.managedOpencode);
     engineState.managedPid = handle.managedOpencode?.pid ?? null;
     engineState.managedIsAlive = handle.managedOpencode?.isAlive ?? null;
@@ -2262,23 +2262,23 @@ export function createRuntimeManager({
     const boundPort = handle.port;
     const baseUrl = handle.url;
 
-    omnirushServerState.inProcess = true;
-    omnirushServerGenerationCounter += 1;
-    omnirushServerState.generation = omnirushServerGenerationCounter;
-    omnirushServerState.remoteAccessEnabled = options.remoteAccessEnabled;
-    omnirushServerState.host = host;
-    omnirushServerState.port = boundPort;
-    omnirushServerState.baseUrl = baseUrl;
-    omnirushServerState.clientToken = tokens.clientToken;
-    omnirushServerState.hostToken = tokens.hostToken;
+    marsServerState.inProcess = true;
+    marsServerGenerationCounter += 1;
+    marsServerState.generation = marsServerGenerationCounter;
+    marsServerState.remoteAccessEnabled = options.remoteAccessEnabled;
+    marsServerState.host = host;
+    marsServerState.port = boundPort;
+    marsServerState.baseUrl = baseUrl;
+    marsServerState.clientToken = tokens.clientToken;
+    marsServerState.hostToken = tokens.hostToken;
     recordRestart({ action: "started", reason: nextStartReason ?? "startup", source: "runtime" });
     nextStartReason = null;
     clearPendingRestart();
 
     const connectUrls = options.remoteAccessEnabled ? buildConnectUrls(boundPort) : { connectUrl: null, mdnsUrl: null, lanUrl: null };
-    omnirushServerState.connectUrl = connectUrls.connectUrl;
-    omnirushServerState.mdnsUrl = connectUrls.mdnsUrl;
-    omnirushServerState.lanUrl = connectUrls.lanUrl;
+    marsServerState.connectUrl = connectUrls.connectUrl;
+    marsServerState.mdnsUrl = connectUrls.mdnsUrl;
+    marsServerState.lanUrl = connectUrls.lanUrl;
 
     // No health check needed -- startServer() resolves only after the listener is bound.
     let workspaceList = null;
@@ -2293,7 +2293,7 @@ export function createRuntimeManager({
       }
     }
     ownerToken ||= await issueOwnerToken(baseUrl, tokens.hostToken);
-    omnirushServerState.ownerToken = ownerToken;
+    marsServerState.ownerToken = ownerToken;
     if (ownerToken) {
       await persistServerOwnerToken(ownerToken);
     }
@@ -2317,13 +2317,13 @@ export function createRuntimeManager({
           engineState.childExited = false;
         }
       } catch (error) {
-        appendOutput(omnirushServerState, "lastStderr", `OmniRush.ai server workspace probe: ${error instanceof Error ? error.message : String(error)}\n`);
+        appendOutput(marsServerState, "lastStderr", `MarsAI server workspace probe: ${error instanceof Error ? error.message : String(error)}\n`);
       }
     }
     if (!portSelection.preferredPort || boundPort === portSelection.preferredPort) {
-      await persistPreferredOmniRushPort(activeWorkspace, boundPort);
+      await persistPreferredMarsPort(activeWorkspace, boundPort);
     }
-    return snapshotOmniRushServerState(omnirushServerState);
+    return snapshotMarsServerState(marsServerState);
   }
 
   async function stopAllRuntimeChildren() {
@@ -2333,11 +2333,11 @@ export function createRuntimeManager({
       try { await inProcessServer.stop(); } catch { /* ignore */ }
       inProcessServer = null;
     }
-    await stopChild(omnirushServerState);
+    await stopChild(marsServerState);
     await stopChild(engineState);
 
     Object.assign(engineState, createEngineState());
-    Object.assign(omnirushServerState, createOmniRushServerState());
+    Object.assign(marsServerState, createMarsServerState());
   }
 
   async function prepareFreshRuntime(options = {}) {
@@ -2353,19 +2353,19 @@ export function createRuntimeManager({
   }
 
   function settleAfterWorkspacePreparationFailure() {
-    if (snapshotOmniRushServerState(omnirushServerState).running) {
+    if (snapshotMarsServerState(marsServerState).running) {
       lifecycleState = "healthy";
       return;
     }
     Object.assign(engineState, createEngineState());
-    Object.assign(omnirushServerState, createOmniRushServerState());
+    Object.assign(marsServerState, createMarsServerState());
     lifecycleState = "idle";
   }
 
-  async function ensureOmniRush(options) {
-    let omnirushServer;
+  async function ensureMars(options) {
+    let marsServer;
     try {
-      omnirushServer = await startOmniRushServer({
+      marsServer = await startMarsServer({
         workspacePaths: options.workspacePaths,
         opencodeBaseUrl: engineState.baseUrl,
         opencodeUsername: engineState.opencodeUsername,
@@ -2375,11 +2375,11 @@ export function createRuntimeManager({
         opencodeBinPath: options.opencodeBinPath,
       });
     } catch (error) {
-      appendOutput(engineState, "lastStderr", `OmniRush.ai server: ${error instanceof Error ? error.message : String(error)}\n`);
+      appendOutput(engineState, "lastStderr", `MarsAI server: ${error instanceof Error ? error.message : String(error)}\n`);
       throw error;
     }
 
-    assertOmniRushServerReady(omnirushServer);
+    assertMarsServerReady(marsServer);
   }
 
   async function engineStart(projectDir, options = {}) {
@@ -2397,20 +2397,20 @@ export function createRuntimeManager({
 
     // Reuse a healthy server instead of tearing it down. During boot the
     // main process kicks off bootRuntimeForSelectedWorkspace while renderer
-    // routes independently call ensureDesktopLocalOmniRushConnection. Both go
+    // routes independently call ensureDesktopLocalMarsConnection. Both go
     // through this serialized path; without this guard the second call runs
     // prepareFreshRuntime (killing the freshly bound server) and then rebinds
     // the sticky preferred port, racing the not-yet-released socket into
     // EADDRINUSE and leaving the runtime in error -> boot screen.
-    // resolveOmniRushServerReuse also spans workspace switches: requesting a
+    // resolveMarsServerReuse also spans workspace switches: requesting a
     // different projectDir retargets the running runtime instead of killing
     // the process and every in-flight run with it.
-    let reuseDecision = resolveOmniRushServerReuse({
+    let reuseDecision = resolveMarsServerReuse({
       forceRestart: options.forceRestart,
-      inProcess: omnirushServerState.inProcess,
+      inProcess: marsServerState.inProcess,
       lifecycleState,
-      remoteAccessEnabled: omnirushServerState.remoteAccessEnabled,
-      requestedRemoteAccess: options.omnirushRemoteAccess,
+      remoteAccessEnabled: marsServerState.remoteAccessEnabled,
+      requestedRemoteAccess: options.marsRemoteAccess,
       currentProjectDir: engineState.projectDir,
       requestedProjectDir: safeProjectDir,
       platform: workspacePlatform,
@@ -2430,7 +2430,7 @@ export function createRuntimeManager({
       }
     }
     if (reuseDecision.reuse) {
-      const existing = snapshotOmniRushServerState(omnirushServerState);
+      const existing = snapshotMarsServerState(marsServerState);
       if (existing.running && existing.baseUrl && (existing.ownerToken || existing.clientToken)) {
         if (reuseDecision.retarget) {
           try {
@@ -2444,7 +2444,7 @@ export function createRuntimeManager({
             throw error;
           }
           engineState.projectDir = safeProjectDir;
-          await persistPreferredOmniRushPort(safeProjectDir, omnirushServerState.port);
+          await persistPreferredMarsPort(safeProjectDir, marsServerState.port);
         }
         return snapshotEngineState(engineState);
       }
@@ -2475,10 +2475,10 @@ export function createRuntimeManager({
       engineState.child = null;
       engineState.childExited = true;
 
-      await ensureOmniRush({
+      await ensureMars({
         projectDir: safeProjectDir,
         workspacePaths,
-        remoteAccessEnabled: options.omnirushRemoteAccess === true,
+        remoteAccessEnabled: options.marsRemoteAccess === true,
         manageOpencode: true,
         opencodeBinPath: options.opencodeBinPath,
       });
@@ -2502,7 +2502,7 @@ export function createRuntimeManager({
   async function engineRestart(options = {}) {
     const projectDir = engineState.projectDir;
     if (!projectDir) {
-      throw new Error("OmniRush is not configured for a local workspace");
+      throw new Error("Mars is not configured for a local workspace");
     }
     if (options.deferredRun === true) {
       const request = restartRequest(options, "deferred");
@@ -2518,14 +2518,14 @@ export function createRuntimeManager({
         };
       }
     }
-    const omnirushRemoteAccess = typeof options.omnirushRemoteAccess === "boolean"
-      ? options.omnirushRemoteAccess
-      : omnirushServerState.remoteAccessEnabled;
+    const marsRemoteAccess = typeof options.marsRemoteAccess === "boolean"
+      ? options.marsRemoteAccess
+      : marsServerState.remoteAccessEnabled;
     return engineStart(projectDir, {
       runtime: engineState.runtime,
       workspacePaths: [projectDir],
       opencodeEnableExa: options.opencodeEnableExa,
-      omnirushRemoteAccess,
+      marsRemoteAccess,
       forceRestart: true,
     });
   }
@@ -2542,35 +2542,35 @@ export function createRuntimeManager({
       lifecycleState,
       engine: await engineInfo(),
       enginePool: inProcessServer?.managedOpencodePool?.() ?? null,
-      omnirushServer: snapshotOmniRushServerState(omnirushServerState),
+      marsServer: snapshotMarsServerState(marsServerState),
     };
   }
 
-  async function omnirushServerInfo() {
+  async function marsServerInfo() {
     return {
-      ...snapshotOmniRushServerState(omnirushServerState),
+      ...snapshotMarsServerState(marsServerState),
       restarts: await readRuntimeRestartRecords(restartLogFile()),
       pendingRestart: pendingRestartSummary(),
     };
   }
 
-  async function omnirushServerRestart(options = {}) {
+  async function marsServerRestart(options = {}) {
     // Keep the running host binding unless the caller asks to change it: a
     // restart for another reason (account change) must not drop remote access.
     const remoteAccessEnabled = typeof options.remoteAccessEnabled === "boolean"
       ? options.remoteAccessEnabled
-      : omnirushServerState.remoteAccessEnabled === true;
+      : marsServerState.remoteAccessEnabled === true;
     if (options.deferredRun === true) {
       const request = restartRequest(options, "deferred");
       recordRestart({ action: "restarting", reason: request.reason, source: request.source, trigger: "server-restart", why: "idle" });
       nextStartReason = request.reason;
     } else {
       const guard = await guardRestart("server-restart", options, "server-restart", {
-        sameSettings: omnirushServerState.remoteAccessEnabled === remoteAccessEnabled,
+        sameSettings: marsServerState.remoteAccessEnabled === remoteAccessEnabled,
       });
       if (guard.verdict !== "proceed") {
         return {
-          ...snapshotOmniRushServerState(omnirushServerState),
+          ...snapshotMarsServerState(marsServerState),
           restartDeferred: guard.verdict === "defer",
           restartSkipped: guard.verdict === "skip",
           busySessions: guard.busy.sessions,
@@ -2581,21 +2581,21 @@ export function createRuntimeManager({
       platform: workspacePlatform,
     });
     const shouldManageOpencode = Boolean(
-      omnirushServerState.managedOpencodeBinPath || engineState.opencodeBinPath || !engineState.baseUrl,
+      marsServerState.managedOpencodeBinPath || engineState.opencodeBinPath || !engineState.baseUrl,
     );
-    return startOmniRushServer({
+    return startMarsServer({
       workspacePaths,
       opencodeBaseUrl: shouldManageOpencode ? null : engineState.baseUrl,
       opencodeUsername: shouldManageOpencode ? null : engineState.opencodeUsername,
       opencodePassword: shouldManageOpencode ? null : engineState.opencodePassword,
       remoteAccessEnabled,
       manageOpencode: shouldManageOpencode,
-      opencodeBinPath: engineState.opencodeBinPath ?? omnirushServerState.managedOpencodeBinPath,
+      opencodeBinPath: engineState.opencodeBinPath ?? marsServerState.managedOpencodeBinPath,
     });
   }
 
   async function engineInstall() {
-    // The engine is OmniRush.ai's own build of opencode 1.18.32 and ships
+    // The engine is MarsAI's own build of opencode 1.18.32 and ships
     // inside the app (resources/sidecars); there is no separate installer.
     // An upstream opencode install would keep its sessions apart from the
     // app's, so none is offered.
@@ -2603,7 +2603,7 @@ export function createRuntimeManager({
       ok: false,
       status: -1,
       stdout: "",
-      stderr: "The OmniRush engine ships inside OmniRush.ai. Reinstall OmniRush.ai to restore it, then restart the app.",
+      stderr: "The Mars engine ships inside MarsAI. Reinstall MarsAI to restore it, then restart the app.",
     };
   }
 
@@ -2635,8 +2635,8 @@ export function createRuntimeManager({
     };
   }
 
-  async function sandboxCleanupOmniRushContainers() {
-    const candidates = await listOmniRushManagedContainers().catch((error) => {
+  async function sandboxCleanupMarsContainers() {
+    const candidates = await listMarsManagedContainers().catch((error) => {
       throw error;
     });
     const removed = [];
@@ -2678,14 +2678,14 @@ export function createRuntimeManager({
       versionsFiles: sidecarDirs.map((directory) => path.join(directory, "versions.json")),
     }),
     engineInstall,
-    omnirushServerInfo,
-    omnirushServerRestart: (options) => withRuntimeLifecycle(() => omnirushServerRestart(options)),
+    marsServerInfo,
+    marsServerRestart: (options) => withRuntimeLifecycle(() => marsServerRestart(options)),
     /** A user's sign-out: the next server start deletes the queued uploads and archives. */
     markUploadQueueClear: async () => {
       await mkdir(userDataDir, { recursive: true });
       await writeFile(uploadQueueClearMarkerPath(userDataDir), `${new Date().toISOString()}\n`, { mode: 0o600 });
     },
     opencodeMcpAuth,
-    sandboxCleanupOmniRushContainers,
+    sandboxCleanupMarsContainers,
   };
 }

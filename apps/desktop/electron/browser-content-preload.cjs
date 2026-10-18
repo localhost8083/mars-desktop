@@ -4,21 +4,21 @@ const ipcRenderer = electron && typeof electron === "object" ? electron.ipcRende
 const webFrame = electron && typeof electron === "object" ? electron.webFrame : null;
 
 // This function is serialized into the website's main JavaScript world. Keep it
-// self-contained: it must never close over Electron, Node, or OmniRush.ai objects.
+// self-contained: it must never close over Electron, Node, or MarsAI objects.
 function installWebMcpRuntime() {
   if (typeof document === "undefined" || typeof window === "undefined") return false;
   if (!globalThis.isSecureContext) return false;
   if ("modelContext" in Document.prototype && document.modelContext) {
     if (typeof document.modelContext.addEventListener === "function") {
       document.modelContext.addEventListener("toolchange", () => {
-        window.dispatchEvent(new Event("omnirush:webmcp-tools-changed"));
+        window.dispatchEvent(new Event("mars:webmcp-tools-changed"));
       });
     }
     return false;
   }
 
   const INTERNAL = Symbol.for("webmcp.model-context.internal");
-  const POLICY_BRIDGE = "__omnirushWebMcpPolicyV1";
+  const POLICY_BRIDGE = "__marsWebMcpPolicyV1";
   const contexts = new WeakMap();
   const TOOL_NAME = /^[A-Za-z0-9_.-]{1,128}$/;
 
@@ -110,7 +110,7 @@ function installWebMcpRuntime() {
         ownerDocument.modelContext?.dispatchEvent(new Event("toolchange"));
         // A DOM event is the preload's only signal to refresh native discovery.
         // It contains no data and grants the page no Electron capability.
-        ownerWindow.dispatchEvent(new Event("omnirush:webmcp-tools-changed"));
+        ownerWindow.dispatchEvent(new Event("mars:webmcp-tools-changed"));
         resolve();
       }, 0);
     });
@@ -300,7 +300,7 @@ function installWebMcpRuntime() {
 }
 
 function dismissMenuOverlay() {
-  ipcRenderer?.send("omnirush:menu-overlay:dismiss");
+  ipcRenderer?.send("mars:menu-overlay:dismiss");
 }
 
 function installDismissListeners() {
@@ -311,11 +311,11 @@ function installDismissListeners() {
 
 function installToolChangeRelay() {
   let timer = null;
-  window.addEventListener("omnirush:webmcp-tools-changed", () => {
+  window.addEventListener("mars:webmcp-tools-changed", () => {
     if (timer) return;
     timer = setTimeout(() => {
       timer = null;
-      ipcRenderer?.send("omnirush:webmcp:tools-changed");
+      ipcRenderer?.send("mars:webmcp:tools-changed");
     }, 250);
   });
 }
@@ -324,7 +324,7 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
   // This listener and its DOM wrappers live only in Electron's isolated world.
   // Main-world overrides cannot alter these reads or send IPC replies. The only
   // page-facing method below requests a check; it never forwards caller data.
-  ipcRenderer?.on("omnirush:webmcp:read-policy", (_event, replyChannel, childIndex) => {
+  ipcRenderer?.on("mars:webmcp:read-policy", (_event, replyChannel, childIndex) => {
     let policy = null;
     try {
       let embedding = null;
@@ -351,8 +351,8 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
   });
   try {
     if (typeof contextBridge?.exposeInMainWorld === "function" && ipcRenderer?.invoke) {
-      contextBridge.exposeInMainWorld("__omnirushWebMcpPolicyV1", {
-        check: () => ipcRenderer.invoke("omnirush:webmcp:frame-policy"),
+      contextBridge.exposeInMainWorld("__marsWebMcpPolicyV1", {
+        check: () => ipcRenderer.invoke("mars:webmcp:frame-policy"),
       });
     }
     if (typeof contextBridge?.executeInMainWorld === "function") {

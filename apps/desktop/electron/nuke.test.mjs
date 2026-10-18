@@ -17,10 +17,10 @@ import {
 } from "./nuke.mjs";
 import { runNukeCleanupWorker } from "./nuke-worker.mjs";
 
-const LEGACY_ORCHESTRATOR_DIR_NAME = ["omnirush", "orchestrator"].join("-");
+const LEGACY_ORCHESTRATOR_DIR_NAME = ["mars", "orchestrator"].join("-");
 
 function legacyOrchestratorPath(home) {
-  return path.join(home, ".omnirush", LEGACY_ORCHESTRATOR_DIR_NAME);
+  return path.join(home, ".mars", LEGACY_ORCHESTRATOR_DIR_NAME);
 }
 
 async function exists(targetPath) {
@@ -33,7 +33,7 @@ async function exists(targetPath) {
 }
 
 async function withTempDir(fn) {
-  const root = await mkdtemp(path.join(tmpdir(), "omnirush-nuke-test-"));
+  const root = await mkdtemp(path.join(tmpdir(), "mars-nuke-test-"));
   try {
     await fn(root);
   } finally {
@@ -51,7 +51,7 @@ function pendingNukeInput(root) {
 }
 
 function pendingNukePath(root) {
-  return path.join(root, "xdg", "omnirush", ".nuke-pending.json");
+  return path.join(root, "xdg", "mars", ".nuke-pending.json");
 }
 
 async function writePendingNuke(root, pending) {
@@ -80,7 +80,7 @@ function fakeRuntimeManager() {
   return {
     dispose: async () => {},
     prepareFreshRuntime: async () => {},
-    sandboxCleanupOmniRushContainers: async () => ({ candidates: [], removed: [], errors: [] }),
+    sandboxCleanupMarsContainers: async () => ({ candidates: [], removed: [], errors: [] }),
   };
 }
 
@@ -112,21 +112,21 @@ async function tinyDelay(ms = 140) {
 
 test("buildNukeManifest includes default macOS state roots and preserves bootstrap", () => {
   const home = "/Users/alice";
-  const userDataPath = "/Users/alice/Library/Application Support/ai.omnirush.desktop";
+  const userDataPath = "/Users/alice/Library/Application Support/ai.marsai.desktop";
   const manifest = buildNukeManifest({ env: {}, homedir: home, platform: "darwin", userDataPath });
 
-  assert.equal(manifest.bootstrapPath, "/Users/alice/.config/omnirush/desktop-bootstrap.json");
-  assert.equal(manifest.preserveBootstrapPath, "/Users/alice/.config/omnirush/desktop-bootstrap.json");
-  assert.deepEqual(manifest.partitions, ["default", "persist:omnirush-browser"]);
+  assert.equal(manifest.bootstrapPath, "/Users/alice/.config/mars/desktop-bootstrap.json");
+  assert.equal(manifest.preserveBootstrapPath, "/Users/alice/.config/mars/desktop-bootstrap.json");
+  assert.deepEqual(manifest.partitions, ["default", "persist:mars-browser"]);
   assert.ok(manifest.deletePaths.includes(userDataPath));
-  assert.ok(manifest.deletePaths.includes("/Users/alice/.config/omnirush/server.json"));
-  assert.ok(manifest.deletePaths.includes("/Users/alice/.config/omnirush/runtime.sqlite"));
-  assert.ok(manifest.deletePaths.includes("/Users/alice/.config/omnirush/runtime.sqlite-wal"));
-  assert.ok(manifest.deletePaths.includes("/Users/alice/.config/omnirush/runtime.sqlite-shm"));
-  assert.ok(manifest.deletePaths.includes("/Users/alice/.config/omnirush/runtime-opencode-config.json"));
-  assert.ok(manifest.deletePaths.includes("/Users/alice/.config/omnirush/engine-instances.json"));
-  assert.ok(manifest.deletePaths.includes("/Users/alice/.config/omnirush/tokens.json"));
-  assert.ok(manifest.deletePaths.includes("/Users/alice/.config/omnirush/env.json"));
+  assert.ok(manifest.deletePaths.includes("/Users/alice/.config/mars/server.json"));
+  assert.ok(manifest.deletePaths.includes("/Users/alice/.config/mars/runtime.sqlite"));
+  assert.ok(manifest.deletePaths.includes("/Users/alice/.config/mars/runtime.sqlite-wal"));
+  assert.ok(manifest.deletePaths.includes("/Users/alice/.config/mars/runtime.sqlite-shm"));
+  assert.ok(manifest.deletePaths.includes("/Users/alice/.config/mars/runtime-opencode-config.json"));
+  assert.ok(manifest.deletePaths.includes("/Users/alice/.config/mars/engine-instances.json"));
+  assert.ok(manifest.deletePaths.includes("/Users/alice/.config/mars/tokens.json"));
+  assert.ok(manifest.deletePaths.includes("/Users/alice/.config/mars/env.json"));
   assert.ok(manifest.deletePaths.includes("/Users/alice/.local/share/opencode"));
   assert.ok(manifest.deletePaths.includes("/Users/alice/Library/Application Support/opencode"));
   assert.ok(manifest.deletePaths.includes("/Users/alice/.config/opencode"));
@@ -138,7 +138,7 @@ test("buildNukeManifest includes default macOS state roots and preserves bootstr
 
 test("buildNukeManifest wipes session state, server audit data, and workspace registries", () => {
   const home = "/Users/alice";
-  const userDataPath = "/Users/alice/Library/Application Support/ai.omnirush.desktop";
+  const userDataPath = "/Users/alice/Library/Application Support/ai.marsai.desktop";
   const manifest = buildNukeManifest({
     env: {},
     homedir: home,
@@ -148,25 +148,25 @@ test("buildNukeManifest wipes session state, server audit data, and workspace re
   });
 
   assert.ok(manifest.deletePaths.includes("/Users/alice/.local/state/opencode"));
-  assert.ok(manifest.deletePaths.includes("/Users/alice/.omnirush/omnirush-server"));
-  assert.ok(manifest.deletePaths.includes(`${userDataPath}/omnirush-workspaces.json`));
-  assert.ok(manifest.deletePaths.includes(`${userDataPath}/omnirush-server-tokens.json`));
-  assert.ok(manifest.deletePaths.includes(`${userDataPath}/omnirush-server-state.json`));
-  assert.ok(manifest.deletePaths.includes("/Users/alice/project/.opencode/omnirush"));
-  assert.ok(manifest.deletePaths.includes("/Users/alice/project/.opencode/omnirush.json"));
-  assert.ok(manifest.deletePaths.includes("/Users/alice/other/.opencode/omnirush"));
+  assert.ok(manifest.deletePaths.includes("/Users/alice/.mars/mars-server"));
+  assert.ok(manifest.deletePaths.includes(`${userDataPath}/mars-workspaces.json`));
+  assert.ok(manifest.deletePaths.includes(`${userDataPath}/mars-server-tokens.json`));
+  assert.ok(manifest.deletePaths.includes(`${userDataPath}/mars-server-state.json`));
+  assert.ok(manifest.deletePaths.includes("/Users/alice/project/.opencode/mars"));
+  assert.ok(manifest.deletePaths.includes("/Users/alice/project/.opencode/mars.json"));
+  assert.ok(manifest.deletePaths.includes("/Users/alice/other/.opencode/mars"));
   assert.ok(!manifest.deletePaths.includes("/Users/alice/project/.opencode"));
   assert.ok(!manifest.deletePaths.includes("/Users/alice/project"));
 });
 
 test("buildNukeManifest can include the bootstrap file in the wipe", () => {
-  const bootstrapPath = "/Users/alice/.config/omnirush/desktop-bootstrap.json";
+  const bootstrapPath = "/Users/alice/.config/mars/desktop-bootstrap.json";
   const manifest = buildNukeManifest({
     env: {},
     homedir: "/Users/alice",
     platform: "darwin",
     preserveBootstrap: false,
-    userDataPath: "/Users/alice/Library/Application Support/ai.omnirush.desktop",
+    userDataPath: "/Users/alice/Library/Application Support/ai.marsai.desktop",
   });
 
   assert.equal(manifest.bootstrapPath, bootstrapPath);
@@ -179,11 +179,11 @@ test("buildNukeManifest includes default Linux state roots", () => {
     env: {},
     homedir: "/home/alice",
     platform: "linux",
-    userDataPath: "/home/alice/.config/ai.omnirush.desktop",
+    userDataPath: "/home/alice/.config/ai.marsai.desktop",
   });
 
-  assert.equal(manifest.preserveBootstrapPath, "/home/alice/.config/omnirush/desktop-bootstrap.json");
-  assert.ok(manifest.deletePaths.includes("/home/alice/.config/ai.omnirush.desktop"));
+  assert.equal(manifest.preserveBootstrapPath, "/home/alice/.config/mars/desktop-bootstrap.json");
+  assert.ok(manifest.deletePaths.includes("/home/alice/.config/ai.marsai.desktop"));
   assert.ok(manifest.deletePaths.includes("/home/alice/.local/share/opencode"));
   assert.ok(manifest.deletePaths.includes("/home/alice/.config/opencode"));
   assert.ok(manifest.deletePaths.includes("/home/alice/.cache/opencode"));
@@ -199,56 +199,56 @@ test("buildNukeManifest includes Windows path shapes", () => {
     env,
     homedir: "C:\\Users\\Alice",
     platform: "win32",
-    userDataPath: "C:\\Users\\Alice\\AppData\\Roaming\\ai.omnirush.desktop",
+    userDataPath: "C:\\Users\\Alice\\AppData\\Roaming\\ai.marsai.desktop",
   });
 
-  assert.equal(manifest.preserveBootstrapPath, "C:\\Users\\Alice\\AppData\\Local\\omnirush\\desktop-bootstrap.json");
-  assert.ok(manifest.deletePaths.includes("C:\\Users\\Alice\\AppData\\Roaming\\ai.omnirush.desktop"));
-  assert.ok(manifest.deletePaths.includes("C:\\Users\\Alice\\AppData\\Roaming\\omnirush\\server.json"));
-  assert.ok(manifest.deletePaths.includes("C:\\Users\\Alice\\AppData\\Roaming\\omnirush\\runtime.sqlite"));
-  assert.ok(manifest.deletePaths.includes("C:\\Users\\Alice\\AppData\\Roaming\\omnirush\\tokens.json"));
-  assert.ok(manifest.deletePaths.includes("C:\\Users\\Alice\\AppData\\Roaming\\omnirush\\env.json"));
+  assert.equal(manifest.preserveBootstrapPath, "C:\\Users\\Alice\\AppData\\Local\\mars\\desktop-bootstrap.json");
+  assert.ok(manifest.deletePaths.includes("C:\\Users\\Alice\\AppData\\Roaming\\ai.marsai.desktop"));
+  assert.ok(manifest.deletePaths.includes("C:\\Users\\Alice\\AppData\\Roaming\\mars\\server.json"));
+  assert.ok(manifest.deletePaths.includes("C:\\Users\\Alice\\AppData\\Roaming\\mars\\runtime.sqlite"));
+  assert.ok(manifest.deletePaths.includes("C:\\Users\\Alice\\AppData\\Roaming\\mars\\tokens.json"));
+  assert.ok(manifest.deletePaths.includes("C:\\Users\\Alice\\AppData\\Roaming\\mars\\env.json"));
   assert.ok(manifest.deletePaths.includes("C:\\Users\\Alice\\AppData\\Roaming\\opencode"));
   assert.ok(manifest.deletePaths.includes("C:\\Users\\Alice\\AppData\\Roaming\\opencode"));
   assert.ok(manifest.deletePaths.includes("C:\\Users\\Alice\\.cache\\opencode"));
-  assert.ok(manifest.deletePaths.includes("C:\\Users\\Alice\\.config\\omnirush\\desktop-bootstrap.json"));
+  assert.ok(manifest.deletePaths.includes("C:\\Users\\Alice\\.config\\mars\\desktop-bootstrap.json"));
 });
 
-test("buildNukeManifest honors OMNIRUSH_ELECTRON_USERDATA override", () => {
+test("buildNukeManifest honors MARS_ELECTRON_USERDATA override", () => {
   const manifest = buildNukeManifest({
-    env: { OMNIRUSH_ELECTRON_USERDATA: "/tmp/omnirush-userdata" },
+    env: { MARS_ELECTRON_USERDATA: "/tmp/mars-userdata" },
     homedir: "/Users/alice",
     platform: "darwin",
-    userDataPath: "/Users/alice/Library/Application Support/ai.omnirush.desktop",
+    userDataPath: "/Users/alice/Library/Application Support/ai.marsai.desktop",
   });
 
-  assert.ok(manifest.deletePaths.includes("/tmp/omnirush-userdata"));
-  assert.ok(!manifest.deletePaths.includes("/Users/alice/Library/Application Support/ai.omnirush.desktop"));
+  assert.ok(manifest.deletePaths.includes("/tmp/mars-userdata"));
+  assert.ok(!manifest.deletePaths.includes("/Users/alice/Library/Application Support/ai.marsai.desktop"));
 });
 
 test("buildNukeManifest redirects HOME/XDG paths in dev mode", () => {
   const manifest = buildNukeManifest({
-    env: { OMNIRUSH_DEV_MODE: "1" },
+    env: { MARS_DEV_MODE: "1" },
     homedir: "/Users/alice",
     platform: "darwin",
-    userDataPath: "/tmp/omnirush-dev-userdata",
+    userDataPath: "/tmp/mars-dev-userdata",
   });
 
   assert.equal(
     manifest.preserveBootstrapPath,
-    "/tmp/omnirush-dev-userdata/omnirush-dev-data/home/.config/omnirush/desktop-bootstrap.json",
+    "/tmp/mars-dev-userdata/mars-dev-data/home/.config/mars/desktop-bootstrap.json",
   );
-  assert.ok(manifest.deletePaths.includes("/tmp/omnirush-dev-userdata"));
-  assert.ok(manifest.deletePaths.includes("/tmp/omnirush-dev-userdata/omnirush-dev-data/xdg/data/opencode"));
-  assert.ok(manifest.deletePaths.includes("/tmp/omnirush-dev-userdata/omnirush-dev-data/config/opencode"));
-  assert.ok(manifest.deletePaths.includes("/tmp/omnirush-dev-userdata/omnirush-dev-data/xdg/cache/opencode"));
+  assert.ok(manifest.deletePaths.includes("/tmp/mars-dev-userdata"));
+  assert.ok(manifest.deletePaths.includes("/tmp/mars-dev-userdata/mars-dev-data/xdg/data/opencode"));
+  assert.ok(manifest.deletePaths.includes("/tmp/mars-dev-userdata/mars-dev-data/config/opencode"));
+  assert.ok(manifest.deletePaths.includes("/tmp/mars-dev-userdata/mars-dev-data/xdg/cache/opencode"));
   assert.ok(!manifest.deletePaths.some((targetPath) => targetPath.startsWith("/Users/alice/")));
 });
 
 test("buildNukeManifest never reaches production state from a non-dev isolated profile", () => {
-  const userDataPath = "/Users/alice/Library/Application Support/ai.omnirush.desktop.dev.wt2";
+  const userDataPath = "/Users/alice/Library/Application Support/ai.marsai.desktop.dev.wt2";
   const manifest = buildNukeManifest({
-    env: { OMNIRUSH_ELECTRON_APP_IDENTIFIER: "ai.omnirush.desktop.dev.wt2" },
+    env: { MARS_ELECTRON_APP_IDENTIFIER: "ai.marsai.desktop.dev.wt2" },
     homedir: "/Users/alice",
     platform: "darwin",
     userDataPath,
@@ -256,15 +256,15 @@ test("buildNukeManifest never reaches production state from a non-dev isolated p
 
   assert.ok(manifest.deletePaths.includes(userDataPath));
   for (const productionPath of [
-    "/Users/alice/.config/omnirush",
-    "/Users/alice/.config/omnirush/tokens.json",
-    "/Users/alice/.config/omnirush/runtime.sqlite",
+    "/Users/alice/.config/mars",
+    "/Users/alice/.config/mars/tokens.json",
+    "/Users/alice/.config/mars/runtime.sqlite",
     "/Users/alice/.config/opencode",
     "/Users/alice/.cache/opencode",
     "/Users/alice/.local/share/opencode",
     "/Users/alice/Library/Application Support/opencode",
     legacyOrchestratorPath("/Users/alice"),
-    "/Users/alice/Library/Caches/ai.omnirush.desktop.ShipIt",
+    "/Users/alice/Library/Caches/ai.marsai.desktop.ShipIt",
   ]) {
     assert.ok(!manifest.deletePaths.includes(productionPath), `must not delete ${productionPath}`);
   }
@@ -273,10 +273,10 @@ test("buildNukeManifest never reaches production state from a non-dev isolated p
 test("buildNukeManifest still wipes a dev profile's own orchestrator data dir", () => {
   const devOrchestratorPath = `${legacyOrchestratorPath("/Users/alice")}-dev`;
   const manifest = buildNukeManifest({
-    env: { OMNIRUSH_DEV_MODE: "1", OMNIRUSH_DATA_DIR: devOrchestratorPath },
+    env: { MARS_DEV_MODE: "1", MARS_DATA_DIR: devOrchestratorPath },
     homedir: "/Users/alice",
     platform: "darwin",
-    userDataPath: "/tmp/omnirush-dev-userdata",
+    userDataPath: "/tmp/mars-dev-userdata",
   });
 
   assert.ok(manifest.deletePaths.includes(devOrchestratorPath));
@@ -285,10 +285,10 @@ test("buildNukeManifest still wipes a dev profile's own orchestrator data dir", 
 
 test("buildNukeManifest ignores an inherited XDG_CONFIG_HOME pointing at production config", () => {
   const manifest = buildNukeManifest({
-    env: { OMNIRUSH_DEV_MODE: "1", XDG_CONFIG_HOME: "/Users/alice/.config" },
+    env: { MARS_DEV_MODE: "1", XDG_CONFIG_HOME: "/Users/alice/.config" },
     homedir: "/Users/alice",
     platform: "darwin",
-    userDataPath: "/tmp/omnirush-dev-userdata",
+    userDataPath: "/tmp/mars-dev-userdata",
   });
 
   assert.ok(!manifest.deletePaths.some((targetPath) => targetPath.startsWith("/Users/alice/")));
@@ -299,7 +299,7 @@ test("buildNukeManifest excludes paths that would remove ~/.opencode/bin", () =>
     env: { OPENCODE_CONFIG_DIR: "/Users/alice/.opencode" },
     homedir: "/Users/alice",
     platform: "darwin",
-    userDataPath: "/tmp/omnirush-userdata",
+    userDataPath: "/tmp/mars-userdata",
   });
 
   assert.ok(!manifest.deletePaths.includes("/Users/alice/.opencode"));
@@ -312,7 +312,7 @@ test("sanitizeDesktopBootstrapConfig strips secrets and keeps deployment fields"
     baseUrl: " https://den.example.com ",
     apiBaseUrl: " https://api.den.example.com ",
     requireSignin: true,
-    brandAppName: " Acme OmniRush.ai ",
+    brandAppName: " Acme MarsAI ",
     brandLogoUrl: " https://cdn.example.com/logo.png ",
     brandIconUrl: " https://cdn.example.com/icon.png ",
     handoff: { grant: "secret", denBaseUrl: "https://den.example.com" },
@@ -324,7 +324,7 @@ test("sanitizeDesktopBootstrapConfig strips secrets and keeps deployment fields"
     baseUrl: "https://den.example.com",
     apiBaseUrl: "https://api.den.example.com",
     requireSignin: true,
-    brandAppName: "Acme OmniRush.ai",
+    brandAppName: "Acme MarsAI",
     brandLogoUrl: "https://cdn.example.com/logo.png",
     brandIconUrl: "https://cdn.example.com/icon.png",
     writtenAt,
@@ -416,7 +416,7 @@ test("runPendingNukeCleanup removes the sentinel after all pending paths are gon
 test("runPendingNukeCleanup retains the choice to remove bootstrap state", async () => {
   await withTempDir(async (root) => {
     const input = pendingNukeInput(root);
-    const bootstrapPath = path.join(input.env.XDG_CONFIG_HOME, "omnirush", "desktop-bootstrap.json");
+    const bootstrapPath = path.join(input.env.XDG_CONFIG_HOME, "mars", "desktop-bootstrap.json");
     await mkdir(path.dirname(bootstrapPath), { recursive: true });
     await writeFile(bootstrapPath, JSON.stringify({ baseUrl: "https://den.example.com" }), "utf8");
     await writePendingNuke(root, {
@@ -476,8 +476,8 @@ test("runPendingNukeCleanup rewrites only failed paths and removes them on the n
 test("runPendingNukeCleanup refuses replayed paths outside an isolated profile", async () => {
   await withTempDir(async (root) => {
     const userDataPath = path.join(root, "userData");
-    const productionPath = path.join(root, "home", ".config", "omnirush", "tokens.json");
-    const profilePath = path.join(userDataPath, "omnirush-server-tokens.json");
+    const productionPath = path.join(root, "home", ".config", "mars", "tokens.json");
+    const profilePath = path.join(userDataPath, "mars-server-tokens.json");
     await mkdir(path.dirname(productionPath), { recursive: true });
     await mkdir(userDataPath, { recursive: true });
     await writeFile(productionPath, "production secrets", "utf8");
@@ -487,7 +487,7 @@ test("runPendingNukeCleanup refuses replayed paths outside an isolated profile",
     await writeFile(pendingPath, `${JSON.stringify({ paths: [productionPath, profilePath] })}\n`, "utf8");
 
     const result = await runPendingNukeCleanup({
-      env: { OMNIRUSH_ELECTRON_APP_IDENTIFIER: "ai.omnirush.desktop.dev.wt2" },
+      env: { MARS_ELECTRON_APP_IDENTIFIER: "ai.marsai.desktop.dev.wt2" },
       homedir: path.join(root, "home"),
       platform: process.platform === "win32" ? "win32" : "darwin",
       userDataPath,
@@ -527,10 +527,10 @@ test("nuke worker payload only serializes safe path inputs", () => {
   const nukeInput = buildNukeWorkerNukeInput({
     env: {
       APPDATA: "C:\\Users\\Alice\\AppData\\Roaming",
-      OMNIRUSH_API_KEY: "secret-api-key",
-      OMNIRUSH_TOKEN: "secret-token",
-      OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT: "9888",
-      OMNIRUSH_TOKEN_STORE: "C:\\Users\\Alice\\AppData\\Roaming\\omnirush\\tokens.json",
+      MARS_API_KEY: "secret-api-key",
+      MARS_TOKEN: "secret-token",
+      MARS_ELECTRON_REMOTE_DEBUG_PORT: "9888",
+      MARS_TOKEN_STORE: "C:\\Users\\Alice\\AppData\\Roaming\\mars\\tokens.json",
       XDG_CONFIG_HOME: "/tmp/config",
     },
     homedir: "/tmp/home",
@@ -543,14 +543,14 @@ test("nuke worker payload only serializes safe path inputs", () => {
     nukeInput,
     appExecutablePath: process.execPath,
     appArgv: ["--remote-debugging-port=9888", "--remote-debugging-address=0.0.0.0", "--secret=token"],
-    pendingPath: "/tmp/config/omnirush/.nuke-pending.json",
+    pendingPath: "/tmp/config/mars/.nuke-pending.json",
     nowMs: 1_000,
   });
   const serialized = JSON.stringify(payload);
 
   assert.equal(payload.nukeInput.env.APPDATA, "C:\\Users\\Alice\\AppData\\Roaming");
   assert.equal(payload.nukeInput.env.XDG_CONFIG_HOME, "/tmp/config");
-  assert.equal(payload.nukeInput.env.OMNIRUSH_TOKEN_STORE, "C:\\Users\\Alice\\AppData\\Roaming\\omnirush\\tokens.json");
+  assert.equal(payload.nukeInput.env.MARS_TOKEN_STORE, "C:\\Users\\Alice\\AppData\\Roaming\\mars\\tokens.json");
   assert.equal(payload.nukeInput.preserveBootstrap, false);
   assert.deepEqual(payload.appArgv, []);
   assert.equal(serialized.includes("secret-api-key"), false);
@@ -558,16 +558,16 @@ test("nuke worker payload only serializes safe path inputs", () => {
   assert.equal(serialized.includes("--secret"), false);
   assert.equal(serialized.includes("0.0.0.0"), false);
   assert.equal(serialized.includes("9888"), false);
-  assert.equal(serialized.includes("OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT"), false);
-  assert.equal(serialized.includes("OMNIRUSH_API_KEY"), false);
-  assert.equal(serialized.includes("OMNIRUSH_TOKEN\""), false);
+  assert.equal(serialized.includes("MARS_ELECTRON_REMOTE_DEBUG_PORT"), false);
+  assert.equal(serialized.includes("MARS_API_KEY"), false);
+  assert.equal(serialized.includes("MARS_TOKEN\""), false);
 
   const devPayload = buildNukeWorkerPayload({
     parentPid: 123,
     nukeInput,
     appExecutablePath: process.execPath,
     appArgv: ["/repo/apps/desktop/electron/main.mjs", "--remote-debugging-port=9888"],
-    pendingPath: "/tmp/config/omnirush/.nuke-pending.json",
+    pendingPath: "/tmp/config/mars/.nuke-pending.json",
     nowMs: 1_000,
   });
   assert.deepEqual(devPayload.appArgv, ["/repo/apps/desktop/electron/main.mjs"]);
@@ -576,7 +576,7 @@ test("nuke worker payload only serializes safe path inputs", () => {
 test("scheduleNukeCleanupWorker launches Electron as Node with a detached safe payload", async () => {
   await withTempDir(async (root) => {
     const input = pendingNukeInput(root);
-    input.env.OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT = "9888";
+    input.env.MARS_ELECTRON_REMOTE_DEBUG_PORT = "9888";
     const plan = {
       pendingPath: pendingNukePath(root),
     };
@@ -592,7 +592,7 @@ test("scheduleNukeCleanupWorker launches Electron as Node with a detached safe p
       plan,
       execPath: process.execPath,
       argv: [process.execPath, "--remote-debugging-port=9888", "--remote-debugging-address=0.0.0.0", "--ignored"],
-      env: { SECRET_TOKEN: "do-not-write", XDG_CONFIG_HOME: input.env.XDG_CONFIG_HOME, OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT: "9888" },
+      env: { SECRET_TOKEN: "do-not-write", XDG_CONFIG_HOME: input.env.XDG_CONFIG_HOME, MARS_ELECTRON_REMOTE_DEBUG_PORT: "9888" },
       spawnFn: (command, args, options) => {
         spawnCommand = command;
         spawnArgs = args;
@@ -611,8 +611,8 @@ test("scheduleNukeCleanupWorker launches Electron as Node with a detached safe p
     assert.equal(spawnOptions.stdio, "ignore");
     assert.equal(spawnOptions.shell, undefined);
     assert.equal(spawnOptions.env.ELECTRON_RUN_AS_NODE, "1");
-    assert.equal(spawnOptions.env.OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT, undefined);
-    assert.equal(payload.nukeInput.env.OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT, undefined);
+    assert.equal(spawnOptions.env.MARS_ELECTRON_REMOTE_DEBUG_PORT, undefined);
+    assert.equal(payload.nukeInput.env.MARS_ELECTRON_REMOTE_DEBUG_PORT, undefined);
     assert.deepEqual(payload.appArgv, []);
     assert.equal(JSON.stringify(payload).includes("do-not-write"), false);
 
@@ -647,7 +647,7 @@ test("nuke cleanup worker waits for parent exit, clears pending path, removes pa
     let launchEnv = {};
 
     const result = await runNukeCleanupWorker(payloadPath, {
-      env: { ELECTRON_RUN_AS_NODE: "1", OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT: "9888" },
+      env: { ELECTRON_RUN_AS_NODE: "1", MARS_ELECTRON_REMOTE_DEBUG_PORT: "9888" },
       relaunchHandleGraceMs: 0,
       spawnApp: (_command, args, options) => {
         launchedAfterParentExit = parent.exitCode !== null;
@@ -661,7 +661,7 @@ test("nuke cleanup worker waits for parent exit, clears pending path, removes pa
     assert.equal(launchedAfterParentExit, true);
     assert.deepEqual(launchedArgs, []);
     assert.equal(launchEnv.ELECTRON_RUN_AS_NODE, undefined);
-    assert.equal(launchEnv.OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT, undefined);
+    assert.equal(launchEnv.MARS_ELECTRON_REMOTE_DEBUG_PORT, undefined);
     assert.equal(await exists(targetPath), false);
     assert.equal(await exists(pendingPath), false);
     assert.equal(await exists(payloadPath), false);
@@ -705,11 +705,11 @@ test("executeNukeFreshStart skips host-wide container cleanup on an isolated pro
   await withTempDir(async (root) => {
     const runtimeManager = fakeRuntimeManager();
     let cleanedContainers = 0;
-    runtimeManager.sandboxCleanupOmniRushContainers = async () => {
+    runtimeManager.sandboxCleanupMarsContainers = async () => {
       cleanedContainers += 1;
       return { candidates: [], removed: [], errors: [] };
     };
-    const input = { ...pendingNukeInput(root), env: { OMNIRUSH_DEV_MODE: "1" } };
+    const input = { ...pendingNukeInput(root), env: { MARS_DEV_MODE: "1" } };
     await mkdir(input.userDataPath, { recursive: true });
 
     await executeNukeFreshStart({
@@ -729,7 +729,7 @@ test("executeNukeFreshStart still cleans containers on the default profile", asy
   await withTempDir(async (root) => {
     const runtimeManager = fakeRuntimeManager();
     let cleanedContainers = 0;
-    runtimeManager.sandboxCleanupOmniRushContainers = async () => {
+    runtimeManager.sandboxCleanupMarsContainers = async () => {
       cleanedContainers += 1;
       return { candidates: [], removed: [], errors: [] };
     };
@@ -847,7 +847,7 @@ test("executeNukeFreshStart relaunches directly when no paths remain pending", a
 test("executeNukeFreshStart removes the bootstrap when preservation is disabled", async () => {
   await withTempDir(async (root) => {
     const input = { ...pendingNukeInput(root), preserveBootstrap: false };
-    const bootstrapPath = path.join(input.env.XDG_CONFIG_HOME, "omnirush", "desktop-bootstrap.json");
+    const bootstrapPath = path.join(input.env.XDG_CONFIG_HOME, "mars", "desktop-bootstrap.json");
     await mkdir(path.dirname(bootstrapPath), { recursive: true });
     await writeFile(bootstrapPath, JSON.stringify({ baseUrl: "https://den.example.com" }), "utf8");
     await mkdir(input.userDataPath, { recursive: true });

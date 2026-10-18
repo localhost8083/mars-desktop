@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { EnvService } from "./env-file.js";
 import { CloudProviderSync } from "./cloud-provider-sync.js";
 import { clearEnginePoolForConfig, setEnginePoolForConfig, type EnginePool } from "./engine-pool.js";
-import { readOmniRushWorkspaceConfig, writeOmniRushWorkspaceConfig } from "./omnirush-workspace-config-store.js";
+import { readMarsWorkspaceConfig, writeMarsWorkspaceConfig } from "./mars-workspace-config-store.js";
 import {
   readGlobalRuntimeOpencodeConfig,
   readRuntimeOpencodeConfig,
@@ -20,10 +20,10 @@ const clientToken = "owt_cloud_provider_client";
 const hostToken = "owt_cloud_provider_host";
 const roots: string[] = [];
 const stops: Array<() => void | Promise<void>> = [];
-const previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
-const previousEnvStore = process.env.OMNIRUSH_ENV_STORE;
-const previousInterval = process.env.OMNIRUSH_CLOUD_PROVIDER_SYNC_INTERVAL_MS;
-const previousReloadRetry = process.env.OMNIRUSH_ENGINE_RELOAD_RETRY_MS;
+const previousRuntimeDb = process.env.MARS_RUNTIME_DB;
+const previousEnvStore = process.env.MARS_ENV_STORE;
+const previousInterval = process.env.MARS_CLOUD_PROVIDER_SYNC_INTERVAL_MS;
+const previousReloadRetry = process.env.MARS_ENGINE_RELOAD_RETRY_MS;
 
 type FakeModel = {
   id: string;
@@ -57,7 +57,7 @@ function clientHeaders() {
 }
 
 function hostHeaders() {
-  return { "x-omnirush-host-token": hostToken, "content-type": "application/json" };
+  return { "x-mars-host-token": hostToken, "content-type": "application/json" };
 }
 
 async function responseRecord(response: Response, label: string): Promise<Record<string, unknown>> {
@@ -65,11 +65,11 @@ async function responseRecord(response: Response, label: string): Promise<Record
 }
 
 async function createRoot(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-cloud-provider-sync-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-cloud-provider-sync-"));
   roots.push(root);
-  process.env.OMNIRUSH_RUNTIME_DB = join(root, "runtime.sqlite");
-  process.env.OMNIRUSH_ENV_STORE = join(root, "env.json");
-  process.env.OMNIRUSH_CLOUD_PROVIDER_SYNC_INTERVAL_MS = "3600000";
+  process.env.MARS_RUNTIME_DB = join(root, "runtime.sqlite");
+  process.env.MARS_ENV_STORE = join(root, "env.json");
+  process.env.MARS_CLOUD_PROVIDER_SYNC_INTERVAL_MS = "3600000";
   return root;
 }
 
@@ -169,14 +169,14 @@ afterEach(async () => {
     const root = roots.pop();
     if (root) await rm(root, { recursive: true, force: true });
   }
-  if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-  else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
-  if (previousEnvStore === undefined) delete process.env.OMNIRUSH_ENV_STORE;
-  else process.env.OMNIRUSH_ENV_STORE = previousEnvStore;
-  if (previousInterval === undefined) delete process.env.OMNIRUSH_CLOUD_PROVIDER_SYNC_INTERVAL_MS;
-  else process.env.OMNIRUSH_CLOUD_PROVIDER_SYNC_INTERVAL_MS = previousInterval;
-  if (previousReloadRetry === undefined) delete process.env.OMNIRUSH_ENGINE_RELOAD_RETRY_MS;
-  else process.env.OMNIRUSH_ENGINE_RELOAD_RETRY_MS = previousReloadRetry;
+  if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+  else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
+  if (previousEnvStore === undefined) delete process.env.MARS_ENV_STORE;
+  else process.env.MARS_ENV_STORE = previousEnvStore;
+  if (previousInterval === undefined) delete process.env.MARS_CLOUD_PROVIDER_SYNC_INTERVAL_MS;
+  else process.env.MARS_CLOUD_PROVIDER_SYNC_INTERVAL_MS = previousInterval;
+  if (previousReloadRetry === undefined) delete process.env.MARS_ENGINE_RELOAD_RETRY_MS;
+  else process.env.MARS_ENGINE_RELOAD_RETRY_MS = previousReloadRetry;
 });
 
 describe("cloud provider sync gateway", () => {
@@ -209,7 +209,7 @@ describe("cloud provider sync gateway", () => {
           if (url.pathname === "/v1/me/desktop-config") return Response.json({});
           return Response.json({ error: "not_found" }, { status: 404 });
         }
-        listOrgIds.push(request.headers.get("x-omnirush-legacy-org-id") ?? "");
+        listOrgIds.push(request.headers.get("x-mars-legacy-org-id") ?? "");
         const listIndex = listOrgIds.length;
         listRequestsInFlight += 1;
         maxListRequestsInFlight = Math.max(maxListRequestsInFlight, listRequestsInFlight);
@@ -298,7 +298,7 @@ describe("cloud provider sync gateway", () => {
     ) => {
       const url = new URL(String(input));
       if (url.hostname === "den.example.test") {
-        const orgId = new Headers(init?.headers).get("x-omnirush-legacy-org-id");
+        const orgId = new Headers(init?.headers).get("x-mars-legacy-org-id");
         if (orgId === "org_b") return Response.json({ error: "not_found" }, { status: 404 });
         if (url.pathname === "/v1/llm-providers") return Response.json({ llmProviders: [provider] });
         if (url.pathname === `/v1/llm-providers/${provider.id}/connect`) {
@@ -310,7 +310,7 @@ describe("cloud provider sync gateway", () => {
       }
       return Response.json({ error: "not_found" }, { status: 404 });
     }, { preconnect: globalThis.fetch.preconnect });
-    const env = new EnvService({ path: process.env.OMNIRUSH_ENV_STORE });
+    const env = new EnvService({ path: process.env.MARS_ENV_STORE });
     const sync = new CloudProviderSync({
       config,
       env,
@@ -385,7 +385,7 @@ describe("cloud provider sync gateway", () => {
       }
       return Response.json({ error: "not_found" }, { status: 404 });
     }, { preconnect: globalThis.fetch.preconnect });
-    const env = new EnvService({ path: process.env.OMNIRUSH_ENV_STORE });
+    const env = new EnvService({ path: process.env.MARS_ENV_STORE });
     const sync = new CloudProviderSync({
       config,
       env,
@@ -423,7 +423,7 @@ describe("cloud provider sync gateway", () => {
   });
 
   test("defers a reload while a generation drains and retries it once", async () => {
-    process.env.OMNIRUSH_ENGINE_RELOAD_RETRY_MS = "50";
+    process.env.MARS_ENGINE_RELOAD_RETRY_MS = "50";
     const root = await createRoot();
     const provider = buildProvider([{ id: "model-a", name: "Model A", config: {} }]);
     const config = serverConfig(root, "https://engine.example.test");
@@ -440,7 +440,7 @@ describe("cloud provider sync gateway", () => {
     }, { preconnect: globalThis.fetch.preconnect });
     const sync = new CloudProviderSync({
       config,
-      env: new EnvService({ path: process.env.OMNIRUSH_ENV_STORE }),
+      env: new EnvService({ path: process.env.MARS_ENV_STORE }),
       fetchImpl,
       engineBusy: async () => draining,
       reloadEngine: async () => { reloads += 1; },
@@ -498,7 +498,7 @@ describe("cloud provider sync gateway", () => {
     stops.push(() => den.stop(true));
     const sync = new CloudProviderSync({
       config,
-      env: new EnvService({ path: process.env.OMNIRUSH_ENV_STORE }),
+      env: new EnvService({ path: process.env.MARS_ENV_STORE }),
       reloadEngine: async () => {
         reloads += 1;
       },
@@ -555,7 +555,7 @@ describe("cloud provider sync gateway", () => {
     stops.push(() => den.stop(true));
     const sync = new CloudProviderSync({
       config,
-      env: new EnvService({ path: process.env.OMNIRUSH_ENV_STORE }),
+      env: new EnvService({ path: process.env.MARS_ENV_STORE }),
       reloadEngine: async () => undefined,
       intervalMs: 3_600_000,
     });
@@ -613,7 +613,7 @@ describe("cloud provider sync gateway", () => {
       return Response.json({ error: "not_found" }, { status: 404 });
     }, { preconnect: globalThis.fetch.preconnect });
     const config = serverConfig(root, "https://engine.example.test");
-    const env = new EnvService({ path: process.env.OMNIRUSH_ENV_STORE });
+    const env = new EnvService({ path: process.env.MARS_ENV_STORE });
     const sync = new CloudProviderSync({
       config,
       env,
@@ -711,7 +711,7 @@ describe("cloud provider sync gateway", () => {
       return Response.json({ error: "not_found" }, { status: 404 });
     }, { preconnect: globalThis.fetch.preconnect });
     const config = serverConfig(root, "https://engine.example.test");
-    const env = new EnvService({ path: process.env.OMNIRUSH_ENV_STORE });
+    const env = new EnvService({ path: process.env.MARS_ENV_STORE });
     const envValues = async () => new Map((await env.list()).map((entry) => [entry.key, entry.value]));
     const session = { baseUrl: "https://den.example.test", token: "den-token", orgId: "org-env-upgrade" };
     const newSync = () => {
@@ -780,7 +780,7 @@ describe("cloud provider sync gateway", () => {
         denRequests.push({
           path: url.pathname,
           authorization: request.headers.get("authorization"),
-          orgId: request.headers.get("x-omnirush-legacy-org-id"),
+          orgId: request.headers.get("x-mars-legacy-org-id"),
         });
         // This fixture isolates provider-catalog outages; policy verification
         // remains available when the provider service fails.
@@ -803,7 +803,7 @@ describe("cloud provider sync gateway", () => {
         local_provider: { id: "local", name: "Local" },
       },
     }));
-    await writeOmniRushWorkspaceConfig(config, "ws_1", () => ({
+    await writeMarsWorkspaceConfig(config, "ws_1", () => ({
       cloudImports: {
         providers: { lpr_stale: { cloudProviderId: "lpr_stale" } },
         marketplaces: { mkp_keep: { name: "Keep" } },
@@ -812,7 +812,7 @@ describe("cloud provider sync gateway", () => {
     // Simulate an upgrade/restart after an older process persisted the cloud
     // credential. The next sync sees the same value, performs no upsert, and
     // must still reclaim ownership so logout removes it.
-    await new EnvService({ path: process.env.OMNIRUSH_ENV_STORE }).upsertMany([
+    await new EnvService({ path: process.env.MARS_ENV_STORE }).upsertMany([
       { key: "TEST_PROVIDER_API_KEY", value: "sk-test-provider" },
     ]);
 
@@ -875,15 +875,15 @@ describe("cloud provider sync gateway", () => {
     const globalModels = expectRecord(globalProvider.models, "global runtime provider models");
     expect(Object.keys(globalModels).sort()).toEqual(["model-a", "model-z"]);
     expect(expectRecord(globalModels["model-z"], "model-z runtime config").reasoning).toBe(true);
-    expect((await new EnvService({ path: process.env.OMNIRUSH_ENV_STORE }).list()).find(
+    expect((await new EnvService({ path: process.env.MARS_ENV_STORE }).list()).find(
       (entry) => entry.key === "TEST_PROVIDER_API_KEY",
     )?.value).toBe("sk-test-provider");
 
     const workspaceProviders = runtimeProviderMap(await readRuntimeOpencodeConfig(config, "ws_1"));
     expect(workspaceProviders.lpr_stale).toBeUndefined();
     expect(workspaceProviders.local_provider).toBeDefined();
-    const omnirush = await readOmniRushWorkspaceConfig(config, "ws_1");
-    const cloudImports = expectRecord(omnirush.cloudImports, "workspace cloud imports");
+    const mars = await readMarsWorkspaceConfig(config, "ws_1");
+    const cloudImports = expectRecord(mars.cloudImports, "workspace cloud imports");
     expect(cloudImports.providers).toEqual({});
     expect(cloudImports.marketplaces).toEqual({ mkp_keep: { name: "Keep" } });
 
@@ -911,7 +911,7 @@ describe("cloud provider sync gateway", () => {
     const deleteResponse = await fetch(`${base}/den-session`, { method: "DELETE", headers: hostHeaders() });
     expect(deleteResponse.status).toBe(204);
     expect(runtimeProviderMap(await readGlobalRuntimeOpencodeConfig(config)).lpr_test).toBeUndefined();
-    expect((await new EnvService({ path: process.env.OMNIRUSH_ENV_STORE }).list()).find(
+    expect((await new EnvService({ path: process.env.MARS_ENV_STORE }).list()).find(
       (entry) => entry.key === "TEST_PROVIDER_API_KEY",
     )).toBeUndefined();
     const clearedStatusResponse = await fetch(`${base}/cloud-provider-sync/status`, { headers: clientHeaders() });

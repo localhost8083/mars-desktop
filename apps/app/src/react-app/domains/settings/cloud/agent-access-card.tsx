@@ -5,12 +5,12 @@ import { ArrowUpRight, ChevronDown, ChevronRight } from "lucide-react";
 import { mintCloudControlMcpToken, readDenSettings } from "@/app/lib/den";
 import { openDesktopUrl } from "@/app/lib/desktop";
 import type {
-  OmniRushCloudMcpEngineRefresh,
-  OmniRushCloudMcpHealth,
-  OmniRushCloudMcpProviderModelContext,
-  OmniRushConnectState,
-  OmniRushServerClient,
-} from "@/app/lib/omnirush-server";
+  MarsCloudMcpEngineRefresh,
+  MarsCloudMcpHealth,
+  MarsCloudMcpProviderModelContext,
+  MarsConnectState,
+  MarsServerClient,
+} from "@/app/lib/mars-server";
 import { Button } from "@/components/ui/button";
 import {
   SettingsInset,
@@ -19,11 +19,11 @@ import {
 } from "@/react-app/domains/settings/settings-section";
 import { useCloudSession } from "@/react-app/domains/settings/cloud/cloud-session-provider";
 import {
-  OMNIRUSH_CLOUD_EXPECTED_TOOLS,
+  MARS_CLOUD_EXPECTED_TOOLS,
   clearCloudMcpDisabledIntent,
   cloudMcpDisplaySummary,
-  runOmniRushCloudMcpEngineRefresh,
-  runOmniRushCloudMcpReconciler,
+  runMarsCloudMcpEngineRefresh,
+  runMarsCloudMcpReconciler,
   type CloudMcpOperationContext,
 } from "@/react-app/domains/connections/cloud-mcp-reconciler";
 import {
@@ -33,7 +33,7 @@ import {
   cloudMcpProbeTraceLines,
 } from "@/react-app/domains/connections/cloud-mcp-diagnostics";
 import { readCloudMcpUserState } from "@/react-app/domains/connections/cloud-mcp-user-state";
-import { resolveOmniRushConnectStateSummary } from "@/react-app/domains/connections/omnirush-connect-status";
+import { resolveMarsConnectStateSummary } from "@/react-app/domains/connections/mars-connect-status";
 import { t } from "@/i18n";
 
 const CLOUD_MCP_REFRESH_MARGIN_MS = 24 * 60 * 60 * 1000;
@@ -57,9 +57,9 @@ function ManageInDenButton() {
 }
 
 function buildCloudMcpContext(input: {
-  client: OmniRushServerClient | null;
+  client: MarsServerClient | null;
   workspaceId: string | null;
-  currentModel: OmniRushCloudMcpProviderModelContext | null;
+  currentModel: MarsCloudMcpProviderModelContext | null;
 }): CloudMcpOperationContext | null {
   const workspaceId = input.workspaceId?.trim() ?? "";
   const serverBaseUrl = input.client?.baseUrl.trim() ?? "";
@@ -79,7 +79,7 @@ function buildCloudMcpContext(input: {
 }
 
 function missingCloudMcpContextMessage(input: {
-  client: OmniRushServerClient | null;
+  client: MarsServerClient | null;
   workspaceId: string | null;
 }): string {
   if (!input.workspaceId?.trim()) return "Select a workspace before running agent access diagnostics.";
@@ -88,25 +88,25 @@ function missingCloudMcpContextMessage(input: {
   return "Agent access diagnostics are unavailable for the current workspace.";
 }
 
-export function readyCloudMcpToolIds(health: OmniRushCloudMcpHealth | null): string[] {
+export function readyCloudMcpToolIds(health: MarsCloudMcpHealth | null): string[] {
   if (!health?.usable) return [];
-  return health.tools.present.filter((tool) => OMNIRUSH_CLOUD_EXPECTED_TOOLS.some((expected) => expected === tool));
+  return health.tools.present.filter((tool) => MARS_CLOUD_EXPECTED_TOOLS.some((expected) => expected === tool));
 }
 
 export function AgentAccessCard(props: {
-  client: OmniRushServerClient | null;
+  client: MarsServerClient | null;
   workspaceId: string | null;
-  currentModel: OmniRushCloudMcpProviderModelContext | null;
-  onHealthChange?: (health: OmniRushCloudMcpHealth | null) => void;
+  currentModel: MarsCloudMcpProviderModelContext | null;
+  onHealthChange?: (health: MarsCloudMcpHealth | null) => void;
 }) {
   const cloudSession = useCloudSession();
-  const [health, setHealth] = useState<OmniRushCloudMcpHealth | null>(null);
-  const [connectState, setConnectState] = useState<OmniRushConnectState | null>(null);
+  const [health, setHealth] = useState<MarsCloudMcpHealth | null>(null);
+  const [connectState, setConnectState] = useState<MarsConnectState | null>(null);
   const [busy, setBusy] = useState<"test" | "repair" | "refresh" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
-  const [lastEngineRefresh, setLastEngineRefresh] = useState<OmniRushCloudMcpEngineRefresh | null>(null);
+  const [lastEngineRefresh, setLastEngineRefresh] = useState<MarsCloudMcpEngineRefresh | null>(null);
   const context = buildCloudMcpContext(props);
   const userState = context ? readCloudMcpUserState(context) : null;
   const signedIn = cloudSession.isSignedIn && Boolean(cloudSession.authToken.trim());
@@ -139,7 +139,7 @@ export function AgentAccessCard(props: {
           : null
     : null;
   const connectStateSummary = connectState && (connectState.status !== "available" || !connectState.connectEnabled)
-    ? resolveOmniRushConnectStateSummary(connectState.status, connectState.connectEnabled)
+    ? resolveMarsConnectStateSummary(connectState.status, connectState.connectEnabled)
     : null;
   const summary = missingContextSummary ?? connectStateSummary ?? cloudMcpDisplaySummary({
       signedIn,
@@ -149,7 +149,7 @@ export function AgentAccessCard(props: {
       health,
     });
 
-  const updateHealth = (next: OmniRushCloudMcpHealth | null) => {
+  const updateHealth = (next: MarsCloudMcpHealth | null) => {
     setHealth(next);
     props.onHealthChange?.(next);
   };
@@ -162,10 +162,10 @@ export function AgentAccessCard(props: {
     setBusy("test");
     setError(null);
     try {
-      // probe: verify the Cloud endpoint directly from the omnirush.ai server as
+      // probe: verify the Cloud endpoint directly from the marsai.click server as
       // well, so a failure can be attributed to the endpoint, the network
       // path, or the engine — not just reported as the engine's cached state.
-      const result = await runOmniRushCloudMcpReconciler({
+      const result = await runMarsCloudMcpReconciler({
         mode: "health",
         client: props.client,
         context: { ...context, trigger: "desktop-connect-test" },
@@ -189,7 +189,7 @@ export function AgentAccessCard(props: {
     setBusy("refresh");
     setError(null);
     try {
-      const result = await runOmniRushCloudMcpEngineRefresh({
+      const result = await runMarsCloudMcpEngineRefresh({
         client: props.client,
         context: { ...context, trigger: "desktop-connect-engine-refresh" },
       });
@@ -198,7 +198,7 @@ export function AgentAccessCard(props: {
       if (result.status === "skipped") {
         setError(
           result.skippedReason === "unsupported"
-            ? "This omnirush.ai server does not support engine refresh yet. Update omnirush.ai, then retry."
+            ? "This marsai.click server does not support engine refresh yet. Update marsai.click, then retry."
             : "Select a workspace before refreshing the engine connection.",
         );
       }
@@ -238,7 +238,7 @@ export function AgentAccessCard(props: {
     setError(null);
     try {
       clearCloudMcpDisabledIntent(context);
-      const result = await runOmniRushCloudMcpReconciler({
+      const result = await runMarsCloudMcpReconciler({
         mode: "repair",
         client: props.client,
         context: { ...context, trigger: "desktop-connect-repair" },
@@ -283,7 +283,7 @@ export function AgentAccessCard(props: {
     let cancelled = false;
     setBusy("test");
     setError(null);
-    void runOmniRushCloudMcpReconciler({
+    void runMarsCloudMcpReconciler({
       mode: "health",
       client: props.client,
       context: { ...context, trigger: "desktop-connect-autocheck" },
@@ -310,7 +310,7 @@ export function AgentAccessCard(props: {
     let cancelled = false;
     const retryAfterReconnect = () => {
       if (window.navigator.onLine === false) return;
-      void runOmniRushCloudMcpReconciler({
+      void runMarsCloudMcpReconciler({
         mode: "repair",
         client,
         context: { ...context, trigger: "desktop-connect-online-retry" },
@@ -374,7 +374,7 @@ export function AgentAccessCard(props: {
         <div className="space-y-1">
           <div className="text-base font-semibold text-dls-text">Agent access to connected services</div>
           <div className="max-w-[62ch] text-sm text-dls-secondary">
-            Lets agents use the exact omnirush.ai Cloud tools for this active workspace and organization.
+            Lets agents use the exact marsai.click Cloud tools for this active workspace and organization.
           </div>
         </div>
         <SettingsStatusBadge label={summary.statusLabel} tone={summary.tone} />
@@ -434,8 +434,8 @@ export function AgentAccessCard(props: {
 }
 
 function AgentAccessAdvanced(props: {
-  health: OmniRushCloudMcpHealth | null;
-  engineRefresh: OmniRushCloudMcpEngineRefresh | null;
+  health: MarsCloudMcpHealth | null;
+  engineRefresh: MarsCloudMcpEngineRefresh | null;
   open: boolean;
   onToggle: () => void;
   busyLabel: "test" | "repair" | "refresh" | null;

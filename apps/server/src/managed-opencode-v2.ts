@@ -71,7 +71,7 @@ function sleep(ms: number): Promise<void> {
 function diagnostics(exitCode: number | null, stdout: string, stderr: string): Error {
   const tail = (value: string) => value.slice(-4_000);
   return new Error(
-    `OmniRush v2 server exited with code ${String(exitCode)}\nstdout:\n${tail(stdout)}\nstderr:\n${tail(stderr)}`,
+    `Mars v2 server exited with code ${String(exitCode)}\nstdout:\n${tail(stdout)}\nstderr:\n${tail(stderr)}`,
   );
 }
 
@@ -92,7 +92,7 @@ export async function createManagedOpencodeV2Server(
   // cloud, database, or control-plane credentials. Unknown keys stay private.
   const inherited: Record<string, string> = {};
   for (const key of [
-    "OMNIRUSH_SERVER_URL", "OMNIRUSH_POLICY_TOKEN",
+    "MARS_SERVER_URL", "MARS_POLICY_TOKEN",
     "PATH", "HOME", "USER", "LOGNAME", "SHELL", "TMPDIR", "TMP", "TEMP",
     "LANG", "LC_ALL", "LC_CTYPE", "TZ", "TERM", "CI",
     "XDG_CACHE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_RUNTIME_DIR",
@@ -143,7 +143,7 @@ export async function createManagedOpencodeV2Server(
     path: string,
     init: { method?: string; body?: unknown; directory?: string; timeoutMs?: number } = {},
   ): Promise<{ status: number; json: unknown }> {
-    if (!url) throw new Error("OmniRush v2 has not announced its listener");
+    if (!url) throw new Error("Mars v2 has not announced its listener");
     const separator = path.includes("?") ? "&" : "?";
     const requestPath = init.directory === undefined
       ? path
@@ -170,13 +170,13 @@ export async function createManagedOpencodeV2Server(
   async function health(): Promise<OpencodeV2Health> {
     const response = await fetchJson("/api/health", { timeoutMs: 5_000 });
     if (response.status !== 200 || !isRecord(response.json)) {
-      throw new Error(`OmniRush v2 health returned HTTP ${response.status}`);
+      throw new Error(`Mars v2 health returned HTTP ${response.status}`);
     }
     const { healthy, version, pid } = response.json;
     if (typeof healthy !== "boolean" || typeof version !== "string" || typeof pid !== "number") {
-      throw new Error("OmniRush v2 health returned an invalid payload");
+      throw new Error("Mars v2 health returned an invalid payload");
     }
-    if (pid !== child.pid) throw new Error("OmniRush v2 health did not match the spawned child");
+    if (pid !== child.pid) throw new Error("Mars v2 health did not match the spawned child");
     return { healthy, version, pid };
   }
 
@@ -220,7 +220,7 @@ export async function createManagedOpencodeV2Server(
       $schema: "https://opencode.ai/config.json",
       providers: providerConfig,
       ...(options.permissions ? { permissions: await options.permissions() } : {}),
-      ...(options.env?.OMNIRUSH_SERVER_URL ? { plugins: [managedPolicyPluginPath(true)] } : {}),
+      ...(options.env?.MARS_SERVER_URL ? { plugins: [managedPolicyPluginPath(true)] } : {}),
     }, null, 2)}\n`, { mode: 0o600 });
   }
 
@@ -272,7 +272,7 @@ export async function createManagedOpencodeV2Server(
   while (Date.now() < deadline) {
     if (spawnError !== undefined) {
       await close();
-      throw new Error(`Failed to start OmniRush v2 server: ${spawnError.message}`);
+      throw new Error(`Failed to start Mars v2 server: ${spawnError.message}`);
     }
     if (child.exitCode !== null || child.signalCode !== null) throw diagnostics(child.exitCode, stdout, stderr);
     // Only the child can write its stdout pipe. Do not send the generated
@@ -286,7 +286,7 @@ export async function createManagedOpencodeV2Server(
           || endpoint.search || endpoint.hash
           || (port !== 0 && Number(endpoint.port) !== port)) {
           await close();
-          throw new Error("OmniRush v2 announced an unexpected listener");
+          throw new Error("Mars v2 announced an unexpected listener");
         }
         url = endpoint.origin;
       }
@@ -301,5 +301,5 @@ export async function createManagedOpencodeV2Server(
   }
 
   await close();
-  throw new Error(`Timed out waiting ${bootTimeoutMs}ms for OmniRush v2 health\nstdout:\n${stdout.slice(-4_000)}\nstderr:\n${stderr.slice(-4_000)}`);
+  throw new Error(`Timed out waiting ${bootTimeoutMs}ms for Mars v2 health\nstdout:\n${stdout.slice(-4_000)}\nstderr:\n${stderr.slice(-4_000)}`);
 }

@@ -6,7 +6,7 @@ import {
   buildHeadlessCorsOrigins,
   buildHeadlessRuntimeManifest,
   buildHeadlessServerLaunch,
-  buildOmniRushServerArgs,
+  buildMarsServerArgs,
   isHeadlessStackCommand,
   mergeHeadlessServerConfig,
   normalizeDenTarget,
@@ -17,7 +17,7 @@ import {
 
 describe("dev-headless-web helpers", () => {
   test("isolates server config under tmp by default", () => {
-    const cwd = "/repo/omnirush";
+    const cwd = "/repo/mars";
     expect(resolveHeadlessServerConfigPath(cwd)).toBe(
       path.join(cwd, "tmp", "headless-server.json"),
     );
@@ -100,7 +100,7 @@ describe("dev-headless-web helpers", () => {
   });
 
   test("server args use --config only, never --workspace (would drop persisted workspaces)", () => {
-    const args = buildOmniRushServerArgs({
+    const args = buildMarsServerArgs({
       host: "127.0.0.1",
       port: 8787,
       configPath: "/repo/tmp/headless-server.json",
@@ -116,11 +116,11 @@ describe("dev-headless-web helpers", () => {
   });
 
   test("server launch always uses current source instead of compiled output", () => {
-    expect(buildHeadlessServerLaunch("/repo/omnirush", ["--port", "8787"])).toEqual({
+    expect(buildHeadlessServerLaunch("/repo/mars", ["--port", "8787"])).toEqual({
       command: "bun",
       args: [
         "--conditions=development",
-        path.join("/repo/omnirush", "apps/server/src/cli.ts"),
+        path.join("/repo/mars", "apps/server/src/cli.ts"),
         "--port",
         "8787",
       ],
@@ -145,7 +145,7 @@ describe("dev-headless-web helpers", () => {
       "http://localhost:5178",
     ]);
 
-    const args = buildOmniRushServerArgs({
+    const args = buildMarsServerArgs({
       host: "127.0.0.1",
       port: 8787,
       configPath: "/repo/tmp/headless-server.json",
@@ -160,7 +160,7 @@ describe("dev-headless-web helpers", () => {
   test("runtime manifest carries agent-facing local-server fields", () => {
     const manifest = buildHeadlessRuntimeManifest({
       webUrl: "http://127.0.0.1:5178",
-      omnirushUrl: "http://127.0.0.1:8778",
+      marsUrl: "http://127.0.0.1:8778",
       workspace: "/Users/me/project",
       token: "client-token",
       hostToken: "host-token",
@@ -171,7 +171,7 @@ describe("dev-headless-web helpers", () => {
       denTarget: "https://den.example.com",
       pid: 42,
       webPid: 43,
-      omnirushServerPid: 44,
+      marsServerPid: 44,
       startedAt: "2026-08-12T00:00:00.000Z",
     });
 
@@ -182,13 +182,13 @@ describe("dev-headless-web helpers", () => {
     expect(manifest.token).toBe("client-token");
     expect(manifest.notes).toContain("same-origin");
     expect(manifest.pid).toBe(42);
-    expect(manifest.pids).toEqual({ launcher: 42, web: 43, omnirushServer: 44 });
+    expect(manifest.pids).toEqual({ launcher: 42, web: 43, marsServer: 44 });
   });
 
   test("manifest omits Den fields when the Den wiring is disabled", () => {
     const manifest = buildHeadlessRuntimeManifest({
       webUrl: "http://127.0.0.1:5178",
-      omnirushUrl: "http://127.0.0.1:8778",
+      marsUrl: "http://127.0.0.1:8778",
       workspace: "/Users/me/project",
       token: "t",
       hostToken: "h",
@@ -213,7 +213,7 @@ describe("dev-headless-web helpers", () => {
   });
 
   test("requires an explicit Den target instead of defaulting to a hosted Den", () => {
-    expect(() => normalizeDenTarget(undefined)).toThrow(/OMNIRUSH_DEV_DEN_PROXY_TARGET/);
+    expect(() => normalizeDenTarget(undefined)).toThrow(/MARS_DEV_DEN_PROXY_TARGET/);
     expect(() => normalizeDenTarget("   ")).toThrow(/no hosted Den/);
   });
 
@@ -228,7 +228,7 @@ describe("dev-headless-web helpers", () => {
   test("stale-pid cleanup only targets processes from this stack", () => {
     expect(isHeadlessStackCommand("bun scripts/dev-headless-web.ts")).toBe(true);
     expect(
-      isHeadlessStackCommand("/repo/apps/server/dist/bin/omnirush-server --config tmp/headless-server.json"),
+      isHeadlessStackCommand("/repo/apps/server/dist/bin/mars-server --config tmp/headless-server.json"),
     ).toBe(true);
     expect(
       isHeadlessStackCommand("bun --conditions=development /repo/apps/server/src/cli.ts --config tmp/headless-server.json"),

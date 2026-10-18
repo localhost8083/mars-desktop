@@ -27,10 +27,10 @@ describe("Mermaid Markdown placeholders", () => {
       const highlighted = await renderHighlightedMarkdownHtml(MARKDOWN, presentation);
 
       for (const html of [fallback, highlighted]) {
-        expect(html).toContain("data-omnirush-mermaid");
-        expect(html).toContain("data-omnirush-mermaid-source");
-        expect(html).toContain("data-omnirush-mermaid-view=\"rendered\"");
-        expect(html).toContain("data-omnirush-mermaid-download");
+        expect(html).toContain("data-mars-mermaid");
+        expect(html).toContain("data-mars-mermaid-source");
+        expect(html).toContain("data-mars-mermaid-view=\"rendered\"");
+        expect(html).toContain("data-mars-mermaid-download");
         expect(html).toContain("Start[Start] --&gt; Finish[Finish]");
         expect(html).not.toContain("<svg");
       }
@@ -39,8 +39,8 @@ describe("Mermaid Markdown placeholders", () => {
 
   test("leaves non-Mermaid fences on the existing code path", () => {
     const html = renderMarkdownHtml("```ts\nconst diagram = false;\n```");
-    expect(html).toContain("data-omnirush-code-block");
-    expect(html).not.toContain("data-omnirush-mermaid");
+    expect(html).toContain("data-mars-code-block");
+    expect(html).not.toContain("data-mars-mermaid");
   });
 
   test("classifies standalone Mermaid source as a Markdown artifact", () => {

@@ -38,13 +38,13 @@ function fakeSafeStorage(overrides = {}, marker = "sealed") {
  * @param {string} filePath
  */
 async function backupSiblings(filePath) {
-  const prefix = `${path.basename(filePath)}.omnirush-backup-`;
+  const prefix = `${path.basename(filePath)}.mars-backup-`;
   return (await readdir(path.dirname(filePath))).filter((name) => name.startsWith(prefix));
 }
 
 describe("desktop managed MCP vault key", () => {
   it("persists only an OS-protected blob and restores the same key", async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-vault-key-"));
+    const root = await mkdtemp(path.join(os.tmpdir(), "mars-vault-key-"));
     const filePath = path.join(root, "vault-key.bin");
     try {
       const safeStorage = fakeSafeStorage();
@@ -68,7 +68,7 @@ describe("desktop managed MCP vault key", () => {
   });
 
   it("quarantines a blob the OS keychain can no longer decrypt and mints a fresh key", async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-vault-key-"));
+    const root = await mkdtemp(path.join(os.tmpdir(), "mars-vault-key-"));
     const filePath = path.join(root, "vault-key.bin");
     try {
       const oldKey = await createDesktopVaultKeyProvider({ filePath, loadSafeStorage: () => fakeSafeStorage() })();
@@ -92,7 +92,7 @@ describe("desktop managed MCP vault key", () => {
   });
 
   it("rejects Electron's insecure Linux basic-text backend (no fallback path)", async () => {
-    const filePath = path.join(os.tmpdir(), "unused-omnirush-vault-key.bin");
+    const filePath = path.join(os.tmpdir(), "unused-mars-vault-key.bin");
     const provider = createDesktopVaultKeyProvider({
       filePath,
       loadSafeStorage: () => fakeSafeStorage({ getSelectedStorageBackend: () => "basic_text" }),
@@ -103,7 +103,7 @@ describe("desktop managed MCP vault key", () => {
   });
 
   it("fails closed when OS secure storage is unavailable", async () => {
-    const filePath = path.join(os.tmpdir(), "unused-omnirush-vault-key.bin");
+    const filePath = path.join(os.tmpdir(), "unused-mars-vault-key.bin");
     const provider = createDesktopVaultKeyProvider({
       filePath,
       loadSafeStorage: () => fakeSafeStorage({ isAsyncEncryptionAvailable: async () => false }),
@@ -123,7 +123,7 @@ describe("desktop managed MCP vault key", () => {
     const quiet = () => undefined;
 
     it("keeps the key in an owner-only private file and restores it", async () => {
-      const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-vault-key-"));
+      const root = await mkdtemp(path.join(os.tmpdir(), "mars-vault-key-"));
       const { filePath, fallbackFilePath } = paths(root);
       try {
         const options = { filePath, fallbackFilePath, loadSafeStorage: basicText, platform: /** @type {const} */ ("linux"), log: quiet };
@@ -145,7 +145,7 @@ describe("desktop managed MCP vault key", () => {
     });
 
     it("moves the key into a keyring that appears later and deletes the private file", async () => {
-      const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-vault-key-"));
+      const root = await mkdtemp(path.join(os.tmpdir(), "mars-vault-key-"));
       const { filePath, fallbackFilePath } = paths(root);
       try {
         const base = { filePath, fallbackFilePath, platform: /** @type {const} */ ("linux"), log: quiet };
@@ -161,7 +161,7 @@ describe("desktop managed MCP vault key", () => {
     });
 
     it("mints a file key when the keyring that sealed the old one is gone, leaving the sealed blob", async () => {
-      const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-vault-key-"));
+      const root = await mkdtemp(path.join(os.tmpdir(), "mars-vault-key-"));
       const { filePath, fallbackFilePath } = paths(root);
       try {
         const base = { filePath, fallbackFilePath, platform: /** @type {const} */ ("linux"), log: quiet };
@@ -181,7 +181,7 @@ describe("desktop managed MCP vault key", () => {
     });
 
     it("keeps the private file until the sealed key reads back, then records the store", async () => {
-      const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-vault-key-"));
+      const root = await mkdtemp(path.join(os.tmpdir(), "mars-vault-key-"));
       const { filePath, fallbackFilePath } = paths(root);
       try {
         const recorded = [];
@@ -205,7 +205,7 @@ describe("desktop managed MCP vault key", () => {
 
     for (const platform of /** @type {const} */ (["darwin", "win32"])) {
       it(`${platform}: unavailable secure storage keeps the key in the private file`, async () => {
-        const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-vault-key-"));
+        const root = await mkdtemp(path.join(os.tmpdir(), "mars-vault-key-"));
         const { filePath, fallbackFilePath } = paths(root);
         try {
           const options = {
@@ -226,7 +226,7 @@ describe("desktop managed MCP vault key", () => {
       });
 
       it(`${platform}: a keyring that refuses to encrypt keeps the key in the private file`, async () => {
-        const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-vault-key-"));
+        const root = await mkdtemp(path.join(os.tmpdir(), "mars-vault-key-"));
         const { filePath, fallbackFilePath } = paths(root);
         const logs = [];
         try {
@@ -248,7 +248,7 @@ describe("desktop managed MCP vault key", () => {
       });
 
       it(`${platform}: without a private file path a refusing keyring still fails with its own error`, async () => {
-        const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-vault-key-"));
+        const root = await mkdtemp(path.join(os.tmpdir(), "mars-vault-key-"));
         const { filePath } = paths(root);
         try {
           const provider = createDesktopVaultKeyProvider({

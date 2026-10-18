@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { captureScreenshot, evaluate } from "@omnirush/cdp";
-import type { Surface } from "@omnirush/cdp";
+import { captureScreenshot, evaluate } from "@mars/cdp";
+import type { Surface } from "@mars/cdp";
 import { currentTestEvidence } from "./ambient.ts";
 
 export interface ScreenshotArtifact {

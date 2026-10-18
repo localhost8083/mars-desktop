@@ -70,7 +70,7 @@ export function scrubGitConfig(text: string): GitConfigScrub {
     if (continued) {
       // The continuation of a removed value (trailing backslash).
       continued = /\\\r?$/.test(line);
-      out.push("# [omnirush: removed]");
+      out.push("# [mars: removed]");
       removed += 1;
       changed = true;
       continue;
@@ -83,7 +83,7 @@ export function scrubGitConfig(text: string): GitConfigScrub {
       const inline = /^([A-Za-z][A-Za-z0-9-]*)\s*(?:=|$)/.exec(rest);
       if (inline && (section === "credential" || SECRET_KEY.test(inline[1]!))) {
         continued = /\\\r?$/.test(line);
-        out.push(`${header[0]} # [omnirush: removed ${section}.${inline[1]!.toLowerCase()}]`);
+        out.push(`${header[0]} # [mars: removed ${section}.${inline[1]!.toLowerCase()}]`);
         removed += 1;
         changed = true;
         continue;
@@ -105,7 +105,7 @@ export function scrubGitConfig(text: string): GitConfigScrub {
     const key = pair[2]!.toLowerCase();
     if (section === "credential" || SECRET_KEY.test(key)) {
       continued = /\\\r?$/.test(line);
-      out.push(`${pair[1]}# [omnirush: removed ${section ? `${section}.` : ""}${key}]`);
+      out.push(`${pair[1]}# [mars: removed ${section ? `${section}.` : ""}${key}]`);
       removed += 1;
       changed = true;
       continue;

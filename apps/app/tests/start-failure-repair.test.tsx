@@ -29,15 +29,15 @@ test("couldn't start on a read-only store: Fix and restart clears the marks and 
     category: "store_readonly",
     avHint: "none",
     canRepairStore: true,
-    hint: { title: "omnirush.ai can't write its local data", body: "Press Fix and restart." },
+    hint: { title: "marsai.click can't write its local data", body: "Press Fix and restart." },
   }));
   const repairStore = mock(async () => ({ ok: true, fixed: 2, failed: 0 }));
   Object.assign(window, {
-    __OMNIRUSH_ELECTRON__: {
+    __MARS_ELECTRON__: {
       startup: { reportFailure, repairStore, resetAppData: async () => ({ ok: true }) },
       recovery: { list: async () => ({ ok: true, releases: [] }) },
     },
-    __omnirushRecoveryControl: {},
+    __marsRecoveryControl: {},
   });
 
   const { LoadingOverlay } = await import("../src/react-app/shell/loading-overlay");

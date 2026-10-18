@@ -37,7 +37,7 @@ testkit and behavior packages. Presentation components belong to the root worksp
 Run onboarding (Daytona when authenticated; the CLI prints placement):
 
 ```sh
-OMNIRUSH_EVAL_FILM_DIR="$PWD/evals/results/onboarding-capture" pnpm evals:e2e onboarding
+MARS_EVAL_FILM_DIR="$PWD/evals/results/onboarding-capture" pnpm evals:e2e onboarding
 pnpm --dir scenarios onboarding:render "$PWD/evals/results/onboarding-capture"
 ```
 
@@ -62,8 +62,8 @@ and illustrate opening an empty chat. That illustration is not proof of installa
 | --- | --- |
 | Existing environment | `worlds/` and `evals/worlds/` |
 | User, probe, and evidence channels | `evals/packages/testkit/` |
-| Paced field input | `typeField`, `readableTyping` from `@omnirush/behaviors` |
-| Browser recording and download events | `captureBrowserFilm` from `@omnirush/cdp` |
+| Paced field input | `typeField`, `readableTyping` from `@mars/behaviors` |
+| Browser recording and download events | `captureBrowserFilm` from `@mars/cdp` |
 | Settled documentation screenshots | `evals/docs-shots/gate.ts` and `loop.ts` |
 | Browser frame and recording playback | `packages/presentation/` |
 

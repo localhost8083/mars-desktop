@@ -1,4 +1,4 @@
-export const OPEN_RENAME_SESSION_EVENT = "omnirush:session:rename";
+export const OPEN_RENAME_SESSION_EVENT = "mars:session:rename";
 
 export function requestRenameSession(sessionId: string): void {
   window.dispatchEvent(new CustomEvent(OPEN_RENAME_SESSION_EVENT, { detail: { sessionId } }));

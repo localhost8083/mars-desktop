@@ -7,7 +7,7 @@ synthetic 503 responses and response headers, includes it in interruption SSE
 errors, and attaches it to retry/fallback logs and events. The original supplied
 ID remains stable across attachment, auth, connection and sub-agent retries.
 
-Verification: bun test apps/server/src/omnirush-gateway-broker.test.ts — 66
+Verification: bun test apps/server/src/mars-gateway-broker.test.ts — 66
 passed, 0 failed, 1 existing recorded-stream test skipped because
-OMNIRUSH_RECORDED_SSE_DIR was not provided. git diff --check passed. Not
+MARS_RECORDED_SSE_DIR was not provided. git diff --check passed. Not
 deployed or released.

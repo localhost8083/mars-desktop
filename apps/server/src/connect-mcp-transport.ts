@@ -1,5 +1,5 @@
 // Minimal Streamable-HTTP MCP client used to read discovery resources from an
-// omnirush-cloud connection. Extracted from connect-skill-catalog so the skill
+// mars-cloud connection. Extracted from connect-skill-catalog so the skill
 // index and the Automation index speak to the same connection the same way.
 export type McpFetch = (input: string, init?: RequestInit) => Promise<Response>;
 
@@ -46,7 +46,7 @@ export async function mcpPost(fetcher: McpFetch, url: string, headers: Record<st
 }
 
 /**
- * Reads one JSON resource from an omnirush-cloud config. Returns the resource
+ * Reads one JSON resource from an mars-cloud config. Returns the resource
  * text, or null when the config is unusable (invalid URL, disabled, auth
  * rejected, transport or protocol error) so callers can try another candidate.
  */

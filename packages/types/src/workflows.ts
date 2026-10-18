@@ -83,7 +83,7 @@ export type WorkflowRunPreview = z.infer<typeof workflowRunPreviewSchema>
 
 export const workflowVersionSchema = z.object({
   id: idSchema,
-  // Authoring source and example input are OmniRush.ai management data, not MCP
+  // Authoring source and example input are MarsAI management data, not MCP
   // runtime data. Non-manager detail responses intentionally return null.
   code: z.string().nullable(),
   graph: workflowGraphSchema.nullable(),
@@ -156,7 +156,7 @@ export type WorkflowTestResult = z.infer<typeof workflowTestResultSchema>
  * Stable data contract injected into the Workflow Artifact MCP App view.
  *
  * Keep this independent from the presentation resource so MCP hosts and other
- * OmniRush.ai surfaces can validate the same result without understanding the UI.
+ * MarsAI surfaces can validate the same result without understanding the UI.
  */
 export const workflowArtifactSchemaVersion = "1" as const
 export const workflowArtifactPayloadSchema = z.object({
@@ -198,7 +198,7 @@ export type GeneratedArtifactViewBuildDiagnostic = z.infer<typeof generatedArtif
 export const generatedArtifactViewRevisionSchema = z.object({
   id: idSchema,
   artifactViewId: idSchema,
-  resourceUri: z.string().startsWith("ui://omnirush/artifacts/"),
+  resourceUri: z.string().startsWith("ui://mars/artifacts/"),
   buildStatus: z.enum(["ready", "failed"]),
   sourceDigest: digestSchema,
   resourceDigest: digestSchema.nullable(),

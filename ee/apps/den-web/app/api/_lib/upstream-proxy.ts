@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { joinBaseUrl, readBaseUrlEnv } from "@omnirush/types/url";
+import { joinBaseUrl, readBaseUrlEnv } from "@mars/types/url";
 
 import { denWebLogger } from "../../../observability/runtime-logger";
 import { readPublicWebOrigin } from "../../_lib/public-web-origin";

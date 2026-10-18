@@ -7,7 +7,7 @@ import { opencodeConfigPath } from "./workspace-files.js";
 import { readJsoncFile } from "./jsonc.js";
 import type { ReloadReason, WorkspaceInfo } from "./types.js";
 
-type WorkspaceOmniRushConfig = {
+type WorkspaceMarsConfig = {
   version: number;
   workspace?: {
     name?: string | null;
@@ -39,13 +39,13 @@ function errorStringField(error: unknown, field: "code" | "path" | "syscall"): s
 }
 
 /**
- * Build the default per-workspace omnirush config metadata. The omnirush
+ * Build the default per-workspace mars config metadata. The mars
  * config is now stored in the runtime DB (see
- * `seedOmniRushWorkspaceConfigIfEmpty`), not in `.opencode/omnirush.json`, so
+ * `seedMarsWorkspaceConfigIfEmpty`), not in `.opencode/mars.json`, so
  * this no longer writes a file. Exposed so the workspace-creation route can
  * seed the DB row with the same defaults.
  */
-export function defaultWorkspaceOmniRushConfig(workspaceRoot: string, preset: string): WorkspaceOmniRushConfig {
+export function defaultWorkspaceMarsConfig(workspaceRoot: string, preset: string): WorkspaceMarsConfig {
   return {
     version: 1,
     workspace: {
@@ -96,7 +96,7 @@ export async function ensureWorkspaceFiles(
   }
   const reloadReasons = new Set<ReloadReason>();
   if (await ensureOpencodeConfig(workspaceRoot)) reloadReasons.add("config");
-  // omnirush config is seeded into the runtime DB by the caller, not written
+  // mars config is seeded into the runtime DB by the caller, not written
   // as a file here.
   void preset;
   return {

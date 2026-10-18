@@ -1,7 +1,7 @@
 import {
   desktopPolicyUserNotices,
   type DesktopPolicyKey,
-} from "@omnirush/types/den/desktop-policies";
+} from "@mars/types/den/desktop-policies";
 import type { DenDesktopConfig } from "../lib/den";
 import type { ModelRef, SettingsTab } from "../types";
 

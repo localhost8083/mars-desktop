@@ -1,6 +1,6 @@
 import { expect } from "vitest";
-import { startCaptureEfficiencyLab, type CaptureEfficiencyAttempt, type CaptureEfficiencyLab, type CaptureEfficiencyWitness } from "@omnirush/labs";
-import { eventually, needs, test } from "@omnirush/testkit";
+import { startCaptureEfficiencyLab, type CaptureEfficiencyAttempt, type CaptureEfficiencyLab, type CaptureEfficiencyWitness } from "@mars/labs";
+import { eventually, needs, test } from "@mars/testkit";
 
 const SESSION_A = "session-a-0001";
 const SESSION_B = "session-b-0001";

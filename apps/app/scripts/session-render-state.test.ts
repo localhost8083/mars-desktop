@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { UIMessage } from "ai";
 
-import type { OmniRushSessionSnapshot } from "../src/app/lib/omnirush-server";
+import type { MarsSessionSnapshot } from "../src/app/lib/mars-server";
 import {
   deriveRenderedSessionMessages,
   resolveRenderedSessionSnapshot,
@@ -16,7 +16,7 @@ import { describeOpencodeSessionError } from "../src/react-app/domains/session/s
 function snapshotWithMessages(
   messages: Array<{ id: string; role: "user" | "assistant"; text: string; created?: number }>,
   sessionId = "ses_test",
-): OmniRushSessionSnapshot {
+): MarsSessionSnapshot {
   return {
     session: {
       id: sessionId,
@@ -45,7 +45,7 @@ function snapshotWithMessages(
     })),
     todos: [],
     status: { type: "idle" },
-  } as unknown as OmniRushSessionSnapshot;
+  } as unknown as MarsSessionSnapshot;
 }
 
 function uiMessage(id: string, role: "user" | "assistant", text: string, created?: number): UIMessage {
@@ -57,7 +57,7 @@ function uiMessage(id: string, role: "user" | "assistant", text: string, created
   };
 }
 
-function snapshotWithText(text: string, sessionId = "ses_test"): OmniRushSessionSnapshot {
+function snapshotWithText(text: string, sessionId = "ses_test"): MarsSessionSnapshot {
   return snapshotWithMessages([{ id: "msg_user", role: "user", text }], sessionId);
 }
 

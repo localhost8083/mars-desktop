@@ -1,4 +1,4 @@
-import { cellInputFromText, openXlsxWorkbook, sheetGridRows, writeXlsxWorkbook } from "@omnirush/workbook";
+import { cellInputFromText, openXlsxWorkbook, sheetGridRows, writeXlsxWorkbook } from "@mars/workbook";
 
 import type { Data } from "./open-target";
 

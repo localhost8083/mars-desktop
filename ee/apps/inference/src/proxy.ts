@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto"
 import { inferenceBearerKey } from "@omnirush-ee/utils/inference-bearer-key"
-import { ManagedModelsPolicyError } from "@omnirush/types/den/managed-models-policy"
+import { ManagedModelsPolicyError } from "@mars/types/den/managed-models-policy"
 import type { Context, Hono } from "hono"
 import { env } from "./env.js"
 import type { assertOrganizationManagedModelsAllowed as assertOrganizationManagedModelsAllowedFn, findActiveInferenceKey as findActiveInferenceKeyFn, getOpenRouterProviderKey as getOpenRouterProviderKeyFn } from "./keys.js"

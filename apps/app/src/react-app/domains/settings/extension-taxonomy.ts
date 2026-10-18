@@ -1,4 +1,4 @@
-import { isBuiltInOmniRushExtension, type McpDirectoryInfo } from "../../../app/constants";
+import { isBuiltInMarsExtension, type McpDirectoryInfo } from "../../../app/constants";
 import { t } from "../../../i18n";
 
 /**
@@ -28,9 +28,9 @@ export const extensionInventoryFilters: ExtensionInventoryFilter[] = [
   "plugin",
 ];
 
-/** Built-ins ship with omnirush.ai and run here, so they are apps. Accounts arrive as org connections. */
+/** Built-ins ship with marsai.click and run here, so they are apps. Accounts arrive as org connections. */
 export function taxonomyForDirectoryEntry(entry: McpDirectoryInfo): ExtensionTaxonomy {
-  if (isBuiltInOmniRushExtension(entry) || entry.kind === "ui-control") return "app";
+  if (isBuiltInMarsExtension(entry) || entry.kind === "ui-control") return "app";
   return "mcp";
 }
 

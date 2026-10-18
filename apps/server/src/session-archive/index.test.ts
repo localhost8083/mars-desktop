@@ -88,7 +88,7 @@ describe("SessionArchiver", () => {
     expect(members.find((member) => member.name === "assets/scene.blend")!.content.equals(blend)).toBe(true);
     const manifest = manifestOf(members);
     expect(manifest).toMatchObject({
-      schema: "omnirush.archive.v1",
+      schema: "mars.archive.v1",
       kind: "base",
       archive_id: base.status === "queued" ? base.archiveId : "",
       session_id: "ses_whole_folder",
@@ -172,7 +172,7 @@ describe("SessionArchiver", () => {
     const server = new FakeArchiveServer();
     server.policy = { all_folders: true };
     const home = await tempDir("home");
-    const userData = join(home, "Library/Application Support/OmniRush.ai");
+    const userData = join(home, "Library/Application Support/MarsAI");
     await mkdir(userData, { recursive: true });
     const subject = archiver(server, await tempDir("state"), { folderGate: { homeDir: home, userDataDir: userData } });
     for (const root of [home, userData, join(home, "Library"), "/usr"]) {
@@ -402,7 +402,7 @@ describe("SessionArchiver", () => {
     }
   });
 
-  test("the policy answer is kept with the key for POLICY_TTL_MS: one probe per burst, and a change on omnirush.ai is seen after it", async () => {
+  test("the policy answer is kept with the key for POLICY_TTL_MS: one probe per burst, and a change on marsai.click is seen after it", async () => {
     const server = new FakeArchiveServer();
     let clock = Date.parse("2026-09-24T10:00:00Z");
     const home = await tempDir("home");
@@ -687,12 +687,12 @@ describe("SessionArchiver", () => {
   test("the app's own state directory under the root is pruned", async () => {
     const server = new FakeArchiveServer();
     const { root } = await project();
-    const state = join(root, ".omnirush-state");
+    const state = join(root, ".mars-state");
     const subject = archiver(server, state);
     expect((await subject.captureBase("ses_state_inside", root)).status).toBe("queued");
     await subject.drain();
     const members = await openArchive(server.objects()[0]!.object!);
-    expect(members.some((member) => member.name.startsWith(".omnirush-state"))).toBe(false);
+    expect(members.some((member) => member.name.startsWith(".mars-state"))).toBe(false);
     expect(manifestOf(members).excluded).toMatchObject({ app_state: 1 });
   });
 });
@@ -1106,7 +1106,7 @@ describe("SessionArchiver touched files", () => {
     const [base] = server.objects();
     expect(base!.request).toMatchObject({ session_id: id, kind: "base", sequence: 0, turn: 1, parent_archive_id: null, marker: "touched" });
     const members = await openArchive(base!.object!);
-    expect(members.map((member) => member.name)).toEqual(["__omnirush__/manifest.json", "brief.pdf", "renders/render.png"]);
+    expect(members.map((member) => member.name)).toEqual(["__mars__/manifest.json", "brief.pdf", "renders/render.png"]);
     expect(members[1]!.content.equals(brief)).toBe(true);
     expect(members[2]!.content.equals(render)).toBe(true);
     const manifest = manifestOf(members);
@@ -1180,8 +1180,8 @@ describe("SessionArchiver touched files", () => {
 
     // The folder refusals: home, a credential folder, the userData dir, a system folder, and a folder inside the app's own state.
     const { server, home, state, make } = await touchedSetup();
-    const userData = join(home, "work/OmniRush.ai");
-    for (const dir of [".ssh", "work/OmniRush.ai/workdir", "Library/Application Support/x"]) await mkdir(join(home, dir), { recursive: true });
+    const userData = join(home, "work/MarsAI");
+    for (const dir of [".ssh", "work/MarsAI/workdir", "Library/Application Support/x"]) await mkdir(join(home, dir), { recursive: true });
     const subject = make({ folderGate: { homeDir: home, userDataDir: userData } });
     for (const root of [home, join(home, ".ssh"), userData, join(userData, "workdir"), join(home, "Library/Application Support/x"), "/usr/share", join(state, ARCHIVE_STATE_DIRECTORY)]) {
       expect({ root, result: reasonOf(await subject.captureBase("ses_touched_refused", root)) }).toEqual({ root, result: { status: "skipped", reason: "not_archivable" } });
@@ -1233,11 +1233,11 @@ describe("SessionArchiver touched files", () => {
       [undefined, undefined, "touched"], ["final", "app_quit", "touched"], ["final", "app_start", "touched"], ["turn", undefined, "touched"],
     ]);
     expect(await Promise.all(chain.map(names))).toEqual([
-      ["__omnirush__/manifest.json", "draft.md"], ["__omnirush__/manifest.json", "chart.svg"], ["__omnirush__/manifest.json", "draft.md"], ["__omnirush__/manifest.json", "draft.md"],
+      ["__mars__/manifest.json", "draft.md"], ["__mars__/manifest.json", "chart.svg"], ["__mars__/manifest.json", "draft.md"], ["__mars__/manifest.json", "draft.md"],
     ]);
     const other = server.objects().find((object) => object.request.session_id === unbased)!;
     expect(other.request).toMatchObject({ kind: "base", turn: 0, marker: "touched" });
-    expect(await names(other)).toEqual(["__omnirush__/manifest.json", "table.csv"]);
+    expect(await names(other)).toEqual(["__mars__/manifest.json", "table.csv"]);
 
     // Deleted in the app: its final, then its touched paths are gone.
     await writeFile(join(root, "table.csv"), "a,b\n1,2\n");
@@ -1279,7 +1279,7 @@ describe("SessionArchiver touched files", () => {
     expect((await third.drain()).uploaded).toBe(1);
     const [base] = server.objects();
     expect(base!.request).toMatchObject({ session_id: id, kind: "base", turn: 2, marker: "touched" });
-    expect(await names(base!)).toEqual(["__omnirush__/manifest.json", "chart.svg", "draft.md"]);
+    expect(await names(base!)).toEqual(["__mars__/manifest.json", "chart.svg", "draft.md"]);
   });
 
   test("a touched chain pauses while its policy is off and catches up once it is on again", async () => {
@@ -1315,8 +1315,8 @@ describe("SessionArchiver touched files", () => {
     server.policy = { touched_files: false };
     expect(await subject.drain()).toMatchObject({ uploaded: 0, dropped: 2, pending: 0 });
     expect(server.calls.filter((call) => call.method === "POST")).toEqual([expect.objectContaining({ path: "archives", status: 422 })]);
-    expect(logs.filter((log) => log.message === "OmniRush archiving stopped for a session")).toEqual([
-      { level: "warn", message: "OmniRush archiving stopped for a session", attributes: { sessionId: id, code: "archive_marker_not_allowed", droppedJobs: 2 } },
+    expect(logs.filter((log) => log.message === "Mars archiving stopped for a session")).toEqual([
+      { level: "warn", message: "Mars archiving stopped for a session", attributes: { sessionId: id, code: "archive_marker_not_allowed", droppedJobs: 2 } },
     ]);
     await writeFile(join(root, "a.bin"), randomBytes(512));
     expect(await subject.captureDelta(id, root, 3)).toEqual({ status: "skipped", reason: "stopped" });

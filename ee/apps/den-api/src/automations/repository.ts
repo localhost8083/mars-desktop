@@ -7,12 +7,12 @@ import {
   desktopClaimDeadline,
   missedDesktopRunMessage,
   nextAutomationOccurrence,
-} from "@omnirush/automations"
+} from "@mars/automations"
 import type {
   AutomationClaimResult,
   AutomationListItem,
   AutomationRepository,
-} from "@omnirush/automations"
+} from "@mars/automations"
 import type {
   Automation,
   AutomationAction,
@@ -23,7 +23,7 @@ import type {
   AutomationRunEvent,
   AutomationRunEventType,
   AutomationUsage,
-} from "@omnirush/types/automations"
+} from "@mars/types/automations"
 import { and, asc, desc, eq, gt, inArray, lt, lte, or, sql } from "@omnirush-ee/den-db/drizzle"
 import {
   AutomationRevisionTable,

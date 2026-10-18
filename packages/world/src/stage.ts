@@ -20,7 +20,7 @@ export function sanitizeStage(raw: string): string {
 
 export function resolveStage(env: NodeJS.ProcessEnv, explicit?: string): string | undefined {
   if (explicit !== undefined) return sanitizeStage(explicit);
-  const configured = env.OMNIRUSH_WORLD_STAGE?.trim();
+  const configured = env.MARS_WORLD_STAGE?.trim();
   return configured ? sanitizeStage(configured) : undefined;
 }
 

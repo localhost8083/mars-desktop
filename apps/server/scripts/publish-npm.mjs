@@ -28,12 +28,12 @@ async function main() {
   await mkdir(resolve(outputRoot, "bin"), { recursive: true });
   await mkdir(resolve(outputRoot, "dist/bin"), { recursive: true });
   await cp(
-    resolve(packageRoot, "bin/omnirush-server.mjs"),
-    resolve(outputRoot, "bin/omnirush-server.mjs")
+    resolve(packageRoot, "bin/mars-server.mjs"),
+    resolve(outputRoot, "bin/mars-server.mjs")
   );
   await cp(
-    resolve(packageRoot, "dist/bin/omnirush-server"),
-    resolve(outputRoot, "dist/bin/omnirush-server")
+    resolve(packageRoot, "dist/bin/mars-server"),
+    resolve(outputRoot, "dist/bin/mars-server")
   );
   await cp(resolve(packageRoot, "README.md"), resolve(outputRoot, "README.md"));
   await writeFile(

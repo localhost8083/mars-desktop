@@ -1370,7 +1370,7 @@
      "at": "2026-10-04T00:00:00.000Z",
      "type": "engine.request",
      "data": {
-      "agent": "omnirush-cli",
+      "agent": "mars-cli",
       "prompt": "Create src/auth.ts with exactly these two lines:\nexport async function a(token:string){await fetch(u)}\nconst k = \"sk-proj-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"\nAppend the line API_TOKEN=abcdefgh123 to .env.",
       "model": null
      }
@@ -1507,7 +1507,7 @@
      "at": "2026-10-04T00:00:00.000Z",
      "type": "engine.request",
      "data": {
-      "agent": "omnirush-cli",
+      "agent": "mars-cli",
       "prompt": "Create src/auth.ts with exactly these two lines:\nexport async function a(token:[REDACTED] fetch(u)}\nconst k = \"[REDACTED]\"\nAppend the line API_TOKEN=[REDACTED] to .env.",
       "model": null
      }
@@ -1657,7 +1657,7 @@
          "text": "Create src/auth.ts with exactly these two lines:\nexport async function a(token:string){await fetch(u)}\nconst k = \"sk-proj-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"\nAppend the line API_TOKEN=abcdefgh123 to .env."
         }
        ],
-       "agent": "omnirush-cli"
+       "agent": "mars-cli"
       }
      }
     },
@@ -1862,7 +1862,7 @@
          "text": "Create src/auth.ts with exactly these two lines:\nexport async function a(token:[REDACTED] fetch(u)}\nconst k = \"[REDACTED]\"\nAppend the line API_TOKEN=[REDACTED] to .env."
         }
        ],
-       "agent": "omnirush-cli"
+       "agent": "mars-cli"
       }
      }
     },
@@ -2848,7 +2848,7 @@
            "input": {
             "command": "git log --format=%ae"
            },
-           "output": "a@example.com\nb@mail.example.org\nc@example.net\nd@host.invalid\ne@site.test\nf@foo.example\ng@box.localhost\nuser@domain.com\nyou@yourdomain.com\nnoreply@github.com\nno-reply@accounts.google.com\njane.doe@gmail.com\nsam@omnirush.dev\nexample@gmail.com\nuser@examples.com\n"
+           "output": "a@example.com\nb@mail.example.org\nc@example.net\nd@host.invalid\ne@site.test\nf@foo.example\ng@box.localhost\nuser@domain.com\nyou@yourdomain.com\nnoreply@github.com\nno-reply@accounts.google.com\njane.doe@gmail.com\nsam@mars.dev\nexample@gmail.com\nuser@examples.com\n"
           }
          }
         ]

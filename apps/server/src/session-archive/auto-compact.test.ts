@@ -8,7 +8,7 @@ import { compactionSummary, workingOn } from "../turn-steer.js";
 import { AutoCompactor, autoCompactPolicy, compactionResult, RETRY_AFTER_TURNS, turnsSinceCompaction, type AutoCompactEngine, type ModelRef } from "./auto-compact.js";
 import { completedTurnCount, steerPrompts } from "./turn-prompts.js";
 
-const MODEL: ModelRef = { providerID: "omnirush", modelID: "astra" };
+const MODEL: ModelRef = { providerID: "mars", modelID: "astra" };
 const user = (id: string, created: number) => ({ info: { id, role: "user", time: { created }, model: MODEL }, parts: [{ type: "text", text: "do it" }] });
 const done = (id: string, created: number) => ({ info: { id, role: "assistant", time: { created, completed: created + 1 }, finish: "stop" }, parts: [] });
 const compactRequest = (id: string, created: number) => ({ info: { id, role: "user", time: { created }, model: MODEL }, parts: [{ type: "compaction", auto: false }] });
@@ -44,9 +44,9 @@ describe("auto compaction", () => {
   test("compacts a due chat before the prompt, on the prompt's model", async () => {
     const compactor = new AutoCompactor({ policy: async () => ({ enabled: true, afterTurns: 3, minContextTokens: 0 }) });
     const { engine, calls } = engineOf(() => chat(3));
-    const outcome = await compactor.beforePrompt("s", engine, new TextEncoder().encode(JSON.stringify({ parts: [], model: { providerID: "omnirush", modelID: "sol" } })).buffer);
+    const outcome = await compactor.beforePrompt("s", engine, new TextEncoder().encode(JSON.stringify({ parts: [], model: { providerID: "mars", modelID: "sol" } })).buffer);
     expect(outcome.action).toBe("compacted");
-    expect(calls.summarize).toEqual([{ providerID: "omnirush", modelID: "sol" }]);
+    expect(calls.summarize).toEqual([{ providerID: "mars", modelID: "sol" }]);
     // The seed (also the check before compacting), then how it ended.
     expect(calls.messages).toBe(2);
     expect(compactor.count("s")).toBe(1);

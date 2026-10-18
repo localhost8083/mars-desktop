@@ -1,11 +1,11 @@
 import {
   normalizeDesktopConfig,
   type DesktopConfig as SharedDesktopConfig,
-} from "@omnirush/types/den/desktop-policies";
+} from "@mars/types/den/desktop-policies";
 import {
   AUTOMATION_MODEL_ATTENTION_CAPABILITY,
   AUTOMATION_MODEL_ATTENTION_CAPABILITY_HEADER,
-} from "@omnirush/types/automations";
+} from "@mars/types/automations";
 import type {
   AutomationDetail,
   AutomationDesktopRunnerPresence,
@@ -17,8 +17,8 @@ import type {
   CreateAutomation,
   CreateCloudAutomation,
   UpdateAutomation,
-} from "@omnirush/types/automations";
-import { generatedArtifactViewSchema, savedAppDetailSchema, savedAppSummarySchema, type SaveApp, type WorkflowDetail } from "@omnirush/types/workflows";
+} from "@mars/types/automations";
+import { generatedArtifactViewSchema, savedAppDetailSchema, savedAppSummarySchema, type SaveApp, type WorkflowDetail } from "@mars/types/workflows";
 
 // Re-export the shared schema under the local alias so React consumers
 // (e.g. the cloud domain's desktop-config provider) can import it alongside
@@ -27,7 +27,7 @@ import { generatedArtifactViewSchema, savedAppDetailSchema, savedAppSummarySchem
 export type { SharedDesktopConfig };
 export { normalizeDesktopConfig };
 
-import { isDesktopDeployment, isWebDeployment } from "./omnirush-deployment";
+import { isDesktopDeployment, isWebDeployment } from "./mars-deployment";
 import {
   dispatchDenSessionUpdated,
   dispatchDenSettingsChanged,
@@ -40,50 +40,50 @@ import {
   setDesktopBootstrapConfig as setDesktopBootstrapConfigInShell,
   type DesktopBootstrapConfig as ShellDesktopBootstrapConfig,
 } from "./desktop";
-import { getOmniRushGatewayOrigin } from "./gateway-runtime";
+import { getMarsGatewayOrigin } from "./gateway-runtime";
 import { clearDesktopSignInIntent, clearOrgSelectionPending } from "./den-sign-in-intent";
 import { clearDashboardTileCacheStorage } from "./dashboard-cache-storage";
 import { isDesktopRuntime } from "./runtime-env";
 import type { ReloadReason } from "../types";
 import type {
-  OmniRushExtensionContribution,
-  OmniRushExtensionContributionType,
-  OmniRushExtensionLifecycle,
-  OmniRushExtensionManifest,
-  OmniRushExtensionResource,
-  OmniRushExtensionResourceType,
-  OmniRushExtensionSetup,
-  OmniRushExtensionSource,
-  OmniRushExtensionSourceFormat,
+  MarsExtensionContribution,
+  MarsExtensionContributionType,
+  MarsExtensionLifecycle,
+  MarsExtensionManifest,
+  MarsExtensionResource,
+  MarsExtensionResourceType,
+  MarsExtensionSetup,
+  MarsExtensionSource,
+  MarsExtensionSourceFormat,
 } from "../extensions";
 
 declare global {
   interface Window {
-    __omnirushOrgDropWarnings?: string[];
+    __marsOrgDropWarnings?: string[];
   }
 }
 
-export const STORAGE_BASE_URL = "omnirush.den.baseUrl";
-const LEGACY_STORAGE_API_BASE_URL = "omnirush.den.apiBaseUrl";
-const STORAGE_AUTH_TOKEN = "omnirush.den.authToken";
+export const STORAGE_BASE_URL = "mars.den.baseUrl";
+const LEGACY_STORAGE_API_BASE_URL = "mars.den.apiBaseUrl";
+const STORAGE_AUTH_TOKEN = "mars.den.authToken";
 /**
  * Origin comparison key (see denOriginComparisonKey) of the Den control plane
  * that issued the retained auth token. Written together with the token so a
  * later boot can prove the retained session belongs to the resolved bootstrap
  * origin before any credential-bearing request is made.
  */
-export const STORAGE_SESSION_ORIGIN = "omnirush.den.sessionOrigin";
-const STORAGE_ACTIVE_ORG_ID = "omnirush.den.activeOrgId";
-const STORAGE_ACTIVE_ORG_SLUG = "omnirush.den.activeOrgSlug";
-const STORAGE_ACTIVE_ORG_NAME = "omnirush.den.activeOrgName";
-const DESKTOP_CONFIG_CACHE_PREFIX = "omnirush.den.desktopConfig:";
-export const CLOUD_MCP_SYNC_MARKER_STORAGE_KEY = "omnirush.den.mcp.sync";
-const ORG_PROXY_HEADER = "x-omnirush-legacy-org-id";
-const ORG_SCOPE_HEADER = "x-omnirush-org-id";
+export const STORAGE_SESSION_ORIGIN = "mars.den.sessionOrigin";
+const STORAGE_ACTIVE_ORG_ID = "mars.den.activeOrgId";
+const STORAGE_ACTIVE_ORG_SLUG = "mars.den.activeOrgSlug";
+const STORAGE_ACTIVE_ORG_NAME = "mars.den.activeOrgName";
+const DESKTOP_CONFIG_CACHE_PREFIX = "mars.den.desktopConfig:";
+export const CLOUD_MCP_SYNC_MARKER_STORAGE_KEY = "mars.den.mcp.sync";
+const ORG_PROXY_HEADER = "x-mars-legacy-org-id";
+const ORG_SCOPE_HEADER = "x-mars-org-id";
 const DEFAULT_DEN_TIMEOUT_MS = 12_000;
 
-export const DEFAULT_DEN_AUTH_NAME = "omnirush.ai User";
-// omnirush.ai ships without a hosted Den control plane, so the build default
+export const DEFAULT_DEN_AUTH_NAME = "marsai.click User";
+// marsai.click ships without a hosted Den control plane, so the build default
 // is empty: a Den base URL exists only when VITE_DEN_BASE_URL,
 // desktop-bootstrap.json, a connect link, the local gateway, or the user's
 // settings provide one. Nothing may contact a control plane by default.
@@ -109,8 +109,8 @@ function readBuildDenApiBaseUrl(): string {
 }
 
 function readForceEnvDenSettings(): boolean {
-  return (typeof import.meta !== "undefined" && typeof import.meta.env?.VITE_OMNIRUSH_FORCE_ENV_SETTINGS === "string"
-    ? /^(1|true|yes|on)$/i.test(import.meta.env.VITE_OMNIRUSH_FORCE_ENV_SETTINGS.trim())
+  return (typeof import.meta !== "undefined" && typeof import.meta.env?.VITE_MARS_FORCE_ENV_SETTINGS === "string"
+    ? /^(1|true|yes|on)$/i.test(import.meta.env.VITE_MARS_FORCE_ENV_SETTINGS.trim())
     : false);
 }
 
@@ -274,7 +274,7 @@ export type DenWorkerTokens = {
   clientToken: string | null;
   ownerToken: string | null;
   hostToken: string | null;
-  omnirushUrl: string | null;
+  marsUrl: string | null;
   workspaceId: string | null;
 };
 
@@ -317,7 +317,7 @@ export type DenOrgLlmProviderModel = {
 
 export type DenOrgLlmProvider = {
   id: string;
-  source: "models_dev" | "custom" | "omnirush";
+  source: "models_dev" | "custom" | "mars";
   providerId: string;
   name: string;
   providerConfig: Record<string, unknown>;
@@ -434,11 +434,11 @@ export type DenBillingSummary = {
   benefitId: string | null;
 };
 
-export type DenOmniRushWebAccessSource = "subscription" | "complimentary" | null;
+export type DenMarsWebAccessSource = "subscription" | "complimentary" | null;
 
-export type DenOmniRushWebAccess = {
+export type DenMarsWebAccess = {
   hasAccess: boolean;
-  accessSource: DenOmniRushWebAccessSource;
+  accessSource: DenMarsWebAccessSource;
 };
 
 type DenAuthResult = {
@@ -704,8 +704,8 @@ export function denOriginComparisonKey(input: string | null | undefined): string
 }
 
 /**
- * omnirush.ai has no hosted Den: every configured control plane is
- * self-hosted, so hosted-only surfaces (e.g. omnirush.ai Models upsells)
+ * marsai.click has no hosted Den: every configured control plane is
+ * self-hosted, so hosted-only surfaces (e.g. marsai.click Models upsells)
  * always stay hidden.
  */
 export function isSelfHostedControlPlane(): boolean {
@@ -803,7 +803,7 @@ export function resolveDenBaseUrls(input: { baseUrl?: string | null; apiBaseUrl?
   const rawBaseUrl = typeof input === "string" ? input : input?.baseUrl;
   const normalizedBaseUrl = normalizeDenBaseUrl(rawBaseUrl);
   const normalizedApiBaseUrl = typeof input === "string" ? null : normalizeDenBaseUrl(input?.apiBaseUrl);
-  const gatewayOrigin = getOmniRushGatewayOrigin();
+  const gatewayOrigin = getMarsGatewayOrigin();
 
   if (gatewayOrigin) {
     const normalizedGatewayOrigin = normalizeDenBaseUrl(gatewayOrigin) ?? gatewayOrigin;
@@ -1153,7 +1153,7 @@ function shouldWithholdDenCredentials(bootstrapBaseUrl: string): boolean {
 }
 
 export function readDenBootstrapConfig(): DenBootstrapConfig {
-  const gatewayOrigin = getOmniRushGatewayOrigin();
+  const gatewayOrigin = getMarsGatewayOrigin();
   if (gatewayOrigin) {
     if (
       gatewayBootstrapConfig &&
@@ -1182,7 +1182,7 @@ export async function initializeDenBootstrapConfig(): Promise<DenBootstrapConfig
   const generation = ++desktopBootstrapGeneration;
 
   if (!isDesktopRuntime()) {
-    const gatewayOrigin = getOmniRushGatewayOrigin();
+    const gatewayOrigin = getMarsGatewayOrigin();
     // Forced env settings (headless/dev runs): stale stored base URLs from
     // earlier sessions must not override the launcher-provided control plane.
     if (readForceEnvDenSettings() && typeof window !== "undefined") {
@@ -1387,9 +1387,9 @@ export function buildDenAuthUrl(baseUrl: string, mode: "sign-in" | "sign-up"): s
     || (webReturnOrigin !== null && !canUseCloudWebAuthReturn(webReturnOrigin))
   ) {
     // Desktop app, or local/dev web that cannot receive an approved webAuth
-    // redirect: Den shows the copyable omnirush:// / grant handoff instead.
+    // redirect: Den shows the copyable mars:// / grant handoff instead.
     target.searchParams.set("desktopAuth", "1");
-    target.searchParams.set("desktopScheme", "omnirush");
+    target.searchParams.set("desktopScheme", "mars");
   } else if (webReturnOrigin !== null) {
     target.searchParams.set("webAuth", "1");
     target.searchParams.set("webAuthReturn", webReturnOrigin);
@@ -1417,7 +1417,7 @@ export function readDenSettings(): DenSettings {
 
   const bootstrapConfig = readDenBootstrapConfig();
   const baseUrls = resolveDenBaseUrls(
-    isDesktopRuntime() || getOmniRushGatewayOrigin()
+    isDesktopRuntime() || getMarsGatewayOrigin()
       ? bootstrapConfig
       : { baseUrl: window.localStorage.getItem(STORAGE_BASE_URL) ?? bootstrapConfig.baseUrl },
   );
@@ -1538,8 +1538,8 @@ function warnOnUnexpectedActiveOrgDrop(input: {
   const message = `[den-settings] activeOrgId dropped unexpectedly from ${previousActiveOrgId}`;
   const stack = new Error(message).stack ?? message;
   try {
-    window.__omnirushOrgDropWarnings ??= [];
-    window.__omnirushOrgDropWarnings.push(stack);
+    window.__marsOrgDropWarnings ??= [];
+    window.__marsOrgDropWarnings.push(stack);
     console.warn(stack);
   } catch {
     // Diagnostics must never block the settings write they observe.
@@ -1943,7 +1943,7 @@ function getWorkerTokens(payload: unknown): DenWorkerTokens | null {
     clientToken: typeof tokens.client === "string" ? tokens.client : null,
     ownerToken: typeof tokens.owner === "string" ? tokens.owner : null,
     hostToken: typeof tokens.host === "string" ? tokens.host : null,
-    omnirushUrl: connect && typeof connect.omnirushUrl === "string" ? connect.omnirushUrl : null,
+    marsUrl: connect && typeof connect.marsUrl === "string" ? connect.marsUrl : null,
     workspaceId: connect && typeof connect.workspaceId === "string" ? connect.workspaceId : null,
   };
 }
@@ -2057,7 +2057,7 @@ function parseDenOrgLlmProvider(value: unknown): DenOrgLlmProvider | null {
     typeof value.name !== "string" ||
     (value.source !== "models_dev" &&
       value.source !== "custom" &&
-      value.source !== "omnirush")
+      value.source !== "mars")
   ) {
     return null;
   }
@@ -2251,11 +2251,11 @@ function parsePluginConfigObject(value: unknown): DenPluginConfigObject | null {
   };
 }
 
-function parseExtensionSourceFormat(value: unknown): OmniRushExtensionSourceFormat | null {
+function parseExtensionSourceFormat(value: unknown): MarsExtensionSourceFormat | null {
   switch (value) {
     case "agent-plugin":
-    case "omnirush-builtin":
-    case "omnirush-extension-manifest":
+    case "mars-builtin":
+    case "mars-extension-manifest":
     case "claude-plugin":
     case "opencode-plugin":
     case "mcp-directory":
@@ -2266,7 +2266,7 @@ function parseExtensionSourceFormat(value: unknown): OmniRushExtensionSourceForm
   }
 }
 
-function parseExtensionSourceOrigin(value: unknown): OmniRushExtensionSource["origin"] | undefined {
+function parseExtensionSourceOrigin(value: unknown): MarsExtensionSource["origin"] | undefined {
   switch (value) {
     case "builtin":
     case "den":
@@ -2278,7 +2278,7 @@ function parseExtensionSourceOrigin(value: unknown): OmniRushExtensionSource["or
   }
 }
 
-function parseExtensionSource(value: unknown): OmniRushExtensionSource | null {
+function parseExtensionSource(value: unknown): MarsExtensionSource | null {
   if (!isRecord(value) || typeof value.trusted !== "boolean") return null;
   const format = parseExtensionSourceFormat(value.format);
   if (!format) return null;
@@ -2296,7 +2296,7 @@ function parseStringList(value: unknown): string[] | undefined {
   return value;
 }
 
-function parseExtensionResourceType(value: unknown): OmniRushExtensionResourceType | null {
+function parseExtensionResourceType(value: unknown): MarsExtensionResourceType | null {
   switch (value) {
     case "skill":
     case "agent":
@@ -2317,17 +2317,17 @@ function parseExtensionResourceType(value: unknown): OmniRushExtensionResourceTy
   }
 }
 
-function parseExtensionLocalCommandRef(value: unknown): OmniRushExtensionResource["localCommandRef"] | undefined {
+function parseExtensionLocalCommandRef(value: unknown): MarsExtensionResource["localCommandRef"] | undefined {
   switch (value) {
-    case "omnirush.computerUseMcp":
-    case "omnirush.uiMcp":
+    case "mars.computerUseMcp":
+    case "mars.uiMcp":
       return value;
     default:
       return undefined;
   }
 }
 
-function parseExtensionResource(value: unknown): OmniRushExtensionResource | null {
+function parseExtensionResource(value: unknown): MarsExtensionResource | null {
   if (!isRecord(value) || typeof value.id !== "string") return null;
   const type = parseExtensionResourceType(value.type);
   if (!type) return null;
@@ -2349,7 +2349,7 @@ function parseExtensionResource(value: unknown): OmniRushExtensionResource | nul
   };
 }
 
-function parseExtensionContributionType(value: unknown): OmniRushExtensionContributionType | null {
+function parseExtensionContributionType(value: unknown): MarsExtensionContributionType | null {
   switch (value) {
     case "settings-panel":
     case "setup-instructions":
@@ -2366,7 +2366,7 @@ function parseExtensionContributionType(value: unknown): OmniRushExtensionContri
   }
 }
 
-function parseExtensionContributionLocation(value: unknown): OmniRushExtensionContribution["location"] | undefined {
+function parseExtensionContributionLocation(value: unknown): MarsExtensionContribution["location"] | undefined {
   switch (value) {
     case "settings-detail":
     case "composer":
@@ -2380,7 +2380,7 @@ function parseExtensionContributionLocation(value: unknown): OmniRushExtensionCo
   }
 }
 
-function parseExtensionContribution(value: unknown): OmniRushExtensionContribution | null {
+function parseExtensionContribution(value: unknown): MarsExtensionContribution | null {
   if (!isRecord(value)) return null;
   const type = parseExtensionContributionType(value.type);
   if (!type) return null;
@@ -2395,7 +2395,7 @@ function parseExtensionContribution(value: unknown): OmniRushExtensionContributi
   };
 }
 
-function parseExtensionSetup(value: unknown): OmniRushExtensionSetup | undefined {
+function parseExtensionSetup(value: unknown): MarsExtensionSetup | undefined {
   if (!isRecord(value)) return undefined;
   const requiredEnv = parseStringList(value.requiredEnv);
   return {
@@ -2430,7 +2430,7 @@ function parseReloadReasons(value: unknown): ReloadReason[] | undefined {
   return reasons.length === value.length ? reasons : undefined;
 }
 
-function parseExtensionLifecycle(value: unknown): OmniRushExtensionLifecycle | undefined {
+function parseExtensionLifecycle(value: unknown): MarsExtensionLifecycle | undefined {
   if (!isRecord(value)) return undefined;
   const reload = parseReloadReasons(value.reload);
   const detection = parseStringList(value.detection);
@@ -2440,7 +2440,7 @@ function parseExtensionLifecycle(value: unknown): OmniRushExtensionLifecycle | u
   };
 }
 
-function parseExtensionPlatform(value: unknown): OmniRushExtensionManifest["platform"] | undefined {
+function parseExtensionPlatform(value: unknown): MarsExtensionManifest["platform"] | undefined {
   if (!Array.isArray(value)) return undefined;
   const platforms = value.flatMap((item) => {
     switch (item) {
@@ -2456,7 +2456,7 @@ function parseExtensionPlatform(value: unknown): OmniRushExtensionManifest["plat
   return platforms.length === value.length ? platforms : undefined;
 }
 
-function parseOmniRushExtensionManifest(value: unknown): OmniRushExtensionManifest | null {
+function parseMarsExtensionManifest(value: unknown): MarsExtensionManifest | null {
   if (
     !isRecord(value) ||
     value.schemaVersion !== 1 ||
@@ -2517,7 +2517,7 @@ function parseDenExtensionProjection(value: unknown): DenOrgExtensionProjection 
     name: value.name,
     description: typeof value.description === "string" ? value.description : null,
     sourceFormat,
-    manifest: parseOmniRushExtensionManifest(value.manifest),
+    manifest: parseMarsExtensionManifest(value.manifest),
   };
 }
 
@@ -2761,13 +2761,13 @@ function getBillingSummary(payload: unknown): DenBillingSummary | null {
   };
 }
 
-export function parseDenOmniRushWebAccess(payload: unknown): DenOmniRushWebAccess | null {
+export function parseDenMarsWebAccess(payload: unknown): DenMarsWebAccess | null {
   if (!isRecord(payload) || !isRecord(payload.billing)) return null;
   const stripe = payload.billing.stripe;
   if (!isRecord(stripe) || !isRecord(stripe.web)) return null;
 
   const web = stripe.web;
-  const accessSource: DenOmniRushWebAccessSource | undefined =
+  const accessSource: DenMarsWebAccessSource | undefined =
     web.accessSource === "subscription" || web.accessSource === "complimentary"
       ? web.accessSource
       : web.accessSource === null
@@ -3189,7 +3189,7 @@ export function createDenClient(options: { baseUrl: string; apiBaseUrl?: string 
       return instance;
     },
 
-    async getOmniRushWebAccess(orgId: string): Promise<DenOmniRushWebAccess> {
+    async getMarsWebAccess(orgId: string): Promise<DenMarsWebAccess> {
       const context = await requestJson<unknown>(baseUrls, "/v1/org", {
         method: "GET",
         token,
@@ -3201,7 +3201,7 @@ export function createDenClient(options: { baseUrl: string; apiBaseUrl?: string 
       // Missing means unsupported. This follows the established Den capability
       // negotiation pattern so a newer hosted client never calls the Web billing
       // route on an older Den deployment that does not advertise the contract.
-      if (capabilities?.omnirushWeb !== true) {
+      if (capabilities?.marsWeb !== true) {
         return { hasAccess: false, accessSource: null };
       }
 
@@ -3210,9 +3210,9 @@ export function createDenClient(options: { baseUrl: string; apiBaseUrl?: string 
         token,
         organizationId: orgId,
       });
-      const access = parseDenOmniRushWebAccess(payload);
+      const access = parseDenMarsWebAccess(payload);
       if (!access) {
-        throw new DenApiError(500, "invalid_omnirush_web_access_payload", "omnirush.ai Web access response was invalid.");
+        throw new DenApiError(500, "invalid_mars_web_access_payload", "marsai.click Web access response was invalid.");
       }
       return access;
     },
@@ -3295,7 +3295,7 @@ export function createDenClient(options: { baseUrl: string; apiBaseUrl?: string 
       });
     },
 
-    /** Web creation surface: placement is fixed to omnirush.ai Cloud by the route. */
+    /** Web creation surface: placement is fixed to marsai.click Cloud by the route. */
     async createCloudAutomation(orgId: string, input: CreateCloudAutomation): Promise<AutomationDetail> {
       return requestJson<AutomationDetail>(baseUrls, "/v1/cloud-automations", {
         method: "POST",

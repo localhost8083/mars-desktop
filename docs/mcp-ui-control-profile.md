@@ -1,29 +1,29 @@
-# Control OmniRush.ai from any MCP client
+# Control MarsAI from any MCP client
 
-OmniRush.ai exposes its UI as an MCP server so any MCP-capable app can read what's on screen and run actions — no DOM scraping, no coordinates, no accessibility hacks.
+MarsAI exposes its UI as an MCP server so any MCP-capable app can read what's on screen and run actions — no DOM scraping, no coordinates, no accessibility hacks.
 
 ## Why this exists
 
 Apps like HandsFree let people control their computers hands-free using AI. But generic computer-use flows (screenshot → click coordinate) are slow, fragile, and need a vision model for every step.
 
-OmniRush.ai takes a different approach: the app itself tells you what actions are available, what the current state is, and lets you execute actions by name. The MCP server wraps that surface so any MCP client gets a first-class, semantic control experience out of the box.
+MarsAI takes a different approach: the app itself tells you what actions are available, what the current state is, and lets you execute actions by name. The MCP server wraps that surface so any MCP client gets a first-class, semantic control experience out of the box.
 
 This means:
 
-- **HandsFree** can drive OmniRush.ai sessions, composer, navigation, and transcript without guessing pixels.
-- **OpenCode** can automate OmniRush.ai as part of a larger coding workflow.
-- **Claude Desktop, Codex, Cursor**, or any MCP-compatible tool can add OmniRush.ai control with a single config line.
+- **HandsFree** can drive MarsAI sessions, composer, navigation, and transcript without guessing pixels.
+- **OpenCode** can automate MarsAI as part of a larger coding workflow.
+- **Claude Desktop, Codex, Cursor**, or any MCP-compatible tool can add MarsAI control with a single config line.
 - Your own app can do the same.
 
-> Want to control OmniRush.ai Cloud workers and server APIs instead of the desktop UI? Check out the **OmniRush.ai Cloud MCP** (separate package, coming soon).
+> Want to control MarsAI Cloud workers and server APIs instead of the desktop UI? Check out the **MarsAI Cloud MCP** (separate package, coming soon).
 
 ## Quick start with HandsFree
 
-HandsFree auto-discovers the OmniRush.ai MCP server when both apps are running on the same machine. No config needed.
+HandsFree auto-discovers the MarsAI MCP server when both apps are running on the same machine. No config needed.
 
-1. Launch **OmniRush.ai** (desktop app).
+1. Launch **MarsAI** (desktop app).
 2. Launch **HandsFree**.
-3. Open the HandsFree connector panel — you should see **OmniRush.ai** with a green "Connected" status and an action count.
+3. Open the HandsFree connector panel — you should see **MarsAI** with a green "Connected" status and an action count.
 
 That's it. HandsFree can now list your sessions, read transcripts, type into the composer, send prompts, and navigate the app — all through MCP.
 
@@ -32,11 +32,11 @@ That's it. HandsFree can now list your sessions, read transcripts, type into the
 - `ui_snapshot` — see the current route, status, and available actions.
 - `ui_list_actions` — get every action the app currently exposes (session controls, composer, navigation, etc.).
 - `ui_execute_action` — run an action by ID, e.g. `session.create_task`, `composer.set_text`, `composer.send`.
-- `ui_status` — check if OmniRush.ai is running and the bridge is reachable.
+- `ui_status` — check if MarsAI is running and the bridge is reachable.
 
 ### Cross-session memory
 
-OmniRush.ai's cross-session memory currently comes from saved session history exposed through the UI control surface. It is not a separate long-term memory database.
+MarsAI's cross-session memory currently comes from saved session history exposed through the UI control surface. It is not a separate long-term memory database.
 
 For requests like `What did I say in the customer migration session?` or `Remind me what we decided in session ses_abc123`, an MCP client can:
 
@@ -45,31 +45,31 @@ For requests like `What did I say in the customer migration session?` or `Remind
 3. Run `session.read_transcript` to read recent messages from that session.
 4. Answer from the returned transcript, and say when the returned messages are insufficient.
 
-This may navigate OmniRush.ai away from the user's current session while the lookup runs. If multiple sessions match, ask which one to inspect.
+This may navigate MarsAI away from the user's current session while the lookup runs. If multiple sessions match, ask which one to inspect.
 
-### OmniRush.ai agents
+### MarsAI agents
 
-Inside OmniRush.ai, agents control the app through the semantic tools (`omnirush_context`, `omnirush_query`, `omnirush_execute`) using affordance ids from context. External MCP clients can also use the hidden **OmniRush.ai UI Control** MCP via **Settings -> Extensions -> Show hidden**.
+Inside MarsAI, agents control the app through the semantic tools (`mars_context`, `mars_query`, `mars_execute`) using affordance ids from context. External MCP clients can also use the hidden **MarsAI UI Control** MCP via **Settings -> Extensions -> Show hidden**.
 
 ## Install
 
-Nothing to install. The UI-control MCP ships inside the OmniRush.ai desktop app
+Nothing to install. The UI-control MCP ships inside the MarsAI desktop app
 as a single bundled file and runs with the app's own binary in Node mode:
 
 ```bash
-ELECTRON_RUN_AS_NODE=1 "/Applications/omnirush.app/Contents/MacOS/omnirush" \
-  "/Applications/omnirush.app/Contents/Resources/omnirush-ui-mcp/index.mjs"
+ELECTRON_RUN_AS_NODE=1 "/Applications/mars.app/Contents/MacOS/mars" \
+  "/Applications/mars.app/Contents/Resources/mars-ui-mcp/index.mjs"
 ```
 
 The paths above are the macOS default. **Settings -> Extensions -> UI Control**
 shows the exact command, environment, and client config for your installation.
 
-> `omnirush-ui-mcp` is **not** published on npm. Never configure it as
-> `npx omnirush-ui-mcp` or install it with `npm install`: a package with that
-> name on a public registry is not the UI-control MCP. omnirush-server refuses
-> to store or launch any MCP command that resolves `omnirush-ui-mcp` by name
+> `mars-ui-mcp` is **not** published on npm. Never configure it as
+> `npx mars-ui-mcp` or install it with `npm install`: a package with that
+> name on a public registry is not the UI-control MCP. mars-server refuses
+> to store or launch any MCP command that resolves `mars-ui-mcp` by name
 > (`npx`, `bunx`, `pnpm dlx`, `yarn dlx`, `npm exec`, a global install). On
-> startup the desktop app rewrites a stored `npx -y omnirush-ui-mcp` command to
+> startup the desktop app rewrites a stored `npx -y mars-ui-mcp` command to
 > the bundled one; a standalone server removes it, and UI control is
 > reconnected from the desktop app.
 >
@@ -86,11 +86,11 @@ command shown in the app:
 ```json
 {
   "mcp": {
-    "omnirush-ui": {
+    "mars-ui": {
       "type": "local",
       "command": [
-        "/Applications/omnirush.app/Contents/MacOS/omnirush",
-        "/Applications/omnirush.app/Contents/Resources/omnirush-ui-mcp/index.mjs"
+        "/Applications/mars.app/Contents/MacOS/mars",
+        "/Applications/mars.app/Contents/Resources/mars-ui-mcp/index.mjs"
       ],
       "environment": { "ELECTRON_RUN_AS_NODE": "1" },
       "enabled": true
@@ -102,7 +102,7 @@ command shown in the app:
 Then use the tools in any session:
 
 ```
-> Use ui_snapshot to see what's on screen in OmniRush.ai, then list the available sessions.
+> Use ui_snapshot to see what's on screen in MarsAI, then list the available sessions.
 ```
 
 ## Add to Claude Desktop or Codex
@@ -112,9 +112,9 @@ Both use the same MCP config shape. Add to your `claude_desktop_config.json` or 
 ```json
 {
   "mcpServers": {
-    "omnirush-ui": {
-      "command": "/Applications/omnirush.app/Contents/MacOS/omnirush",
-      "args": ["/Applications/omnirush.app/Contents/Resources/omnirush-ui-mcp/index.mjs"],
+    "mars-ui": {
+      "command": "/Applications/mars.app/Contents/MacOS/mars",
+      "args": ["/Applications/mars.app/Contents/Resources/mars-ui-mcp/index.mjs"],
       "env": { "ELECTRON_RUN_AS_NODE": "1" }
     }
   }
@@ -125,21 +125,21 @@ Restart the app. The four tools (`ui_status`, `ui_snapshot`, `ui_list_actions`, 
 
 ## Add to your own MCP client
 
-If you're building an app that speaks MCP, you can connect to the OmniRush.ai UI server the same way:
+If you're building an app that speaks MCP, you can connect to the MarsAI UI server the same way:
 
 ```js
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const transport = new StdioClientTransport({
-  command: "/Applications/omnirush.app/Contents/MacOS/omnirush",
-  args: ["/Applications/omnirush.app/Contents/Resources/omnirush-ui-mcp/index.mjs"],
+  command: "/Applications/mars.app/Contents/MacOS/mars",
+  args: ["/Applications/mars.app/Contents/Resources/mars-ui-mcp/index.mjs"],
   env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" },
 });
 const client = new Client({ name: "my-app", version: "1.0.0" });
 await client.connect(transport);
 
-// Check if OmniRush.ai is running
+// Check if MarsAI is running
 const status = await client.callTool({ name: "ui_status", arguments: {} });
 console.log(status);
 
@@ -158,21 +158,21 @@ await client.callTool({
 
 ### `ui_status`
 
-Check if OmniRush.ai is running and reachable. Returns connection status and app info.
+Check if MarsAI is running and reachable. Returns connection status and app info.
 
 **No arguments.**
 
 Example response:
 
 ```
-Connected to OmniRush.ai
+Connected to MarsAI
 Bridge: http://127.0.0.1:52431
 Version: 1
 ```
 
 ### `ui_snapshot`
 
-Get the current OmniRush.ai UI state: active route, narration, visible actions, and status. Call this before acting to understand what the user sees.
+Get the current MarsAI UI state: active route, narration, visible actions, and status. Call this before acting to understand what the user sees.
 
 **No arguments.**
 
@@ -201,7 +201,7 @@ Returns the full list with labels, descriptions, and argument info.
 
 ### `ui_execute_action`
 
-Execute an OmniRush.ai UI action by its id.
+Execute an MarsAI UI action by its id.
 
 | Argument | Type | Description |
 |----------|------|-------------|
@@ -228,7 +228,7 @@ Example — send the composer prompt:
 
 ## Available actions
 
-The exact list depends on the current OmniRush.ai route and state. Common actions include:
+The exact list depends on the current MarsAI route and state. Common actions include:
 
 | Action | Description |
 |--------|-------------|
@@ -252,24 +252,24 @@ The exact list depends on the current OmniRush.ai route and state. Common action
 
 ## Requirements
 
-- **OmniRush.ai desktop** must be running. The MCP server connects to OmniRush.ai's local bridge which starts automatically when the desktop app launches.
-- **macOS** is the primary supported platform. The bridge uses Electron IPC and writes a discovery file to `~/Library/Application Support/ai.omnirush.desktop/`.
+- **MarsAI desktop** must be running. The MCP server connects to MarsAI's local bridge which starts automatically when the desktop app launches.
+- **macOS** is the primary supported platform. The bridge uses Electron IPC and writes a discovery file to `~/Library/Application Support/ai.marsai.desktop/`.
 - The MCP server runs as a **stdio** process — your MCP client spawns it and communicates over stdin/stdout.
 
 ## How it works under the hood
 
 ```
 ┌─────────────┐     MCP stdio      ┌──────────────────┐     HTTP localhost     ┌──────────────┐
-│  MCP client  │ ←────────────────→ │  omnirush-ui-mcp │ ←───────────────────→ │  OmniRush.ai app │
+│  MCP client  │ ←────────────────→ │  mars-ui-mcp │ ←───────────────────→ │  MarsAI app │
 │  (HandsFree, │                    │  (Node.js)       │                       │  (Electron)   │
 │   OpenCode,  │                    │                  │                       │               │
 │   Codex)     │                    └──────────────────┘                       └──────────────┘
 └─────────────┘
 ```
 
-1. OmniRush.ai desktop starts a private localhost HTTP bridge on a random port, protected by a bearer token.
-2. It writes a discovery file with the port and token so `omnirush-ui-mcp` can find it.
-3. `omnirush-ui-mcp` reads the discovery file, proxies MCP tool calls to the bridge, and returns structured results.
-4. The bridge calls `window.__omnirushControl` inside the Electron renderer to snapshot state and execute actions.
+1. MarsAI desktop starts a private localhost HTTP bridge on a random port, protected by a bearer token.
+2. It writes a discovery file with the port and token so `mars-ui-mcp` can find it.
+3. `mars-ui-mcp` reads the discovery file, proxies MCP tool calls to the bridge, and returns structured results.
+4. The bridge calls `window.__marsControl` inside the Electron renderer to snapshot state and execute actions.
 
-The bridge and discovery file are implementation details — you never need to touch them directly. Just point your MCP client at the bundled `omnirush-ui-mcp/index.mjs` shown in the app.
+The bridge and discovery file are implementation details — you never need to touch them directly. Just point your MCP client at the bundled `mars-ui-mcp/index.mjs` shown in the app.

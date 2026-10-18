@@ -55,9 +55,9 @@ describe("workspace git identity", () => {
   test("applies the connected account's name and email to the repository only", async () => {
     const git = fakeGit({});
     const profile = async () => ({ email: "sam@example.com", displayName: "Sam Example" });
-    const cfg = config({ omnirushGatewayCredentials: { gatewayUrl: "https://gw.example/v1", accessToken: "a", refreshToken: "r", profile } });
+    const cfg = config({ marsGatewayCredentials: { gatewayUrl: "https://gw.example/v1", accessToken: "a", refreshToken: "r", profile } });
     const result = await ensureWorkspaceGitIdentity(cfg, "/repo", { runGit: git.runGit, env: {} });
-    expect(result).toEqual({ status: "applied", name: "Sam Example", email: "sam@example.com", source: "omnirush_account" });
+    expect(result).toEqual({ status: "applied", name: "Sam Example", email: "sam@example.com", source: "mars_account" });
     expect(git.writes).toEqual([["--local", "user.name", "Sam Example"], ["--local", "user.email", "sam@example.com"]]);
     expect(git.writes.every((write) => !write.includes("--global"))).toBe(true);
   });
@@ -65,9 +65,9 @@ describe("workspace git identity", () => {
   test("fills only the missing half and keeps an existing identity", async () => {
     const partial = fakeGit({ name: "Repo Owner" });
     const profile = async () => ({ email: "sam@example.com", displayName: "Sam Example" });
-    const cfg = config({ omnirushGatewayCredentials: { gatewayUrl: "https://gw.example/v1", accessToken: "a", refreshToken: "r", profile } });
+    const cfg = config({ marsGatewayCredentials: { gatewayUrl: "https://gw.example/v1", accessToken: "a", refreshToken: "r", profile } });
     expect(await ensureWorkspaceGitIdentity(cfg, "/repo", { runGit: partial.runGit, env: {} }))
-      .toEqual({ status: "applied", name: "Repo Owner", email: "sam@example.com", source: "omnirush_account" });
+      .toEqual({ status: "applied", name: "Repo Owner", email: "sam@example.com", source: "mars_account" });
     expect(partial.writes).toEqual([["--local", "user.email", "sam@example.com"]]);
 
     const complete = fakeGit({ name: "Repo Owner", email: "owner@example.com" });
@@ -100,10 +100,10 @@ describe("workspace git identity", () => {
       return Response.json({ email: "iamsam.jones42@example.com", status: "active" });
     };
     const cfg = config();
-    const env = { OMNIRUSH_GATEWAY_URL: "https://gateway.example/omnirush/v1", OMNIRUSH_ACCESS_TOKEN: "env-access" };
+    const env = { MARS_GATEWAY_URL: "https://gateway.example/mars/v1", MARS_ACCESS_TOKEN: "env-access" };
     expect(await resolveAccountIdentity(cfg, { fetchImpl, env })).toEqual({ name: "Sam Jones", email: "iamsam.jones42@example.com" });
     expect(await resolveAccountIdentity(cfg, { fetchImpl, env })).toEqual({ name: "Sam Jones", email: "iamsam.jones42@example.com" });
-    expect(requests).toEqual([{ url: "https://gateway.example/omnirush/device/me", authorization: "Bearer env-access" }]);
+    expect(requests).toEqual([{ url: "https://gateway.example/mars/oauth/userinfo", authorization: "Bearer env-access" }]);
     forgetAccountIdentity(cfg);
     expect(await resolveAccountIdentity(config(), { fetchImpl, env: {} })).toBeNull();
   });
@@ -118,7 +118,7 @@ describe("workspace git identity", () => {
   });
 
   test("reads a real repository without touching the global configuration", async () => {
-    const root = await mkdtemp(path.join(tmpdir(), "omnirush-git-identity-"));
+    const root = await mkdtemp(path.join(tmpdir(), "mars-git-identity-"));
     roots.push(root);
     await writeFile(path.join(root, "gitconfig"), "", "utf8");
     const repo = path.join(root, "repo");
@@ -130,7 +130,7 @@ describe("workspace git identity", () => {
       expect(await readWorkspaceGitIdentity(repo)).toEqual({ repository: true, name: null, email: null });
       expect(await readWorkspaceGitIdentity(root)).toEqual({ repository: false, name: null, email: null });
       const profile = async () => ({ email: "sam@example.com", displayName: "Sam Example" });
-      const cfg = config({ omnirushGatewayCredentials: { gatewayUrl: "https://gw.example/v1", accessToken: "a", refreshToken: "r", profile } });
+      const cfg = config({ marsGatewayCredentials: { gatewayUrl: "https://gw.example/v1", accessToken: "a", refreshToken: "r", profile } });
       // The plugin reaches this through the policy service's "git_identity" action.
       await managedDesktopPolicy(cfg).assert("git_identity", { directory: repo });
       expect(await readWorkspaceGitIdentity(repo)).toEqual({ repository: true, name: "Sam Example", email: "sam@example.com" });

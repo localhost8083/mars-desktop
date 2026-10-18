@@ -20,7 +20,7 @@ const baseSnapshot: ResourceSnapshot = {
 
 describe("desktop cloud sync", () => {
   test("queues provider update and remove changes", () => {
-    const omnirush = {
+    const mars = {
       cloudImports: {
         providers: {
           lpr_existing: {
@@ -35,7 +35,7 @@ describe("desktop cloud sync", () => {
       },
     };
 
-    const result = syncDesktopCloudResources({ now: 1780442400000, omnirush, snapshot: baseSnapshot });
+    const result = syncDesktopCloudResources({ now: 1780442400000, mars, snapshot: baseSnapshot });
 
     expect(result.changes).toEqual([
       {
@@ -56,7 +56,7 @@ describe("desktop cloud sync", () => {
       },
     ]);
 
-    const state = readDesktopCloudSyncState(result.omnirush);
+    const state = readDesktopCloudSyncState(result.mars);
     expect(state.entries["org_1::member_1"]?.pendingChanges).toHaveLength(2);
   });
 
@@ -83,10 +83,10 @@ describe("desktop cloud sync", () => {
       teamIds: [],
       resources: { llmProviders, marketplaces: {} },
     };
-    const omnirush = { cloudImports: { providers: importedProviders } };
+    const mars = { cloudImports: { providers: importedProviders } };
 
     const start = performance.now();
-    const result = syncDesktopCloudResources({ now: 1780442400000, omnirush, snapshot });
+    const result = syncDesktopCloudResources({ now: 1780442400000, mars, snapshot });
     const elapsedMs = performance.now() - start;
 
     expect(result.changes).toHaveLength(providerCount / 2);

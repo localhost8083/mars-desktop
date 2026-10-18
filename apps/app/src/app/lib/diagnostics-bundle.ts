@@ -2,19 +2,19 @@ import { readDevLogs, type DevLogRecord } from "./dev-log";
 import {
   appBuildInfo,
   engineInfo,
-  omnirushServerInfo,
+  marsServerInfo,
   type AppBuildInfo,
   type EngineInfo,
   type OpencodeExecutionSnapshot,
-  type OmniRushServerInfo,
+  type MarsServerInfo,
 } from "./desktop";
 import { readPerfLogs, type PerfLogRecord } from "./perf-log";
 import { sanitizeCloudMcpHealthDiagnostic } from "./diagnostic-sanitizer";
 import {
-  readOmniRushServerSettings,
-  type OmniRushServerSettings,
-  type OmniRushServerStatus,
-} from "./omnirush-server";
+  readMarsServerSettings,
+  type MarsServerSettings,
+  type MarsServerStatus,
+} from "./mars-server";
 import { isDesktopRuntime } from "../utils";
 
 export type DiagnosticsBundleContext = {
@@ -24,9 +24,9 @@ export type DiagnosticsBundleContext = {
   developerMode?: boolean;
   hostConnectUrl?: string;
   hostConnectUrlUsesMdns?: boolean;
-  hostInfo?: OmniRushServerInfo | null;
-  omnirushServerStatus?: OmniRushServerStatus;
-  omnirushServerUrl?: string;
+  hostInfo?: MarsServerInfo | null;
+  marsServerStatus?: MarsServerStatus;
+  marsServerUrl?: string;
   runtimeWorkspaceId?: string | null;
   /** The session in the focused pane: the side chat while it has focus. */
   focusedSession?: { workspaceId: string; sessionId: string } | null;
@@ -39,8 +39,8 @@ export type DiagnosticsBundleInputs = {
   desktopRuntime: boolean;
   appInfo: AppBuildInfo | null;
   engineInfo: EngineInfo | null;
-  omnirushServerSettings: OmniRushServerSettings;
-  hostInfo: OmniRushServerInfo | null;
+  marsServerSettings: MarsServerSettings;
+  hostInfo: MarsServerInfo | null;
   developerLogs: DevLogRecord[];
   perfLogs: PerfLogRecord[];
   /** Renderer-side platform guess, used when the desktop bridge does not report its OS. */
@@ -66,7 +66,7 @@ function pickAppInfo(info: AppBuildInfo | null) {
     version: info.version,
     gitSha: info.gitSha ?? null,
     buildEpoch: info.buildEpoch ?? null,
-    omnirushDevMode: info.omnirushDevMode ?? null,
+    marsDevMode: info.marsDevMode ?? null,
     os: info.os ?? null,
     arch: info.arch ?? null,
   };
@@ -105,7 +105,7 @@ function pickEngineInfo(info: EngineInfo | null) {
   };
 }
 
-function pickHostInfo(info: OmniRushServerInfo | null) {
+function pickHostInfo(info: MarsServerInfo | null) {
   if (!info) return null;
   const generation = typeof info.generation === "number" ? info.generation : null;
   return {
@@ -127,7 +127,7 @@ function pickHostInfo(info: OmniRushServerInfo | null) {
   };
 }
 
-function defaultHostConnectUrl(hostInfo: OmniRushServerInfo | null) {
+function defaultHostConnectUrl(hostInfo: MarsServerInfo | null) {
   return hostInfo?.connectUrl ?? hostInfo?.mdnsUrl ?? hostInfo?.lanUrl ?? hostInfo?.baseUrl ?? "";
 }
 
@@ -139,8 +139,8 @@ function addSecretValue(secrets: string[], value: string | null | undefined) {
 
 function collectSecretValues(input: DiagnosticsBundleInputs) {
   const secrets: string[] = [];
-  addSecretValue(secrets, input.omnirushServerSettings.token);
-  addSecretValue(secrets, input.omnirushServerSettings.hostToken);
+  addSecretValue(secrets, input.marsServerSettings.token);
+  addSecretValue(secrets, input.marsServerSettings.hostToken);
   addSecretValue(secrets, input.hostInfo?.clientToken);
   addSecretValue(secrets, input.hostInfo?.ownerToken);
   addSecretValue(secrets, input.hostInfo?.hostToken);
@@ -158,8 +158,8 @@ function scrubKnownSecretValues(value: string, secrets: string[]) {
 
 export function composeDiagnosticsBundleJson(input: DiagnosticsBundleInputs): string {
   const context = input.context;
-  const urlOverride = input.omnirushServerSettings.urlOverride?.trim() ?? "";
-  const token = input.omnirushServerSettings.token?.trim() ?? "";
+  const urlOverride = input.marsServerSettings.urlOverride?.trim() ?? "";
+  const token = input.marsServerSettings.token?.trim() ?? "";
   const hostConnectUrl = context?.hostConnectUrl ?? defaultHostConnectUrl(input.hostInfo);
   const hostConnectUrlUsesMdns = context?.hostConnectUrlUsesMdns ?? hostConnectUrl.includes(".local");
   const clientConnected = context?.clientConnected === true;
@@ -182,9 +182,9 @@ export function composeDiagnosticsBundleJson(input: DiagnosticsBundleInputs): st
       clientConnected,
       anyActiveRuns: context?.anyActiveRuns === true,
     },
-    omnirushServer: {
-      status: context?.omnirushServerStatus ?? (clientConnected ? "connected" : "disconnected"),
-      url: context?.omnirushServerUrl ?? "",
+    marsServer: {
+      status: context?.marsServerStatus ?? (clientConnected ? "connected" : "disconnected"),
+      url: context?.marsServerUrl ?? "",
       settings: {
         urlOverride: urlOverride || null,
         tokenPresent: Boolean(token),
@@ -232,7 +232,7 @@ async function readEngineInfo(desktopRuntime: boolean) {
 async function readHostInfo(desktopRuntime: boolean) {
   if (!desktopRuntime) return null;
   try {
-    return await omnirushServerInfo();
+    return await marsServerInfo();
   } catch {
     return null;
   }
@@ -257,7 +257,7 @@ export async function buildDiagnosticsBundleJson(context?: DiagnosticsBundleCont
     desktopRuntime,
     appInfo,
     engineInfo: engine,
-    omnirushServerSettings: readOmniRushServerSettings(),
+    marsServerSettings: readMarsServerSettings(),
     hostInfo,
     developerLogs: readDevLogs(80),
     perfLogs: readPerfLogs(80),

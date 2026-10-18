@@ -1,6 +1,6 @@
 /**
  * A read-only view of the opencode 2.x engine's session store (its
- * `opencode.db`, as OmniRush.ai desktop 2.2.0 – 3.x left it), in the shapes
+ * `opencode.db`, as MarsAI desktop 2.2.0 – 3.x left it), in the shapes
  * the 2.x engine's own API answered with:
  *
  *   - a session (`session_v2` row) as `GET /api/session/:id` gave it:
@@ -9,7 +9,7 @@
  *     `GET /api/session/:id/message` gave them: `{id, type, ...data}`.
  *
  * The file is opened read-only and never written: the 2.x store stays as it
- * was, so an older OmniRush.ai still opens it.
+ * was, so an older MarsAI still opens it.
  */
 import { existsSync } from "node:fs";
 import { isRecord, type JsonRecord } from "./util.js";

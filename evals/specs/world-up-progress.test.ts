@@ -3,13 +3,13 @@ import { access, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { eventually, test } from "@omnirush/testkit";
+import { eventually, test } from "@mars/testkit";
 import {
   isProcessAlive,
   main,
   readScriptWorldSnapshot,
   type WorldCliOptions,
-} from "@omnirush/world";
+} from "@mars/world";
 
 const REPO_ROOT = fileURLToPath(new URL("../..", import.meta.url));
 
@@ -26,7 +26,7 @@ function assertInOrder(lines: string[], predicates: Array<(line: string) => bool
 }
 
 test("world up narrates each step, stalls, failures, and attach replays them", async ({ evidence }) => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-world-up-progress-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-world-up-progress-"));
   const worldsDirectory = join(root, "worlds");
   const scriptsDirectory = join(root, ".worlds", "scripts");
   const fixtureName = "progress-world";
@@ -36,10 +36,10 @@ test("world up narrates each step, stalls, failures, and attach replays them", a
   const receiptPath = join(scriptsDirectory, `${stagedName}.json`);
   const logPath = join(scriptsDirectory, `${stagedName}.log`);
   const recipeUrl = pathToFileURL(join(REPO_ROOT, "evals", "packages", "env", "src", "recipe.ts")).href;
-  const previousSnapshotDirectory = process.env.OMNIRUSH_WORLD_SNAPSHOT_DIR;
-  const previousHeartbeat = process.env.OMNIRUSH_WORLD_HEARTBEAT_MS;
-  const previousStall = process.env.OMNIRUSH_WORLD_STUB_STALL_MS;
-  const previousFail = process.env.OMNIRUSH_WORLD_STUB_FAIL;
+  const previousSnapshotDirectory = process.env.MARS_WORLD_SNAPSHOT_DIR;
+  const previousHeartbeat = process.env.MARS_WORLD_HEARTBEAT_MS;
+  const previousStall = process.env.MARS_WORLD_STUB_STALL_MS;
+  const previousFail = process.env.MARS_WORLD_STUB_FAIL;
   const launchedPids = new Set<number>();
   let printed: string[] = [];
   let narrated: string[] = [];
@@ -65,10 +65,10 @@ test("world up narrates each step, stalls, failures, and attach replays them", a
   };
 
   try {
-    process.env.OMNIRUSH_WORLD_SNAPSHOT_DIR = scriptsDirectory;
-    process.env.OMNIRUSH_WORLD_HEARTBEAT_MS = "300";
-    process.env.OMNIRUSH_WORLD_STUB_STALL_MS = "1200";
-    delete process.env.OMNIRUSH_WORLD_STUB_FAIL;
+    process.env.MARS_WORLD_SNAPSHOT_DIR = scriptsDirectory;
+    process.env.MARS_WORLD_HEARTBEAT_MS = "300";
+    process.env.MARS_WORLD_STUB_STALL_MS = "1200";
+    delete process.env.MARS_WORLD_STUB_FAIL;
     await mkdir(worldsDirectory);
     await writeFile(fixturePath, `
 import { mkdtemp, rm } from "node:fs/promises";
@@ -79,7 +79,7 @@ import { recipe, runRecipe } from ${JSON.stringify(recipeUrl)};
 const world = recipe(${JSON.stringify(fixtureName)}, async (tools) => {
   const a = tools.progress.step("alpha", "Alpha");
   await a.ok("fast");
-  const dir = await mkdtemp(join(tmpdir(), "omnirush-progress-"));
+  const dir = await mkdtemp(join(tmpdir(), "mars-progress-"));
   await tools.track({ kind: "tmpdir", id: dir, label: "scratch" });
   tools.stack.use({
     async [Symbol.asyncDispose](): Promise<void> {
@@ -87,8 +87,8 @@ const world = recipe(${JSON.stringify(fixtureName)}, async (tools) => {
     },
   });
   const b = tools.progress.step("beta", "Beta");
-  await new Promise((resolve) => setTimeout(resolve, Number(process.env.OMNIRUSH_WORLD_STUB_STALL_MS ?? "0")));
-  if (process.env.OMNIRUSH_WORLD_STUB_FAIL === "1") {
+  await new Promise((resolve) => setTimeout(resolve, Number(process.env.MARS_WORLD_STUB_STALL_MS ?? "0")));
+  if (process.env.MARS_WORLD_STUB_FAIL === "1") {
     await b.fail("beta exploded");
     throw new Error("beta exploded");
   }
@@ -154,8 +154,8 @@ if (import.meta.main) await runRecipe(world);
     assert.equal(downCode, 0, printed.join("\n"));
     assert.equal(await exists(receiptPath), false);
 
-    process.env.OMNIRUSH_WORLD_STUB_FAIL = "1";
-    process.env.OMNIRUSH_WORLD_STUB_STALL_MS = "0";
+    process.env.MARS_WORLD_STUB_FAIL = "1";
+    process.env.MARS_WORLD_STUB_STALL_MS = "0";
     const failedCode = await run(["up", fixturePath, "--detach", "--stage", stage, "--timeout", "10000"]);
     assert.equal(failedCode, 1, [...narrated, ...printed].join("\n"));
     const failedStep = narrated.findIndex((line) => line === "✖ Beta — beta exploded");
@@ -172,7 +172,7 @@ if (import.meta.main) await runRecipe(world);
       true,
     );
 
-    delete process.env.OMNIRUSH_WORLD_STUB_FAIL;
+    delete process.env.MARS_WORLD_STUB_FAIL;
     const missingAttachCode = await run(["attach", fixtureName, "--stage", stage]);
     assert.equal(missingAttachCode, 1, printed.join("\n"));
     assert.deepEqual(printed, [`World receipt "${stagedName}" does not exist.`]);
@@ -183,7 +183,7 @@ if (import.meta.main) await runRecipe(world);
       true,
     );
   } finally {
-    delete process.env.OMNIRUSH_WORLD_STUB_FAIL;
+    delete process.env.MARS_WORLD_STUB_FAIL;
     try {
       const snapshot = await readScriptWorldSnapshot(receiptPath);
       if (snapshot) {
@@ -202,14 +202,14 @@ if (import.meta.main) await runRecipe(world);
         });
       } catch {}
     }
-    if (previousSnapshotDirectory === undefined) delete process.env.OMNIRUSH_WORLD_SNAPSHOT_DIR;
-    else process.env.OMNIRUSH_WORLD_SNAPSHOT_DIR = previousSnapshotDirectory;
-    if (previousHeartbeat === undefined) delete process.env.OMNIRUSH_WORLD_HEARTBEAT_MS;
-    else process.env.OMNIRUSH_WORLD_HEARTBEAT_MS = previousHeartbeat;
-    if (previousStall === undefined) delete process.env.OMNIRUSH_WORLD_STUB_STALL_MS;
-    else process.env.OMNIRUSH_WORLD_STUB_STALL_MS = previousStall;
-    if (previousFail === undefined) delete process.env.OMNIRUSH_WORLD_STUB_FAIL;
-    else process.env.OMNIRUSH_WORLD_STUB_FAIL = previousFail;
+    if (previousSnapshotDirectory === undefined) delete process.env.MARS_WORLD_SNAPSHOT_DIR;
+    else process.env.MARS_WORLD_SNAPSHOT_DIR = previousSnapshotDirectory;
+    if (previousHeartbeat === undefined) delete process.env.MARS_WORLD_HEARTBEAT_MS;
+    else process.env.MARS_WORLD_HEARTBEAT_MS = previousHeartbeat;
+    if (previousStall === undefined) delete process.env.MARS_WORLD_STUB_STALL_MS;
+    else process.env.MARS_WORLD_STUB_STALL_MS = previousStall;
+    if (previousFail === undefined) delete process.env.MARS_WORLD_STUB_FAIL;
+    else process.env.MARS_WORLD_STUB_FAIL = previousFail;
     await rm(root, { recursive: true, force: true });
   }
 }, 60_000);

@@ -2,13 +2,13 @@ import { chmod, mkdir, mkdtemp, readdir, rename, rm, symlink, writeFile } from "
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect } from "vitest";
-import { test } from "@omnirush/testkit";
-import { bootServer, isRecord, stopChild } from "../worlds/omnirush-server-cli.ts";
+import { test } from "@mars/testkit";
+import { bootServer, isRecord, stopChild } from "../worlds/mars-server-cli.ts";
 
 // The file-session catalog is a public server journey used by the file browser
 // and sync clients. Exercise real OS permissions and HTTP, without mocking fs.
 test("workspace catalog preserves readable siblings and reports permission gaps", async ({ evidence }) => {
-  const scratch = await mkdtemp(join(tmpdir(), "omnirush-catalog-permissions-"));
+  const scratch = await mkdtemp(join(tmpdir(), "mars-catalog-permissions-"));
   const workspace = join(scratch, "workspace");
   const restricted = join(workspace, "a-restricted");
   await mkdir(restricted, { recursive: true });
@@ -17,9 +17,9 @@ test("workspace catalog preserves readable siblings and reports permission gaps"
   await writeFile(join(workspace, "z-readable", "report.txt"), "synthetic readable fixture");
   const home = join(scratch, "home");
   await mkdir(home);
-  const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("OMNIRUSH_") && !key.startsWith("OPENCODE")));
+  const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("MARS_") && !key.startsWith("OPENCODE")));
   const headers = { authorization: "Bearer catalog-test-token", "content-type": "application/json" };
-  const booted = bootServer({ ...inherited, HOME: home, XDG_CONFIG_HOME: join(home, ".config"), XDG_DATA_HOME: join(home, ".local/share"), OMNIRUSH_MANAGE_OPENCODE: "0" }, "catalog-test-token", workspace, () => {});
+  const booted = bootServer({ ...inherited, HOME: home, XDG_CONFIG_HOME: join(home, ".config"), XDG_DATA_HOME: join(home, ".local/share"), MARS_MANAGE_OPENCODE: "0" }, "catalog-test-token", workspace, () => {});
   try {
     const base = await booted.listening;
     const request = (path: string, body?: unknown) => fetch(`${base}${path}`, { headers, method: body === undefined ? "GET" : "POST", body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(10_000) });
@@ -85,7 +85,7 @@ test("workspace catalog preserves readable siblings and reports permission gaps"
 
 
 test("healthy workspace catalog preserves symlink boundaries, pagination, and directory exclusions", async ({ evidence }) => {
-  const scratch = await mkdtemp(join(tmpdir(), "omnirush-catalog-compatibility-"));
+  const scratch = await mkdtemp(join(tmpdir(), "mars-catalog-compatibility-"));
   const workspace = join(scratch, "workspace");
   const outside = join(scratch, "outside");
   const home = join(scratch, "home");
@@ -101,9 +101,9 @@ test("healthy workspace catalog preserves symlink boundaries, pagination, and di
   await symlink(outside, join(workspace, "external-link"), "dir");
   await symlink(workspace, join(workspace, "cycle-link"), "dir");
   await symlink(join(outside, "outside-only.txt"), join(workspace, "external-file-link"), "file");
-  const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("OMNIRUSH_") && !key.startsWith("OPENCODE")));
+  const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("MARS_") && !key.startsWith("OPENCODE")));
   const headers = { authorization: "Bearer catalog-compatibility-token", "content-type": "application/json" };
-  const booted = bootServer({ ...inherited, HOME: home, XDG_CONFIG_HOME: join(home, ".config"), XDG_DATA_HOME: join(home, ".local/share"), OMNIRUSH_MANAGE_OPENCODE: "0" }, "catalog-compatibility-token", workspace, () => {});
+  const booted = bootServer({ ...inherited, HOME: home, XDG_CONFIG_HOME: join(home, ".config"), XDG_DATA_HOME: join(home, ".local/share"), MARS_MANAGE_OPENCODE: "0" }, "catalog-compatibility-token", workspace, () => {});
   try {
     const base = await booted.listening;
     const request = (path: string, body?: unknown) => fetch(`${base}${path}`, { headers, method: body === undefined ? "GET" : "POST", body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(10_000) });

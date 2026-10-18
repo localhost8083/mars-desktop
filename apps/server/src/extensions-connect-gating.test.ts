@@ -38,7 +38,7 @@ const connectStateResponseSchema = z.object({
 
 const gatedCallSchema = z.object({
   ok: z.literal(false),
-  error: z.literal("use_omnirush_cloud"),
+  error: z.literal("use_mars_cloud"),
   message: z.string(),
 }).passthrough();
 
@@ -63,10 +63,10 @@ const googleWorkspaceStatusActionSchema = z.object({
 type ActionItem = z.infer<typeof actionSchema>;
 
 const previousEnv = {
-  runtimeDb: process.env.OMNIRUSH_RUNTIME_DB,
+  runtimeDb: process.env.MARS_RUNTIME_DB,
   googleClientSecret: process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET,
-  legacyGoogleClientSecret: process.env.OMNIRUSH_GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET,
-  tokenBrokerUrl: process.env.OMNIRUSH_GOOGLE_WORKSPACE_TOKEN_BROKER_URL,
+  legacyGoogleClientSecret: process.env.MARS_GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET,
+  tokenBrokerUrl: process.env.MARS_GOOGLE_WORKSPACE_TOKEN_BROKER_URL,
   legacyTokenBrokerUrl: process.env.GOOGLE_WORKSPACE_TOKEN_BROKER_URL,
 };
 
@@ -80,8 +80,8 @@ function restoreEnv(key: string, value: string | undefined) {
 
 function clearLegacyGoogleWorkspaceEnv() {
   delete process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET;
-  delete process.env.OMNIRUSH_GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET;
-  delete process.env.OMNIRUSH_GOOGLE_WORKSPACE_TOKEN_BROKER_URL;
+  delete process.env.MARS_GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET;
+  delete process.env.MARS_GOOGLE_WORKSPACE_TOKEN_BROKER_URL;
   delete process.env.GOOGLE_WORKSPACE_TOKEN_BROKER_URL;
 }
 
@@ -106,9 +106,9 @@ function serverConfig(root: string): ServerConfig {
 }
 
 async function boot() {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-connect-gating-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-connect-gating-"));
   dirs.push(root);
-  process.env.OMNIRUSH_RUNTIME_DB = join(root, "runtime.sqlite");
+  process.env.MARS_RUNTIME_DB = join(root, "runtime.sqlite");
   const config = serverConfig(root);
   const server = await startServer(config);
   stops.push(() => server.stop());
@@ -124,7 +124,7 @@ function clientJsonHeaders() {
 }
 
 function hostJsonHeaders() {
-  return { "x-omnirush-host-token": HOST_TOKEN, "content-type": "application/json" };
+  return { "x-mars-host-token": HOST_TOKEN, "content-type": "application/json" };
 }
 
 async function readSchema<T>(response: Response, schema: z.ZodType<T>): Promise<T> {
@@ -190,7 +190,7 @@ function expectAllActions(actions: ActionItem[]) {
   expect(actions).toHaveLength(18);
   expect(actions.filter((action) => action.extensionId === "google-workspace")).toHaveLength(14);
   expect(actions.filter((action) => action.extensionId === "openai-image-generation")).toHaveLength(2);
-  expect(actions.filter((action) => action.extensionId === "omnirush-cloud-uploads")).toHaveLength(2);
+  expect(actions.filter((action) => action.extensionId === "mars-cloud-uploads")).toHaveLength(2);
 }
 
 beforeEach(() => {
@@ -205,10 +205,10 @@ afterEach(async () => {
     const dir = dirs.pop();
     if (dir) await rm(dir, { recursive: true, force: true });
   }
-  restoreEnv("OMNIRUSH_RUNTIME_DB", previousEnv.runtimeDb);
+  restoreEnv("MARS_RUNTIME_DB", previousEnv.runtimeDb);
   restoreEnv("GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET", previousEnv.googleClientSecret);
-  restoreEnv("OMNIRUSH_GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET", previousEnv.legacyGoogleClientSecret);
-  restoreEnv("OMNIRUSH_GOOGLE_WORKSPACE_TOKEN_BROKER_URL", previousEnv.tokenBrokerUrl);
+  restoreEnv("MARS_GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET", previousEnv.legacyGoogleClientSecret);
+  restoreEnv("MARS_GOOGLE_WORKSPACE_TOKEN_BROKER_URL", previousEnv.tokenBrokerUrl);
   restoreEnv("GOOGLE_WORKSPACE_TOKEN_BROKER_URL", previousEnv.legacyTokenBrokerUrl);
 });
 
@@ -256,8 +256,8 @@ describe("Connect-aware legacy extension gating", () => {
     const actions = await listActions(base);
     expect(actionKeys(actions)).toEqual([
       "google-workspace/status",
-      "omnirush-cloud-uploads/drive_upload_file",
-      "omnirush-cloud-uploads/gmail_create_draft_with_attachments",
+      "mars-cloud-uploads/drive_upload_file",
+      "mars-cloud-uploads/gmail_create_draft_with_attachments",
       "openai-image-generation/image_generate",
       "openai-image-generation/status",
     ]);
@@ -279,7 +279,7 @@ describe("Connect-aware legacy extension gating", () => {
       ...current,
       mcp: {
         ...current.mcp,
-        "omnirush-cloud": { type: "remote", url: "https://cloud.example/mcp" },
+        "mars-cloud": { type: "remote", url: "https://cloud.example/mcp" },
       },
     }));
 

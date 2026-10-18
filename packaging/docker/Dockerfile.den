@@ -25,7 +25,7 @@ COPY packages/connect-link/package.json /app/packages/connect-link/package.json
 COPY packages/headless-threads/package.json /app/packages/headless-threads/package.json
 COPY packages/mcp-apps/package.json /app/packages/mcp-apps/package.json
 # apps/desktop/package.json is copied below for version metadata, and it depends
-# on @omnirush/paths, @omnirush/browser-tabs, and @omnirush/browser-logins, so those
+# on @mars/paths, @mars/browser-tabs, and @mars/browser-logins, so those
 # packages must exist for
 # workspace resolution.
 COPY packages/paths/package.json /app/packages/paths/package.json

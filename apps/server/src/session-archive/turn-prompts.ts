@@ -1,6 +1,6 @@
 /**
  * Which user messages of an engine session open a turn. The same file ships
- * in omnirush-cli and omnirush-gui (PARITY.sha256): every turn number the
+ * in mars-cli and mars-gui (PARITY.sha256): every turn number the
  * clients write (archive states, context turns, a resumed session's count)
  * comes from here, so both number turns the same way.
  *

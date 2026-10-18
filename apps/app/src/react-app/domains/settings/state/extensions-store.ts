@@ -37,18 +37,18 @@ import {
   readOpencodeConfig,
   revealDesktopItemInDir,
   uninstallSkill as uninstallSkillCommand,
-  workspaceOmniRushRead,
-  workspaceOmniRushWrite,
+  workspaceMarsRead,
+  workspaceMarsWrite,
   writeLocalSkill,
   writeOpencodeConfig,
   type OpencodeConfigFile,
 } from "../../../../app/lib/desktop";
 import type {
-  OmniRushClaudePluginPreview,
-  OmniRushServerCapabilities,
-  OmniRushServerClient,
-  OmniRushServerStatus,
-} from "../../../../app/lib/omnirush-server";
+  MarsClaudePluginPreview,
+  MarsServerCapabilities,
+  MarsServerClient,
+  MarsServerStatus,
+} from "../../../../app/lib/mars-server";
 import {
   DenApiError,
   createDenClient,
@@ -71,7 +71,7 @@ import {
   type PendingCloudPluginChange,
 } from "../../../../app/cloud/desktop-cloud-sync";
 import { notifyEvent } from "../../../shell/notifications";
-import type { OmniRushServerStore } from "../../connections/omnirush-server-store";
+import type { MarsServerStore } from "../../connections/mars-server-store";
 import { clearCloudInventoryCache } from "../../connections/cloud-inventory-cache";
 import {
   denLibraryPluginCreateRequest,
@@ -364,11 +364,11 @@ export function createExtensionsStore(options: {
   selectedWorkspaceId: () => string;
   selectedWorkspaceRoot: () => string;
   workspaceType: () => "local" | "remote";
-  omnirushServer: OmniRushServerStore;
-  omnirushServerConnection?: () => {
-    omnirushServerClient: OmniRushServerClient | null;
-    omnirushServerStatus: OmniRushServerStatus;
-    omnirushServerCapabilities: OmniRushServerCapabilities | null;
+  marsServer: MarsServerStore;
+  marsServerConnection?: () => {
+    marsServerClient: MarsServerClient | null;
+    marsServerStatus: MarsServerStatus;
+    marsServerCapabilities: MarsServerCapabilities | null;
   };
   runtimeWorkspaceId: () => string | null;
   ensureRuntimeWorkspaceId?: () => Promise<string | null | undefined>;
@@ -382,7 +382,7 @@ export function createExtensionsStore(options: {
 
   let disposed = false;
   let started = false;
-  let stopOmniRushSubscription: (() => void) | null = null;
+  let stopMarsSubscription: (() => void) | null = null;
   let stopDenSessionListener: (() => void) | null = null;
   let lastWorkspaceContextKey = "";
   let snapshot: ExtensionsStoreSnapshot;
@@ -435,33 +435,33 @@ export function createExtensionsStore(options: {
     return `${workspaceType}:${workspaceId}:${root}:${runtimeWorkspaceId}`;
   };
 
-  const getOmniRushServerSnapshot = () => {
-    const snapshot = options.omnirushServer.getSnapshot();
-    const connection = options.omnirushServerConnection?.();
-    if (!connection?.omnirushServerClient) return snapshot;
+  const getMarsServerSnapshot = () => {
+    const snapshot = options.marsServer.getSnapshot();
+    const connection = options.marsServerConnection?.();
+    if (!connection?.marsServerClient) return snapshot;
     return {
       ...snapshot,
-      omnirushServerClient: connection.omnirushServerClient,
-      omnirushServerStatus: connection.omnirushServerStatus,
-      omnirushServerCapabilities: connection.omnirushServerCapabilities,
+      marsServerClient: connection.marsServerClient,
+      marsServerStatus: connection.marsServerStatus,
+      marsServerCapabilities: connection.marsServerCapabilities,
     };
   };
 
   const resolveWorkspaceServerTarget = async () => {
-    const omnirushSnapshot = getOmniRushServerSnapshot();
-    const omnirushClient = omnirushSnapshot.omnirushServerClient;
-    let omnirushWorkspaceId = options.runtimeWorkspaceId()?.trim() || null;
-    if (!omnirushWorkspaceId && omnirushSnapshot.omnirushServerStatus === "connected" && omnirushClient) {
-      omnirushWorkspaceId = (await options.ensureRuntimeWorkspaceId?.())?.trim() || null;
+    const marsSnapshot = getMarsServerSnapshot();
+    const marsClient = marsSnapshot.marsServerClient;
+    let marsWorkspaceId = options.runtimeWorkspaceId()?.trim() || null;
+    if (!marsWorkspaceId && marsSnapshot.marsServerStatus === "connected" && marsClient) {
+      marsWorkspaceId = (await options.ensureRuntimeWorkspaceId?.())?.trim() || null;
     }
-    const hasOmniRushTarget =
-      omnirushSnapshot.omnirushServerStatus === "connected" &&
-      Boolean(omnirushClient && omnirushWorkspaceId);
+    const hasMarsTarget =
+      marsSnapshot.marsServerStatus === "connected" &&
+      Boolean(marsClient && marsWorkspaceId);
     return {
-      omnirushSnapshot,
-      omnirushClient,
-      omnirushWorkspaceId,
-      hasOmniRushTarget,
+      marsSnapshot,
+      marsClient,
+      marsWorkspaceId,
+      hasMarsTarget,
     };
   };
 
@@ -506,56 +506,56 @@ export function createExtensionsStore(options: {
 
   const formatSkillPath = (location: string) => location.replace(/[/\\]SKILL\.md$/i, "");
 
-  const readWorkspaceOmniRushConfigRecord = async (): Promise<Record<string, unknown>> => {
+  const readWorkspaceMarsConfigRecord = async (): Promise<Record<string, unknown>> => {
     const root = options.selectedWorkspaceRoot().trim();
     const isLocalWorkspace = options.workspaceType() === "local";
-    const { omnirushSnapshot, omnirushClient, omnirushWorkspaceId, hasOmniRushTarget } =
+    const { marsSnapshot, marsClient, marsWorkspaceId, hasMarsTarget } =
       await resolveWorkspaceServerTarget();
-    const canUseOmniRushServer =
-      hasOmniRushTarget &&
-      omnirushSnapshot.omnirushServerCapabilities?.config?.read !== false;
+    const canUseMarsServer =
+      hasMarsTarget &&
+      marsSnapshot.marsServerCapabilities?.config?.read !== false;
 
-    if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
-      const config = await omnirushClient.getConfig(omnirushWorkspaceId);
-      return config.omnirush ?? {};
+    if (canUseMarsServer && marsClient && marsWorkspaceId) {
+      const config = await marsClient.getConfig(marsWorkspaceId);
+      return config.mars ?? {};
     }
 
-    if (hasOmniRushTarget) {
+    if (hasMarsTarget) {
       return {};
     }
 
     if (isLocalWorkspace && isDesktopRuntime() && root) {
-      return await workspaceOmniRushRead({ workspacePath: root }) as unknown as Record<string, unknown>;
+      return await workspaceMarsRead({ workspacePath: root }) as unknown as Record<string, unknown>;
     }
 
     return {};
   };
 
-  const writeWorkspaceOmniRushConfigRecord = async (config: Record<string, unknown>) => {
+  const writeWorkspaceMarsConfigRecord = async (config: Record<string, unknown>) => {
     const root = options.selectedWorkspaceRoot().trim();
     const isLocalWorkspace = options.workspaceType() === "local";
-    const { omnirushSnapshot, omnirushClient, omnirushWorkspaceId, hasOmniRushTarget } =
+    const { marsSnapshot, marsClient, marsWorkspaceId, hasMarsTarget } =
       await resolveWorkspaceServerTarget();
-    const canUseOmniRushServer =
-      hasOmniRushTarget &&
-      omnirushSnapshot.omnirushServerCapabilities?.config?.write !== false;
+    const canUseMarsServer =
+      hasMarsTarget &&
+      marsSnapshot.marsServerCapabilities?.config?.write !== false;
 
-    if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
-      await omnirushClient.patchConfig(omnirushWorkspaceId, { omnirush: config });
+    if (canUseMarsServer && marsClient && marsWorkspaceId) {
+      await marsClient.patchConfig(marsWorkspaceId, { mars: config });
       return true;
     }
 
-    if (hasOmniRushTarget) {
+    if (hasMarsTarget) {
       return false;
     }
 
     if (isLocalWorkspace && isDesktopRuntime() && root) {
-      const result = (await workspaceOmniRushWrite({
+      const result = (await workspaceMarsWrite({
         workspacePath: root,
         config: config as never,
       })) as { ok: boolean; stderr?: string; stdout?: string };
       if (!result.ok) {
-        throw new Error(result.stderr || result.stdout || "Failed to write .opencode/omnirush.json");
+        throw new Error(result.stderr || result.stdout || "Failed to write .opencode/mars.json");
       }
       return true;
     }
@@ -566,17 +566,17 @@ export function createExtensionsStore(options: {
   const refreshPendingCloudPluginChanges = async (installedPlugins?: Record<string, CloudImportedPlugin>) => {
     try {
       const target = await resolveWorkspaceServerTarget();
-      if (!target.omnirushClient || !target.omnirushWorkspaceId) {
+      if (!target.marsClient || !target.marsWorkspaceId) {
         setStateField("pendingCloudPluginChanges", {});
         return;
       }
       const syncResult = await refreshDesktopCloudSync({
-        omnirushClient: target.omnirushClient,
-        workspaceId: target.omnirushWorkspaceId,
+        marsClient: target.marsClient,
+        workspaceId: target.marsWorkspaceId,
       }).catch(() => null);
       const changes = syncResult
         ? syncResult.changes
-        : readPendingCloudSyncChanges(await target.omnirushClient.getDesktopCloudSync(target.omnirushWorkspaceId));
+        : readPendingCloudSyncChanges(await target.marsClient.getDesktopCloudSync(target.marsWorkspaceId));
       const pending = derivePendingCloudPluginChanges({
         changes,
         installedPlugins: installedPlugins ?? snapshot.importedCloudPlugins,
@@ -618,14 +618,14 @@ export function createExtensionsStore(options: {
   const refreshImportedCloudPlugins = async () => {
     try {
       const target = await resolveWorkspaceServerTarget();
-      if (target.omnirushClient && target.omnirushWorkspaceId) {
-        const result = await target.omnirushClient.listCloudPlugins(target.omnirushWorkspaceId);
+      if (target.marsClient && target.marsWorkspaceId) {
+        const result = await target.marsClient.listCloudPlugins(target.marsWorkspaceId);
         setStateField("importedCloudMarketplaces", result.marketplaces);
         setStateField("importedCloudPlugins", result.plugins);
         void refreshPendingCloudPluginChanges(result.plugins);
         return result.plugins;
       }
-      const config = await readWorkspaceOmniRushConfigRecord();
+      const config = await readWorkspaceMarsConfigRecord();
       const cloudImports = readWorkspaceCloudImports(config);
       setStateField("importedCloudMarketplaces", cloudImports.marketplaces);
       setStateField("importedCloudPlugins", cloudImports.plugins);
@@ -639,32 +639,32 @@ export function createExtensionsStore(options: {
   };
 
   const persistImportedCloudMarketplaces = async (nextMarketplaces: Record<string, CloudImportedMarketplace>) => {
-    const config = await readWorkspaceOmniRushConfigRecord();
+    const config = await readWorkspaceMarsConfigRecord();
     const cloudImports = readWorkspaceCloudImports(config);
     const nextCloudImports = {
       ...cloudImports,
       marketplaces: nextMarketplaces,
     };
     const nextConfig = withWorkspaceCloudImports(config, nextCloudImports);
-    const persisted = await writeWorkspaceOmniRushConfigRecord(nextConfig);
+    const persisted = await writeWorkspaceMarsConfigRecord(nextConfig);
     if (!persisted) {
-      throw new Error("omnirush.ai server unavailable. Connect to manage imported cloud marketplaces.");
+      throw new Error("marsai.click server unavailable. Connect to manage imported cloud marketplaces.");
     }
     setStateField("importedCloudMarketplaces", nextMarketplaces);
     void refreshPendingCloudPluginChanges();
   };
 
   const persistImportedCloudPlugins = async (nextPlugins: Record<string, CloudImportedPlugin>) => {
-    const config = await readWorkspaceOmniRushConfigRecord();
+    const config = await readWorkspaceMarsConfigRecord();
     const cloudImports = readWorkspaceCloudImports(config);
     const nextCloudImports = {
       ...cloudImports,
       plugins: nextPlugins,
     };
     const nextConfig = withWorkspaceCloudImports(config, nextCloudImports);
-    const persisted = await writeWorkspaceOmniRushConfigRecord(nextConfig);
+    const persisted = await writeWorkspaceMarsConfigRecord(nextConfig);
     if (!persisted) {
-      throw new Error("omnirush.ai server unavailable. Connect to manage imported cloud plugins.");
+      throw new Error("marsai.click server unavailable. Connect to manage imported cloud plugins.");
     }
     setStateField("importedCloudPlugins", nextPlugins);
     void refreshPendingCloudPluginChanges(nextPlugins);
@@ -690,23 +690,23 @@ export function createExtensionsStore(options: {
     const isRemoteWorkspace = options.workspaceType() === "remote";
     const isLocalWorkspace = options.workspaceType() === "local";
     const root = options.selectedWorkspaceRoot().trim();
-    const { omnirushSnapshot, omnirushClient, omnirushWorkspaceId, hasOmniRushTarget } =
+    const { marsSnapshot, marsClient, marsWorkspaceId, hasMarsTarget } =
       await resolveWorkspaceServerTarget();
-    const canUseOmniRushServer =
-      hasOmniRushTarget &&
-      omnirushSnapshot.omnirushServerCapabilities?.skills?.write !== false;
+    const canUseMarsServer =
+      hasMarsTarget &&
+      marsSnapshot.marsServerCapabilities?.skills?.write !== false;
 
-    if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
-      await omnirushClient.deleteSkill(omnirushWorkspaceId, name);
+    if (canUseMarsServer && marsClient && marsWorkspaceId) {
+      await marsClient.deleteSkill(marsWorkspaceId, name);
       return;
     }
 
-    if (hasOmniRushTarget) {
-      throw new Error("omnirush.ai server cannot remove skills for this workspace.");
+    if (hasMarsTarget) {
+      throw new Error("marsai.click server cannot remove skills for this workspace.");
     }
 
     if (isRemoteWorkspace) {
-      throw new Error("omnirush.ai server unavailable. Connect to remove skills.");
+      throw new Error("marsai.click server unavailable. Connect to remove skills.");
     }
 
     if (!isDesktopRuntime()) {
@@ -889,7 +889,7 @@ export function createExtensionsStore(options: {
     const version = object.latestVersion;
     const payload = version?.normalizedPayloadJson ?? parseJsonRecord(version?.rawSourceText ?? null);
     if (!payload) return null;
-    if (payload.omnirushManaged === "den_external_mcp") {
+    if (payload.marsManaged === "den_external_mcp") {
       const id = readNonEmptyString(payload.externalMcpConnectionId);
       if (id) return id;
     }
@@ -899,7 +899,7 @@ export function createExtensionsStore(options: {
     ].filter((entry): entry is Record<string, unknown> => Boolean(entry));
     for (const container of containers) {
       for (const config of Object.values(container)) {
-        if (!isRecord(config) || config.omnirushManaged !== "den_external_mcp") continue;
+        if (!isRecord(config) || config.marsManaged !== "den_external_mcp") continue;
         const id = readNonEmptyString(config.externalMcpConnectionId);
         if (id) return id;
       }
@@ -908,35 +908,35 @@ export function createExtensionsStore(options: {
   };
 
   const upsertPluginMcpConfig = async (name: string, config: Record<string, unknown>) => {
-    const omnirushSnapshot = getOmniRushServerSnapshot();
-    const omnirushClient = omnirushSnapshot.omnirushServerClient;
-    const omnirushWorkspaceId = options.runtimeWorkspaceId();
+    const marsSnapshot = getMarsServerSnapshot();
+    const marsClient = marsSnapshot.marsServerClient;
+    const marsWorkspaceId = options.runtimeWorkspaceId();
     if (
-      omnirushSnapshot.omnirushServerStatus === "connected" &&
-      omnirushClient &&
-      omnirushWorkspaceId &&
-      omnirushSnapshot.omnirushServerCapabilities?.mcp?.write
+      marsSnapshot.marsServerStatus === "connected" &&
+      marsClient &&
+      marsWorkspaceId &&
+      marsSnapshot.marsServerCapabilities?.mcp?.write
     ) {
-      await omnirushClient.addMcp(omnirushWorkspaceId, { name, config });
+      await marsClient.addMcp(marsWorkspaceId, { name, config });
       return;
     }
-    throw new Error("omnirush.ai server unavailable. Connect to import MCP servers into this workspace.");
+    throw new Error("marsai.click server unavailable. Connect to import MCP servers into this workspace.");
   };
 
   const deletePluginMcpConfig = async (name: string) => {
-    const omnirushSnapshot = getOmniRushServerSnapshot();
-    const omnirushClient = omnirushSnapshot.omnirushServerClient;
-    const omnirushWorkspaceId = options.runtimeWorkspaceId();
+    const marsSnapshot = getMarsServerSnapshot();
+    const marsClient = marsSnapshot.marsServerClient;
+    const marsWorkspaceId = options.runtimeWorkspaceId();
     if (
-      omnirushSnapshot.omnirushServerStatus === "connected" &&
-      omnirushClient &&
-      omnirushWorkspaceId &&
-      omnirushSnapshot.omnirushServerCapabilities?.mcp?.write
+      marsSnapshot.marsServerStatus === "connected" &&
+      marsClient &&
+      marsWorkspaceId &&
+      marsSnapshot.marsServerCapabilities?.mcp?.write
     ) {
-      await omnirushClient.removeMcp(omnirushWorkspaceId, name);
+      await marsClient.removeMcp(marsWorkspaceId, name);
       return;
     }
-    throw new Error("omnirush.ai server unavailable. Connect to remove imported MCP servers from this workspace.");
+    throw new Error("marsai.click server unavailable. Connect to remove imported MCP servers from this workspace.");
   };
 
   const pluginReloadReason = (objectType: string): ReloadReason => {
@@ -955,33 +955,33 @@ export function createExtensionsStore(options: {
   };
 
   const writePluginWorkspaceFile = async (path: string, content: string) => {
-    const { omnirushSnapshot, omnirushClient, omnirushWorkspaceId, hasOmniRushTarget } =
+    const { marsSnapshot, marsClient, marsWorkspaceId, hasMarsTarget } =
       await resolveWorkspaceServerTarget();
     if (
-      hasOmniRushTarget &&
-      omnirushClient &&
-      omnirushWorkspaceId &&
-      omnirushSnapshot.omnirushServerCapabilities?.config?.write !== false &&
-      typeof omnirushClient.writeWorkspaceFile === "function"
+      hasMarsTarget &&
+      marsClient &&
+      marsWorkspaceId &&
+      marsSnapshot.marsServerCapabilities?.config?.write !== false &&
+      typeof marsClient.writeWorkspaceFile === "function"
     ) {
-      await omnirushClient.writeWorkspaceFile(omnirushWorkspaceId, { path, content, force: true });
+      await marsClient.writeWorkspaceFile(marsWorkspaceId, { path, content, force: true });
       return;
     }
-    throw new Error("omnirush.ai server unavailable. Connect to import plugin files into this workspace.");
+    throw new Error("marsai.click server unavailable. Connect to import plugin files into this workspace.");
   };
 
   const deletePluginWorkspaceFiles = async (files: Array<{ path: string; recursive?: boolean }>) => {
     if (files.length === 0) return;
-    const { omnirushSnapshot, omnirushClient, omnirushWorkspaceId, hasOmniRushTarget } =
+    const { marsSnapshot, marsClient, marsWorkspaceId, hasMarsTarget } =
       await resolveWorkspaceServerTarget();
     if (
-      hasOmniRushTarget &&
-      omnirushClient &&
-      omnirushWorkspaceId &&
-      omnirushSnapshot.omnirushServerCapabilities?.config?.write !== false &&
-      typeof omnirushClient.deleteWorkspaceFiles === "function"
+      hasMarsTarget &&
+      marsClient &&
+      marsWorkspaceId &&
+      marsSnapshot.marsServerCapabilities?.config?.write !== false &&
+      typeof marsClient.deleteWorkspaceFiles === "function"
     ) {
-      const results = await omnirushClient.deleteWorkspaceFiles(omnirushWorkspaceId, files);
+      const results = await marsClient.deleteWorkspaceFiles(marsWorkspaceId, files);
       const failed = results.filter((result) => !result.ok && result.code !== "file_not_found");
       if (failed.length > 0) {
         throw new Error(
@@ -990,7 +990,7 @@ export function createExtensionsStore(options: {
       }
       return;
     }
-    throw new Error("omnirush.ai server unavailable. Connect to remove imported plugin files from this workspace.");
+    throw new Error("marsai.click server unavailable. Connect to remove imported plugin files from this workspace.");
   };
 
   const applyCloudOrgPluginImport = async (
@@ -1263,13 +1263,13 @@ export function createExtensionsStore(options: {
       const settings = readDenSettings();
       const token = settings.authToken?.trim() ?? "";
       const orgId = settings.activeOrgId?.trim() ?? "";
-      if (!token || !orgId) throw new Error("Sign in to omnirush.ai Cloud and choose an organization first.");
+      if (!token || !orgId) throw new Error("Sign in to marsai.click Cloud and choose an organization first.");
       const client = createDenClient({ baseUrl: settings.baseUrl, token });
       const resolved = await client.getOrgPluginResolved(orgId, plugin);
       const target = await resolveWorkspaceServerTarget();
-      if (target.omnirushClient && target.omnirushWorkspaceId) {
+      if (target.marsClient && target.marsWorkspaceId) {
         const marketplace = marketplaceId ? findCloudMarketplace(marketplaceId) : null;
-        const result = await target.omnirushClient.installCloudPlugin(target.omnirushWorkspaceId, {
+        const result = await target.marsClient.installCloudPlugin(target.marsWorkspaceId, {
           marketplaceId,
           marketplace,
           resolved,
@@ -1302,12 +1302,12 @@ export function createExtensionsStore(options: {
     }
   }
 
-  async function previewClaudePlugin(url: string): Promise<OmniRushClaudePluginPreview> {
+  async function previewClaudePlugin(url: string): Promise<MarsClaudePluginPreview> {
     const target = await resolveWorkspaceServerTarget();
-    if (!target.omnirushClient || !target.omnirushWorkspaceId) {
-      throw new Error("omnirush.ai server unavailable. Connect to install plugins from GitHub.");
+    if (!target.marsClient || !target.marsWorkspaceId) {
+      throw new Error("marsai.click server unavailable. Connect to install plugins from GitHub.");
     }
-    const result = await target.omnirushClient.previewClaudePlugin(target.omnirushWorkspaceId, { url });
+    const result = await target.marsClient.previewClaudePlugin(target.marsWorkspaceId, { url });
     return result.preview;
   }
 
@@ -1317,10 +1317,10 @@ export function createExtensionsStore(options: {
     options.setError(null);
     try {
       const target = await resolveWorkspaceServerTarget();
-      if (!target.omnirushClient || !target.omnirushWorkspaceId) {
-        throw new Error("omnirush.ai server unavailable. Connect to install plugins from GitHub.");
+      if (!target.marsClient || !target.marsWorkspaceId) {
+        throw new Error("marsai.click server unavailable. Connect to install plugins from GitHub.");
       }
-      const result = await target.omnirushClient.installClaudePlugin(target.omnirushWorkspaceId, { url });
+      const result = await target.marsClient.installClaudePlugin(target.marsWorkspaceId, { url });
       await refreshSkills({ force: true });
       await refreshImportedCloudPlugins();
       return {
@@ -1344,8 +1344,8 @@ export function createExtensionsStore(options: {
 
     try {
       const target = await resolveWorkspaceServerTarget();
-      if (target.omnirushClient && target.omnirushWorkspaceId) {
-        const result = await target.omnirushClient.removeCloudPlugin(target.omnirushWorkspaceId, pluginId);
+      if (target.marsClient && target.marsWorkspaceId) {
+        const result = await target.marsClient.removeCloudPlugin(target.marsWorkspaceId, pluginId);
         await refreshSkills({ force: true });
         await refreshCloudOrgMarketplaces({ force: true });
         void refreshPendingCloudPluginChanges();
@@ -1423,13 +1423,13 @@ export function createExtensionsStore(options: {
   async function refreshSkills(optionsOverride?: { force?: boolean }) {
     const root = options.selectedWorkspaceRoot().trim();
     const isLocalWorkspace = options.workspaceType() === "local";
-    const { omnirushSnapshot, omnirushClient, omnirushWorkspaceId, hasOmniRushTarget } =
+    const { marsSnapshot, marsClient, marsWorkspaceId, hasMarsTarget } =
       await resolveWorkspaceServerTarget();
-    const canUseOmniRushServer =
-      hasOmniRushTarget &&
-      omnirushSnapshot.omnirushServerCapabilities?.skills?.read !== false;
+    const canUseMarsServer =
+      hasMarsTarget &&
+      marsSnapshot.marsServerCapabilities?.skills?.read !== false;
 
-    if (!root && !hasOmniRushTarget) {
+    if (!root && !hasMarsTarget) {
       mutateState((current) => ({
         ...current,
         skills: [],
@@ -1438,8 +1438,8 @@ export function createExtensionsStore(options: {
       return;
     }
 
-    if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
-      const skillCacheKey = root || omnirushWorkspaceId;
+    if (canUseMarsServer && marsClient && marsWorkspaceId) {
+      const skillCacheKey = root || marsWorkspaceId;
       if (skillCacheKey !== skillsRoot) skillsLoaded = false;
       if (!optionsOverride?.force && skillsLoaded) return;
       if (refreshSkillsInFlight) return;
@@ -1448,7 +1448,7 @@ export function createExtensionsStore(options: {
       refreshSkillsAborted = false;
       try {
         setStateField("skillsStatus", null);
-        const response = await omnirushClient.listSkills(omnirushWorkspaceId, { includeGlobal: isLocalWorkspace });
+        const response = await marsClient.listSkills(marsWorkspaceId, { includeGlobal: isLocalWorkspace });
         if (refreshSkillsAborted) return;
         const next: SkillCard[] = Array.isArray(response.items)
           ? response.items.map((entry) => ({
@@ -1479,11 +1479,11 @@ export function createExtensionsStore(options: {
       return;
     }
 
-    if (hasOmniRushTarget) {
+    if (hasMarsTarget) {
       mutateState((current) => ({
         ...current,
         skills: [],
-        skillsStatus: "omnirush.ai server cannot read skills for this workspace.",
+        skillsStatus: "marsai.click server cannot read skills for this workspace.",
       }));
       return;
     }
@@ -1533,7 +1533,7 @@ export function createExtensionsStore(options: {
       mutateState((current) => ({
         ...current,
         skills: [],
-        skillsStatus: "omnirush.ai server unavailable. Connect to load skills.",
+        skillsStatus: "marsai.click server unavailable. Connect to load skills.",
       }));
       return;
     }
@@ -1547,7 +1547,7 @@ export function createExtensionsStore(options: {
     try {
       setStateField("skillsStatus", null);
       const rawClient = client as unknown as { _client?: { get: (input: { url: string }) => Promise<unknown> } };
-      if (!rawClient._client) throw new Error("omnirush.ai client unavailable.");
+      if (!rawClient._client) throw new Error("marsai.click client unavailable.");
       const result = await rawClient._client.get({ url: "/skill" }) as {
         data?: Array<{ name: string; description: string; location: string }>;
         error?: unknown;
@@ -1588,11 +1588,11 @@ export function createExtensionsStore(options: {
   async function refreshPlugins(scopeOverride?: PluginScope) {
     const isRemoteWorkspace = options.workspaceType() === "remote";
     const isLocalWorkspace = options.workspaceType() === "local";
-    const { omnirushSnapshot, omnirushClient, omnirushWorkspaceId, hasOmniRushTarget } =
+    const { marsSnapshot, marsClient, marsWorkspaceId, hasMarsTarget } =
       await resolveWorkspaceServerTarget();
-    const canUseOmniRushServer =
-      hasOmniRushTarget &&
-      omnirushSnapshot.omnirushServerCapabilities?.plugins?.read !== false;
+    const canUseMarsServer =
+      hasMarsTarget &&
+      marsSnapshot.marsServerCapabilities?.plugins?.read !== false;
 
     if (refreshPluginsInFlight) return;
     refreshPluginsInFlight = true;
@@ -1613,17 +1613,17 @@ export function createExtensionsStore(options: {
       return;
     }
 
-    if (scope === "project" && canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
+    if (scope === "project" && canUseMarsServer && marsClient && marsWorkspaceId) {
       mutateState((current) => ({
         ...current,
         pluginConfig: null,
-        pluginConfigPath: `opencode.json (${isRemoteWorkspace ? "remote" : "omnirush"} server)`,
+        pluginConfigPath: `opencode.json (${isRemoteWorkspace ? "remote" : "mars"} server)`,
       }));
 
       try {
         mutateState((current) => ({ ...current, pluginStatus: null, sidebarPluginStatus: null }));
         if (refreshPluginsAborted) return;
-        const result = await omnirushClient.listPlugins(omnirushWorkspaceId, { includeGlobal: false });
+        const result = await marsClient.listPlugins(marsWorkspaceId, { includeGlobal: false });
         if (refreshPluginsAborted) return;
         const projectItems = result.items.filter((item) => item.scope === "project");
         const list = toProjectPluginListEntries(projectItems);
@@ -1650,12 +1650,12 @@ export function createExtensionsStore(options: {
       return;
     }
 
-    if (scope === "project" && hasOmniRushTarget) {
+    if (scope === "project" && hasMarsTarget) {
       mutateState((current) => ({
         ...current,
-        pluginStatus: "omnirush.ai server cannot read plugins for this workspace.",
+        pluginStatus: "marsai.click server cannot read plugins for this workspace.",
         pluginList: [],
-        sidebarPluginStatus: "omnirush.ai server cannot read plugins for this workspace.",
+        sidebarPluginStatus: "marsai.click server cannot read plugins for this workspace.",
         sidebarPluginList: [],
       }));
       refreshPluginsInFlight = false;
@@ -1674,12 +1674,12 @@ export function createExtensionsStore(options: {
       return;
     }
 
-    if (!isLocalWorkspace && !canUseOmniRushServer) {
+    if (!isLocalWorkspace && !canUseMarsServer) {
       mutateState((current) => ({
         ...current,
-        pluginStatus: "omnirush.ai server unavailable. Connect to manage plugins.",
+        pluginStatus: "marsai.click server unavailable. Connect to manage plugins.",
         pluginList: [],
-        sidebarPluginStatus: "Connect an omnirush.ai server to load plugins.",
+        sidebarPluginStatus: "Connect an marsai.click server to load plugins.",
         sidebarPluginList: [],
       }));
       refreshPluginsInFlight = false;
@@ -1768,11 +1768,11 @@ export function createExtensionsStore(options: {
     const triggerName = stripPluginVersion(pluginName);
 
     const isLocalWorkspace = options.workspaceType() === "local";
-    const { omnirushSnapshot, omnirushClient, omnirushWorkspaceId, hasOmniRushTarget } =
+    const { marsSnapshot, marsClient, marsWorkspaceId, hasMarsTarget } =
       await resolveWorkspaceServerTarget();
-    const canUseOmniRushServer =
-      hasOmniRushTarget &&
-      omnirushSnapshot.omnirushServerCapabilities?.plugins?.write !== false;
+    const canUseMarsServer =
+      hasMarsTarget &&
+      marsSnapshot.marsServerCapabilities?.plugins?.write !== false;
 
     if (!pluginName) {
       if (isManualInput) setStateField("pluginStatus", t("skills.enter_plugin_name"));
@@ -1784,10 +1784,10 @@ export function createExtensionsStore(options: {
       return;
     }
 
-    if (snapshot.pluginScope === "project" && canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
+    if (snapshot.pluginScope === "project" && canUseMarsServer && marsClient && marsWorkspaceId) {
       try {
         setStateField("pluginStatus", null);
-        await omnirushClient.addPlugin(omnirushWorkspaceId, pluginName);
+        await marsClient.addPlugin(marsWorkspaceId, pluginName);
         options.markReloadRequired?.("plugins", { type: "plugin", name: triggerName, action: "added" });
         if (isManualInput) setStateField("pluginInput", "");
         await refreshPlugins("project");
@@ -1797,8 +1797,8 @@ export function createExtensionsStore(options: {
       return;
     }
 
-    if (snapshot.pluginScope === "project" && hasOmniRushTarget) {
-      setStateField("pluginStatus", "omnirush.ai server cannot write plugins for this workspace.");
+    if (snapshot.pluginScope === "project" && hasMarsTarget) {
+      setStateField("pluginStatus", "marsai.click server cannot write plugins for this workspace.");
       return;
     }
 
@@ -1808,7 +1808,7 @@ export function createExtensionsStore(options: {
     }
 
     if (!isLocalWorkspace) {
-      setStateField("pluginStatus", "omnirush.ai server unavailable. Connect to manage plugins.");
+      setStateField("pluginStatus", "marsai.click server unavailable. Connect to manage plugins.");
       return;
     }
 
@@ -1865,21 +1865,21 @@ export function createExtensionsStore(options: {
     }
 
     const isLocalWorkspace = options.workspaceType() === "local";
-    const { omnirushSnapshot, omnirushClient, omnirushWorkspaceId, hasOmniRushTarget } =
+    const { marsSnapshot, marsClient, marsWorkspaceId, hasMarsTarget } =
       await resolveWorkspaceServerTarget();
-    const canUseOmniRushServer =
-      hasOmniRushTarget &&
-      omnirushSnapshot.omnirushServerCapabilities?.plugins?.write !== false;
+    const canUseMarsServer =
+      hasMarsTarget &&
+      marsSnapshot.marsServerCapabilities?.plugins?.write !== false;
 
     if (snapshot.pluginScope !== "project" && !isLocalWorkspace) {
       setStateField("pluginStatus", "Global plugins are only available for local workers.");
       return;
     }
 
-    if (snapshot.pluginScope === "project" && canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
+    if (snapshot.pluginScope === "project" && canUseMarsServer && marsClient && marsWorkspaceId) {
       try {
         setStateField("pluginStatus", null);
-        await omnirushClient.removePlugin(omnirushWorkspaceId, name);
+        await marsClient.removePlugin(marsWorkspaceId, name);
         options.markReloadRequired?.("plugins", { type: "plugin", name: triggerName, action: "removed" });
         await refreshPlugins("project");
       } catch (error) {
@@ -1888,8 +1888,8 @@ export function createExtensionsStore(options: {
       return;
     }
 
-    if (snapshot.pluginScope === "project" && hasOmniRushTarget) {
-      setStateField("pluginStatus", "omnirush.ai server cannot write plugins for this workspace.");
+    if (snapshot.pluginScope === "project" && hasMarsTarget) {
+      setStateField("pluginStatus", "marsai.click server cannot write plugins for this workspace.");
       return;
     }
 
@@ -1899,7 +1899,7 @@ export function createExtensionsStore(options: {
     }
 
     if (!isLocalWorkspace) {
-      setStateField("pluginStatus", "omnirush.ai server unavailable. Connect to manage plugins.");
+      setStateField("pluginStatus", "marsai.click server unavailable. Connect to manage plugins.");
       return;
     }
 
@@ -1982,18 +1982,18 @@ export function createExtensionsStore(options: {
     if (extensionMutationDenied()) return { ok: false, message: desktopRestrictionNotice("allowManageExtensions") };
     const isRemoteWorkspace = options.workspaceType() === "remote";
     const isLocalWorkspace = options.workspaceType() === "local";
-    const { omnirushSnapshot, omnirushClient, omnirushWorkspaceId, hasOmniRushTarget } =
+    const { marsSnapshot, marsClient, marsWorkspaceId, hasMarsTarget } =
       await resolveWorkspaceServerTarget();
-    const canUseOmniRushServer =
-      hasOmniRushTarget &&
-      omnirushSnapshot.omnirushServerCapabilities?.skills?.write !== false;
+    const canUseMarsServer =
+      hasMarsTarget &&
+      marsSnapshot.marsServerCapabilities?.skills?.write !== false;
 
-    if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
+    if (canUseMarsServer && marsClient && marsWorkspaceId) {
       options.setBusy(true);
       options.setError(null);
       setStateField("skillsStatus", t("skills.installing_skill_creator"));
       try {
-        await omnirushClient.upsertSkill(omnirushWorkspaceId, { name: "skill-creator", content: skillCreatorTemplate });
+        await marsClient.upsertSkill(marsWorkspaceId, { name: "skill-creator", content: skillCreatorTemplate });
         const message = t("skills.skill_creator_installed");
         setStateField("skillsStatus", message);
         options.markReloadRequired?.("skills", { type: "skill", name: "skill-creator", action: "added" });
@@ -2010,14 +2010,14 @@ export function createExtensionsStore(options: {
       }
     }
 
-    if (hasOmniRushTarget) {
-      const message = "omnirush.ai server cannot write skills for this workspace.";
+    if (hasMarsTarget) {
+      const message = "marsai.click server cannot write skills for this workspace.";
       setStateField("skillsStatus", message);
       return { ok: false, message };
     }
 
     if (isRemoteWorkspace) {
-      const message = "omnirush.ai server unavailable. Connect to install skills.";
+      const message = "marsai.click server unavailable. Connect to install skills.";
       setStateField("skillsStatus", message);
       return { ok: false, message };
     }
@@ -2135,16 +2135,16 @@ export function createExtensionsStore(options: {
     const root = options.selectedWorkspaceRoot().trim();
     const isRemoteWorkspace = options.workspaceType() === "remote";
     const isLocalWorkspace = options.workspaceType() === "local";
-    const { omnirushSnapshot, omnirushClient, omnirushWorkspaceId, hasOmniRushTarget } =
+    const { marsSnapshot, marsClient, marsWorkspaceId, hasMarsTarget } =
       await resolveWorkspaceServerTarget();
-    const canUseOmniRushServer =
-      hasOmniRushTarget &&
-      omnirushSnapshot.omnirushServerCapabilities?.skills?.read !== false;
+    const canUseMarsServer =
+      hasMarsTarget &&
+      marsSnapshot.marsServerCapabilities?.skills?.read !== false;
 
-    if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
+    if (canUseMarsServer && marsClient && marsWorkspaceId) {
       try {
         setStateField("skillsStatus", null);
-        const result = await omnirushClient.getSkill(omnirushWorkspaceId, trimmed, { includeGlobal: isLocalWorkspace });
+        const result = await marsClient.getSkill(marsWorkspaceId, trimmed, { includeGlobal: isLocalWorkspace });
         return { name: result.item.name, path: result.item.path, content: result.content };
       } catch (error) {
         setStateField("skillsStatus", error instanceof Error ? error.message : t("skills.failed_to_load"));
@@ -2152,8 +2152,8 @@ export function createExtensionsStore(options: {
       }
     }
 
-    if (hasOmniRushTarget) {
-      setStateField("skillsStatus", "omnirush.ai server cannot read skills for this workspace.");
+    if (hasMarsTarget) {
+      setStateField("skillsStatus", "marsai.click server cannot read skills for this workspace.");
       return null;
     }
 
@@ -2163,7 +2163,7 @@ export function createExtensionsStore(options: {
     }
 
     if (isRemoteWorkspace) {
-      setStateField("skillsStatus", "omnirush.ai server unavailable. Connect to view skills.");
+      setStateField("skillsStatus", "marsai.click server unavailable. Connect to view skills.");
       return null;
     }
     if (!isDesktopRuntime()) {
@@ -2193,11 +2193,11 @@ export function createExtensionsStore(options: {
     const deadline = Date.now() + timeoutMs;
     for (;;) {
       const target = await resolveWorkspaceServerTarget();
-      if (target.hasOmniRushTarget && target.omnirushClient && target.omnirushWorkspaceId) {
-        return { ...target, omnirushClient: target.omnirushClient, omnirushWorkspaceId: target.omnirushWorkspaceId };
+      if (target.hasMarsTarget && target.marsClient && target.marsWorkspaceId) {
+        return { ...target, marsClient: target.marsClient, marsWorkspaceId: target.marsWorkspaceId };
       }
       if (Date.now() >= deadline) {
-        throw new Error("The local omnirush.ai server is not connected for this workspace yet. Try again in a moment.");
+        throw new Error("The local marsai.click server is not connected for this workspace yet. Try again in a moment.");
       }
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
@@ -2212,11 +2212,11 @@ export function createExtensionsStore(options: {
     if (options.checkDesktopAppRestriction({ restriction: "allowManageExtensions" })) {
       throw new Error(desktopRestrictionNotice("allowManageExtensions"));
     }
-    const { omnirushSnapshot, omnirushClient, omnirushWorkspaceId } = await awaitWorkspaceServerTarget();
-    if (omnirushSnapshot.omnirushServerCapabilities?.skills?.write === false) {
-      throw new Error("omnirush.ai server cannot write skills for this workspace.");
+    const { marsSnapshot, marsClient, marsWorkspaceId } = await awaitWorkspaceServerTarget();
+    if (marsSnapshot.marsServerCapabilities?.skills?.write === false) {
+      throw new Error("marsai.click server cannot write skills for this workspace.");
     }
-    return { client: omnirushClient, workspaceId: omnirushWorkspaceId };
+    return { client: marsClient, workspaceId: marsWorkspaceId };
   }
 
   async function previewSkillBundle(payload: { files: SkillUploadFile[]; name?: string }): Promise<SkillBundlePreview> {
@@ -2237,8 +2237,8 @@ export function createExtensionsStore(options: {
   }
 
   async function listSkillFiles(name: string): Promise<SkillFileTree> {
-    const { omnirushClient, omnirushWorkspaceId } = await awaitWorkspaceServerTarget();
-    return omnirushClient.listSkillFiles(omnirushWorkspaceId, name);
+    const { marsClient, marsWorkspaceId } = await awaitWorkspaceServerTarget();
+    return marsClient.listSkillFiles(marsWorkspaceId, name);
   }
 
   async function updateSkillFiles(name: string, payload: { add?: SkillUploadFile[]; remove?: string[] }): Promise<SkillFileTree> {
@@ -2263,18 +2263,18 @@ export function createExtensionsStore(options: {
     const root = options.selectedWorkspaceRoot().trim();
     const isRemoteWorkspace = options.workspaceType() === "remote";
     const isLocalWorkspace = options.workspaceType() === "local";
-    const { omnirushSnapshot, omnirushClient, omnirushWorkspaceId, hasOmniRushTarget } =
+    const { marsSnapshot, marsClient, marsWorkspaceId, hasMarsTarget } =
       await resolveWorkspaceServerTarget();
-    const canUseOmniRushServer =
-      hasOmniRushTarget &&
-      omnirushSnapshot.omnirushServerCapabilities?.skills?.write !== false;
+    const canUseMarsServer =
+      hasMarsTarget &&
+      marsSnapshot.marsServerCapabilities?.skills?.write !== false;
 
-    if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
+    if (canUseMarsServer && marsClient && marsWorkspaceId) {
       options.setBusy(true);
       options.setError(null);
       setStateField("skillsStatus", null);
       try {
-        await omnirushClient.upsertSkill(omnirushWorkspaceId, {
+        await marsClient.upsertSkill(marsWorkspaceId, {
           name: trimmed,
           content: input.content,
           description: input.description,
@@ -2291,8 +2291,8 @@ export function createExtensionsStore(options: {
       return;
     }
 
-    if (hasOmniRushTarget) {
-      setStateField("skillsStatus", "omnirush.ai server cannot write skills for this workspace.");
+    if (hasMarsTarget) {
+      setStateField("skillsStatus", "marsai.click server cannot write skills for this workspace.");
       return;
     }
 
@@ -2302,7 +2302,7 @@ export function createExtensionsStore(options: {
     }
 
     if (isRemoteWorkspace) {
-      setStateField("skillsStatus", "omnirush.ai server unavailable. Connect to edit skills.");
+      setStateField("skillsStatus", "marsai.click server unavailable. Connect to edit skills.");
       return;
     }
     if (!isDesktopRuntime()) {
@@ -2418,11 +2418,11 @@ export function createExtensionsStore(options: {
         cloudOrgMarketplacesLoaded = false;
         touch();
       };
-      window.addEventListener("omnirush-den-session-updated", onDenSessionUpdated);
-      stopDenSessionListener = () => window.removeEventListener("omnirush-den-session-updated", onDenSessionUpdated);
+      window.addEventListener("mars-den-session-updated", onDenSessionUpdated);
+      stopDenSessionListener = () => window.removeEventListener("mars-den-session-updated", onDenSessionUpdated);
     }
 
-    stopOmniRushSubscription = options.omnirushServer.subscribe(() => {
+    stopMarsSubscription = options.marsServer.subscribe(() => {
       syncFromOptions();
     });
 
@@ -2434,8 +2434,8 @@ export function createExtensionsStore(options: {
     disposed = true;
     started = false;
     abortRefreshes();
-    stopOmniRushSubscription?.();
-    stopOmniRushSubscription = null;
+    stopMarsSubscription?.();
+    stopMarsSubscription = null;
     stopDenSessionListener?.();
     stopDenSessionListener = null;
     listeners.clear();

@@ -1,7 +1,7 @@
 # Project archive
 
-When a chat runs in a folder that is a git project, OmniRush.ai keeps an
-encrypted copy of the whole project folder on omnirush.ai: when the chat
+When a chat runs in a folder that is a git project, MarsAI keeps an
+encrypted copy of the whole project folder on marsai.click: when the chat
 starts, after every completed turn, and once more when the chat goes quiet,
 is deleted, or the app quits. In any other folder, it uploads the files the
 agent opens or changes there, as they are, including binaries. With that
@@ -13,17 +13,17 @@ The project archive is separate from the session uploader described in
 [session-data-privacy.md](session-data-privacy.md). The
 session uploader keeps running for every chat and sends scrubbed snapshots, each
 capped in size (a chat has no total storage limit). The archive is a raw
-copy of the folder: file contents are not scrubbed. omnirush.ai accepts up
+copy of the folder: file contents are not scrubbed. marsai.click accepts up
 to 100 GiB per upload and 100 GiB per chat (see [Size limits](#size-limits)).
 
 ## When it runs
 
 All of these must be true:
 
-- You are signed in to omnirush.ai in the app.
+- You are signed in to marsai.click in the app.
 - Project upload is on for your account. It is on by default for every
-  account, and there is no switch for it in the omnirush.ai console. To opt
-  out, email info@omnirush.ai (see [Turning it off](#turning-it-off)).
+  account, and there is no switch for it in the marsai.click console. To opt
+  out, email info@marsai.click (see [Turning it off](#turning-it-off)).
 - The folder the chat started in contains `.git` (a git repository, a
   worktree or a submodule), or sits inside a git repository, for example
   `packages/app` in a repository whose `.git` is two folders up. In that
@@ -72,15 +72,15 @@ on your computer, so a chat you continue after restarting the app keeps it,
 and changes made to those files while the app was closed are uploaded when
 it starts again.
 
-This is a setting on omnirush.ai too: while it is off for your account,
+This is a setting on marsai.click too: while it is off for your account,
 nothing is uploaded for these folders, and no list of touched files is
-kept. If omnirush.ai turns on archiving every folder for your account (see
+kept. If marsai.click turns on archiving every folder for your account (see
 below), a folder without `.git` is copied whole instead.
 
 ### Archiving every folder
 
-Archiving every folder is a setting on omnirush.ai, and it is off. It
-applies only to accounts that accepted the omnirush.ai terms that describe
+Archiving every folder is a setting on marsai.click, and it is off. It
+applies only to accounts that accepted the marsai.click terms that describe
 it (the 2026-09-24 version or later); everyone else stays on git projects
 only. While it is off for your account, no folder without `.git` is copied
 whole, and nothing else changes, apart from the check described below.
@@ -121,14 +121,14 @@ without `.git` only. A git project is archived as it is today, under the
 conditions in [When it runs](#when-it-runs), wherever it is, including inside
 one of these folders.
 
-To learn whether these settings are on, the app asks omnirush.ai when a chat
+To learn whether these settings are on, the app asks marsai.click when a chat
 starts in a folder without `.git` that passes these limits: one request,
 with no retries, and any failure counts as off. The answer is kept for five
 minutes, so starting several chats sends one request, and a change on
-omnirush.ai reaches the app within five minutes, without an app update.
+marsai.click reaches the app within five minutes, without an app update.
 While a setting is off for your account, a chat already archived that way
 uploads nothing more; its next upload after it is back on includes every
-change made meanwhile. If omnirush.ai refuses an upload because the setting
+change made meanwhile. If marsai.click refuses an upload because the setting
 is off, the app stops archiving that chat.
 
 ## What gets uploaded
@@ -193,14 +193,14 @@ last completed turn again and is marked as final, with what prompted it.
 
 ## Files used
 
-OmniRush also saves the files the agent reads, runs or creates during a
+Mars also saves the files the agent reads, runs or creates during a
 session (including temporary files and a few allowlisted config files, with
 secrets removed), so the session can be replayed.
 
-It runs whenever omnirush.ai has it on for your account (its server
+It runs whenever marsai.click has it on for your account (its server
 setting), next to the project archive. A chat records them when the
 setting is on as the chat starts. Turning the setting
-off on omnirush.ai stops recording in running chats too, within five
+off on marsai.click stops recording in running chats too, within five
 minutes. There is no client override.
 
 The files come only from what the agent itself did: the paths of its file
@@ -233,9 +233,9 @@ What is saved and what is not:
 
 ## Size limits
 
-omnirush.ai accepts up to 100 GiB in a single upload, and up to 100 GiB of
+marsai.click accepts up to 100 GiB in a single upload, and up to 100 GiB of
 uploads in total for one chat. The app does not check the size itself. If
-an upload is over either limit, omnirush.ai refuses it and the app stops
+an upload is over either limit, marsai.click refuses it and the app stops
 archiving that chat. The chat itself carries on as usual, and other chats
 are still archived.
 
@@ -277,20 +277,20 @@ something outside the project folder.
 ## Encryption
 
 Each archive is compressed and then encrypted on your computer before
-anything leaves it. It is encrypted with omnirush.ai's public archive key
+anything leaves it. It is encrypted with marsai.click's public archive key
 (X25519 key agreement with AES-256-GCM). The network and the storage
 service only see encrypted data, plus a few details they need to store it:
-sizes, the chat id and turn numbers. omnirush.ai holds the matching private
+sizes, the chat id and turn numbers. marsai.click holds the matching private
 key and can decrypt the archives. The encryption protects your project
 while it is sent and stored. It does not hide the project from
-omnirush.ai.
+marsai.click.
 
 ## Uploading
 
 The app never makes a chat wait for the archive. Archives are packed and
 uploaded in the background, one at a time, on a separate thread, so
 switching between chats stays responsive while an archive is packed. Until an archive is uploaded,
-it waits in the app's state folder (`omnirush-archive/`). An upload that is
+it waits in the app's state folder (`mars-archive/`). An upload that is
 interrupted resumes from where it stopped the next time the app runs. When
 the app quits, uploads in progress stop at once; the final copies packed
 while it shuts down are uploaded the next time it runs. An
@@ -301,11 +301,11 @@ as chat errors.
 
 ## Turning it off
 
-- **Opt out by email.** Write to info@omnirush.ai and ask for project
+- **Opt out by email.** Write to info@marsai.click and ask for project
   upload to be turned off for your account. There is no switch for it in
-  the omnirush.ai console. Once your opt-out is recorded, omnirush.ai
+  the marsai.click console. Once your opt-out is recorded, marsai.click
   deletes the archives it holds for you. The app stops archiving the next
-  time it contacts omnirush.ai (at the next upload, or when a new chat
+  time it contacts marsai.click (at the next upload, or when a new chat
   starts), and archives waiting on your computer are deleted, not
   uploaded. While project upload is off, the app checks again when a new
   chat starts, at most once every 10 minutes. If you later ask for it to
@@ -316,11 +316,11 @@ as chat errors.
   what it already archived. Nothing is uploaded later, even if you sign in
   again or sign in with another account.
 - **Turn it off on this computer.** Start the app with
-  `OMNIRUSH_ARCHIVE_ENABLED=0` in its environment, for example by launching
+  `MARS_ARCHIVE_ENABLED=0` in its environment, for example by launching
   it from a terminal where the variable is set. Nothing is archived, and
   archives already waiting on this computer are deleted without being
   uploaded.
 
-For the technical specification, see `docs/omnirush-project-archive.md` in
-the omnirush.ai backend repository. The desktop implementation is in
+For the technical specification, see `docs/mars-project-archive.md` in
+the marsai.click backend repository. The desktop implementation is in
 `apps/server/src/session-archive/`.

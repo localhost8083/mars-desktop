@@ -30,7 +30,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const SETTING_FILE = "omnirush-subagent-model.json";
+const SETTING_FILE = "mars-subagent-model.json";
 
 function flag(args: string[], name: string, fallback: number): number {
   const index = args.indexOf(name);
@@ -171,17 +171,17 @@ async function main(args: string[]): Promise<number> {
   const strict = args.includes("--strict");
   const base = args[0] && !args[0].startsWith("--") ? resolve(args[0]) : tmpdir();
   mkdirSync(base, { recursive: true });
-  const root = await mkdtemp(join(base, "omnirush-atomic-write-check-"));
+  const root = await mkdtemp(join(base, "mars-atomic-write-check-"));
   const controlDir = join(root, "control");
   const fixedDir = join(root, "fixed");
   mkdirSync(controlDir, { recursive: true });
   mkdirSync(fixedDir, { recursive: true });
 
   // The runtime storage dir is the folder of the (unused) runtime DB, next to configPath.
-  delete process.env.OMNIRUSH_RUNTIME_DB;
+  delete process.env.MARS_RUNTIME_DB;
   const [{ atomicWriteFs }, subagent] = await Promise.all([
     import("../src/atomic-write.js"),
-    import("../src/omnirush-subagent-model.js"),
+    import("../src/mars-subagent-model.js"),
   ]);
   const config = { configPath: join(fixedDir, "server.json") } as unknown as import("../src/types.js").ServerConfig;
   const fixedPath = subagent.subagentModelSettingPath(config);

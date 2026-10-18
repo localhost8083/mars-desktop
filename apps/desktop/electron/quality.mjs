@@ -1,5 +1,5 @@
 /**
- * Quality rewards: the `quality` block on /device/me, the wheel's
+ * Quality rewards: the `quality` block on the account profile, the wheel's
  * segments (GET /me/quality) and a spin (POST /me/quality/spin).
  *
  * `quality: null` means the feature is switched off: the app shows nothing.
@@ -111,7 +111,7 @@ function parseNudge(value) {
 }
 
 /**
- * The `quality` block of a /device/me (or /me) answer; null when the
+ * The `quality` block of a profile (/oauth/userinfo) answer; null when the
  * feature is off, the block is missing or it names no known tier.
  * @returns {AccountQuality | null}
  */
@@ -271,7 +271,7 @@ export function parseFailLabels(value) {
   return labels;
 }
 
-/** A session id the profile request may name (`/device/me?session_id=`), or null. */
+/** The profile request session (session_id bytes are no longer sent); null. */
 export function profileSessionId(value) {
   const id = text(value);
   return id && /^[A-Za-z0-9_-]{1,128}$/.test(id) ? id : null;
@@ -386,7 +386,7 @@ function parseClientSwitches(value) {
 
 /**
  * The server's status block for one session (GET /me/sessions/{id}/status,
- * or `session_status` on /device/me); null when it is missing or malformed.
+ * or `session_status` on the account profile); null when it is missing or malformed.
  * Labels, hints and messages are the server's words, kept as given.
  */
 export function parseSessionStatus(value) {

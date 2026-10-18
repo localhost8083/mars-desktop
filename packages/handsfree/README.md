@@ -1,7 +1,7 @@
-# OmniRush.ai Computer Use
+# MarsAI Computer Use
 
-Native macOS computer-use runtime for OmniRush.ai.
-Packaged OmniRush.ai builds wrap this runtime in a bundled `Computer Use.app`
+Native macOS computer-use runtime for MarsAI.
+Packaged MarsAI builds wrap this runtime in a bundled `Computer Use.app`
 helper so macOS Accessibility and Screen Recording permissions belong to the
 helper app instead of a transient Node or Swift process.
 
@@ -26,13 +26,13 @@ is only used when strict mode is disabled.
 Build the native stdio server:
 
 ```bash
-pnpm --filter @omnirush/handsfree check:native
+pnpm --filter @mars/handsfree check:native
 ```
 
 Run it as an MCP-compatible adapter:
 
 ```bash
-pnpm --filter @omnirush/handsfree exec omnirush-handsfree-computer-use mcp
+pnpm --filter @mars/handsfree exec mars-handsfree-computer-use mcp
 ```
 
 The core runtime is intentionally MCP-independent. `ComputerUseRuntime` exposes a small direct surface (`snapshot`, `click`, `typeText`, `pressKey`, `scroll`, `wait`, `setValue`, `performAction`); `MCPServer` is only a thin stdio wrapper.

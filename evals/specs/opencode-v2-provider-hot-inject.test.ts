@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
 import { createServer, type IncomingMessage } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { eventually, test } from "@omnirush/testkit";
+import { eventually, test } from "@mars/testkit";
 import { expect } from "vitest";
 
 import {
@@ -26,14 +26,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 
 async function resolveOpencodeV2Bin(): Promise<string> {
-  const override = process.env.OMNIRUSH_EVAL_OPENCODE2_BIN;
+  const override = process.env.MARS_EVAL_OPENCODE2_BIN;
   if (typeof override === "string" && override.trim() !== "") return override;
 
   const constants: unknown = JSON.parse(await readFile(join(import.meta.dirname, "../../constants.json"), "utf8"));
   if (!isRecord(constants) || typeof constants.opencodeV2Version !== "string") {
     throw new Error("constants.json must define a string opencodeV2Version");
   }
-  return installOpencodeV2Binary(join(tmpdir(), "omnirush-opencode-v2-verified"), constants.opencodeV2Version);
+  return installOpencodeV2Binary(join(tmpdir(), "mars-opencode-v2-verified"), constants.opencodeV2Version);
 }
 
 async function readRequestBody(request: IncomingMessage): Promise<unknown> {
@@ -100,7 +100,7 @@ test("opencode v2 injects providers at runtime without an engine reload", { time
   const directory = join(rootDir, "workspace");
   await mkdir(directory);
   const baseConfig = join(rootDir, "opencode.json");
-  await writeFile(baseConfig, `${JSON.stringify({ agent: { omnirush: { mode: "primary" } }, default_agent: "omnirush" })}\n`);
+  await writeFile(baseConfig, `${JSON.stringify({ agent: { mars: { mode: "primary" } }, default_agent: "mars" })}\n`);
   let server: ManagedOpencodeV2Server | undefined;
 
   try {
@@ -129,8 +129,8 @@ test("opencode v2 injects providers at runtime without an engine reload", { time
       rootDir,
       env: {
         OPENCODE_CONFIG: baseConfig, ...opencodeModelsEnv,
-        OMNIRUSH_ENCRYPTION_KEY: "fixture-server-only", OMNIRUSH_TOKEN: "fixture-server-only",
-        OMNIRUSH_HOST_TOKEN: "fixture-server-only", OMNIRUSH_SERVER_TOKEN: "fixture-server-only",
+        MARS_ENCRYPTION_KEY: "fixture-server-only", MARS_TOKEN: "fixture-server-only",
+        MARS_HOST_TOKEN: "fixture-server-only", MARS_SERVER_TOKEN: "fixture-server-only",
         OPENAI_API_KEY: "fixture-server-only", ANTHROPIC_API_KEY: "fixture-server-only",
         AWS_SECRET_ACCESS_KEY: "fixture-server-only", GITHUB_TOKEN: "fixture-server-only",
         DATABASE_URL: "fixture-server-only", CUSTOM_SERVICE_SECRET: "fixture-server-only",
@@ -144,7 +144,7 @@ test("opencode v2 injects providers at runtime without an engine reload", { time
     if (process.platform === "linux") {
       const environment = await readFile(`/proc/${pid0}/environ`, "utf8");
       const names = environment.split("\0").map((entry) => entry.split("=")[0]);
-      expect(names.filter((name) => name?.startsWith("OMNIRUSH_"))).toEqual([]);
+      expect(names.filter((name) => name?.startsWith("MARS_"))).toEqual([]);
       for (const name of ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "AWS_SECRET_ACCESS_KEY", "GITHUB_TOKEN", "DATABASE_URL", "CUSTOM_SERVICE_SECRET"]) {
         expect(names).not.toContain(name);
       }
@@ -168,8 +168,8 @@ test("opencode v2 injects providers at runtime without an engine reload", { time
     const catalogReadinessMs = Date.now() - catalogStartedAt;
     const baselineText = JSON.stringify(baseline.json);
     expect(baseline.status).toBe(200);
-    expect(baselineText).not.toContain("omnirush-witness-a");
-    expect(baselineText).not.toContain("omnirush-witness-b");
+    expect(baselineText).not.toContain("mars-witness-a");
+    expect(baselineText).not.toContain("mars-witness-b");
     console.info(`[opencode-v2-spec] cold catalog readiness: ${catalogReadinessMs}ms`);
     evidence.recordAssertionEvidence(
       "C1 positive baseline and negative provider absence",
@@ -179,7 +179,7 @@ test("opencode v2 injects providers at runtime without an engine reload", { time
 
     const injectionStartedAt = Date.now();
     await server.injectProvider({
-      id: "omnirush-witness-a",
+      id: "mars-witness-a",
       name: "Witness A",
       baseUrl: `${witnessUrl}/v1`,
       apiKey: "witness-key-a",
@@ -191,7 +191,7 @@ test("opencode v2 injects providers at runtime without an engine reload", { time
         within: 15_000,
         intervalMs: 250,
         label: "provider A to appear in the model list",
-        until: (result) => result !== undefined && JSON.stringify(result.json).includes("omnirush-witness-a"),
+        until: (result) => result !== undefined && JSON.stringify(result.json).includes("mars-witness-a"),
       },
     );
     if (process.platform !== "win32") {
@@ -205,7 +205,7 @@ test("opencode v2 injects providers at runtime without an engine reload", { time
       );
     }
     const injectionLatencyMs = Date.now() - injectionStartedAt;
-    expect(JSON.stringify(modelsAfterA?.json)).toContain("omnirush-witness-a");
+    expect(JSON.stringify(modelsAfterA?.json)).toContain("mars-witness-a");
     console.info(`[opencode-v2-spec] provider A injection latency: ${injectionLatencyMs}ms`);
     evidence.recordAssertionEvidence(
       "C2 positive hot injection and negative bounded-wait failure",
@@ -216,7 +216,7 @@ test("opencode v2 injects providers at runtime without an engine reload", { time
     const sessionA = await server.fetchJson("/api/session", {
       method: "POST",
       directory,
-      body: { model: { providerID: "omnirush-witness-a", id: "witness-model-a" } },
+      body: { model: { providerID: "mars-witness-a", id: "witness-model-a" } },
     });
     expect(sessionA.status).toBe(200);
     const idA = sessionId(sessionA.json);
@@ -240,7 +240,7 @@ test("opencode v2 injects providers at runtime without an engine reload", { time
       true,
     );
     await server.injectProvider({
-      id: "omnirush-witness-b",
+      id: "mars-witness-b",
       name: "Witness B",
       baseUrl: `${witnessUrl}/v1`,
       apiKey: "witness-key-b",
@@ -254,7 +254,7 @@ test("opencode v2 injects providers at runtime without an engine reload", { time
         intervalMs: 250,
         label: "provider B to appear in the model list",
         until: (result) => {
-          if (result === undefined || !JSON.stringify(result.json).includes("omnirush-witness-b")) {
+          if (result === undefined || !JSON.stringify(result.json).includes("mars-witness-b")) {
             providerBFirstSeenAt = undefined;
             return false;
           }
@@ -264,13 +264,13 @@ test("opencode v2 injects providers at runtime without an engine reload", { time
       },
     );
     const modelsAfterBText = JSON.stringify(modelsAfterB?.json);
-    expect(modelsAfterBText).toContain("omnirush-witness-a");
-    expect(modelsAfterBText).toContain("omnirush-witness-b");
+    expect(modelsAfterBText).toContain("mars-witness-a");
+    expect(modelsAfterBText).toContain("mars-witness-b");
 
     const sessionB = await server.fetchJson("/api/session", {
       method: "POST",
       directory,
-      body: { model: { providerID: "omnirush-witness-b", id: "witness-model-b" } },
+      body: { model: { providerID: "mars-witness-b", id: "witness-model-b" } },
     });
     expect(sessionB.status).toBe(200);
     const idB = sessionId(sessionB.json);

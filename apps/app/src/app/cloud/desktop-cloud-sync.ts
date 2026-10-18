@@ -3,11 +3,11 @@ import {
   readDenSettings,
 } from "../lib/den";
 import type {
-  OmniRushDesktopCloudSyncChange,
-  OmniRushDesktopCloudSyncResult,
-  OmniRushDesktopCloudSyncState,
-  OmniRushServerClient,
-} from "../lib/omnirush-server";
+  MarsDesktopCloudSyncChange,
+  MarsDesktopCloudSyncResult,
+  MarsDesktopCloudSyncState,
+  MarsServerClient,
+} from "../lib/mars-server";
 
 export type PendingCloudPluginChange = "modified" | "removed";
 
@@ -20,7 +20,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function readSyncChange(value: unknown): OmniRushDesktopCloudSyncChange | null {
+function readSyncChange(value: unknown): MarsDesktopCloudSyncChange | null {
   if (!isRecord(value)) return null;
   const id = typeof value.id === "string" ? value.id.trim() : "";
   const kind = value.kind === "new" || value.kind === "modified" || value.kind === "removed" ? value.kind : null;
@@ -44,7 +44,7 @@ function readSyncChange(value: unknown): OmniRushDesktopCloudSyncChange | null {
 }
 
 /** Read all pending changes from a persisted desktop-cloud-sync state (GET response). */
-export function readPendingCloudSyncChanges(state: OmniRushDesktopCloudSyncState): OmniRushDesktopCloudSyncChange[] {
+export function readPendingCloudSyncChanges(state: MarsDesktopCloudSyncState): MarsDesktopCloudSyncChange[] {
   return Object.values(state.entries).flatMap((entry) => {
     if (!isRecord(entry) || !Array.isArray(entry.pendingChanges)) return [];
     return entry.pendingChanges.flatMap((change) => {
@@ -61,7 +61,7 @@ export function readPendingCloudSyncChanges(state: OmniRushDesktopCloudSyncState
  * no longer installed) are filtered out.
  */
 export function derivePendingCloudPluginChanges(input: {
-  changes: OmniRushDesktopCloudSyncChange[];
+  changes: MarsDesktopCloudSyncChange[];
   installedPlugins: Record<string, InstalledCloudPluginLike>;
 }): Record<string, PendingCloudPluginChange> {
   const pending: Record<string, PendingCloudPluginChange> = {};
@@ -101,9 +101,9 @@ export function derivePendingCloudPluginChanges(input: {
 let desktopCloudSyncQueue: Promise<void> = Promise.resolve();
 
 async function runDesktopCloudSync(input: {
-  omnirushClient: OmniRushServerClient;
+  marsClient: MarsServerClient;
   workspaceId: string;
-}): Promise<OmniRushDesktopCloudSyncResult | null> {
+}): Promise<MarsDesktopCloudSyncResult | null> {
   const settings = readDenSettings();
   const token = settings.authToken?.trim() ?? "";
   const activeOrgId = settings.activeOrgId?.trim() ?? "";
@@ -114,18 +114,18 @@ async function runDesktopCloudSync(input: {
     token,
   }).getResourceSnapshot(activeOrgId);
 
-  return input.omnirushClient.syncDesktopCloud(input.workspaceId, snapshot);
+  return input.marsClient.syncDesktopCloud(input.workspaceId, snapshot);
 }
 
 export function refreshDesktopCloudSync(input: {
-  omnirushClient: OmniRushServerClient | null | undefined;
+  marsClient: MarsServerClient | null | undefined;
   workspaceId: string | null | undefined;
-}): Promise<OmniRushDesktopCloudSyncResult | null> {
-  const omnirushClient = input.omnirushClient ?? null;
+}): Promise<MarsDesktopCloudSyncResult | null> {
+  const marsClient = input.marsClient ?? null;
   const workspaceId = input.workspaceId?.trim() ?? "";
-  if (!omnirushClient || !workspaceId) return Promise.resolve(null);
+  if (!marsClient || !workspaceId) return Promise.resolve(null);
 
-  const run = desktopCloudSyncQueue.then(() => runDesktopCloudSync({ omnirushClient, workspaceId }));
+  const run = desktopCloudSyncQueue.then(() => runDesktopCloudSync({ marsClient, workspaceId }));
   desktopCloudSyncQueue = run.then(
     () => undefined,
     () => undefined,

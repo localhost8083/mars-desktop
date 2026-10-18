@@ -1,6 +1,6 @@
 /**
  * Docs screenshot pipeline: recomposes the eval app-driver packages
- * (@omnirush/hosts, @omnirush/behaviors, @omnirush/cdp) into declarative
+ * (@mars/hosts, @mars/behaviors, @mars/cdp) into declarative
  * scenes that regenerate the images under packages/docs/images.
  *
  * Usage (from the repo root, Node >= 24):
@@ -14,8 +14,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { basename, dirname, resolve } from "node:path";
-import { docShotReceiptSchema } from "@omnirush/review";
-import { emulateFocus, freezeMotion, paintBackdrop, setViewport } from "@omnirush/cdp";
+import { docShotReceiptSchema } from "@mars/review";
+import { emulateFocus, freezeMotion, paintBackdrop, setViewport } from "@mars/cdp";
 import { Ctx } from "./ctx.ts";
 import { captureUntil } from "./loop.ts";
 import { shots } from "./shots/index.ts";
@@ -29,8 +29,8 @@ for (const key of [
   "OPENAI_API_KEY",
   "OPENROUTER_API_KEY",
   "GOOGLE_GENERATIVE_AI_API_KEY",
-  "OMNIRUSH_API_KEY",
-  "OMNIRUSH_INFERENCE_BASE_URL",
+  "MARS_API_KEY",
+  "MARS_INFERENCE_BASE_URL",
 ]) {
   process.env[key] = "";
 }

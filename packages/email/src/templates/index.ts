@@ -22,11 +22,11 @@ export type EmailTemplateProps = {
 export type EmailTemplate = keyof EmailTemplateProps
 
 export const emailSubjects: { [Template in EmailTemplate]: (props: EmailTemplateProps[Template]) => string } = {
-  verification: ({ verificationCode }) => `Your OmniRush.ai verification code is ${verificationCode}`,
-  passwordReset: () => "Reset your OmniRush.ai password",
-  organizationInvite: ({ organizationName }) => `You're invited to join ${organizationName} on OmniRush.ai`,
-  downloadLink: () => "Your OmniRush.ai download link",
-  feedback: ({ name, source }) => `OmniRush.ai feedback from ${name}${source ? ` (${source})` : ""}`,
+  verification: ({ verificationCode }) => `Your MarsAI verification code is ${verificationCode}`,
+  passwordReset: () => "Reset your MarsAI password",
+  organizationInvite: ({ organizationName }) => `You're invited to join ${organizationName} on MarsAI`,
+  downloadLink: () => "Your MarsAI download link",
+  feedback: ({ name, source }) => `MarsAI feedback from ${name}${source ? ` (${source})` : ""}`,
 }
 
 export const emailReplyTo: { [Template in EmailTemplate]: (props: EmailTemplateProps[Template]) => string | undefined } = {

@@ -2,7 +2,7 @@
  * Kubernetes Den-stack harness for eval environments.
  *
  * This is the kind-backed Den placement: the same eval scenarios target the
- * same OMNIRUSH_EVAL_DEN_* URLs, but the control plane runs through the Helm
+ * same MARS_EVAL_DEN_* URLs, but the control plane runs through the Helm
  * chart in a local Kubernetes cluster. Endpoints are exposed with kubectl
  * port-forward instead of kind node port mappings so an existing warm cluster
  * can be reused across profiles without recreating the node config.
@@ -12,15 +12,15 @@ import { openSync } from "node:fs";
 import { access, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolveChromeBinary } from "@omnirush/hosts";
+import { resolveChromeBinary } from "@mars/hosts";
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(MODULE_DIR, "..", "..", "..", "..");
 const DEFAULT_STATE_DIR = resolve(MODULE_DIR, "..", "..", "..", "results", ".kube-stack");
-const DEFAULT_ELECTRON_USERDATA = process.env.OMNIRUSH_EVAL_KUBE_ELECTRON_USERDATA?.trim()
+const DEFAULT_ELECTRON_USERDATA = process.env.MARS_EVAL_KUBE_ELECTRON_USERDATA?.trim()
   || join(DEFAULT_STATE_DIR, "electron-user-data");
 
-export const KUBE_CLUSTER_NAME = "omnirush-kube-lab";
+export const KUBE_CLUSTER_NAME = "mars-kube-lab";
 export const KUBE_CONTEXT = `kind-${KUBE_CLUSTER_NAME}`;
 export const KUBE_RELEASE_NAME = "omnirush-ee";
 export const KUBE_NAMESPACE = "default";
@@ -35,20 +35,20 @@ const KUBE_ALLOW_EXTERNAL_EGRESS_TEMPLATE = `${KUBE_NETPOL_DIR}/allow-external.t
 const CALICO_MANIFEST_URL = "https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/calico.yaml";
 const DEN_API_SERVICE = `${KUBE_RELEASE_NAME}-den-api`;
 const DEN_WEB_SERVICE = `${KUBE_RELEASE_NAME}-den-web`;
-const MYSQL_DEPLOYMENT = "omnirush-mysql";
-const DEN_API_PORT = Number(process.env.OMNIRUSH_EVAL_DEN_PORT ?? 8790);
-const DEN_WEB_PORT = Number(process.env.OMNIRUSH_EVAL_DEN_WEB_PORT ?? 3005);
+const MYSQL_DEPLOYMENT = "mars-mysql";
+const DEN_API_PORT = Number(process.env.MARS_EVAL_DEN_PORT ?? 8790);
+const DEN_WEB_PORT = Number(process.env.MARS_EVAL_DEN_WEB_PORT ?? 3005);
 const DEN_API_URL = `http://127.0.0.1:${DEN_API_PORT}`;
 const DEN_WEB_URL = `http://127.0.0.1:${DEN_WEB_PORT}`;
 const DEN_BASE_URL = `http://localhost:${DEN_API_PORT}`;
 const DEMO_EMAIL = process.env.DEN_DEMO_OWNER_EMAIL ?? "alex@acme.test";
-export const DEMO_PASSWORD = process.env.DEN_DEMO_OWNER_PASSWORD ?? "OmniRushDemo123!";
-const LOCAL_IMAGE_TAG = process.env.OMNIRUSH_EVAL_KUBE_LOCAL_IMAGE_TAG?.trim() || "kube-lab";
-const PUBLISHED_IMAGE_TAG = process.env.OMNIRUSH_EVAL_KUBE_IMAGE_TAG?.trim() || "latest";
-const PUBLISHED_DEN_API_REPOSITORY = "ghcr.io/omnirush-ai/omnirush-den-api";
-const PUBLISHED_DEN_WEB_REPOSITORY = "ghcr.io/omnirush-ai/omnirush-den-web";
-const LOCAL_DEN_API_REPOSITORY = "omnirush-den-api";
-const LOCAL_DEN_WEB_REPOSITORY = "omnirush-den-web";
+export const DEMO_PASSWORD = process.env.DEN_DEMO_OWNER_PASSWORD ?? "MarsDemo123!";
+const LOCAL_IMAGE_TAG = process.env.MARS_EVAL_KUBE_LOCAL_IMAGE_TAG?.trim() || "kube-lab";
+const PUBLISHED_IMAGE_TAG = process.env.MARS_EVAL_KUBE_IMAGE_TAG?.trim() || "latest";
+const PUBLISHED_DEN_API_REPOSITORY = "ghcr.io/mars-ai/mars-den-api";
+const PUBLISHED_DEN_WEB_REPOSITORY = "ghcr.io/mars-ai/mars-den-web";
+const LOCAL_DEN_API_REPOSITORY = "mars-den-api";
+const LOCAL_DEN_WEB_REPOSITORY = "mars-den-web";
 
 type DenOrgMode = "single_org" | "multi_org";
 export type KubeProfile = "single-org" | "multi-org";
@@ -446,7 +446,7 @@ async function publishedImagesSupportPlatform(runtime: KubeRuntime, platform: Ku
 
 export async function resolveKubeImagePlan(options: { exec?: KubeExec; images?: KubeImageMode; log?: (message: string) => void } = {}): Promise<KubeImagePlan> {
   const runtime = createRuntime({ exec: options.exec, log: options.log });
-  const envMode = parseImageMode(process.env.OMNIRUSH_EVAL_KUBE_IMAGES);
+  const envMode = parseImageMode(process.env.MARS_EVAL_KUBE_IMAGES);
   const requested = options.images ?? envMode;
   const platform = currentDockerPlatform();
   if (requested === "local") {
@@ -503,7 +503,7 @@ export function helmUpgradeArgs(profile: KubeProfileConfig, plan: KubeImagePlan,
   ];
   if (egress === "allowlist") {
     args.push(
-      "--set", "config.omnirushDevMode=0",
+      "--set", "config.marsDevMode=0",
       "--set", "config.public.allowPrivateMcpUrls=1",
     );
   }
@@ -738,13 +738,13 @@ async function ensureHostMockMasquerade(runtime: KubeRuntime, hostIp: string, po
 export async function ensureEgressAllowlist(options: KubeLayerOptions = {}): Promise<void> {
   const runtime = createRuntime(options);
   const allowedHostIp = await resolveAllowedHostIp(runtime);
-  const allowedMockPort = mockPort("OMNIRUSH_EVAL_KUBE_ALLOWED_MOCK_PORT", 4791);
-  const deniedMockPort = mockPort("OMNIRUSH_EVAL_KUBE_DENIED_MOCK_PORT", 4792);
+  const allowedMockPort = mockPort("MARS_EVAL_KUBE_ALLOWED_MOCK_PORT", 4791);
+  const deniedMockPort = mockPort("MARS_EVAL_KUBE_DENIED_MOCK_PORT", 4792);
   const template = await readFile(resolve(REPO_ROOT, KUBE_ALLOW_EXTERNAL_EGRESS_TEMPLATE), "utf8");
   const externalManifest = template
-    .replaceAll("${OMNIRUSH_EVAL_KUBE_ALLOWED_HOST_IP}", allowedHostIp)
-    .replaceAll("${OMNIRUSH_EVAL_KUBE_ALLOWED_MOCK_PORT}", String(allowedMockPort));
-  if (externalManifest.includes("${OMNIRUSH_EVAL_")) {
+    .replaceAll("${MARS_EVAL_KUBE_ALLOWED_HOST_IP}", allowedHostIp)
+    .replaceAll("${MARS_EVAL_KUBE_ALLOWED_MOCK_PORT}", String(allowedMockPort));
+  if (externalManifest.includes("${MARS_EVAL_")) {
     throw new Error(`Unresolved placeholder in ${KUBE_ALLOW_EXTERNAL_EGRESS_TEMPLATE}.`);
   }
   await ensureHostMockMasquerade(runtime, allowedHostIp, allowedMockPort);
@@ -771,12 +771,12 @@ export async function ensureEgressAllowlist(options: KubeLayerOptions = {}): Pro
     { input: externalManifest, timeoutMs: 60_000 },
   );
 
-  process.env.OMNIRUSH_EVAL_KUBE_EGRESS_TEST = "1";
-  process.env.OMNIRUSH_EVAL_KUBE_ALLOWED_HOST_IP = allowedHostIp;
-  process.env.OMNIRUSH_EVAL_KUBE_ALLOWED_MOCK_PORT = String(allowedMockPort);
-  process.env.OMNIRUSH_EVAL_KUBE_DENIED_MOCK_PORT = String(deniedMockPort);
+  process.env.MARS_EVAL_KUBE_EGRESS_TEST = "1";
+  process.env.MARS_EVAL_KUBE_ALLOWED_HOST_IP = allowedHostIp;
+  process.env.MARS_EVAL_KUBE_ALLOWED_MOCK_PORT = String(allowedMockPort);
+  process.env.MARS_EVAL_KUBE_DENIED_MOCK_PORT = String(deniedMockPort);
   runtime.log("Kube egress allowlist enforced for den-api and den-web");
-  runtime.log(`export OMNIRUSH_EVAL_KUBE_EGRESS_TEST=1 OMNIRUSH_EVAL_KUBE_ALLOWED_HOST_IP=${allowedHostIp} OMNIRUSH_EVAL_KUBE_ALLOWED_MOCK_PORT=${allowedMockPort} OMNIRUSH_EVAL_KUBE_DENIED_MOCK_PORT=${deniedMockPort}`);
+  runtime.log(`export MARS_EVAL_KUBE_EGRESS_TEST=1 MARS_EVAL_KUBE_ALLOWED_HOST_IP=${allowedHostIp} MARS_EVAL_KUBE_ALLOWED_MOCK_PORT=${allowedMockPort} MARS_EVAL_KUBE_DENIED_MOCK_PORT=${deniedMockPort}`);
 }
 
 export async function kubeStackTest(options: KubeLayerOptions = {}): Promise<void> {
@@ -798,8 +798,8 @@ async function mysqlQuery(runtime: KubeRuntime, sql: string): Promise<string> {
     `deployment/${MYSQL_DEPLOYMENT}`,
     "--",
     "mysql",
-    "-uomnirush",
-    "-pomnirush",
+    "-umars",
+    "-pmars",
     "omnirush_den",
     "-N",
     "-e",
@@ -836,7 +836,7 @@ export async function ensureSeed(options: KubeLayerOptions = {}): Promise<void> 
     "--",
     "sh",
     "-lc",
-    "cd /app/ee/apps/den-api && OMNIRUSH_DEV_MODE=1 DEN_DEMO_SEED_ALLOW_NONLOCAL=1 DEN_DEMO_SEED_FETCH_GITHUB=0 node --conditions=development --import tsx scripts/seed-demo-org.ts",
+    "cd /app/ee/apps/den-api && MARS_DEV_MODE=1 DEN_DEMO_SEED_ALLOW_NONLOCAL=1 DEN_DEMO_SEED_FETCH_GITHUB=0 node --conditions=development --import tsx scripts/seed-demo-org.ts",
   ]), { timeoutMs: 10 * 60_000 });
   if (result.code !== 0) {
     const detail = [result.stderr.trim(), result.stdout.trim()].filter(Boolean).join("\n");
@@ -952,15 +952,15 @@ export async function exposeEndpointHandles(profile: KubeProfileConfig, options:
 export async function exposeEndpoints(profile: KubeProfileConfig, options: KubeLayerOptions = {}): Promise<void> {
   const runtime = createRuntime(options);
   const endpoints = await exposeEndpointHandles(profile, options);
-  process.env.OMNIRUSH_EVAL_DEN_API_URL = DEN_API_URL;
-  process.env.OMNIRUSH_EVAL_DEN_WEB_URL = DEN_WEB_URL;
+  process.env.MARS_EVAL_DEN_API_URL = DEN_API_URL;
+  process.env.MARS_EVAL_DEN_WEB_URL = DEN_WEB_URL;
   if (profile.orgMode === "multi_org") {
-    process.env.OMNIRUSH_EVAL_DEN_MULTI_ORG = "1";
+    process.env.MARS_EVAL_DEN_MULTI_ORG = "1";
   } else {
-    delete process.env.OMNIRUSH_EVAL_DEN_MULTI_ORG;
+    delete process.env.MARS_EVAL_DEN_MULTI_ORG;
   }
-  process.env.OMNIRUSH_EVAL_DEN_TOKEN = endpoints.token;
-  runtime.log(`Kube Den endpoints exported: OMNIRUSH_EVAL_DEN_API_URL=${DEN_API_URL}, OMNIRUSH_EVAL_DEN_WEB_URL=${DEN_WEB_URL}${profile.orgMode === "multi_org" ? ", OMNIRUSH_EVAL_DEN_MULTI_ORG=1" : ""}`);
+  process.env.MARS_EVAL_DEN_TOKEN = endpoints.token;
+  runtime.log(`Kube Den endpoints exported: MARS_EVAL_DEN_API_URL=${DEN_API_URL}, MARS_EVAL_DEN_WEB_URL=${DEN_WEB_URL}${profile.orgMode === "multi_org" ? ", MARS_EVAL_DEN_MULTI_ORG=1" : ""}`);
 }
 
 function appUserDataHome(): string {
@@ -968,7 +968,7 @@ function appUserDataHome(): string {
 }
 
 function appBootstrapPath(): string {
-  return join(appUserDataHome(), "omnirush-dev-data", "home", ".config", "omnirush", "desktop-bootstrap.json");
+  return join(appUserDataHome(), "mars-dev-data", "home", ".config", "mars", "desktop-bootstrap.json");
 }
 
 async function hasCdpPageTarget(baseUrl: string): Promise<boolean> {
@@ -1052,8 +1052,8 @@ async function ensureApp(cdpCandidates: string[], options: KubeLayerOptions = {}
     }
   }
 
-  if (process.env.OMNIRUSH_EVAL_KUBE_SURFACE?.trim() !== "electron") {
-    runtime.log("Starting Chrome CDP surface for kube Den web evals (set OMNIRUSH_EVAL_KUBE_SURFACE=electron to force dev Electron).");
+  if (process.env.MARS_EVAL_KUBE_SURFACE?.trim() !== "electron") {
+    runtime.log("Starting Chrome CDP surface for kube Den web evals (set MARS_EVAL_KUBE_SURFACE=electron to force dev Electron).");
     await ensureChromeApp(cdpCandidates, options);
     return;
   }
@@ -1071,7 +1071,7 @@ async function ensureApp(cdpCandidates: string[], options: KubeLayerOptions = {}
   const pid = runtime.spawnDetached("pnpm", ["dev"], {
     stateDir: runtime.stateDir,
     logName: "app",
-    env: { OMNIRUSH_ELECTRON_USERDATA: appUserDataHome() },
+    env: { MARS_ELECTRON_USERDATA: appUserDataHome() },
   });
   await writePidState(runtime, "app.pid", pid);
   for (let attempt = 0; attempt < 45; attempt += 1) {

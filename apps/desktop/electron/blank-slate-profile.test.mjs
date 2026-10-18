@@ -18,7 +18,7 @@ const execFileAsync = promisify(execFile);
 test("normal launches remain unchanged", () => {
   const env = {
     HOME: "/Users/installed",
-    OMNIRUSH_DESKTOP_BOOTSTRAP_PATH: "/Users/installed/.config/omnirush/desktop-bootstrap.json",
+    MARS_DESKTOP_BOOTSTRAP_PATH: "/Users/installed/.config/mars/desktop-bootstrap.json",
   };
   const originalEnv = { ...env };
   const profile = prepareBlankSlateProfile({
@@ -30,17 +30,17 @@ test("normal launches remain unchanged", () => {
 
   assert.equal(profile, null);
   assert.deepEqual(env, originalEnv);
-  assert.deepEqual(resolveBlankSlateLaunch({ appName: "OmniRush.ai", profile }), {
+  assert.deepEqual(resolveBlankSlateLaunch({ appName: "MarsAI", profile }), {
     enabled: false,
-    appName: "OmniRush.ai",
+    appName: "MarsAI",
     userDataPath: null,
   });
 });
 
 test("cleanup worker removes the entire temporary root after its parent exits", async () => {
-  const rootPath = await mkdtemp(path.join(tmpdir(), "omnirush-cleanup-test-"));
+  const rootPath = await mkdtemp(path.join(tmpdir(), "mars-cleanup-test-"));
   const userDataPath = path.join(rootPath, "electron", "user-data");
-  const configPath = path.join(rootPath, "omnirush", "config");
+  const configPath = path.join(rootPath, "mars", "config");
   await mkdir(userDataPath, { recursive: true });
   await mkdir(configPath, { recursive: true });
   await writeFile(path.join(userDataPath, "Preferences"), "test");
@@ -58,16 +58,16 @@ test("cleanup worker removes the entire temporary root after its parent exits", 
 test("blank-slate launches receive unique temporary roots and a visible name", async () => {
   const firstProfile = prepareBlankSlateProfile({ argv: ["--blank-slate"], env: {} });
   const secondProfile = prepareBlankSlateProfile({ argv: ["--blank-slate"], env: {} });
-  const first = resolveBlankSlateLaunch({ appName: "OmniRush.ai", profile: firstProfile });
-  const second = resolveBlankSlateLaunch({ appName: "OmniRush.ai", profile: secondProfile });
+  const first = resolveBlankSlateLaunch({ appName: "MarsAI", profile: firstProfile });
+  const second = resolveBlankSlateLaunch({ appName: "MarsAI", profile: secondProfile });
 
   try {
-    assert.equal(first.appName, "OmniRush.ai - Test profile");
+    assert.equal(first.appName, "MarsAI - Test profile");
     assert.equal(first.enabled, true);
     assert.ok(first.rootPath.startsWith(tmpdir()));
     assert.notEqual(first.rootPath, second.rootPath);
     assert.ok(first.userDataPath.startsWith(first.rootPath));
-    assert.ok(!first.rootPath.includes("ai.omnirush.desktop"));
+    assert.ok(!first.rootPath.includes("ai.marsai.desktop"));
   } finally {
     await Promise.all([
       rm(first.rootPath, { recursive: true, force: true }),
@@ -77,7 +77,7 @@ test("blank-slate launches receive unique temporary roots and a visible name", a
 });
 
 test("process profile hides an installed bootstrap before workspace-store loads", async () => {
-  const installedRoot = await mkdtemp(path.join(tmpdir(), "omnirush-installed-profile-test-"));
+  const installedRoot = await mkdtemp(path.join(tmpdir(), "mars-installed-profile-test-"));
   const installedBootstrapPath = path.join(installedRoot, "desktop-bootstrap.json");
   await writeFile(installedBootstrapPath, JSON.stringify({
     baseUrl: "http://localhost:3005",
@@ -94,13 +94,13 @@ test("process profile hides an installed bootstrap before workspace-store loads"
     try {
       const store = createWorkspaceStore({
         app: { getPath: () => processBlankSlateProfile.userDataPath },
-        defaultDenBaseUrl: "https://api.omnirush.example.com",
+        defaultDenBaseUrl: "https://api.mars.example.com",
         defaultRequireSignin: true,
         forceRequireSignin: true,
       });
       console.log(JSON.stringify({
         bootstrap: store.readDesktopBootstrapConfigSync(),
-        bootstrapPath: process.env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH,
+        bootstrapPath: process.env.MARS_DESKTOP_BOOTSTRAP_PATH,
         rootPath: processBlankSlateProfile.rootPath,
       }));
     } finally {
@@ -112,12 +112,12 @@ test("process profile hides an installed bootstrap before workspace-store loads"
     const { stdout } = await execFileAsync(process.execPath, ["--input-type=module", "--eval", script], {
       env: {
         ...process.env,
-        OMNIRUSH_DESKTOP_BOOTSTRAP_PATH: installedBootstrapPath,
+        MARS_DESKTOP_BOOTSTRAP_PATH: installedBootstrapPath,
       },
     });
     const result = JSON.parse(stdout);
     assert.deepEqual(result.bootstrap, {
-      baseUrl: "https://api.omnirush.example.com",
+      baseUrl: "https://api.mars.example.com",
       requireSignin: true,
       fromFile: false,
     });
@@ -138,8 +138,8 @@ function registerPlatformIsolationTest(platform, temporaryDirectory, rootPath) {
     const paths = platform === "win32" ? path.win32 : path.posix;
     const env = {
       HOME: paths.join(paths.parse(rootPath).root, "installed", "home"),
-      OMNIRUSH_DESKTOP_DISTRIBUTION: "enterprise",
-      OMNIRUSH_SERVER_CONFIG: paths.join(paths.parse(rootPath).root, "installed", "server.json"),
+      MARS_DESKTOP_DISTRIBUTION: "enterprise",
+      MARS_SERVER_CONFIG: paths.join(paths.parse(rootPath).root, "installed", "server.json"),
     };
     const createdDirectories = [];
     const profile = prepareBlankSlateProfile({
@@ -148,15 +148,15 @@ function registerPlatformIsolationTest(platform, temporaryDirectory, rootPath) {
       platform,
       temporaryDirectory,
       createTempRoot: (prefix) => {
-        assert.equal(prefix, paths.join(temporaryDirectory, "omnirush-test-profile-"));
+        assert.equal(prefix, paths.join(temporaryDirectory, "mars-test-profile-"));
         return rootPath;
       },
       createDirectory: (directory) => createdDirectories.push(directory),
     });
 
     assert.ok(profile);
-    assert.equal(env.OMNIRUSH_DESKTOP_DISTRIBUTION, "enterprise");
-    assert.ok(!Object.hasOwn(env, "OMNIRUSH_DEV_MODE"));
+    assert.equal(env.MARS_DESKTOP_DISTRIBUTION, "enterprise");
+    assert.ok(!Object.hasOwn(env, "MARS_DEV_MODE"));
     assert.equal(env.HOME, profile.homePath);
     assert.equal(env.USERPROFILE, profile.homePath);
     for (const key of BLANK_SLATE_PATH_ENV_KEYS) {
@@ -171,6 +171,6 @@ function registerPlatformIsolationTest(platform, temporaryDirectory, rootPath) {
   });
 }
 
-registerPlatformIsolationTest("darwin", "/private/tmp", "/private/tmp/omnirush-test-profile-macos");
-registerPlatformIsolationTest("linux", "/tmp", "/tmp/omnirush-test-profile-linux");
-registerPlatformIsolationTest("win32", "C:\\Temp", "C:\\Temp\\omnirush-test-profile-windows");
+registerPlatformIsolationTest("darwin", "/private/tmp", "/private/tmp/mars-test-profile-macos");
+registerPlatformIsolationTest("linux", "/tmp", "/tmp/mars-test-profile-linux");
+registerPlatformIsolationTest("win32", "C:\\Temp", "C:\\Temp\\mars-test-profile-windows");

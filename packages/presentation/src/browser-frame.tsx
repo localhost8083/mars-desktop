@@ -96,7 +96,7 @@ export function Icon({ name, size = 18 }: { name: string; size?: number }) {
 export function BrowserFrame({
   children,
   section = "Get started",
-  address = "OmniRush.ai",
+  address = "MarsAI",
   download,
 }: {
   children: React.ReactNode;
@@ -168,7 +168,7 @@ export function BrowserFrame({
           }}
         >
           <Mark size={17} />
-          OmniRush.ai{" "}
+          MarsAI{" "}
           <span style={{ color: "#a5aa9e", fontSize: 12, fontWeight: 400 }}>
             {" "}
             / {section}
@@ -261,7 +261,7 @@ export function DownloadToast({
         </div>
         <div>
           <div style={{ fontSize: 16, fontWeight: 600 }}>
-            {complete ? "OmniRush.ai downloaded" : "Downloading OmniRush.ai"}
+            {complete ? "MarsAI downloaded" : "Downloading MarsAI"}
           </div>
           <div style={{ fontSize: 12, color: "#8a9381", marginTop: 5 }}>
             Linux desktop app · {(bytes / 1e6).toFixed(1)} MB
@@ -299,7 +299,7 @@ export function DownloadToast({
             justifyContent: "space-between",
           }}
         >
-          Open OmniRush.ai
+          Open MarsAI
           <Icon name="arrow" size={15} />
         </div>
       )}

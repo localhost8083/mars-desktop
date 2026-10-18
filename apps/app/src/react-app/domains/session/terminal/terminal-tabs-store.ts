@@ -20,7 +20,7 @@ export type WorkspaceTerminalTabs = {
 
 type SavedTabs = Record<string, { tabs: Array<{ name: string; shellId: string | null }>; active: number }>;
 
-export const TERMINAL_TABS_STORAGE_KEY = "omnirush.terminal-tabs.v1";
+export const TERMINAL_TABS_STORAGE_KEY = "mars.terminal-tabs.v1";
 const MAX_NAME_CHARS = 60;
 
 let tabCounter = 0;

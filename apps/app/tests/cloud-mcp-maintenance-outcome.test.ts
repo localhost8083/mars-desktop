@@ -120,7 +120,7 @@ describe("cloud MCP maintenance watchdog", () => {
   });
 
   test("corrupt storage is treated as no recorded outcomes", () => {
-    storageValues.set("omnirush.den.mcp.lastMaintenanceOutcome", "{not json");
+    storageValues.set("mars.den.mcp.lastMaintenanceOutcome", "{not json");
     expect(readCloudMcpMaintenanceOutcome("anything")).toBeNull();
     recordCloudMcpMaintenanceOutcome("anything", { status: "ok" }, 5);
     expect(readCloudMcpMaintenanceOutcome("anything")?.at).toBe(5);

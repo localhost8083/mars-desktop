@@ -55,7 +55,7 @@ jobs:
       - name: Run Linux X11 native journey
         if: runner.os == 'Linux'
         run: |
-          xvfb-run -a sh -c 'openbox --sm-disable >/tmp/omnirush-test-openbox.log 2>&1 & export XDG_SESSION_TYPE=x11; unset WAYLAND_DISPLAY; pnpm evals:e2e computer-use-portable-window'
+          xvfb-run -a sh -c 'openbox --sm-disable >/tmp/mars-test-openbox.log 2>&1 & export XDG_SESSION_TYPE=x11; unset WAYLAND_DISPLAY; pnpm evals:e2e computer-use-portable-window'
       - name: Preserve journey evidence
         if: always()
         uses: actions/upload-artifact@v4

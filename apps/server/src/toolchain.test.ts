@@ -17,7 +17,7 @@ import { SessionUploader } from "./session-uploader.js";
 const hasZstd = typeof zlib.zstdDecompressSync === "function";
 
 function tempProject(files = {}) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omnirush-toolchain-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mars-toolchain-"));
   for (const [name, content] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(root, name)), { recursive: true });
     fs.writeFileSync(path.join(root, name), content);
@@ -86,7 +86,7 @@ test("a failing probe (non-zero exit, error, empty output) is left out; python i
 
 test.skipIf(process.platform === "win32")("a probe that hangs is killed at its timeout and left out, without holding up the rest", async () => {
   const root = tempProject();
-  const bin = fs.mkdtempSync(path.join(os.tmpdir(), "omnirush-toolchain-bin-"));
+  const bin = fs.mkdtempSync(path.join(os.tmpdir(), "mars-toolchain-bin-"));
   // `slow` sleeps; `stuck` leaves a grandchild holding stdout open.
   fs.writeFileSync(path.join(bin, "slow"), "#!/bin/sh\nsleep 30\necho never\n", { mode: 0o755 });
   fs.writeFileSync(path.join(bin, "stuck"), "#!/bin/sh\n(sleep 30; echo late) &\necho stuck 1.0\nsleep 30\n", { mode: 0o755 });
@@ -280,7 +280,7 @@ test("the cache waits only a bounded time; a slow collection lands on a later up
 
 async function envelopesFrom(options, { beforeStopMs = 0 } = {}) {
   const root = tempProject({ "package.json": "{}", "requirements.txt": "attrs\n", "README.md": "# demo\n" });
-  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "omnirush-toolchain-state-"));
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "mars-toolchain-state-"));
   const envelopes = [];
   const sync = new SessionUploader({
     stateDir,

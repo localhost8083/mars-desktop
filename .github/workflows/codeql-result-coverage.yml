@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   coverage:
-    if: github.repository == 'omnirush-ai/omnirush-gui'
+    if: github.repository == 'mars-ai/mars-gui'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

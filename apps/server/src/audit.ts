@@ -1,19 +1,19 @@
 import { dirname, join } from "node:path";
 import { appendFile, readFile } from "node:fs/promises";
-import { omnirushServerDataDir } from "@omnirush/paths";
+import { marsServerDataDir } from "@mars/paths";
 import type { AuditEntry } from "./types.js";
 import { ensureDir, exists } from "./utils.js";
 
-function resolveOmniRushDataDir(): string {
-  return omnirushServerDataDir();
+function resolveMarsDataDir(): string {
+  return marsServerDataDir();
 }
 
 export function auditLogPath(workspaceId: string): string {
-  return join(resolveOmniRushDataDir(), "audit", `${workspaceId}.jsonl`);
+  return join(resolveMarsDataDir(), "audit", `${workspaceId}.jsonl`);
 }
 
 export function legacyAuditLogPath(workspaceRoot: string): string {
-  return join(workspaceRoot, ".opencode", "omnirush", "audit.jsonl");
+  return join(workspaceRoot, ".opencode", "mars", "audit.jsonl");
 }
 
 async function resolveReadableAuditPath(workspaceRoot: string, workspaceId: string): Promise<string | null> {

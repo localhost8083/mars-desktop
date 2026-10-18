@@ -1,10 +1,10 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { ATTACHED_PDF, MOCK_REPLY, ON_DISK_PDF, READ_SCENARIO_MARKER, pdfRouting } from "../worlds/pdf-attachments.ts";
 import type { PdfRoutingModel } from "../worlds/pdf-attachments.ts";
 
 // A PDF attached in chat must work with every model the engine can run. This
-// spec drives the real omnirush-server and its managed OpenCode engine, with
+// spec drives the real mars-server and its managed OpenCode engine, with
 // the shipped plugin set, against a mock provider that records what each model
 // actually received. The user-visible claims:
 //   - a PDF-capable model still gets the PDF itself;
@@ -86,7 +86,7 @@ test("each model receives an attached PDF in the form it can take, and the trans
   }
   evidence.recordAssertionEvidence(
     "Inside the real engine, an image-capable model received page images plus text, a text-only model received text, and a PDF-capable model received the PDF itself",
-    `OpenCode ${world.engineVersion} behind omnirush-server with its shipped plugins; the provider saw vision=${observed.vision?.provider.join(",")} text=${observed.text?.provider.join(",")} native=${observed.native?.provider.join(",")}; every reply completed and every persisted user message kept its application/pdf part.`,
+    `OpenCode ${world.engineVersion} behind mars-server with its shipped plugins; the provider saw vision=${observed.vision?.provider.join(",")} text=${observed.text?.provider.join(",")} native=${observed.native?.provider.join(",")}; every reply completed and every persisted user message kept its application/pdf part.`,
     true,
   );
 
@@ -95,10 +95,10 @@ test("each model receives an attached PDF in the form it can take, and the trans
   expect(read.requests[1].parts.some((part) => part.startsWith("file:") || part.startsWith("image_url:"))).toBe(false);
   expect(read.reply).toBe(MOCK_REPLY);
   expect(read.persistedAttachments).toEqual(["application/pdf"]);
-  expect(world.requests.every((request) => request.tools.includes("omnirush_pdf_pages"))).toBe(true);
+  expect(world.requests.every((request) => request.tools.includes("mars_pdf_pages"))).toBe(true);
   evidence.recordAssertionEvidence(
     "A text-only model that reads a PDF from disk through the Read tool receives its text instead of a PDF it cannot take, and the persisted tool result keeps the original attachment",
-    `The mock model asked the engine to read ${ON_DISK_PDF}; the follow-up request carried one tool result containing the OmniRush.ai PDF note and no file or image parts, the turn completed, and the transcript's tool part still holds an application/pdf attachment. Every request advertised the omnirush_pdf_pages tool.`,
+    `The mock model asked the engine to read ${ON_DISK_PDF}; the follow-up request carried one tool result containing the MarsAI PDF note and no file or image parts, the turn completed, and the transcript's tool part still holds an application/pdf attachment. Every request advertised the mars_pdf_pages tool.`,
     true,
   );
 
@@ -108,7 +108,7 @@ test("each model receives an attached PDF in the form it can take, and the trans
   expect(derived.some((name) => name.endsWith("-on-disk"))).toBe(true);
   evidence.recordAssertionEvidence(
     "Derived text and page images are kept in the workspace inbox for the agent's tools and later steps",
-    `.opencode/omnirush/inbox/pdf-pages holds ${derived.join(" and ")}.`,
+    `.opencode/mars/inbox/pdf-pages holds ${derived.join(" and ")}.`,
     true,
   );
 });

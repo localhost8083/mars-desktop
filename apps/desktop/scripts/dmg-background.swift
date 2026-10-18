@@ -38,7 +38,7 @@ let outputDir =
   CommandLine.arguments.count > 1
   ? URL(fileURLWithPath: CommandLine.arguments[1]) : desktopDir.appendingPathComponent("build")
 let variant = CommandLine.arguments.count > 2 ? CommandLine.arguments[2] : "split-b"
-let markURL = desktopDir.appendingPathComponent("../app/public/omnirush-mark.png").standardizedFileURL
+let markURL = desktopDir.appendingPathComponent("../app/public/mars-mark.png").standardizedFileURL
 guard let markImage = NSImage(contentsOf: markURL),
   let mark = markImage.cgImage(forProposedRect: nil, context: nil, hints: nil)
 else { fatalError("missing \(markURL.path)") }
@@ -106,7 +106,7 @@ func text(_ c: CGContext, _ string: String, size: CGFloat, weight: NSFont.Weight
 
 // Header: the mark beside the name, as on the app's welcome card.
 func header(_ c: CGContext, colour: CGColor, y: CGFloat = 52, left fixedLeft: CGFloat? = nil) {
-  let name = "omnirush"
+  let name = "mars"
   let font = NSFont.systemFont(ofSize: 16, weight: .semibold)
   let nameWidth = (name as NSString).size(withAttributes: [.font: font, .kern: -0.2]).width
   let markSize: CGFloat = 22
@@ -117,7 +117,7 @@ func header(_ c: CGContext, colour: CGColor, y: CGFloat = 52, left fixedLeft: CG
 }
 
 func hint(_ c: CGContext, colour: CGColor, left: CGFloat? = nil) {
-  let message = "Drag omnirush to Applications to install"
+  let message = "Drag MarsAI to Applications to install"
   if let left {
     text(c, message, size: 12.5, weight: .regular, colour: colour, x: left, midY: 352)
   } else {

@@ -1,6 +1,6 @@
 {
   "format": "ORSEAL01",
-  "spec": "docs/omnirush-project-archive.md (subscription-manager), section \"Seal format\"; reference implementation in its appendix A",
+  "spec": "docs/mars-project-archive.md (subscription-manager), section \"Seal format\"; reference implementation in its appendix A",
   "notes": [
     "All binary values are lowercase hex unless the key ends in _b64 (RFC 4648 base64, padded).",
     "Vectors named chunk16_* use the vector-only header variant \"chunk\":16 so every framing case stays small; real_chunk_* use the production chunk 1048576.",
@@ -13,7 +13,7 @@
     "magic_hex": "4f525345414c3031",
     "alg": "X25519-HKDF-SHA256-A256GCM",
     "content": "tar+zstd",
-    "hkdf_info_prefix_ascii": "omnirush-seal-v1",
+    "hkdf_info_prefix_ascii": "mars-seal-v1",
     "production_chunk": 1048576,
     "min_chunk": 16,
     "max_chunk": 16777216,
@@ -32,7 +32,7 @@
   },
   "keys": {
     "server": {
-      "derivation": "sha256(b'omnirush-seal-v1 test vector: server key')",
+      "derivation": "sha256(b'mars-seal-v1 test vector: server key')",
       "private_hex": "5176fafce49b54ca18d57a2d5110ae756941e8a12adf9c1d882827e376763072",
       "private_b64": "UXb6/OSbVMoY1XotURCudWlB6KEq35wdiCgn43Z2MHI=",
       "public_hex": "bbd3dae1750a38dc7a799b6f45e2b3a9f0c017e26c86df8bb4af1c6c3d35c94a",
@@ -42,7 +42,7 @@
       "public_spki_der_hex": "302a300506032b656e032100bbd3dae1750a38dc7a799b6f45e2b3a9f0c017e26c86df8bb4af1c6c3d35c94a"
     },
     "previous": {
-      "derivation": "sha256(b'omnirush-seal-v1 test vector: previous server key')",
+      "derivation": "sha256(b'mars-seal-v1 test vector: previous server key')",
       "private_hex": "0ff33d858f62095db6077ec9d51cd38fa926450ddd06faac5e6c309fec860a6f",
       "private_b64": "D/M9hY9iCV22B37J1RzTj6kmRQ3dBvqsXmwwn+yGCm8=",
       "public_hex": "4bbce29ba6c1f8781a259a202aac63c4c310c51ba6ca94bedf9190dac5a79a39",
@@ -52,7 +52,7 @@
       "public_spki_der_hex": "302a300506032b656e0321004bbce29ba6c1f8781a259a202aac63c4c310c51ba6ca94bedf9190dac5a79a39"
     },
     "unrelated": {
-      "derivation": "sha256(b'omnirush-seal-v1 test vector: unrelated key')",
+      "derivation": "sha256(b'mars-seal-v1 test vector: unrelated key')",
       "private_hex": "dd662c9188ae2fd0c34026bbb8b36dad20f0c83497292acde78861faf472b307",
       "private_b64": "3WYskYiuL9DDQCa7uLNtrSDwyDSXKSrN54hh+vRyswc=",
       "public_hex": "2d0a85933390b1274f8b359b2d24a3bfdfaae70835516e993b92d6aa994da364",
@@ -62,7 +62,7 @@
       "public_spki_der_hex": "302a300506032b656e0321002d0a85933390b1274f8b359b2d24a3bfdfaae70835516e993b92d6aa994da364"
     },
     "ephemeral": {
-      "derivation": "sha256(b'omnirush-seal-v1 test vector: ephemeral key')",
+      "derivation": "sha256(b'mars-seal-v1 test vector: ephemeral key')",
       "private_hex": "5296795a27f589e7895e01d8a2d2e6e2b6f762e6fbf5974cd51373cf7f33dad9",
       "private_b64": "UpZ5Wif1ieeJXgHYotLm4rb3Yub79ZdM1RNzz38z2tk=",
       "public_hex": "961fa1030e9459a43957026204b14d72d1aeb511fca3b64bd0d7107931b6c538",
@@ -72,7 +72,7 @@
     }
   },
   "env_example": {
-    "OMNIRUSH_ARCHIVE_PRIVATE_KEYS": "UXb6/OSbVMoY1XotURCudWlB6KEq35wdiCgn43Z2MHI=,D/M9hY9iCV22B37J1RzTj6kmRQ3dBvqsXmwwn+yGCm8="
+    "MARS_ARCHIVE_PRIVATE_KEYS": "UXb6/OSbVMoY1XotURCudWlB6KEq35wdiCgn43Z2MHI=,D/M9hY9iCV22B37J1RzTj6kmRQ3dBvqsXmwwn+yGCm8="
   },
   "decoder_kids": [
     "f900b070cdd3a117",

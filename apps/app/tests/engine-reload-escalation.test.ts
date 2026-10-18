@@ -1,14 +1,14 @@
 import { describe, expect, test } from "bun:test";
 
-import { OmniRushServerError } from "../src/app/lib/omnirush-server";
+import { MarsServerError } from "../src/app/lib/mars-server";
 import { reloadEngineWithDesktopFallback } from "../src/react-app/shell/engine-reload-escalation";
 
 function unreachableError() {
-  return new OmniRushServerError(503, "opencode_engine_unreachable", "engine unreachable");
+  return new MarsServerError(503, "opencode_engine_unreachable", "engine unreachable");
 }
 
 function unconfiguredError() {
-  return new OmniRushServerError(400, "opencode_unconfigured", "engine unconfigured");
+  return new MarsServerError(400, "opencode_unconfigured", "engine unconfigured");
 }
 
 type Harness = {
@@ -112,7 +112,7 @@ describe("reloadEngineWithDesktopFallback", () => {
   });
 
   test("a non-restartable retry failure surfaces to the caller", async () => {
-    const retryFailure = new OmniRushServerError(502, "opencode_reload_failed", "dispose failed");
+    const retryFailure = new MarsServerError(502, "opencode_reload_failed", "dispose failed");
     const harness = makeHarness([unreachableError(), retryFailure]);
     await expect(reloadEngineWithDesktopFallback(harness.client, "ws", harness.options)).rejects.toBe(retryFailure);
     expect(harness.restartCalls).toBe(0);
@@ -127,7 +127,7 @@ describe("reloadEngineWithDesktopFallback", () => {
   });
 
   test("reload timeouts surface instead of restarting mid-teardown", async () => {
-    const timeout = new OmniRushServerError(504, "opencode_reload_timeout", "dispose still tearing down");
+    const timeout = new MarsServerError(504, "opencode_reload_timeout", "dispose still tearing down");
     const harness = makeHarness([timeout]);
     await expect(reloadEngineWithDesktopFallback(harness.client, "ws", harness.options)).rejects.toBe(timeout);
     expect(harness.restartCalls).toBe(0);

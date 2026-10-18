@@ -13,7 +13,7 @@ async function writeSkill(dir: string, name: string) {
 }
 
 beforeEach(async () => {
-  workspace = await mkdtemp(join(tmpdir(), "omnirush-skills-"));
+  workspace = await mkdtemp(join(tmpdir(), "mars-skills-"));
   await mkdir(join(workspace, ".git"), { recursive: true });
 });
 
@@ -83,7 +83,7 @@ describe("listSkills", () => {
       XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME,
       OPENCODE_CONFIG_DIR: process.env.OPENCODE_CONFIG_DIR,
     };
-    const home = await mkdtemp(join(tmpdir(), "omnirush-skills-home-"));
+    const home = await mkdtemp(join(tmpdir(), "mars-skills-home-"));
     const xdg = join(home, "xdg");
     const explicit = join(home, "explicit-opencode");
     try {
@@ -152,7 +152,7 @@ describe("listSkills", () => {
       expect(invalid ? renderSkillContentForResponse(invalid, invalidContent) : "").toContain("ERROR: This skill has invalid YAML frontmatter");
       expect(invalid ? renderSkillContentForResponse(invalid, invalidContent) : "").toContain(invalidContent);
       expect(warnings).toHaveLength(1);
-      expect(warnings[0]?.[0]).toBe("[omnirush:skills] Found invalid skill frontmatter");
+      expect(warnings[0]?.[0]).toBe("[mars:skills] Found invalid skill frontmatter");
     } finally {
       console.warn = originalWarn;
     }

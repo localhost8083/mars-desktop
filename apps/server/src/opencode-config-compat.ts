@@ -1,6 +1,6 @@
 /**
  * Pre-flight compatibility check for user-owned OpenCode config files, for
- * the bundled 1.x engine (or OMNIRUSH_OPENCODE_BIN).
+ * the bundled 1.x engine (or MARS_OPENCODE_BIN).
  *
  * A 1.x engine (OpenCode V1) lowers V2-style
  * config on load (packages/opencode/src/config/v2-compat.ts). Most V2 keys
@@ -16,14 +16,14 @@
  * generic opencode_request_failed.
  */
 import { join } from "node:path";
-import { globalOpencodeConfigDir, workspaceOpencodeConfigCandidates } from "@omnirush/paths";
+import { globalOpencodeConfigDir, workspaceOpencodeConfigCandidates } from "@mars/paths";
 import { readJsoncFile } from "./jsonc.js";
 
 export const OPENCODE_V2_PERMISSIONS_MESSAGE =
-  'V2 permissions are not supported by OmniRush V1. Use V1 "permission" rules or run opencode2.';
+  'V2 permissions are not supported by Mars V1. Use V1 "permission" rules or run opencode2.';
 
 export const OPENCODE_CONFIG_COMPAT_HINT =
-  'Rename "permissions" to "permission" (OmniRush V1 rules) or remove it, then restart OmniRush.ai.';
+  'Rename "permissions" to "permission" (Mars V1 rules) or remove it, then restart MarsAI.';
 
 export type OpencodeConfigCompatScope = "global" | "workspace";
 
@@ -135,7 +135,7 @@ function formatIssues(issues: OpencodeConfigCompatIssue[]): string {
   return issues.map((issue) => `${issue.message} (${issue.path.join(".")})`).join("; ");
 }
 
-/** Same wording the engine prints when it refuses the file, plus the OmniRush.ai fix. */
+/** Same wording the engine prints when it refuses the file, plus the MarsAI fix. */
 export function formatOpencodeConfigCompatFinding(finding: OpencodeConfigCompatFinding): string {
   return `Configuration is invalid at ${finding.file}: ${formatIssues(finding.issues)}`;
 }
@@ -155,7 +155,7 @@ export class OpencodeConfigCompatError extends Error {
 
   constructor(findings: OpencodeConfigCompatFinding[]) {
     super([
-      "OmniRush cannot start with the current global configuration.",
+      "Mars cannot start with the current global configuration.",
       ...findings.map(formatOpencodeConfigCompatFinding),
       OPENCODE_CONFIG_COMPAT_HINT,
     ].join("\n"));
@@ -181,8 +181,8 @@ export async function assertOpencodeConfigCompat(input: {
     input.logger?.log(
       finding.scope === "global" ? "error" : "warn",
       finding.scope === "global"
-        ? "OmniRush global configuration uses V2 permissions; the bundled engine refuses to start."
-        : "OmniRush workspace configuration uses V2 permissions; the engine will reject that workspace.",
+        ? "Mars global configuration uses V2 permissions; the bundled engine refuses to start."
+        : "Mars workspace configuration uses V2 permissions; the engine will reject that workspace.",
       opencodeConfigCompatLogAttributes(finding),
     );
   }
@@ -208,6 +208,6 @@ export function parseOpencodeConfigErrorBody(body: unknown): OpencodeConfigError
       })
     : [];
   const parts = [detail, formatIssues(issues)].filter(Boolean);
-  const message = `OmniRush configuration is invalid${file ? ` at ${file}` : ""}${parts.length ? `: ${parts.join("; ")}` : ""}`;
+  const message = `Mars configuration is invalid${file ? ` at ${file}` : ""}${parts.length ? `: ${parts.join("; ")}` : ""}`;
   return { name: body.name, file, message, issues };
 }

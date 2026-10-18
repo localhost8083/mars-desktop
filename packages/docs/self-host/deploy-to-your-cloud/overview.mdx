@@ -1,9 +1,9 @@
 ---
 title: "Deploy to your cloud"
-description: "Run OmniRush.ai in your AWS, Azure, or Google Cloud account with Kubernetes, Helm, and managed MySQL."
+description: "Run MarsAI in your AWS, Azure, or Google Cloud account with Kubernetes, Helm, and managed MySQL."
 ---
 
-OmniRush.ai's supported private-cloud shape uses the published Helm chart, a managed Kubernetes cluster, and a MySQL-compatible database in your own account. You control the network, DNS, certificates, database, backups, identity provider, and secrets; the chart deploys Den web, Den API, migrations, and the optional inference service.
+MarsAI's supported private-cloud shape uses the published Helm chart, a managed Kubernetes cluster, and a MySQL-compatible database in your own account. You control the network, DNS, certificates, database, backups, identity provider, and secrets; the chart deploys Den web, Den API, migrations, and the optional inference service.
 
 <CardGroup cols={3}>
   <Card title="AWS" icon="cloud" href="/self-host/deploy-to-your-cloud/aws">
@@ -19,7 +19,7 @@ OmniRush.ai's supported private-cloud shape uses the published Helm chart, a man
 
 ## Common architecture
 
-Every provider guide uses the same OmniRush.ai boundaries:
+Every provider guide uses the same MarsAI boundaries:
 
 - Den web listens on port `3005` and serves the browser experience.
 - Den API listens on port `8788` and owns authentication, organizations, policy, and control-plane APIs.

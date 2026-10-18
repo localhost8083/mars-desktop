@@ -6,7 +6,7 @@ import type { HeadlessWebHandle } from "../packages/world/src/headless-web.ts";
 
 const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
 const CLOUD_MODEL_INFRA_WORKER_NAME = "cloud-model-infra-worker";
-const CLOUD_MODEL_INFRA_WORKER_WORKSPACE = "/tmp/omnirush-cloud-model-infra-worker";
+const CLOUD_MODEL_INFRA_WORKER_WORKSPACE = "/tmp/mars-cloud-model-infra-worker";
 
 export interface CloudModelInfraWorkerOptions {
   name: string;
@@ -16,11 +16,11 @@ export interface CloudModelInfraWorkerOptions {
 
 /**
  * Worker runtime for the cloud model-infrastructure world: the same
- * source-first omnirush-server plus managed OpenCode engine an OmniRush.ai
+ * source-first mars-server plus managed OpenCode engine an MarsAI
  * Cloud worker runs, in an isolated workspace.
  *
  * `cloud-model-infra.ts` seeds a Den `worker` whose Daytona signed preview
- * points at this server's `omnirushUrl`, so Den's readiness probe, provider
+ * points at this server's `marsUrl`, so Den's readiness probe, provider
  * materialization, and remote-session capabilities exercise a real worker
  * runtime end to end without a Daytona sandbox.
  *
@@ -53,7 +53,7 @@ export async function main(): Promise<void> {
     name: CLOUD_MODEL_INFRA_WORKER_NAME,
     outputs: {
       webUrl: handle.manifest.webUrl,
-      omnirushUrl: handle.manifest.omnirushUrl,
+      marsUrl: handle.manifest.marsUrl,
       workspace: handle.manifest.workspace,
       runtimeManifest: handle.manifest.runtimeManifestPath,
     },

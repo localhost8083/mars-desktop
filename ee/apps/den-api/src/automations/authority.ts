@@ -7,8 +7,8 @@ import {
   TeamMemberTable,
 } from "@omnirush-ee/den-db/schema"
 import { normalizeDenTypeId } from "@omnirush-ee/utils/typeid"
-import { AUTOMATION_FREE_MODEL } from "@omnirush/types/automations"
-import { INFERENCE_MODEL_ALIASES } from "@omnirush/types/den/inference"
+import { AUTOMATION_FREE_MODEL } from "@mars/types/automations"
+import { INFERENCE_MODEL_ALIASES } from "@mars/types/den/inference"
 import { db } from "../db.js"
 import { organizationAllowsManagedModels } from "../inference.js"
 import { calculateDesktopPolicyForOrgMember } from "../desktop-policies.js"

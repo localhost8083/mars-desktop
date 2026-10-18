@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Release guard for the sandbox images (the same file in omnirush-cli and omnirush-gui,
+// Release guard for the sandbox images (the same file in mars-cli and mars-gui,
 // scripts/box/check-pins.mjs). Fails (exit 1) when a release would ship without working,
 // pinned images:
 //   - an image in images.json has no sha256 digest;

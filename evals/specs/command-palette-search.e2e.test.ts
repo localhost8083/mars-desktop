@@ -1,6 +1,6 @@
-import { browserScript } from "@omnirush/testkit";
+import { browserScript } from "@mars/testkit";
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { commandPaletteSearch } from "../worlds/session-shell.ts";
 
 const test = spec.world(commandPaletteSearch);
@@ -59,7 +59,7 @@ test("command palette searches settings by alias, navigates, records recents, an
     await user.see(paletteInput);
     await user.see({ text: "Recent" });
     await user.see({ role: "option", label: /^Permissions/ });
-    const storedRecents = stringArray(await probe.storage("omnirush.react.command-palette.recents"));
+    const storedRecents = stringArray(await probe.storage("mars.react.command-palette.recents"));
     expect(storedRecents).toEqual(["settings:permissions"]);
     expect(storedRecents).not.toContain("settings:appearance");
     await user.screenshot();
@@ -86,7 +86,7 @@ test("command palette searches settings by alias, navigates, records recents, an
   });
 
   await step("> restricts the palette to actions", async () => {
-    await user.see({ text: /Adjust how omnirush\.ai looks/ });
+    await user.see({ text: /Adjust how mars\.ai looks/ });
     // Settings closes route-owned overlays just after navigation; let that
     // transition settle before reopening the palette.
     await new Promise((resolve) => setTimeout(resolve, 1_500));
@@ -121,7 +121,7 @@ test("command palette searches settings by alias, navigates, records recents, an
     await user.see({ role: "option", label: /^Organization server/ });
     await user.see({ role: "option", label: /^Runtime/ });
     await user.see({ role: "option", label: /^Agent access diagnostics/ });
-    await user.see({ role: "option", label: /^omnirush\.ai config sources/ });
+    await user.see({ role: "option", label: /^mars\.ai config sources/ });
     await user.see({ role: "option", label: /^Experimental engine/ });
     await user.see({ role: "option", label: /^Workspace run mode/ });
     await user.screenshot();
@@ -135,7 +135,7 @@ test("command palette searches settings by alias, navigates, records recents, an
     { query: "server url", title: "Organization server", id: "organization-server" },
     { query: "connection status", title: "Runtime", id: "runtime" },
     { query: "cloud mcp", title: "Agent access diagnostics", id: "agent-access" },
-    { query: "config sources", title: "omnirush.ai config sources", id: "config-sources" },
+    { query: "config sources", title: "marsai.click config sources", id: "config-sources" },
     { query: "chat engine", title: "Experimental engine", id: "experimental-engine" },
     { query: "deep link", title: "Developer", id: "developer" },
   ]) {

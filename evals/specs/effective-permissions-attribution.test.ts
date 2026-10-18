@@ -4,8 +4,8 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect } from "vitest";
-import { needs, test, unmetNeeds } from "@omnirush/testkit";
-import type { TestNeeds } from "@omnirush/testkit";
+import { needs, test, unmetNeeds } from "@mars/testkit";
+import type { TestNeeds } from "@mars/testkit";
 import constants from "../../constants.json" with { type: "json" };
 import type { EffectiveEnginePermissionRule } from "../../apps/server/src/agent-context-engine-inspection.js";
 import { validateEffectiveEngineSnapshot } from "../../apps/server/src/agent-context-engine-inspection.js";
@@ -14,13 +14,13 @@ import {
   summarizeEffectivePermissions,
   type EffectivePermissionRow,
 } from "../../apps/server/src/effective-permissions.js";
-import { buildOmniRushRuntimeConfigObjectFromSnapshot } from "../../apps/server/src/omnirush-runtime-config.js";
+import { buildMarsRuntimeConfigObjectFromSnapshot } from "../../apps/server/src/mars-runtime-config.js";
 import type { RuntimeOpencodeConfig } from "../../apps/server/src/runtime-opencode-config-store.js";
 
 /**
  * "How agents run here" must report what the engine will actually do and
  * which config layer decided it. This boots the pinned engine with a user
- * global file, OmniRush.ai's rendered injected file, and a workspace file, reads
+ * global file, MarsAI's rendered injected file, and a workspace file, reads
  * the evaluated ruleset from GET /agent exactly as the server route does, and
  * checks the summary rows and their attribution against known inputs.
  */
@@ -83,14 +83,14 @@ async function stop(child: ChildProcess): Promise<void> {
 }
 
 async function bootEngine(input: EngineInput): Promise<BootedEngine> {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-effective-permissions-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-effective-permissions-"));
   const workspace = join(root, "workspace");
   const home = join(root, "home");
   const xdg = join(root, "xdg");
   await Promise.all([mkdir(workspace, { recursive: true }), mkdir(home, { recursive: true }), mkdir(join(xdg, "config", "opencode"), { recursive: true })]);
 
   // Plugins would pull packages at boot and do not affect permission rules.
-  const { plugin: _plugin, ...injected } = buildOmniRushRuntimeConfigObjectFromSnapshot(input.runtime);
+  const { plugin: _plugin, ...injected } = buildMarsRuntimeConfigObjectFromSnapshot(input.runtime);
   const injectedPath = join(root, "runtime-opencode-config.json");
   await writeFile(injectedPath, JSON.stringify(stableJson(injected)), "utf8");
   await writeFile(join(xdg, "config", "opencode", "opencode.json"), JSON.stringify(input.globalConfig ?? {}), "utf8");
@@ -110,7 +110,7 @@ async function bootEngine(input: EngineInput): Promise<BootedEngine> {
       XDG_DATA_HOME: join(xdg, "data"),
       XDG_CACHE_HOME: join(xdg, "cache"),
       XDG_STATE_HOME: join(xdg, "state"),
-      OPENCODE_CLIENT: "omnirush-test",
+      OPENCODE_CLIENT: "mars-test",
     },
   });
   let stderr = "";
@@ -160,7 +160,7 @@ async function bootEngine(input: EngineInput): Promise<BootedEngine> {
       agent: agent.name,
       rows: summarizeEffectivePermissions(rules, {
         global: input.globalConfig?.permission,
-        omnirush: injected.permission,
+        mars: injected.permission,
         workspace: input.projectConfig?.permission,
       }, home),
     };
@@ -185,10 +185,10 @@ test.skipIf(missingRequirements.length > 0)(
 
     // Default install with two authorized folders: everything the engine
     // allows by default is attributed to it; the outside-folder ask is the
-    // engine's, its two grants are OmniRush.ai's exceptions.
+    // engine's, its two grants are MarsAI's exceptions.
     await using plain = await bootEngine({ runtime: { permission: { external_directory: { "/shared/*": "allow", "/blocked/*": "deny" } } } });
     expect(plain.version).toBe(constants.opencodeVersion.replace(/^v/, ""));
-    expect(await plain.agentName()).toBe("omnirush");
+    expect(await plain.agentName()).toBe("mars");
     const defaults = byKey(await plain.rows());
     expect(defaults.shell).toEqual({ action: "allow", source: "engine", exceptions: 0 });
     expect(defaults.edit).toEqual({ action: "allow", source: "engine", exceptions: 0 });

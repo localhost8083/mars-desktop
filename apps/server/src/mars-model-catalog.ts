@@ -1,0 +1,272 @@
+/**
+ * The marsai.click model catalog on the desktop: the models the account may
+ * use, as the backend lists them at GET /v1/models, reduced to what
+ * the engine config needs.
+ *
+ * The backend is trusted for model ids, names, numbers, enums and booleans
+ * only. The engine provider itself (npm package, base URL, env, headers,
+ * options) stays hardcoded in mars-runtime-config.ts, so a catalog can
+ * never point the engine anywhere but the local gateway broker.
+ *
+ * The last good catalog is kept at <runtimeStorageDir>/mars-model-catalog.json.
+ * Every list the app shows (model picker, sub-agent models, names) comes from
+ * it; nothing filters by model id. Without one (first run, offline, or a
+ * backend that fails) the engine gets the built-in fallback: the backend's
+ * list at 2026-10-04 (GPT 6 Astra, GPT 6.1 Sol, GPT 6 Sol).
+ */
+import { mkdir, readFile, rm } from "node:fs/promises";
+import { join } from "node:path";
+
+import { runtimeStorageDir } from "./runtime-db.js";
+import type { ServerConfig } from "./types.js";
+import { writeFileAtomic } from "./atomic-write.js";
+
+/** Every effort a catalog model may list, lowest first. */
+export const MARS_MODEL_EFFORTS = ["none", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
+export type MarsModelEffort = (typeof MARS_MODEL_EFFORTS)[number];
+
+const MODEL_STATUSES = ["active", "beta", "deprecated"] as const;
+export type MarsModelStatus = (typeof MODEL_STATUSES)[number];
+
+export type MarsCatalogModel = {
+  id: string;
+  display_name: string;
+  /** The model family the backend names ("OpenAI", "Meta Muse"), if any. */
+  family: string | null;
+  status: MarsModelStatus;
+  /** Exactly one model of a catalog is the default. */
+  default: boolean;
+  /** The efforts the model accepts, lowest first; empty means no effort control. */
+  reasoning_levels: MarsModelEffort[];
+  limits: { context: number; output: number };
+  capabilities: {
+    reasoning: boolean;
+    tool_call: boolean;
+    web_search: boolean;
+    image_input: boolean;
+    file_input: boolean;
+  };
+};
+
+/** Models in the backend's order, default first. Never empty. */
+export type MarsModelCatalog = MarsCatalogModel[];
+
+const MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/;
+const MAX_MODELS = 32;
+const CONTEXT_LIMIT_RANGE = { min: 1_000, max: 2_000_000 };
+const OUTPUT_LIMIT_RANGE = { min: 1_000, max: 256_000 };
+/**
+ * The family of the models v1.0.9 shipped. The engine gets no `family` for
+ * it, so Astra and Sol keep their v1.0.9 entries byte for byte and pickers
+ * list them under the provider's own name; any other family is its own group.
+ */
+const PROVIDER_FAMILY = "OpenAI";
+
+function catalogModel(
+  id: string,
+  displayName: string,
+  family: string | null,
+  isDefault: boolean,
+): MarsCatalogModel {
+  return {
+    id,
+    display_name: displayName,
+    family,
+    status: "active",
+    default: isDefault,
+    reasoning_levels: ["low", "high", "xhigh", "max"],
+    limits: { context: 400_000, output: 128_000 },
+    capabilities: { reasoning: true, tool_call: true, web_search: true, image_input: true, file_input: true },
+  };
+}
+
+/**
+ * The fallback before the first sync (and when no catalog was ever stored):
+ * the backend's list at 2026-10-04, Astra the default, with the Codex-route
+ * metadata. Only a fallback: the synced catalog replaces it whole.
+ */
+export function builtinMarsModelCatalog(): MarsModelCatalog {
+  return [
+    catalogModel("gpt-6-astra", "GPT 6 Astra", PROVIDER_FAMILY, true),
+    catalogModel("gpt-6.1-sol", "GPT 6.1 Sol", PROVIDER_FAMILY, false),
+    catalogModel("gpt-6-sol", "GPT 6 Sol", PROVIDER_FAMILY, false),
+  ];
+}
+
+export function marsDefaultModelId(catalog: MarsModelCatalog): string {
+  return (catalog.find((model) => model.default) ?? catalog[0] ?? builtinMarsModelCatalog()[0]!).id;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Visible text only (no control or bidi characters), trimmed, at most `limit` characters. */
+function label(value: unknown, limit: number): string | null {
+  if (typeof value !== "string") return null;
+  const text = value.replace(/[\u0000-\u001f\u007f-\u009f\p{Default_Ignorable_Code_Point}]/gu, "").trim();
+  return text && text.length <= limit ? text : null;
+}
+
+function tokenLimit(value: unknown, range: { min: number; max: number }): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.min(range.max, Math.max(range.min, Math.floor(value)));
+}
+
+function efforts(value: unknown[]): MarsModelEffort[] {
+  return MARS_MODEL_EFFORTS.filter((effort) => value.includes(effort));
+}
+
+/** "marsai/cat-jam-free" → "Cat Jam Free"; ids outside the free family come back unchanged. */
+function humanizeFreeModelId(id: string): string {
+  const match = /^marsai\/(.+?)(?:-|:)?free$/i.exec(id);
+  if (!match) return id;
+  const words = match[1].split(/[-_]+/).filter(Boolean).map((word) =>
+    /^[0-9]/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1),
+  );
+  return `${words.join(" ")} Free`;
+}
+
+function sanitizeModel(raw: unknown): MarsCatalogModel | null {
+  if (!isRecord(raw)) return null;
+  const id = raw.id;
+  if (typeof id !== "string" || !MODEL_ID.test(id)) return null;
+  // The broker serves the Responses API only; a model on another wire API
+  // could never answer through it.
+  if (raw.api !== undefined && raw.api !== null && raw.api !== "responses") return null;
+  // An older backend lists only id, display_name, default and
+  // reasoning_levels: the rest gets the shared defaults (the Codex-route
+  // metadata). Any id is taken, dots included; none is special.
+  const fallback = builtinMarsModelCatalog().find((model) => model.id === id)
+    ?? catalogModel(id, id, null, false);
+  const limits = isRecord(raw.limits) ? raw.limits : {};
+  const capabilities = isRecord(raw.capabilities) ? raw.capabilities : {};
+  const flag = (name: keyof MarsCatalogModel["capabilities"]) => {
+    const value = capabilities[name];
+    return typeof value === "boolean" ? value : fallback.capabilities[name];
+  };
+  const context = tokenLimit(limits.context, CONTEXT_LIMIT_RANGE) ?? fallback.limits.context;
+  const output = tokenLimit(limits.output, OUTPUT_LIMIT_RANGE) ?? fallback.limits.output;
+  const status = MODEL_STATUSES.find((entry) => entry === raw.status);
+  // Known built-ins keep their curated display names; unknown ids (the
+  // gateway's marsai/*-free models) get a humanized one.
+  const knownFallback = fallback.display_name !== id;
+  return {
+    id,
+    display_name: label(raw.display_name, 64) ?? (knownFallback ? fallback.display_name : humanizeFreeModelId(id)),
+    family: label(raw.family, 32) ?? fallback.family,
+    status: status ?? "active",
+    default: raw.default === true,
+    reasoning_levels: Array.isArray(raw.reasoning_levels) ? efforts(raw.reasoning_levels) : fallback.reasoning_levels,
+    limits: { context, output: Math.min(output, context) },
+    capabilities: {
+      reasoning: flag("reasoning"),
+      tool_call: flag("tool_call"),
+      web_search: flag("web_search"),
+      image_input: flag("image_input"),
+      file_input: flag("file_input"),
+    },
+  };
+}
+
+/**
+ * The catalog in a GET /mars/v1/models body (or the cache file, which
+ * has the same shape), or null when it holds no usable model. Unknown keys
+ * are dropped; only whitelisted fields of the expected types are read.
+ */
+export function sanitizeMarsModelCatalog(raw: unknown): MarsModelCatalog | null {
+  if (!isRecord(raw) || !Array.isArray(raw.data)) return null;
+  const models: MarsCatalogModel[] = [];
+  const seen = new Set<string>();
+  for (const entry of raw.data) {
+    if (models.length === MAX_MODELS) break;
+    const model = sanitizeModel(entry);
+    if (!model || seen.has(model.id)) continue;
+    seen.add(model.id);
+    models.push(model);
+  }
+  if (models.length === 0) return null;
+  const flagged = models.findIndex((model) => model.default);
+  const defaultIndex = flagged < 0 ? 0 : flagged;
+  return models.map((model, index) => ({ ...model, default: index === defaultIndex }));
+}
+
+/** Stable text for change detection: sanitized models are built in a fixed key order. */
+export function canonicalMarsModelCatalog(catalog: MarsModelCatalog): string {
+  return JSON.stringify(catalog);
+}
+
+export function marsModelCatalogPath(config: ServerConfig): string {
+  return join(runtimeStorageDir(config), "mars-model-catalog.json");
+}
+
+/** The last synced catalog, or the built-in one when none is stored or it is unreadable. */
+export async function readMarsModelCatalog(config: ServerConfig): Promise<MarsModelCatalog> {
+  const raw = await readFile(marsModelCatalogPath(config), "utf8").catch(() => null);
+  if (raw === null) return builtinMarsModelCatalog();
+  try {
+    return sanitizeMarsModelCatalog(JSON.parse(raw)) ?? builtinMarsModelCatalog();
+  } catch {
+    return builtinMarsModelCatalog();
+  }
+}
+
+/** Atomic (temp file + rename), so a config build never reads a partial file. */
+export async function writeMarsModelCatalog(config: ServerConfig, catalog: MarsModelCatalog): Promise<void> {
+  const path = marsModelCatalogPath(config);
+  await mkdir(runtimeStorageDir(config), { recursive: true });
+  await writeFileAtomic(path, `${JSON.stringify({ data: catalog }, null, 2)}\n`);
+}
+
+export async function clearMarsModelCatalog(config: ServerConfig): Promise<void> {
+  await rm(marsModelCatalogPath(config), { force: true });
+}
+
+/**
+ * The `mars` provider's engine models. Each model's efforts become
+ * variants carrying the client-facing `reasoning_effort` (the
+ * mars-reasoning-effort plugin and the broker put it on the wire); every
+ * other effort is declared disabled, because the engine merges its own
+ * OpenAI reasoning defaults into a model's variants and drops only entries
+ * marked disabled. `deprecated` is never passed on: the engine deletes
+ * deprecated models, which would strand the sessions pinned to one.
+ */
+export function engineModelsFromCatalog(catalog: MarsModelCatalog): Record<string, Record<string, unknown>> {
+  return Object.fromEntries(catalog.map((model) => [model.id, {
+    name: model.display_name,
+    reasoning: model.capabilities.reasoning,
+    tool_call: model.capabilities.tool_call,
+    structured_output: true,
+    temperature: true,
+    variants: {
+      ...Object.fromEntries(model.reasoning_levels.map((effort) => [effort, { reasoning_effort: effort }])),
+      ...Object.fromEntries(MARS_MODEL_EFFORTS
+        .filter((effort) => !model.reasoning_levels.includes(effort))
+        .map((effort) => [effort, { disabled: true }])),
+    },
+    limit: { context: model.limits.context, output: model.limits.output },
+    modalities: {
+      input: [
+        "text",
+        ...(model.capabilities.image_input ? ["image"] : []),
+        ...(model.capabilities.file_input ? ["pdf"] : []),
+      ],
+      output: ["text"],
+    },
+    ...(model.family && model.family !== PROVIDER_FAMILY ? { family: model.family } : {}),
+    ...(model.status === "beta" ? { status: "beta" } : {}),
+  }]));
+}
+
+/**
+ * Whether the broker asks for reasoning summaries on a Responses request for
+ * `modelId`: a reasoning model of the catalog on the Codex route (the
+ * provider's own family; the engine opts in for GPT-5 ids only). Decided by
+ * the catalog, so a model added to it (gpt-6.1-sol) gets the summaries the
+ * transcript shows without a desktop release.
+ */
+export function marsModelWantsReasoningSummary(catalog: MarsModelCatalog, modelId: unknown): boolean {
+  if (typeof modelId !== "string") return false;
+  const model = catalog.find((entry) => entry.id === modelId);
+  return Boolean(model && model.capabilities.reasoning && (model.family ?? PROVIDER_FAMILY) === PROVIDER_FAMILY);
+}

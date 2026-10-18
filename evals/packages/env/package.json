@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/env",
+  "name": "@mars/env",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -16,11 +16,11 @@
     }
   },
   "dependencies": {
-    "@omnirush/behaviors": "workspace:*",
-    "@omnirush/cdp": "workspace:*",
-    "@omnirush/hosts": "workspace:*",
-    "@omnirush/labs": "workspace:*",
-    "@omnirush/world": "link:../../../packages/world",
+    "@mars/behaviors": "workspace:*",
+    "@mars/cdp": "workspace:*",
+    "@mars/hosts": "workspace:*",
+    "@mars/labs": "workspace:*",
+    "@mars/world": "link:../../../packages/world",
     "mysql2": "^3.11.3"
   }
 }

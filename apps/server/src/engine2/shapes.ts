@@ -1,8 +1,8 @@
 /**
  * Sessions the opencode 2.x engine stored, in the 1.x shapes.
  *
- * OmniRush.ai desktop 2.2.0 – 3.x bundled the opencode 2.x engine; the app
- * now bundles the 1.x engine again (OmniRush.ai's build of 1.18.32), which
+ * MarsAI desktop 2.2.0 – 3.x bundled the opencode 2.x engine; the app
+ * now bundles the 1.x engine again (MarsAI's build of 1.18.32), which
  * cannot read the 2.x session store. engine2/import.ts copies each 2.x
  * session into the 1.x engine's store once, through `opencode import`; this
  * module turns the 2.x records into the 1.x records it takes, field for field:
@@ -557,7 +557,7 @@ const PROMPT_TEXT_SEPARATOR = "\n\n";
 
 /**
  * A prompt's 1.x text parts. The facade records the layout of the text parts
- * it joined (`metadata.omnirush.textParts`: length, synthetic flag, metadata
+ * it joined (`metadata.mars.textParts`: length, synthetic flag, metadata
  * per part); when the stored text still matches that layout it is split back,
  * so a synthetic note stays its own synthetic part. Otherwise one text part.
  */
@@ -750,7 +750,7 @@ export function v1Messages(messages: unknown[], ctx: MessageContext): V1Message[
         let text = str(message, "text") ?? "";
         if (ctx.child && firstUser && type === "user" && text.startsWith(SUBAGENT_PROMPT_PREFIX)) text = text.slice(SUBAGENT_PROMPT_PREFIX.length);
         if (type === "user") firstUser = false;
-        const sent = record(record(message, "metadata"), "omnirush");
+        const sent = record(record(message, "metadata"), "mars");
         const sentModel = record(sent, "model");
         const mapped = v1UserMessage(
           message, ctx, text, arr(message, "files"), type === "synthetic",

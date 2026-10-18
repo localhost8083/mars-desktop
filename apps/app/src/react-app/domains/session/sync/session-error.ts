@@ -11,17 +11,17 @@ export type OpencodeSessionErrorPresentation = {
   description: string | null;
   technicalDetails: string;
   recoveryPrompt: string | null;
-  /** A page that fixes the error, opened in the browser (omnirush.ai's console for an account out of tokens). */
+  /** A page that fixes the error, opened in the browser (marsai.click's console for an account out of tokens). */
   action?: { label: string; link: string } | null;
 };
 
 /**
- * An omnirush.ai error that ends with its console page ("… earn tokens every
- * day: https://omnirush.ai/console/account"): the sentence without the link,
+ * An marsai.click error that ends with its console page ("… earn tokens every
+ * day: https://marsai.click/console/account"): the sentence without the link,
  * and the link as the card's "Open console" button.
  */
 function consoleLinkAction(message: string | null): { text: string; action: { label: string; link: string } } | null {
-  const [, text, link] = (message && /^(omnirush\.ai: [\s\S]+?):\s*(https?:\/\/\S+\/console\/account)\s*$/.exec(message)) || [];
+  const [, text, link] = (message && /^(mars\.ai: [\s\S]+?):\s*(https?:\/\/\S+\/console\/account)\s*$/.exec(message)) || [];
   return text && link ? { text: `${text}.`, action: { label: "Open console", link } } : null;
 }
 
@@ -101,7 +101,7 @@ function sessionErrorKind(
 
 function errorTitle(kind: OpencodeSessionErrorKind, fallback: string) {
   if (kind === "disk-full") return "Storage error reported";
-  if (kind === "database-error") return "omnirush.ai couldn’t access its saved data";
+  if (kind === "database-error") return "marsai.click couldn’t access its saved data";
   if (kind === "aborted") return "Task interrupted";
   if (kind === "provider-timeout") return "Provider did not respond in time";
   if (kind === "provider-incomplete") return "The model response was interrupted";
@@ -114,10 +114,10 @@ function errorDescription(kind: OpencodeSessionErrorKind) {
     return "A storage limit was reported by the task runtime or a connected service. This does not necessarily mean your computer is full. Check the affected service or workspace before freeing local disk space.";
   }
   if (kind === "database-error") {
-    return "Try again. If this keeps happening, check the available disk space on the device running this task and restart omnirush.ai. For a cloud workspace, contact its administrator.";
+    return "Try again. If this keeps happening, check the available disk space on the device running this task and restart marsai.click. For a cloud workspace, contact its administrator.";
   }
   if (kind === "aborted") {
-    return "omnirush.ai stopped before the task finished. Output and files already produced are kept.";
+    return "marsai.click stopped before the task finished. Output and files already produced are kept.";
   }
   if (kind === "provider-timeout") {
     return "The provider connection timed out before a response began. Output and files already produced are kept.";

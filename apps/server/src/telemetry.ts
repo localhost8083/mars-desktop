@@ -6,14 +6,14 @@ export type ServerTelemetryContext = {
   requestSignal?: AbortSignal;
 };
 
-export type OmniRushDesktopTelemetry = {
+export type MarsDesktopTelemetry = {
   captureException: (error: unknown, context?: ServerTelemetryContext) => boolean;
 };
 
 declare global {
   // Provided by the Electron host when the embedded server runs in desktop mode.
-  // The standalone omnirush-server package leaves this unset.
-  var __omnirushDesktopTelemetry: OmniRushDesktopTelemetry | undefined;
+  // The standalone mars-server package leaves this unset.
+  var __marsDesktopTelemetry: MarsDesktopTelemetry | undefined;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -45,7 +45,7 @@ export function isExpectedRequestCancellation(error: unknown, requestSignal: Abo
 export function captureServerException(error: unknown, context: ServerTelemetryContext = {}): boolean {
   const { requestSignal, ...telemetryContext } = context;
   if (isExpectedRequestCancellation(error, requestSignal)) return false;
-  return globalThis.__omnirushDesktopTelemetry?.captureException(error, {
+  return globalThis.__marsDesktopTelemetry?.captureException(error, {
     surface: "server",
     ...telemetryContext,
   }) ?? false;

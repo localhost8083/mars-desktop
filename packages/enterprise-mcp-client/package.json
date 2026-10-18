@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/enterprise-mcp-client",
+  "name": "@mars/enterprise-mcp-client",
   "private": true,
   "version": "0.1.0",
   "description": "Package-first remote MCP client runtime for enterprise Den connections",

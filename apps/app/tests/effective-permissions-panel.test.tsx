@@ -3,10 +3,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { t } from "../src/i18n";
 import { EffectivePermissionsPanel } from "../src/react-app/domains/settings/panels/effective-permissions-panel";
-import type { OmniRushServerCapabilities } from "../src/app/lib/omnirush-server";
+import type { MarsServerCapabilities } from "../src/app/lib/mars-server";
 
-const readableCapabilities: OmniRushServerCapabilities = {
-  skills: { read: true, write: true, source: "omnirush" },
+const readableCapabilities: MarsServerCapabilities = {
+  skills: { read: true, write: true, source: "mars" },
   plugins: { read: true, write: true },
   mcp: { read: true, write: true },
   commands: { read: true, write: true },
@@ -17,9 +17,9 @@ describe("effective permissions panel", () => {
   test("names the section and explains that the engine is the source of truth", () => {
     const markup = renderToStaticMarkup(
       <EffectivePermissionsPanel
-        omnirushServerClient={null}
-        omnirushServerStatus="connected"
-        omnirushServerCapabilities={readableCapabilities}
+        marsServerClient={null}
+        marsServerStatus="connected"
+        marsServerCapabilities={readableCapabilities}
         runtimeWorkspaceId="ws_1"
       />,
     );
@@ -34,9 +34,9 @@ describe("effective permissions panel", () => {
   test("explains what is missing instead of showing an empty list", () => {
     const markup = renderToStaticMarkup(
       <EffectivePermissionsPanel
-        omnirushServerClient={null}
-        omnirushServerStatus="disconnected"
-        omnirushServerCapabilities={null}
+        marsServerClient={null}
+        marsServerStatus="disconnected"
+        marsServerCapabilities={null}
         runtimeWorkspaceId={null}
       />,
     );

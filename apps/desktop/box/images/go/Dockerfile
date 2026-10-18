@@ -1,4 +1,4 @@
-# OmniRush box: Go. FROM the base image (BASE is set by the build workflow to base@digest).
+# Mars box: Go. FROM the base image (BASE is set by the build workflow to base@digest).
 ARG BASE=ghcr.io/omnirush-ai/box-base:2026.10.1
 FROM ${BASE}
 ARG TARGETARCH
@@ -12,4 +12,4 @@ RUN set -eux; \
     echo "${s}  /tmp/go.tgz" | sha256sum -c -; \
     tar -xzf /tmp/go.tgz -C /usr/local --no-same-owner; rm /tmp/go.tgz; \
     go version
-LABEL ai.omnirush.box.stack="go"
+LABEL ai.mars.box.stack="go"

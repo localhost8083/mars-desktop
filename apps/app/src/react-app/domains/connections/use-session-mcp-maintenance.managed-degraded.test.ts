@@ -11,16 +11,16 @@ declare const expect: (value: unknown) => {
 
 import type { DenMcpToken, DenSettings } from "../../../app/lib/den";
 import {
-  OmniRushServerError,
-  type OmniRushCloudMcpHealth,
-} from "../../../app/lib/omnirush-server";
+  MarsServerError,
+  type MarsCloudMcpHealth,
+} from "../../../app/lib/mars-server";
 import { __setCloudMcpUserStateStorageForTest } from "./cloud-mcp-user-state";
 import { syncCloudControlMcpInBackground } from "./use-session-mcp-maintenance";
 
 const NOW = Date.parse("2026-08-15T12:00:00.000Z");
 const WORKSPACE_ID = "workspace_1";
 const SETTINGS: DenSettings = {
-  baseUrl: "https://app.omnirush.test",
+  baseUrl: "https://app.mars.test",
   authToken: "session-token",
   activeOrgId: "organization_1",
 };
@@ -31,10 +31,10 @@ const MINTED: DenMcpToken = {
   appHostExpiresAt: new Date(NOW + 7 * 24 * 60 * 60 * 1000).toISOString(),
   organizationId: "organization_1",
   scopes: ["mcp:read", "mcp:write"],
-  resource: "https://api.omnirush.test/mcp",
+  resource: "https://api.mars.test/mcp",
 };
 
-function cloudHealth(usable: boolean): OmniRushCloudMcpHealth {
+function cloudHealth(usable: boolean): MarsCloudMcpHealth {
   return {
     schemaVersion: 1,
     phase: usable ? "ready" : "missing_desired",
@@ -44,7 +44,7 @@ function cloudHealth(usable: boolean): OmniRushCloudMcpHealth {
     workspace: { id: WORKSPACE_ID, type: "local", directory: "/workspace", path: "/workspace" },
     desired: {
       present: usable,
-      name: "omnirush-cloud",
+      name: "mars-cloud",
       revision: usable ? "rev_ready" : null,
       config: null,
       token: { present: usable, metadata: {} },
@@ -59,9 +59,9 @@ function cloudHealth(usable: boolean): OmniRushCloudMcpHealth {
     },
     engine: { status: usable ? "connected" : "not_checked" },
     tools: {
-      expected: ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
-      present: usable ? ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"] : [],
-      missing: usable ? [] : ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
+      expected: ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
+      present: usable ? ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"] : [],
+      missing: usable ? [] : ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
       direct: {
         checked: false,
         source: "mcp_tools_list",
@@ -71,15 +71,15 @@ function cloudHealth(usable: boolean): OmniRushCloudMcpHealth {
       },
       providerProjection: {
         checked: usable,
-        provider: "omnirush",
+        provider: "mars",
         model: "gpt-5",
-        present: usable ? ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"] : [],
+        present: usable ? ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"] : [],
         missing: [],
       },
     },
     pluginCanaries: { expected: [], present: [], missing: [] },
     compatibility: {
-      omnirush: { serverVersion: null, app: null },
+      mars: { serverVersion: null, app: null },
       opencode: { expectedVersion: null, actualVersion: null, probe: "not_checked" },
       pluginFileHashes: [],
       supportedFeatures: {
@@ -109,7 +109,7 @@ function cloudHealth(usable: boolean): OmniRushCloudMcpHealth {
       code: "cloud_desired_missing",
       stage: "desired",
       retryable: false,
-      recommendedAction: "Connect omnirush.ai Cloud",
+      recommendedAction: "Connect marsai.click Cloud",
       message: "missing",
     },
     checkedAt: new Date(NOW).toISOString(),
@@ -132,16 +132,16 @@ describe("managed MCP secure-storage degradation in session maintenance", () => 
   test("a structured listMcp server error surfaces its own code and message instead of the generic banner", async () => {
     let reconcileCalls = 0;
     const client = {
-      baseUrl: "https://worker.omnirush.test",
+      baseUrl: "https://worker.mars.test",
       listMcp: async (): Promise<never> => {
-        throw new OmniRushServerError(
+        throw new MarsServerError(
           503,
           "managed_mcp_secure_storage_unavailable",
-          "Secure storage for omnirush.ai-managed MCP credentials is unavailable.",
+          "Secure storage for marsai.click-managed MCP credentials is unavailable.",
         );
       },
-      getOmniRushCloudMcpHealth: async () => cloudHealth(false),
-      reconcileOmniRushCloudMcp: async () => {
+      getMarsCloudMcpHealth: async () => cloudHealth(false),
+      reconcileMarsCloudMcp: async () => {
         reconcileCalls += 1;
         return cloudHealth(true);
       },
@@ -169,17 +169,17 @@ describe("managed MCP secure-storage degradation in session maintenance", () => 
   test("a degraded-but-valid listMcp response still proceeds to the reconciler", async () => {
     let reconcileCalls = 0;
     const client = {
-      baseUrl: "https://worker.omnirush.test",
+      baseUrl: "https://worker.mars.test",
       listMcp: async () => ({
         items: [{
-          name: "omnirush-cloud",
-          config: { type: "remote", enabled: true, url: "https://api.omnirush.test/mcp/agent" },
+          name: "mars-cloud",
+          config: { type: "remote", enabled: true, url: "https://api.mars.test/mcp/agent" },
           source: "config.remote" as const,
         }],
         managedOAuthState: { available: false, recovery: null },
       }),
-      getOmniRushCloudMcpHealth: async () => cloudHealth(false),
-      reconcileOmniRushCloudMcp: async () => {
+      getMarsCloudMcpHealth: async () => cloudHealth(false),
+      reconcileMarsCloudMcp: async () => {
         reconcileCalls += 1;
         return cloudHealth(true);
       },

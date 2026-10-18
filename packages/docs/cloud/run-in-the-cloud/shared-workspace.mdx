@@ -1,38 +1,38 @@
 ---
-title: "OmniRush.ai Web"
-description: "Run a full OmniRush.ai workspace in the browser, hosted by OmniRush.ai"
+title: "MarsAI Web"
+description: "Run a full MarsAI workspace in the browser, hosted by MarsAI"
 ---
 
 <Warning>
-**Hosted access.** OmniRush.ai Web is available to every organization when an OmniRush.ai-hosted deployment explicitly enables it. A platform admin in Den `/admin` can also grant complimentary access to one specific organization while deployment-wide availability is off. Web billing must be configured before an owner or admin can purchase it. It costs **$50 per joined organization member per month**; pending invitations are not billed until they are accepted.
+**Hosted access.** MarsAI Web is available to every organization when an MarsAI-hosted deployment explicitly enables it. A platform admin in Den `/admin` can also grant complimentary access to one specific organization while deployment-wide availability is off. Web billing must be configured before an owner or admin can purchase it. It costs **$50 per joined organization member per month**; pending invitations are not billed until they are accepted.
 </Warning>
 
-OmniRush.ai Web gives your team a full OmniRush.ai workspace in the browser, hosted and managed for you — nothing to install. An organization owner or admin can purchase it directly from the organization dashboard.
+MarsAI Web gives your team a full MarsAI workspace in the browser, hosted and managed for you — nothing to install. An organization owner or admin can purchase it directly from the organization dashboard.
 
-## Turn on OmniRush.ai Web
+## Turn on MarsAI Web
 
-1. As an organization owner or admin, open your org dashboard and go to `OmniRush.ai Web`.
-2. Click `Purchase OmniRush.ai Web — $50 per member/month`.
+1. As an organization owner or admin, open your org dashboard and go to `MarsAI Web`.
+2. Click `Purchase MarsAI Web — $50 per member/month`.
 3. Complete Stripe checkout.
 
-If a platform admin has granted your organization complimentary access, you do not need to purchase OmniRush.ai Web.
+If a platform admin has granted your organization complimentary access, you do not need to purchase MarsAI Web.
 
 ## Open your workspace
 
-Any signed-in member can open the org dashboard, go to `OmniRush.ai Web`, and click `Open OmniRush.ai Web`. The first time you open it, OmniRush.ai automatically provisions your instance.
+Any signed-in member can open the org dashboard, go to `MarsAI Web`, and click `Open MarsAI Web`. The first time you open it, MarsAI automatically provisions your instance.
 
 Each member gets one instance per organization. Work is not shared between members' instances. After 30 minutes of inactivity, your instance stops automatically and wakes the next time you open it. Your files persist across wakes.
 
-## OmniRush.ai Web and the desktop app
+## MarsAI Web and the desktop app
 
-OmniRush.ai Web runs in the browser and is not opened from the desktop app. The desktop app's `Add workspace -> Connect custom remote` flow is for a self-hosted `omnirush-server`; see [Self-host OmniRush.ai](/start-here/self-host).
+MarsAI Web runs in the browser and is not opened from the desktop app. The desktop app's `Add workspace -> Connect custom remote` flow is for a self-hosted `mars-server`; see [Self-host MarsAI](/start-here/self-host).
 
-## When to use OmniRush.ai Web
+## When to use MarsAI Web
 
-Use OmniRush.ai Web for teammates who should not install anything, long-running tasks, or working from a machine without the desktop app.
+Use MarsAI Web for teammates who should not install anything, long-running tasks, or working from a machine without the desktop app.
 
 ## Notes
 
-- `DEN_OMNIRUSH_WEB_ENABLED=true` makes OmniRush.ai Web available to every organization. Missing or false remains fail-closed except for an organization with an explicit complimentary grant from a platform admin in Den `/admin`; organization mode, Stripe-variable presence, and ordinary organization metadata do not act as rollout signals.
-- Each member has one OmniRush.ai Web instance per organization; there is no option to add more.
-- If you prefer to self-host a runtime instead, run `omnirush-server` and connect the desktop app to that server URL.
+- `DEN_MARS_WEB_ENABLED=true` makes MarsAI Web available to every organization. Missing or false remains fail-closed except for an organization with an explicit complimentary grant from a platform admin in Den `/admin`; organization mode, Stripe-variable presence, and ordinary organization metadata do not act as rollout signals.
+- Each member has one MarsAI Web instance per organization; there is no option to add more.
+- If you prefer to self-host a runtime instead, run `mars-server` and connect the desktop app to that server URL.

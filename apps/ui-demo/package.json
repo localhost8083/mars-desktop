@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/ui-demo",
+  "name": "@mars/ui-demo",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,7 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@omnirush/ui": "workspace:*",
+    "@mars/ui": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:"
   },

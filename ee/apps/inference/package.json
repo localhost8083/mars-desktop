@@ -14,7 +14,7 @@
     "@hono/node-server": "2.0.12",
     "@omnirush-ee/den-db": "workspace:*",
     "@omnirush-ee/utils": "workspace:*",
-    "@omnirush/types": "workspace:*",
+    "@mars/types": "workspace:*",
     "@sentry/hono": "^10.65.0",
     "@sentry/node": "^10.65.0",
     "dotenv": "^16.4.5",

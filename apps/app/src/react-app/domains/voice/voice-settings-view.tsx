@@ -104,7 +104,7 @@ export function VoiceSettingsView(props: { client: VoiceClient | null }) {
   const availability = !props.client
     ? null
     : status && !status.signedIn
-      ? "Sign in to omnirush.ai to use voice input."
+      ? "Sign in to marsai.click to use voice input."
       : status?.available === false
         ? "Voice input isn't available on your account yet."
         : null;
@@ -143,7 +143,7 @@ export function VoiceSettingsView(props: { client: VoiceClient | null }) {
         <LayoutSectionItem>
           <LayoutSectionItemHeader>
             <LayoutSectionItemTitle>Hotkey</LayoutSectionItemTitle>
-            <LayoutSectionItemDescription>Works whenever the OmniRush.ai window is focused.</LayoutSectionItemDescription>
+            <LayoutSectionItemDescription>Works whenever the MarsAI window is focused.</LayoutSectionItemDescription>
             <LayoutSectionItemHeaderActions>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" data-testid="voice-settings-hotkey" onClick={() => setRecording(true)}>
@@ -264,7 +264,7 @@ export function VoiceSettingsView(props: { client: VoiceClient | null }) {
         {microphoneSettingsUrl() ? <LayoutSectionItem>
           <LayoutSectionItemHeader>
             <LayoutSectionItemTitle>Microphone permission</LayoutSectionItemTitle>
-            <LayoutSectionItemDescription>If dictation says the microphone is off, allow OmniRush.ai in your system's privacy settings.</LayoutSectionItemDescription>
+            <LayoutSectionItemDescription>If dictation says the microphone is off, allow MarsAI in your system's privacy settings.</LayoutSectionItemDescription>
             <LayoutSectionItemHeaderActions>
               <Button variant="outline" size="sm" onClick={() => void openMicrophoneSettings()}>
                 Open privacy settings

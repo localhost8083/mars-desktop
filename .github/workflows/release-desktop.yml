@@ -88,7 +88,7 @@ jobs:
               --draft \
               --verify-tag \
               --generate-notes \
-              --title "OmniRush.ai ${RELEASE_TAG}"
+              --title "MarsAI ${RELEASE_TAG}"
           fi
 
   build:
@@ -179,7 +179,7 @@ jobs:
 
       - name: Install dependencies
         shell: bash
-        run: pnpm --filter @omnirush/desktop... --filter @omnirush/app... --filter omnirush-server... --filter omnirush-ui-mcp... install --frozen-lockfile --prefer-offline
+        run: pnpm --filter @mars/desktop... --filter @mars/app... --filter mars-server... --filter mars-ui-mcp... install --frozen-lockfile --prefer-offline
 
       - name: Stamp release version
         shell: bash
@@ -189,7 +189,7 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         shell: bash
-        run: pnpm --filter @omnirush/desktop build:electron
+        run: pnpm --filter @mars/desktop build:electron
 
       # Developer ID signature, hardened runtime and notarization. Refuses to
       # package a mac build without the signing secrets.
@@ -286,9 +286,9 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          assets=(apps/desktop/dist-electron/omnirush-*)
+          assets=(apps/desktop/dist-electron/mars-*)
           if [ ${#assets[@]} -eq 0 ]; then
-            echo "No packaged OmniRush.ai assets were produced." >&2
+            echo "No packaged MarsAI assets were produced." >&2
             find apps/desktop/dist-electron -maxdepth 1 -type f -print >&2 || true
             exit 1
           fi
@@ -321,9 +321,9 @@ jobs:
           gh release download "$RELEASE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --dir release-assets \
-            --pattern 'omnirush-*'
+            --pattern 'mars-*'
           cd release-assets
-          sha256sum omnirush-* > SHA256SUMS.txt
+          sha256sum mars-* > SHA256SUMS.txt
           gh release upload "$RELEASE_TAG" SHA256SUMS.txt \
             --repo "$GITHUB_REPOSITORY" \
             --clobber

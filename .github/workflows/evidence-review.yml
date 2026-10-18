@@ -43,13 +43,13 @@ jobs:
       - uses: pnpm/action-setup@v4
       - name: Install review and testkit dependencies
         run: |
-          pnpm --filter @omnirush/review-app... --filter @omnirush/world... --filter @omnirush/types... --filter omnirush-server... install --frozen-lockfile --ignore-scripts
+          pnpm --filter @mars/review-app... --filter @mars/world... --filter @mars/types... --filter mars-server... install --frozen-lockfile --ignore-scripts
           pnpm --dir evals install --frozen-lockfile --ignore-scripts
       - name: Build and verify the review app
         env:
-          OMNIRUSH_EVAL_REVIEW: "1"
+          MARS_EVAL_REVIEW: "1"
         run: |
-          pnpm --filter @omnirush/review-app build
+          pnpm --filter @mars/review-app build
           node --test evals/packages/test-artifacts/test/*.test.ts evals/bin/evals.test.mjs
           pnpm evals:pr specs/evidence-review.test.ts
       - name: Save review journey evidence
@@ -61,7 +61,7 @@ jobs:
           retention-days: 7
   publish:
     if: >-
-      vars.OMNIRUSH_REVIEW_URL != '' &&
+      vars.MARS_REVIEW_URL != '' &&
       github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.pull_requests[0].number != null &&
       (github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure')
@@ -83,13 +83,13 @@ jobs:
       - uses: pnpm/action-setup@v4
       - name: Install publisher dependencies
         run: |
-          pnpm --filter @omnirush/review... install --frozen-lockfile --ignore-scripts
-          pnpm --dir evals --filter @omnirush/test-artifacts install --frozen-lockfile --ignore-scripts
+          pnpm --filter @mars/review... install --frozen-lockfile --ignore-scripts
+          pnpm --dir evals --filter @mars/test-artifacts install --frozen-lockfile --ignore-scripts
       - name: Read completed evidence and publish
         env:
           GH_TOKEN: ${{ github.token }}
-          BLOB_READ_WRITE_TOKEN: ${{ secrets.OMNIRUSH_REVIEW_BLOB_TOKEN }}
-          OMNIRUSH_REVIEW_URL: ${{ vars.OMNIRUSH_REVIEW_URL }}
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.MARS_REVIEW_BLOB_TOKEN }}
+          MARS_REVIEW_URL: ${{ vars.MARS_REVIEW_URL }}
           REVIEW_RUN_ID: ${{ github.event.workflow_run.id }}
           REVIEW_PR: ${{ github.event.workflow_run.pull_requests[0].number }}
           REVIEW_SHA: ${{ github.event.workflow_run.pull_requests[0].head.sha }}

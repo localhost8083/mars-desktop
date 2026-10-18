@@ -1,12 +1,12 @@
 import { platform } from "node:os";
 import { chmod, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { omnirushEnvStorePath } from "@omnirush/paths";
+import { marsEnvStorePath } from "@mars/paths";
 import { writeFileAtomic } from "./atomic-write.js";
 import { ensureDir, exists } from "./utils.js";
 
 // User-level environment variables, persisted so the desktop shell can inject
-// them into every spawned child (OpenCode and OmniRush.ai server).
+// them into every spawned child (OpenCode and MarsAI server).
 // Motivation: Linux GUI launches don't inherit shell env, so users set
 // ANTHROPIC_API_KEY / GCLOUD_* / GCP_* in .bashrc and hit silent auth failures.
 // Scope: user/machine, not workspace. Not synced to the cloud.
@@ -14,17 +14,17 @@ import { ensureDir, exists } from "./utils.js";
 const ENV_KEY_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 // Keys reserved for internal wiring by the desktop shell and server. This UI
-// is for service credentials, not OmniRush.ai/OpenCode runtime knobs; users who
+// is for service credentials, not MarsAI/OpenCode runtime knobs; users who
 // need OPENCODE_* process settings should set them from the launching shell.
 // We refuse writes to these and strip them when reading for injection, so a
 // tampered file cannot shadow auth credentials, token paths, or process
 // identity.
-const RESERVED_PREFIXES = ["OMNIRUSH_", "OPENCODE_"] as const;
+const RESERVED_PREFIXES = ["MARS_", "OPENCODE_"] as const;
 const PERSISTABLE_INTERNAL_KEYS = new Set([
-  "OMNIRUSH_API_KEY",
-  "OMNIRUSH_MODELS_API_KEY",
-  "OMNIRUSH_INFERENCE_BASE_URL",
-  "OMNIRUSH_MODELS_BASE_URL",
+  "MARS_API_KEY",
+  "MARS_MODELS_API_KEY",
+  "MARS_INFERENCE_BASE_URL",
+  "MARS_MODELS_BASE_URL",
 ]);
 
 export type EnvRecord = {
@@ -52,7 +52,7 @@ function isInternalEnvKey(key: string): boolean {
 }
 
 export function resolveDefaultEnvStorePath(): string {
-  return omnirushEnvStorePath();
+  return marsEnvStorePath();
 }
 
 function parseRecord(raw: unknown): EnvRecord | null {
@@ -235,7 +235,7 @@ export class InvalidEnvKeyError extends Error {
   constructor(key: string, code: "invalid_env_key" | "reserved_env_key") {
     super(
       code === "reserved_env_key"
-        ? `Environment variable name is reserved for OmniRush.ai internals: ${key}`
+        ? `Environment variable name is reserved for MarsAI internals: ${key}`
         : `Invalid environment variable name: ${key}`,
     );
     this.code = code;

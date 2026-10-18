@@ -21,7 +21,7 @@ export type DownloadPlatformGroup = {
   options: DownloadPlatformOption[]
 }
 
-const FALLBACK_RELEASE = "https://github.com/omnirush-ai/omnirush-gui/releases"
+const FALLBACK_RELEASE = "https://github.com/mars-ai/mars-gui/releases"
 
 const FALLBACK_INSTALLERS: DownloadCardInstallers = {
   macos: { appleSilicon: FALLBACK_RELEASE, intel: FALLBACK_RELEASE },
@@ -145,8 +145,8 @@ function DownloadLink({
       href={href}
       target={openInNewTab ? "_blank" : undefined}
       rel={openInNewTab ? "noreferrer" : undefined}
-      data-testid={testId ?? "download-omnirush-link"}
-      data-download-omnirush-link="true"
+      data-testid={testId ?? "download-mars-link"}
+      data-download-mars-link="true"
       data-recommended={recommended ? "true" : undefined}
       onClick={onDownload}
       className={
@@ -312,7 +312,7 @@ function groupsForInstallers(installers: DownloadCardInstallers): DownloadPlatfo
   ]
 }
 
-export function DownloadOmniRushCard({
+export function DownloadMarsCard({
   installers,
   releaseTag,
   compact = false,
@@ -337,7 +337,7 @@ export function DownloadOmniRushCard({
 
     return (
       <section
-        data-testid="download-omnirush-card"
+        data-testid="download-mars-card"
         data-compact="true"
         data-detected-os={detected?.os}
         data-detected-arch={detected ? detected.arch ?? "unknown" : undefined}
@@ -351,7 +351,7 @@ export function DownloadOmniRushCard({
               {appIcon ?? (detectedGroup ? <PlatformIcon os={detectedGroup.os} className="h-5 w-5" /> : <MonitorIcon className="h-5 w-5" />)}
             </span>
             <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-semibold text-neutral-950">OmniRush.ai for your desktop</h3>
+              <h3 className="text-sm font-semibold text-neutral-950">MarsAI for your desktop</h3>
               <p className="mt-1 text-xs leading-5 text-neutral-500">
                 {recommended && detectedGroup
                   ? `${detectedGroup.title} · ${recommended.label}`
@@ -365,10 +365,10 @@ export function DownloadOmniRushCard({
               href={recommended.href}
               target="_blank"
               rel="noreferrer"
-              data-testid="download-omnirush-link"
-              data-download-omnirush-link="true"
+              data-testid="download-mars-link"
+              data-download-mars-link="true"
               data-recommended="true"
-              aria-label={`Download OmniRush.ai for ${detectedGroup.title} (${recommended.label})`}
+              aria-label={`Download MarsAI for ${detectedGroup.title} (${recommended.label})`}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-neutral-950 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
             >
               <DownloadIcon className="h-4 w-4 shrink-0" />
@@ -392,9 +392,9 @@ export function DownloadOmniRushCard({
                       href={option.href}
                       target="_blank"
                       rel="noreferrer"
-                      data-testid="download-omnirush-link"
-                      data-download-omnirush-link="true"
-                      aria-label={`Download OmniRush.ai for ${group.title} (${option.label})`}
+                      data-testid="download-mars-link"
+                      data-download-mars-link="true"
+                      aria-label={`Download MarsAI for ${group.title} (${option.label})`}
                       className="flex min-h-9 items-center justify-between gap-3 rounded-lg px-2 py-2 text-xs text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
                     >
                       {option.label}<DownloadIcon className="h-3.5 w-3.5 shrink-0" />
@@ -411,7 +411,7 @@ export function DownloadOmniRushCard({
 
   return (
     <section
-      data-testid="download-omnirush-card"
+      data-testid="download-mars-card"
       data-detected-os={detected?.os}
       data-detected-arch={detected ? detected.arch ?? "unknown" : undefined}
       data-detected-os-version={detected ? detected.osVersion ?? "unknown" : undefined}
@@ -421,7 +421,7 @@ export function DownloadOmniRushCard({
       <div className="bg-linear-to-b/srgb from-[#FAFBFE] to-white px-6 py-5">
         <div className="flex items-center gap-2.5">
           <DownloadIcon className="h-5 w-5 text-[#07192C]/70" />
-          <span className="text-[16px] font-semibold text-[#07192C]">Download OmniRush.ai</span>
+          <span className="text-[16px] font-semibold text-[#07192C]">Download MarsAI</span>
           {tag ? (
             <span className="rounded-full bg-[#F1F4F9] px-2 py-0.5 text-[11px] font-medium text-[#5A6886]">{tag}</span>
           ) : null}

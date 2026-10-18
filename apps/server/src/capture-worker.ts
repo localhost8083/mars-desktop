@@ -190,9 +190,9 @@ const host = new CaptureHost({
   onSessionClosed: (sessionId) => post({ kind: "closed", sessionId }),
 });
 
-/** Tests only (capture-client.test.ts): with OMNIRUSH_CAPTURE_TEST_CRASH=1, a trace of TEST_CRASH_TYPE ends the worker as a crash would. */
-const TEST_CRASH = process.env.OMNIRUSH_CAPTURE_TEST_CRASH === "1";
-const TEST_CRASH_TYPE = "omnirush.test.worker_crash";
+/** Tests only (capture-client.test.ts): with MARS_CAPTURE_TEST_CRASH=1, a trace of TEST_CRASH_TYPE ends the worker as a crash would. */
+const TEST_CRASH = process.env.MARS_CAPTURE_TEST_CRASH === "1";
+const TEST_CRASH_TYPE = "mars.test.worker_crash";
 
 port.on("message", (message: ToWorker) => {
   if (message.kind === "result") {

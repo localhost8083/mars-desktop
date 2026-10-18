@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Eye, Layers, Puzzle, Settings, ShieldCheck, Sparkles, Users, X } from "lucide-react";
-import type { DesktopPolicyKey } from "@omnirush/types/den/desktop-policies";
+import type { DesktopPolicyKey } from "@mars/types/den/desktop-policies";
 import { DenButton } from "../../_components/ui/button";
 import { DenNotice } from "../../_components/ui/notice";
 import { getMembersRoute, getOrgAccessFlags } from "../../_lib/den-org";

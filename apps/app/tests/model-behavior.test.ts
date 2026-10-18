@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
 import type { ProviderListItem } from "../src/app/types";
-import { DEFAULT_MODEL, MODEL_PREF_KEY, OMNIRUSH_REASONING_EFFORTS } from "../src/app/constants";
+import { DEFAULT_MODEL, MODEL_PREF_KEY, MARS_REASONING_EFFORTS } from "../src/app/constants";
 import { readStoredDefaultModel } from "../src/react-app/kernel/model-config";
 import {
   getModelBehaviorOptions,
@@ -14,7 +14,7 @@ import {
   resolveModelDisplayName,
   resolveModelProviderDisplayName,
   resolveModelProviderIconId,
-  resolveOmniRushModelGroup,
+  resolveMarsModelGroup,
 } from "../src/app/utils";
 import {
   isDirectModelProvider,
@@ -81,12 +81,12 @@ const model: ProviderModel = {
   },
 };
 
-const omnirushModel = (id: string, name: string): ProviderModel => ({
+const marsModel = (id: string, name: string): ProviderModel => ({
   ...model,
   id,
   name,
-  providerID: "omnirush",
-  api: { id, url: "http://127.0.0.1:8090/omnirush-gateway/v1", npm: "@ai-sdk/openai" },
+  providerID: "mars",
+  api: { id, url: "http://127.0.0.1:8090/mars-gateway/v1", npm: "@ai-sdk/openai" },
   variants: {
     low: { reasoning_effort: "low" },
     high: { reasoning_effort: "high" },
@@ -95,15 +95,15 @@ const omnirushModel = (id: string, name: string): ProviderModel => ({
   },
 });
 
-const OMNIRUSH_MODELS = [
-  omnirushModel("gpt-6-astra", "GPT 6 Astra"),
-  omnirushModel("gpt-5.6-sol", "GPT-5.6 Sol"),
+const MARS_MODELS = [
+  marsModel("gpt-6-astra", "GPT 6 Astra"),
+  marsModel("gpt-5.6-sol", "GPT-5.6 Sol"),
 ];
 
 describe("model behavior options", () => {
-  test("offers low, high, xhigh and max for every omnirush.ai model", () => {
-    for (const internal of OMNIRUSH_MODELS) {
-      const options = getModelBehaviorOptions("omnirush", internal, "omnirush.ai");
+  test("offers low, high, xhigh and max for every marsai.click model", () => {
+    for (const internal of MARS_MODELS) {
+      const options = getModelBehaviorOptions("mars", internal, "marsai.click");
       expect(options.map(({ value, label }) => ({ value, label }))).toEqual([
         { value: "low", label: "Low" },
         { value: "high", label: "High" },
@@ -114,20 +114,20 @@ describe("model behavior options", () => {
       expect(nextModelBehaviorValue(options, "max")).toBe("low");
       expect(previousModelBehaviorValue(options, "low")).toBe("max");
 
-      const summary = getModelBehaviorSummary("omnirush", internal, "max", "omnirush.ai");
+      const summary = getModelBehaviorSummary("mars", internal, "max", "marsai.click");
       expect(summary.value).toBe("max");
       expect(summary.label).toBe("Max");
-      expect(getModelBehaviorSummary("omnirush", internal, null, "omnirush.ai").value).toBe("high");
+      expect(getModelBehaviorSummary("mars", internal, null, "marsai.click").value).toBe("high");
     }
   });
 
-  test("offers each omnirush.ai model exactly the efforts the engine reports for it", () => {
-    expect([...OMNIRUSH_REASONING_EFFORTS]).toEqual(["none", "minimal", "low", "medium", "high", "xhigh", "max"]);
+  test("offers each marsai.click model exactly the efforts the engine reports for it", () => {
+    expect([...MARS_REASONING_EFFORTS]).toEqual(["none", "minimal", "low", "medium", "high", "xhigh", "max"]);
     // The server declares every other effort disabled per model, so the
     // engine reports only the catalog's levels; anything outside the known
     // set (an engine default such as "ultra") still stays off the picker.
     const museSpark: ProviderModel = {
-      ...omnirushModel("meta-muse-spark", "Meta Muse Spark"),
+      ...marsModel("meta-muse-spark", "Meta Muse Spark"),
       family: "Meta Muse",
       variants: {
         minimal: { reasoning_effort: "minimal" },
@@ -138,31 +138,31 @@ describe("model behavior options", () => {
         ultra: { reasoningEffort: "ultra" },
       },
     };
-    const options = getModelBehaviorOptions("omnirush", museSpark, "omnirush.ai");
+    const options = getModelBehaviorOptions("mars", museSpark, "marsai.click");
     expect(options.map((option) => option.value)).toEqual(["minimal", "low", "medium", "high", "xhigh"]);
-    expect(getModelBehaviorSummary("omnirush", museSpark, null, "omnirush.ai").value).toBe("medium");
-    expect(getModelBehaviorSummary("omnirush", museSpark, "xhigh", "omnirush.ai").value).toBe("xhigh");
+    expect(getModelBehaviorSummary("mars", museSpark, null, "marsai.click").value).toBe("medium");
+    expect(getModelBehaviorSummary("mars", museSpark, "xhigh", "marsai.click").value).toBe("xhigh");
     // An effort Muse does not offer (Astra's max) falls back to its default.
-    expect(getModelBehaviorSummary("omnirush", museSpark, "max", "omnirush.ai").value).toBe("medium");
-    expect(getModelBehaviorSummary("omnirush", museSpark, "ultra", "omnirush.ai").value).toBe("medium");
+    expect(getModelBehaviorSummary("mars", museSpark, "max", "marsai.click").value).toBe("medium");
+    expect(getModelBehaviorSummary("mars", museSpark, "ultra", "marsai.click").value).toBe("medium");
 
     // Astra and Sol keep their v1.0.9 levels and default.
-    for (const internal of OMNIRUSH_MODELS) {
-      expect(getModelBehaviorOptions("omnirush", internal, "omnirush.ai").map((option) => option.value)).toEqual(["low", "high", "xhigh", "max"]);
-      expect(getModelBehaviorSummary("omnirush", internal, null, "omnirush.ai").value).toBe("high");
-      expect(getModelBehaviorSummary("omnirush", internal, "medium", "omnirush.ai").value).toBe("high");
+    for (const internal of MARS_MODELS) {
+      expect(getModelBehaviorOptions("mars", internal, "marsai.click").map((option) => option.value)).toEqual(["low", "high", "xhigh", "max"]);
+      expect(getModelBehaviorSummary("mars", internal, null, "marsai.click").value).toBe("high");
+      expect(getModelBehaviorSummary("mars", internal, "medium", "marsai.click").value).toBe("high");
     }
   });
 
   test("groups Meta Muse under its own family and keeps Astra and Sol under the provider", () => {
-    expect(resolveOmniRushModelGroup("omnirush", "Meta Muse")).toBe("Meta Muse");
-    expect(resolveOmniRushModelGroup("omnirush", undefined)).toBeUndefined();
-    expect(resolveOmniRushModelGroup("omnirush", "  ")).toBeUndefined();
-    // Only the omnirush.ai catalog's families group; other providers keep theirs.
-    expect(resolveOmniRushModelGroup("openai", "gpt")).toBeUndefined();
+    expect(resolveMarsModelGroup("mars", "Meta Muse")).toBe("Meta Muse");
+    expect(resolveMarsModelGroup("mars", undefined)).toBeUndefined();
+    expect(resolveMarsModelGroup("mars", "  ")).toBeUndefined();
+    // Only the marsai.click catalog's families group; other providers keep theirs.
+    expect(resolveMarsModelGroup("openai", "gpt")).toBeUndefined();
     expect(resolveModelDisplayName("meta-muse-spark", "Meta Muse Spark")).toBe("Meta Muse Spark");
     expect(resolveModelDisplayName("muse-spark-1.3", "Meta Muse Spark 1.3")).toBe("Meta Muse Spark 1.3");
-    expect(resolveModelProviderDisplayName("omnirush", "muse-spark-1.3", "omnirush.ai")).toBe("omnirush.ai");
+    expect(resolveModelProviderDisplayName("mars", "muse-spark-1.3", "marsai.click")).toBe("marsai.click");
   });
 
   test("names a catalog model the app has never heard of by the catalog's display name", () => {
@@ -175,20 +175,20 @@ describe("model behavior options", () => {
     expect(resolveModelDisplayName("nova-9.0.1-preview")).toBe("Nova 9.0.1 Preview");
   });
 
-  test("shows both omnirush.ai models under the omnirush.ai provider with their display names", () => {
-    expect(OMNIRUSH_MODELS.map((internal) => resolveModelDisplayName(internal.id, internal.name)))
+  test("shows both marsai.click models under the marsai.click provider with their display names", () => {
+    expect(MARS_MODELS.map((internal) => resolveModelDisplayName(internal.id, internal.name)))
       .toEqual(["GPT 6 Astra", "GPT-5.6 Sol"]);
-    for (const internal of OMNIRUSH_MODELS) {
-      expect(resolveModelProviderDisplayName("omnirush", internal.id, "omnirush.ai", internal.name)).toBe("omnirush.ai");
-      expect(resolveModelProviderIconId("omnirush", internal.id, internal.name)).toBe("omnirush");
+    for (const internal of MARS_MODELS) {
+      expect(resolveModelProviderDisplayName("mars", internal.id, "marsai.click", internal.name)).toBe("marsai.click");
+      expect(resolveModelProviderIconId("mars", internal.id, internal.name)).toBe("mars");
     }
     expect(dedupeModelOptions([
-      { providerID: "omnirush", modelID: "gpt-6-astra" },
-      { providerID: "omnirush", modelID: "gpt-5.6-sol" },
-      { providerID: "omnirush", modelID: "gpt-6-astra" },
+      { providerID: "mars", modelID: "gpt-6-astra" },
+      { providerID: "mars", modelID: "gpt-5.6-sol" },
+      { providerID: "mars", modelID: "gpt-6-astra" },
     ])).toEqual([
-      { providerID: "omnirush", modelID: "gpt-6-astra" },
-      { providerID: "omnirush", modelID: "gpt-5.6-sol" },
+      { providerID: "mars", modelID: "gpt-6-astra" },
+      { providerID: "mars", modelID: "gpt-5.6-sol" },
     ]);
   });
 
@@ -204,8 +204,8 @@ describe("model behavior options", () => {
 
   test("keeps model and provider identities truthful", () => {
     expect(resolveModelDisplayName("gpt-6-astra", "GPT-6 Astra")).toBe("GPT 6 Astra");
-    expect(resolveModelProviderDisplayName("omnirush", "gpt-6-astra")).toBe("omnirush.ai");
-    expect(resolveModelProviderDisplayName("omnirush", "gpt-5.6-sol")).toBe("omnirush.ai");
+    expect(resolveModelProviderDisplayName("mars", "gpt-6-astra")).toBe("marsai.click");
+    expect(resolveModelProviderDisplayName("mars", "gpt-5.6-sol")).toBe("marsai.click");
     expect(resolveModelDisplayName("gpt-5.6-sol", "GPT-5.6 Sol")).toBe("GPT-5.6 Sol");
     expect(resolveModelDisplayName("gpt-5.6-terra", "GPT-5.6 Terra")).toBe("GPT-5.6 Terra");
     expect(resolveModelDisplayName("claude-sonnet-4", "Claude Sonnet 4")).toBe("Claude Sonnet 4");
@@ -221,12 +221,12 @@ describe("model behavior options", () => {
     ]);
   });
 
-  test("lists omnirush.ai models only, mainstream providers only behind the flag", () => {
-    expect(isInternalModelProvider("omnirush")).toBe(true);
+  test("lists marsai.click models only, mainstream providers only behind the flag", () => {
+    expect(isInternalModelProvider("mars")).toBe(true);
     expect(isInternalModelProvider("lpr_team")).toBe(true);
     expect(isDirectModelProvider("openai")).toBe(true);
     expect(isDirectModelProvider("anthropic")).toBe(true);
-    expect(isSupportedModelProvider("omnirush")).toBe(true);
+    expect(isSupportedModelProvider("mars")).toBe(true);
     expect(isSupportedModelProvider("lpr_team")).toBe(true);
     expect(isSupportedModelProvider("anthropic")).toBe(false);
     expect(isSupportedModelProvider("google")).toBe(false);
@@ -234,7 +234,7 @@ describe("model behavior options", () => {
     expect(isSupportedModelProvider("openrouter", true)).toBe(true);
     expect(isSupportedModelProvider("opencode", true)).toBe(false);
     expect(isSupportedModelProvider("ollama", true)).toBe(false);
-    expect(providerCatalogRank("omnirush")).toBeLessThan(providerCatalogRank("openai"));
+    expect(providerCatalogRank("mars")).toBeLessThan(providerCatalogRank("openai"));
   });
 
   test("cycles explicit effort values and wraps", () => {
@@ -287,15 +287,15 @@ describe("stored default model", () => {
   }
 
   test("keeps a Meta Muse default instead of resetting it to Astra", () => {
-    const items = storeDefault("omnirush/meta-muse-spark");
-    expect(readStoredDefaultModel()).toEqual({ providerID: "omnirush", modelID: "meta-muse-spark" });
-    expect(items.get(MODEL_PREF_KEY)).toBe("omnirush/meta-muse-spark");
+    const items = storeDefault("mars/meta-muse-spark");
+    expect(readStoredDefaultModel()).toEqual({ providerID: "mars", modelID: "meta-muse-spark" });
+    expect(items.get(MODEL_PREF_KEY)).toBe("mars/meta-muse-spark");
   });
 
-  test("still moves a retired omnirush.ai route to the default, Astra", () => {
-    const items = storeDefault("omnirush/z-ai/glm-5.2");
+  test("still moves a retired marsai.click route to the default, Astra", () => {
+    const items = storeDefault("mars/z-ai/glm-5.2");
     expect(readStoredDefaultModel()).toEqual(DEFAULT_MODEL);
-    expect(DEFAULT_MODEL).toEqual({ providerID: "omnirush", modelID: "gpt-6-astra" });
-    expect(items.get(MODEL_PREF_KEY)).toBe("omnirush/gpt-6-astra");
+    expect(DEFAULT_MODEL).toEqual({ providerID: "mars", modelID: "gpt-6-astra" });
+    expect(items.get(MODEL_PREF_KEY)).toBe("mars/gpt-6-astra");
   });
 });

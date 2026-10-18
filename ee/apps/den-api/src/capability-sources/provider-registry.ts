@@ -9,7 +9,7 @@
  * OAuth plumbing — `generic-oauth.ts` drives every provider the same way.
  */
 
-import { MICROSOFT_365_DEFAULT_FEATURES } from "@omnirush/types/den/microsoft-365"
+import { MICROSOFT_365_DEFAULT_FEATURES } from "@mars/types/den/microsoft-365"
 import { env } from "../env.js"
 
 export type NativeOAuthProviderConfig = {

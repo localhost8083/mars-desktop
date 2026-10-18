@@ -87,7 +87,7 @@ never submits the target or token; both are owned by the Den operator.
 Create a Vercel project from this repository with **Root Directory** set to
 `ee/apps/diagnostics`. Keep **Include source files outside of the Root
 Directory** enabled so Vercel can install the root pnpm workspace and the
-shared `@omnirush/types` package. Link an Upstash Redis database from the
+shared `@mars/types` package. Link an Upstash Redis database from the
 Vercel Marketplace. Vercel injects the Redis REST URL/token; the app accepts
 either a complete `UPSTASH_REDIS_REST_*` pair or a complete `KV_REST_API_*`
 pair, but never mixes values between the two integrations.

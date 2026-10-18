@@ -259,17 +259,17 @@ describe("deriveOpenTargets", () => {
 
   it("extracts PowerPoint decks from assistant artifact summaries", () => {
     const targets = deriveOpenTargets([
-      message("msg_1", "assistant", "Updated file: decks/omnirush-vertebrae-deck.pptx"),
+      message("msg_1", "assistant", "Updated file: decks/mars-vertebrae-deck.pptx"),
     ]);
-    const deck = targets.find((target) => target.value === "decks/omnirush-vertebrae-deck.pptx");
+    const deck = targets.find((target) => target.value === "decks/mars-vertebrae-deck.pptx");
 
     expect(deck).toMatchObject({ preview: "slides", confidence: 65 });
     expect(deck ? isCollectibleArtifactTarget({ ...deck, exists: true }) : false).toBe(true);
   });
 
-  it("extracts artifact paths from OmniRush.ai extension call metadata", () => {
+  it("extracts artifact paths from MarsAI extension call metadata", () => {
     const targets = deriveOpenTargets([
-      toolMessage("msg_tool", "omnirush_extension_call", {
+      toolMessage("msg_tool", "mars_extension_call", {
         extensionId: "openai-image-generation",
         action: "image_generate",
       }, {

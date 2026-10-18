@@ -1,12 +1,12 @@
-import { desktopConfigSchema, type DesktopConfig } from "@omnirush/types/den/desktop-policies-runtime";
+import { desktopConfigSchema, type DesktopConfig } from "@mars/types/den/desktop-policies-runtime";
 import { existsSync } from "node:fs";
 import { parseApprovalMode, type ApprovalMode } from "./approval-mode.js";
 import { ApiError } from "./errors.js";
 import {
-  isOmniRushUiMcpRegistryEntry,
-  OMNIRUSH_UI_MCP_REGISTRY_COMMAND_MESSAGE,
-  withoutOmniRushUiMcpRegistryEntries,
-} from "./omnirush-ui-mcp-command.js";
+  isMarsUiMcpRegistryEntry,
+  MARS_UI_MCP_REGISTRY_COMMAND_MESSAGE,
+  withoutMarsUiMcpRegistryEntries,
+} from "./mars-ui-mcp-command.js";
 import { importNodeSqlite, readRuntimeSqliteWithRecovery, runtimeDbPath } from "./runtime-db.js";
 import type { ServerConfig } from "./types.js";
 import { createWorkspaceKvStore, isRecord } from "./workspace-kv-store.js";
@@ -15,7 +15,7 @@ export { runtimeDbPath, runtimeStorageDir } from "./runtime-db.js";
 
 export type RuntimeOpencodeConfig = {
   managedPolicy?: DesktopConfig;
-  /** User setting for the engine approval mode; global row only, OMNIRUSH_APPROVALS overrides it. */
+  /** User setting for the engine approval mode; global row only, MARS_APPROVALS overrides it. */
   approvals?: { mode: ApprovalMode };
   /** Bundled development guidance; local engine-global setting, enabled when absent. */
   bestPractices?: boolean;
@@ -29,7 +29,7 @@ export type RuntimeOpencodeConfig = {
   provider?: Record<string, unknown>;
 };
 
-export const ENGINE_GLOBAL_RUNTIME_CONFIG_ID = "__omnirush_engine_global__";
+export const ENGINE_GLOBAL_RUNTIME_CONFIG_ID = "__mars_engine_global__";
 
 export function isEngineGlobalRuntimeConfigId(workspaceId: string): boolean {
   return workspaceId === ENGINE_GLOBAL_RUNTIME_CONFIG_ID;
@@ -281,13 +281,13 @@ export function mergeRuntimeOpencodeConfigLayers(
 }
 
 /**
- * The runtime config with every MCP entry that launches `omnirush-ui-mcp`
+ * The runtime config with every MCP entry that launches `mars-ui-mcp`
  * from a package registry removed. Whatever an older build or a direct DB
  * edit left behind, such an entry is never handed to the engine.
  */
-export function withoutRegistryOmniRushUiMcp(config: RuntimeOpencodeConfig): RuntimeOpencodeConfig {
+export function withoutRegistryMarsUiMcp(config: RuntimeOpencodeConfig): RuntimeOpencodeConfig {
   const mcp = runtimeMcpMap(config);
-  const allowed = withoutOmniRushUiMcpRegistryEntries(mcp);
+  const allowed = withoutMarsUiMcpRegistryEntries(mcp);
   if (allowed === mcp) return config;
   const { mcp: _mcp, ...rest } = config;
   return { ...rest, ...(Object.keys(allowed).length ? { mcp: allowed } : {}) };
@@ -296,20 +296,20 @@ export function withoutRegistryOmniRushUiMcp(config: RuntimeOpencodeConfig): Run
 /**
  * The runtime config the engine actually runs with (ENGINE_GLOBAL row plus
  * the workspace row). The dynamic engine MCP push reads MCP entries from
- * here, so registry launches of `omnirush-ui-mcp` are filtered out.
+ * here, so registry launches of `mars-ui-mcp` are filtered out.
  */
 export async function readEffectiveRuntimeOpencodeConfig(
   config: ServerConfig,
   workspaceId: string,
 ): Promise<RuntimeOpencodeConfig> {
   if (isEngineGlobalRuntimeConfigId(workspaceId)) {
-    return withoutMcpRuntimeConfig(withoutRegistryOmniRushUiMcp(await readRuntimeOpencodeConfig(config, workspaceId)));
+    return withoutMcpRuntimeConfig(withoutRegistryMarsUiMcp(await readRuntimeOpencodeConfig(config, workspaceId)));
   }
   const [globalRuntime, workspaceRuntime] = await Promise.all([
     readGlobalRuntimeOpencodeConfig(config),
     readRuntimeOpencodeConfig(config, workspaceId),
   ]);
-  return withoutMcpRuntimeConfig(withoutRegistryOmniRushUiMcp(mergeRuntimeOpencodeConfigLayers(globalRuntime, workspaceRuntime)));
+  return withoutMcpRuntimeConfig(withoutRegistryMarsUiMcp(mergeRuntimeOpencodeConfigLayers(globalRuntime, workspaceRuntime)));
 }
 
 /**
@@ -548,26 +548,26 @@ export async function inspectRuntimeOpencodeConfig(
 }
 
 /**
- * No writer may store an MCP entry that launches `omnirush-ui-mcp` from a
+ * No writer may store an MCP entry that launches `mars-ui-mcp` from a
  * package registry (addMcp, the MCP toggle, the workspace config PATCH route,
  * plugin imports and migrations all write through here). A write that adds
  * one fails with 400. One already in the row before this build (it survives
  * only if the startup migration could not run) is dropped on the next write
  * instead, so unrelated writes keep working and the row converges to clean.
  */
-function refuseRegistryOmniRushUiMcp(
+function refuseRegistryMarsUiMcp(
   previous: RuntimeOpencodeConfig,
   next: RuntimeOpencodeConfig,
 ): RuntimeOpencodeConfig {
   const mcp = runtimeMcpMap(next);
-  const blocked = Object.keys(mcp).filter((name) => isOmniRushUiMcpRegistryEntry(mcp[name]));
+  const blocked = Object.keys(mcp).filter((name) => isMarsUiMcpRegistryEntry(mcp[name]));
   if (blocked.length === 0) return next;
   const previousMcp = runtimeMcpMap(previous);
-  const added = blocked.filter((name) => !isOmniRushUiMcpRegistryEntry(previousMcp[name]));
+  const added = blocked.filter((name) => !isMarsUiMcpRegistryEntry(previousMcp[name]));
   if (added.length > 0) {
-    throw new ApiError(400, "unsafe_mcp_command", OMNIRUSH_UI_MCP_REGISTRY_COMMAND_MESSAGE, { mcp: added });
+    throw new ApiError(400, "unsafe_mcp_command", MARS_UI_MCP_REGISTRY_COMMAND_MESSAGE, { mcp: added });
   }
-  return normalizeRuntimeOpencodeConfig(withoutRegistryOmniRushUiMcp(next));
+  return normalizeRuntimeOpencodeConfig(withoutRegistryMarsUiMcp(next));
 }
 
 // All runtime writers share this queue. A provider refresh cannot overwrite a
@@ -585,7 +585,7 @@ function updateRuntimeConfig(
     // MCP is never persisted by a runtime write. Existing rows are allowed to
     // be read by cleanup code, but the next write removes every registration.
     const next = withoutMcpRuntimeConfig(
-      refuseRegistryOmniRushUiMcp(current, normalizeRuntimeOpencodeConfig(updater(current))),
+      refuseRegistryMarsUiMcp(current, normalizeRuntimeOpencodeConfig(updater(current))),
     );
     const configJson = runtimeOpencodeConfigStore.serialize(next);
     if (row?.valueJson === configJson) return { config: next, changed: false };

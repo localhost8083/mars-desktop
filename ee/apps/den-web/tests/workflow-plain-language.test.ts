@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { WorkflowGraph } from "@omnirush/types/workflows";
+import type { WorkflowGraph } from "@mars/types/workflows";
 import {
   describeCondition,
   describeLoop,

@@ -11,7 +11,7 @@ import { readFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const CONNECT_LINK_ALGORITHM = "EdDSA";
-const CONNECT_LINK_AUDIENCE = "omnirush-desktop-connect";
+const CONNECT_LINK_AUDIENCE = "mars-desktop-connect";
 const CONNECT_LINK_VERSION = 1;
 const CONNECT_LINK_ROUTE = "connect";
 const DEFAULT_CLOCK_SKEW_SECONDS = 60;
@@ -46,7 +46,7 @@ function isLoopbackUrl(rawUrl) {
 }
 
 /**
- * @param {import("@omnirush/types/connect-link").ConnectLinkClaims} claims
+ * @param {import("@mars/types/connect-link").ConnectLinkClaims} claims
  * @returns {string | null}
  */
 function findRefusedClaimUrl(claims, allowInsecureLoopback) {
@@ -90,7 +90,7 @@ function isHttpUrl(value) {
  * zero runtime workspace dependencies.
  *
  * @param {unknown} payload
- * @returns {import("@omnirush/types/connect-link").ConnectLinkClaims | null}
+ * @returns {import("@mars/types/connect-link").ConnectLinkClaims | null}
  */
 function normalizeClaims(payload) {
   if (typeof payload !== "object" || payload === null) return null;
@@ -144,9 +144,9 @@ function normalizeClaims(payload) {
 }
 
 /**
- * Extracts the signed token from a connect deep link. Accepts the omnirush
- * and omnirush-dev schemes and both authority forms (omnirush://connect and
- * omnirush:///connect).
+ * Extracts the signed token from a connect deep link. Accepts the mars
+ * and mars-dev schemes and both authority forms (mars://connect and
+ * mars:///connect).
  *
  * @param {string} rawUrl
  * @returns {string | null}
@@ -159,7 +159,7 @@ export function extractConnectLinkToken(rawUrl) {
   } catch {
     return null;
   }
-  if (parsed.protocol !== "omnirush:" && parsed.protocol !== "omnirush-dev:") return null;
+  if (parsed.protocol !== "mars:" && parsed.protocol !== "mars-dev:") return null;
   const route = (parsed.hostname || parsed.pathname.replace(/^\/+|\/+$/g, "")).toLowerCase();
   if (route !== CONNECT_LINK_ROUTE) return null;
   if (parsed.searchParams.has("code") || parsed.searchParams.has("apiBaseUrl")) return null;
@@ -179,7 +179,7 @@ export function extractConnectExchange(rawUrl) {
   } catch {
     return null;
   }
-  if (parsed.protocol !== "omnirush:" && parsed.protocol !== "omnirush-dev:") return null;
+  if (parsed.protocol !== "mars:" && parsed.protocol !== "mars-dev:") return null;
   const route = (parsed.hostname || parsed.pathname.replace(/^\/+|\/+$/g, "")).toLowerCase();
   if (route !== CONNECT_LINK_ROUTE || parsed.searchParams.has("token")) return null;
   const code = parsed.searchParams.get("code")?.trim() ?? "";
@@ -196,7 +196,7 @@ export function extractConnectExchange(rawUrl) {
  *   clockSkewSeconds?: number,
  *   allowInsecureLoopback?: boolean,
  * }} input
- * @returns {import("@omnirush/types/connect-link").ConnectLinkVerifyResult}
+ * @returns {import("@mars/types/connect-link").ConnectLinkVerifyResult}
  */
 export function verifyConnectLinkToken(input) {
   const now = input.nowEpochSeconds ?? Math.floor(Date.now() / 1000);
@@ -304,7 +304,7 @@ export function verifyConnectLinkToken(input) {
  *   nowEpochSeconds?: number,
  *   allowInsecureLoopback?: boolean,
  * }} options
- * @returns {import("@omnirush/types/connect-link").ConnectLinkVerifyResult}
+ * @returns {import("@mars/types/connect-link").ConnectLinkVerifyResult}
  */
 export function verifyConnectLinkUrl(rawUrl, options) {
   const token = extractConnectLinkToken(rawUrl);
@@ -327,7 +327,7 @@ export function verifyConnectLinkUrl(rawUrl, options) {
  *   nowEpochSeconds?: number,
  *   allowInsecureLoopback?: boolean,
  * }} options
- * @returns {Promise<import("@omnirush/types/connect-link").ConnectLinkVerifyResult>}
+ * @returns {Promise<import("@mars/types/connect-link").ConnectLinkVerifyResult>}
  */
 export async function resolveConnectExchangeUrl(rawUrl, options) {
   const exchange = extractConnectExchange(rawUrl);
@@ -411,7 +411,7 @@ export async function resolveConnectExchangeUrl(rawUrl, options) {
  * Maps verified claims to the only local fields the connection handoff may
  * change. Kept here so both transports share an independently tested boundary.
  *
- * @param {import("@omnirush/types/connect-link").ConnectLinkClaims} claims
+ * @param {import("@mars/types/connect-link").ConnectLinkClaims} claims
  */
 export function desktopBootstrapFromConnectClaims(claims) {
   return {

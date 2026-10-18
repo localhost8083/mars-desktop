@@ -71,10 +71,10 @@ async function setSessionGroupSchemaVersion(dbPath: string, schemaVersion: numbe
 
 if (typeof process.versions.bun !== "string") {
   test("workspace kv store uses Node SQLite with one shared connection per runtime DB", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-workspace-kv-node-"));
-    const previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
+    const root = await mkdtemp(join(tmpdir(), "mars-workspace-kv-node-"));
+    const previousRuntimeDb = process.env.MARS_RUNTIME_DB;
     const dbPath = join(root, "runtime.sqlite");
-    process.env.OMNIRUSH_RUNTIME_DB = dbPath;
+    process.env.MARS_RUNTIME_DB = dbPath;
     try {
       const config = serverConfig(root);
       const first = recordStore("workspace_kv_node_cache_one");
@@ -102,8 +102,8 @@ if (typeof process.versions.bun !== "string") {
       });
       assert.equal(await sessionGroupSchemaVersion(dbPath), 1);
     } finally {
-      if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-      else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
+      if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+      else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
       await rm(root, { recursive: true, force: true });
     }
   });

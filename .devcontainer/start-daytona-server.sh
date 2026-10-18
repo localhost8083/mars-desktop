@@ -4,8 +4,8 @@ set -euo pipefail
 # Start the Den server stack inside a Daytona sandbox.
 # Services: MySQL, Den API, and Den Web.
 
-if [ -n "${OMNIRUSH_WORKSPACE_DIR:-}" ]; then
-  REPO_DIR="$OMNIRUSH_WORKSPACE_DIR"
+if [ -n "${MARS_WORKSPACE_DIR:-}" ]; then
+  REPO_DIR="$MARS_WORKSPACE_DIR"
 elif [ -f /workspace/package.json ]; then
   REPO_DIR="/workspace"
 else
@@ -16,21 +16,21 @@ cd "$REPO_DIR"
 
 # Per-test Den env from the eval harness (base64 KEY=VALUE lines, one per
 # line). Exported first so a caller's value wins over the defaults below.
-if [ -n "${OMNIRUSH_DEN_EXTRA_ENV_B64:-}" ]; then
+if [ -n "${MARS_DEN_EXTRA_ENV_B64:-}" ]; then
   while IFS= read -r line; do
     [ -n "$line" ] || continue
     case "$line" in
       [A-Z_]*=*) export "$line" ;;
-      *) echo "ERROR: invalid Den env line from OMNIRUSH_DEN_EXTRA_ENV_B64." >&2; exit 1 ;;
+      *) echo "ERROR: invalid Den env line from MARS_DEN_EXTRA_ENV_B64." >&2; exit 1 ;;
     esac
   done <<EOF_EXTRA_ENV
-$(printf %s "$OMNIRUSH_DEN_EXTRA_ENV_B64" | base64 -d)
+$(printf %s "$MARS_DEN_EXTRA_ENV_B64" | base64 -d)
 EOF_EXTRA_ENV
 fi
 
 DEN_API_PORT="${DEN_API_PORT:-8788}"
 DEN_WEB_PORT="${DEN_WEB_PORT:-3005}"
-PNPM_STORE="${PNPM_STORE:-$REPO_DIR/.omnirush-daytona/pnpm-store}"
+PNPM_STORE="${PNPM_STORE:-$REPO_DIR/.mars-daytona/pnpm-store}"
 
 DEN_API_PUBLIC_URL="${DEN_API_PUBLIC_URL:-http://localhost:$DEN_API_PORT}"
 DEN_WEB_PUBLIC_URL="${DEN_WEB_PUBLIC_URL:-http://localhost:$DEN_WEB_PORT}"
@@ -38,7 +38,7 @@ DEN_WEB_PUBLIC_HOST="${DEN_WEB_PUBLIC_URL#http://}"
 DEN_WEB_PUBLIC_HOST="${DEN_WEB_PUBLIC_HOST#https://}"
 DEN_WEB_PUBLIC_HOST="${DEN_WEB_PUBLIC_HOST%%/*}"
 
-export OMNIRUSH_DEV_MODE="${OMNIRUSH_DEV_MODE:-1}"
+export MARS_DEV_MODE="${MARS_DEV_MODE:-1}"
 export DEN_ORG_MODE="${DEN_ORG_MODE:-multi_org}"
 # Eval sign-ups must not depend on the HIBP API.
 export DEN_PASSWORD_BREACH_SCREENING_ENABLED="${DEN_PASSWORD_BREACH_SCREENING_ENABLED:-false}"
@@ -58,7 +58,7 @@ export DEN_MCP_RESOURCE_URL="${DEN_MCP_RESOURCE_URL:-$DEN_API_PUBLIC_URL/mcp}"
 export DEN_API_BASE="${DEN_API_BASE:-${DEN_API_PUBLIC_URL:-http://127.0.0.1:$DEN_API_PORT}}"
 export DEN_AUTH_ORIGIN="${DEN_AUTH_ORIGIN:-$DEN_WEB_PUBLIC_URL}"
 export DEN_AUTH_FALLBACK_BASE="${DEN_AUTH_FALLBACK_BASE:-http://127.0.0.1:$DEN_API_PORT}"
-export NEXT_PUBLIC_OMNIRUSH_AUTH_CALLBACK_URL="${NEXT_PUBLIC_OMNIRUSH_AUTH_CALLBACK_URL:-$DEN_WEB_PUBLIC_URL}"
+export NEXT_PUBLIC_MARS_AUTH_CALLBACK_URL="${NEXT_PUBLIC_MARS_AUTH_CALLBACK_URL:-$DEN_WEB_PUBLIC_URL}"
 export DEN_PROVISIONER_MODE="${DEN_PROVISIONER_MODE:-stub}"
 export DEN_WORKER_URL_TEMPLATE="${DEN_WORKER_URL_TEMPLATE:-https://workers.local/{workerId}}"
 export DEN_WEB_ALLOWED_DEV_ORIGINS="${DEN_WEB_ALLOWED_DEV_ORIGINS:-$DEN_WEB_PUBLIC_HOST}"
@@ -122,7 +122,7 @@ wait_for_http() {
 }
 
 echo "==> Starting MySQL..."
-run_root service mysql start >/tmp/omnirush-mysql-service.log 2>&1 || run_root service mariadb start >/tmp/omnirush-mysql-service.log 2>&1
+run_root service mysql start >/tmp/mars-mysql-service.log 2>&1 || run_root service mariadb start >/tmp/mars-mysql-service.log 2>&1
 
 for _ in $(seq 1 60); do
   if mysql -uroot -ppassword -e "SELECT 1" >/dev/null 2>&1; then
@@ -146,8 +146,8 @@ FLUSH PRIVILEGES;
 SQL
 
 echo "==> Installing dependencies if needed..."
-mkdir -p "$PNPM_STORE" .omnirush-daytona
-baseline=.omnirush-daytona/pnpm-lock.sha256
+mkdir -p "$PNPM_STORE" .mars-daytona
+baseline=.mars-daytona/pnpm-lock.sha256
 current="$(sha256sum pnpm-lock.yaml | cut -d " " -f 1)"
 # The server stack never runs Electron or browser automation; skip their
 # binary downloads on reinstalls too.
@@ -176,7 +176,7 @@ build_key() {
 echo "==> Pushing Den DB schema..."
 pnpm --filter @omnirush-ee/den-db db:push > /tmp/den-db-push.log 2>&1
 
-den_api_assets_marker=.omnirush-daytona/den-api-assets.tree
+den_api_assets_marker=.mars-daytona/den-api-assets.tree
 den_api_assets_key="$(build_key HEAD:packages/mcp-apps)"
 if [ -n "$den_api_assets_key" ] && [ -d packages/mcp-apps/dist ] && [ -f "$den_api_assets_marker" ] \
   && [ "$(cat "$den_api_assets_marker")" = "$den_api_assets_key" ]; then
@@ -213,7 +213,7 @@ nohup env \
   DEN_ORG_MODE="$DEN_ORG_MODE" \
   DEN_PASSWORD_BREACH_SCREENING_ENABLED="$DEN_PASSWORD_BREACH_SCREENING_ENABLED" \
   DEN_GENERATED_ARTIFACT_VIEWS_ENABLED="$DEN_GENERATED_ARTIFACT_VIEWS_ENABLED" \
-  OMNIRUSH_DEV_MODE="$OMNIRUSH_DEV_MODE" \
+  MARS_DEV_MODE="$MARS_DEV_MODE" \
   NODE_OPTIONS="--conditions=development" \
   pnpm --filter @omnirush-ee/den-api exec tsx watch src/main.ts > /tmp/den-api.log 2>&1 &
 
@@ -221,7 +221,7 @@ wait_for_http "http://127.0.0.1:$DEN_API_PORT/health" "Den API" 180
 
 if [ "${RUN_SEED:-0}" = "1" ]; then
   demo_email="${DEN_DEMO_OWNER_EMAIL:-alex@acme.test}"
-  demo_password="${DEN_DEMO_OWNER_PASSWORD:-OmniRushDemo123!}"
+  demo_password="${DEN_DEMO_OWNER_PASSWORD:-MarsDemo123!}"
   signin_ok() {
     curl -sf -o /dev/null -X POST "http://127.0.0.1:$DEN_API_PORT/api/auth/sign-in/email" \
       -H 'content-type: application/json' \
@@ -238,7 +238,7 @@ if [ "${RUN_SEED:-0}" = "1" ]; then
       BETTER_AUTH_URL="$BETTER_AUTH_URL" \
       DEN_API_PUBLIC_URL="$DEN_API_PUBLIC_URL" \
       DEN_ORG_MODE="$DEN_ORG_MODE" \
-      OMNIRUSH_DEV_MODE=1 \
+      MARS_DEV_MODE=1 \
       DEN_DEMO_SEED_FETCH_GITHUB="${DEN_DEMO_SEED_FETCH_GITHUB:-0}" \
       node --conditions=development --import tsx scripts/seed-demo-org.ts) > /tmp/den-seed.log 2>&1
     if signin_ok; then
@@ -252,7 +252,7 @@ if [ "${RUN_SEED:-0}" = "1" ]; then
   echo "DEMO_OWNER_READY=$demo_email"
 fi
 
-den_web_marker=.omnirush-daytona/den-web-build.tree
+den_web_marker=.mars-daytona/den-web-build.tree
 den_web_key="$(build_key HEAD:packages/ui HEAD:ee/packages/utils HEAD:ee/apps/den-web)"
 if [ -n "$den_web_key" ] && [ -d ee/apps/den-web/.next ] && [ -f "$den_web_marker" ] \
   && [ "$(cat "$den_web_marker")" = "$den_web_key" ]; then
@@ -268,13 +268,13 @@ else
     DEN_API_BASE="$DEN_API_BASE" \
     DEN_AUTH_ORIGIN="$DEN_AUTH_ORIGIN" \
     DEN_AUTH_FALLBACK_BASE="$DEN_AUTH_FALLBACK_BASE" \
-    NEXT_PUBLIC_OMNIRUSH_AUTH_CALLBACK_URL="$NEXT_PUBLIC_OMNIRUSH_AUTH_CALLBACK_URL" \
+    NEXT_PUBLIC_MARS_AUTH_CALLBACK_URL="$NEXT_PUBLIC_MARS_AUTH_CALLBACK_URL" \
     NEXT_PUBLIC_POSTHOG_KEY= \
     NEXT_PUBLIC_POSTHOG_API_KEY= \
     DEN_ORG_MODE="$DEN_ORG_MODE" \
-    OMNIRUSH_DEV_MODE="$OMNIRUSH_DEV_MODE" \
+    MARS_DEV_MODE="$MARS_DEV_MODE" \
     DEN_WEB_ALLOWED_DEV_ORIGINS="$DEN_WEB_ALLOWED_DEV_ORIGINS" \
-    bash -c 'pnpm --filter @omnirush/ui build && pnpm --filter @omnirush-ee/utils build && pnpm --filter @omnirush-ee/den-web build' > /tmp/den-web-build.log 2>&1; then
+    bash -c 'pnpm --filter @mars/ui build && pnpm --filter @omnirush-ee/utils build && pnpm --filter @omnirush-ee/den-web build' > /tmp/den-web-build.log 2>&1; then
     echo "ERROR: Den Web build failed. Last 80 lines:" >&2
     tail -n 80 /tmp/den-web-build.log >&2
     exit 1
@@ -294,17 +294,17 @@ nohup env \
   DEN_API_BASE="$DEN_API_BASE" \
   DEN_AUTH_ORIGIN="$DEN_AUTH_ORIGIN" \
   DEN_AUTH_FALLBACK_BASE="$DEN_AUTH_FALLBACK_BASE" \
-  NEXT_PUBLIC_OMNIRUSH_AUTH_CALLBACK_URL="$NEXT_PUBLIC_OMNIRUSH_AUTH_CALLBACK_URL" \
+  NEXT_PUBLIC_MARS_AUTH_CALLBACK_URL="$NEXT_PUBLIC_MARS_AUTH_CALLBACK_URL" \
   NEXT_PUBLIC_POSTHOG_KEY= \
   NEXT_PUBLIC_POSTHOG_API_KEY= \
   DEN_ORG_MODE="$DEN_ORG_MODE" \
-  OMNIRUSH_DEV_MODE="$OMNIRUSH_DEV_MODE" \
+  MARS_DEV_MODE="$MARS_DEV_MODE" \
   DEN_WEB_ALLOWED_DEV_ORIGINS="$DEN_WEB_ALLOWED_DEV_ORIGINS" \
   pnpm --filter @omnirush-ee/den-web exec next start --hostname 0.0.0.0 --port "$DEN_WEB_PORT" > /tmp/den-web.log 2>&1 &
 
 wait_for_http "http://127.0.0.1:$DEN_WEB_PORT/api/den/health" "Den Web" 180
 
-cat > .omnirush-daytona/server-env <<EOF
+cat > .mars-daytona/server-env <<EOF
 DEN_API_URL=$DEN_API_PUBLIC_URL
 DEN_WEB_URL=$DEN_WEB_PUBLIC_URL
 BETTER_AUTH_URL=$BETTER_AUTH_URL
@@ -314,7 +314,7 @@ EOF
 
 echo ""
 echo "============================================"
-echo "  OmniRush.ai Daytona server stack ready"
+echo "  MarsAI Daytona server stack ready"
 echo ""
 echo "  Den Web:       $DEN_WEB_PUBLIC_URL"
 echo "  Den API:       $DEN_API_PUBLIC_URL"

@@ -108,7 +108,7 @@ export function VoicePermissionCard(props: { voice: VoiceDictation }) {
       role="alert"
     >
       <span className="min-w-0 flex-1">
-        Microphone access is off for OmniRush.ai.{" "}
+        Microphone access is off for MarsAI.{" "}
         {url ? "Turn it on in your system's privacy settings, then try again." : "Check that a microphone is connected and allowed, then try again."}
       </span>
       {url ? (

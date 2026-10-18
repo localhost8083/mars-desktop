@@ -4,7 +4,7 @@ import {
   agentContextDiagnosticsReportSchema as sharedReportSchema,
   agentContextDiagnosticsRequestSchema as sharedRequestSchema,
   type AgentContextDiagnosticsRequest,
-} from "@omnirush/types/agent-context-diagnostics";
+} from "@mars/types/agent-context-diagnostics";
 
 import {
   agentContextDiagnosticsReportSchema as localReportSchema,
@@ -38,14 +38,14 @@ const validRequest: AgentContextDiagnosticsRequest = {
 };
 
 const workspace: WorkspaceInfo = {
-  id: "remote_omnirush_schema_parity",
-  name: "Remote OmniRush.ai schema parity",
+  id: "remote_mars_schema_parity",
+  name: "Remote MarsAI schema parity",
   path: "",
   preset: "starter",
   workspaceType: "remote",
-  remoteType: "omnirush",
-  baseUrl: "https://remote-omnirush.invalid",
-  omnirushHostUrl: "https://remote-omnirush.invalid",
+  remoteType: "mars",
+  baseUrl: "https://remote-mars.invalid",
+  marsHostUrl: "https://remote-mars.invalid",
 };
 
 const config: ServerConfig = {
@@ -91,7 +91,7 @@ describe("agent context diagnostics server-local schema parity", () => {
     const reportWithCanonicalMcp = {
       ...report,
       mcps: [{
-        name: "omnirush-cloud",
+        name: "mars-cloud",
         source: "config.remote",
         type: "remote",
         enabled: true,
@@ -200,7 +200,7 @@ describe("agent context diagnostics server-local schema parity", () => {
       {
         ...report,
         mcps: [{
-          name: "omnirush-cloud",
+          name: "mars-cloud",
           source: "config.remote",
           type: "remote",
           enabled: true,
@@ -216,7 +216,7 @@ describe("agent context diagnostics server-local schema parity", () => {
       {
         ...report,
         mcps: [{
-          name: "omnirush-cloud",
+          name: "mars-cloud",
           source: "config.remote",
           type: "remote",
           enabled: true,

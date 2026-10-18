@@ -26,7 +26,7 @@ export function boxProbeRunner(boxFor: (cwd: string) => BoxCaptureInfo | null, p
     try {
       const res = await exec({ host: record.host, port: record.port, token: record.token }, [file, ...args], {
         cwd: mapToBox(cwd, box.root, box.croot),
-        env: { ...probeEnv, COREPACK_ENABLE_NETWORK: "0", COREPACK_ENABLE_AUTO_PIN: "0", OMNIRUSH_LEDGER_OFF: "1", NPM_CONFIG_UPDATE_NOTIFIER: "false", PIP_DISABLE_PIP_VERSION_CHECK: "1" },
+        env: { ...probeEnv, COREPACK_ENABLE_NETWORK: "0", COREPACK_ENABLE_AUTO_PIN: "0", MARS_LEDGER_OFF: "1", NPM_CONFIG_UPDATE_NOTIFIER: "false", PIP_DISABLE_PIP_VERSION_CHECK: "1" },
         timeoutMs,
       });
       if (res.code >= 125 && res.code <= 127) return null;

@@ -1,7 +1,7 @@
 import type { Hono } from "hono"
 import { describeRoute } from "hono-openapi"
 import { z } from "zod"
-import { ManagedModelsPolicyError } from "@omnirush/types/den/managed-models-policy"
+import { ManagedModelsPolicyError } from "@mars/types/den/managed-models-policy"
 import { getCloudWorkerBillingStatus } from "../../billing/polar.js"
 import { createInferenceCheckoutSession, createInferencePortalSession, createOmniRushWebCheckout, createSeatCheckoutSession, getOmniRushWebBillingSummary, getOrgBillingSummary, syncStripeCheckoutSession } from "../../stripe-billing.js"
 import { orgRoleRoute } from "../../middleware/index.js"

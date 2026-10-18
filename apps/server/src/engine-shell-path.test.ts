@@ -21,7 +21,7 @@ function runtimeSpelling(entry: string, home: string, env: Record<string, string
 
 describe("engine PATH resolution", () => {
   test("lists the same well-known directories as the desktop runtime", () => {
-    const home = path.join(tmpdir(), "omnirush-path-home");
+    const home = path.join(tmpdir(), "mars-path-home");
     const env = { APPDATA: path.join(tmpdir(), "appdata"), LOCALAPPDATA: path.join(tmpdir(), "localappdata") };
     for (const platform of ["darwin", "linux", "win32"] as const) {
       const entries = wellKnownPathEntries({ platform, home, env, loginShellEntries: [] });
@@ -36,7 +36,7 @@ describe("engine PATH resolution", () => {
   });
 
   test("keeps the inherited PATH first and appends only existing directories once", () => {
-    const home = mkdtempSync(path.join(tmpdir(), "omnirush-path-"));
+    const home = mkdtempSync(path.join(tmpdir(), "mars-path-"));
     const localBin = path.join(home, ".local", "bin");
     mkdirSync(localBin, { recursive: true });
     const result = enrichedPath(`/custom/bin${path.delimiter}/usr/bin${path.delimiter}/custom/bin`, {

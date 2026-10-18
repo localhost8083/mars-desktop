@@ -5,7 +5,7 @@ import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import type { OmniRushSubagentModelSetting, OmniRushSubagentModelState } from "../src/app/lib/omnirush-server";
+import type { MarsSubagentModelSetting, MarsSubagentModelState } from "../src/app/lib/mars-server";
 
 let policyLocked = false;
 const toasts: string[] = [];
@@ -25,20 +25,20 @@ if (typeof globalThis.window === "undefined" || typeof globalThis.document === "
 }
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", { configurable: true, value: true });
 
-const [{ SubagentModelMenu }, { createOmniRushServerClient, OmniRushServerError }, { Popover, PopoverContent, PopoverTrigger }] = await Promise.all([
+const [{ SubagentModelMenu }, { createMarsServerClient, MarsServerError }, { Popover, PopoverContent, PopoverTrigger }] = await Promise.all([
   import("../src/react-app/domains/session/surface/composer/subagent-model-menu"),
-  import("../src/app/lib/omnirush-server"),
+  import("../src/app/lib/mars-server"),
   import("../src/components/ui/popover"),
 ]);
 
 const codex = ["low", "high", "xhigh", "max"];
 
-function fakeClient(initial: OmniRushSubagentModelSetting, signedIn = true) {
-  const saved: OmniRushSubagentModelSetting[] = [];
+function fakeClient(initial: MarsSubagentModelSetting, signedIn = true) {
+  const saved: MarsSubagentModelSetting[] = [];
   let setting = initial;
   const client = {
     baseUrl: `http://server-${Math.random()}`,
-    getSubagentModel: async (): Promise<OmniRushSubagentModelState> => ({
+    getSubagentModel: async (): Promise<MarsSubagentModelState> => ({
       setting,
       signedIn,
       models: [
@@ -49,7 +49,7 @@ function fakeClient(initial: OmniRushSubagentModelSetting, signedIn = true) {
         { id: "muse-spark-1.1", name: "Muse Spark 1.1", family: "Meta Muse", default: false, efforts: ["minimal", "low", "medium", "high", "xhigh"] },
       ],
     }),
-    setSubagentModel: async (next: OmniRushSubagentModelSetting) => {
+    setSubagentModel: async (next: MarsSubagentModelSetting) => {
       saved.push(next);
       setting = next;
       return { ok: true, setting: next };
@@ -114,7 +114,39 @@ test("a picked model and effort show on the trigger; a model outside the catalog
   expect(flagged.getAttribute("title")).toContain("not available, sub-agents use the main model");
 });
 
-test("hidden without an omnirush.ai account", async () => {
+test("the menu lists the account's -free models, with 'Same as main agent' for the main model", async () => {
+  const { client } = fakeClient({ model: null, effort: null });
+  const withFree = client.getSubagentModel.bind(client);
+  client.getSubagentModel = async () => {
+    const state = await withFree();
+    return { ...state, models: [...state.models, { id: "gpt-6-astra-free", name: "GPT 6 Astra Free", family: "OpenAI", default: false, efforts: codex }] };
+  };
+  await mount(<SubagentModelMenu client={client} />);
+  await act(async () => { trigger()!.click(); });
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 10)); });
+  expect(document.querySelector('[data-testid="subagent-model-same"]')).not.toBeNull();
+  expect(document.querySelector('[data-testid="subagent-model-gpt-6-astra-free"]')).not.toBeNull();
+  // The catalog's paid models stay out of the sub-agent list.
+  expect(document.querySelector('[data-testid="subagent-model-gpt-6-sol"]')).toBeNull();
+  expect(document.querySelector('[data-testid="subagent-model-meta-muse-spark"]')).toBeNull();
+});
+
+test("a picked model that is not -free stays selectable in the menu", async () => {
+  const { client } = fakeClient({ model: "gpt-6-sol", effort: null });
+  const withFree = client.getSubagentModel.bind(client);
+  client.getSubagentModel = async () => {
+    const state = await withFree();
+    return { ...state, models: [...state.models, { id: "gpt-6-astra-free", name: "GPT 6 Astra Free", family: "OpenAI", default: false, efforts: codex }] };
+  };
+  await mount(<SubagentModelMenu client={client} />);
+  await act(async () => { trigger()!.click(); });
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 10)); });
+  expect(document.querySelector('[data-testid="subagent-model-gpt-6-sol"]')).not.toBeNull();
+  expect(document.querySelector('[data-testid="subagent-model-gpt-6-astra-free"]')).not.toBeNull();
+  expect(document.querySelector('[data-testid="subagent-model-gpt-6-astra"]')).toBeNull();
+});
+
+test("hidden without an marsai.click account", async () => {
   const { client } = fakeClient({ model: null, effort: null }, false);
   await mount(<SubagentModelMenu client={client} />);
   expect(trigger()).toBeNull();
@@ -124,10 +156,10 @@ test("hidden without an omnirush.ai account", async () => {
 
 test("a save the server could not write shows its message and keeps the previous setting", async () => {
   const { client } = fakeClient({ model: "gpt-6-astra", effort: null });
-  const attempts: OmniRushSubagentModelSetting[] = [];
-  client.setSubagentModel = async (next: OmniRushSubagentModelSetting) => {
+  const attempts: MarsSubagentModelSetting[] = [];
+  client.setSubagentModel = async (next: MarsSubagentModelSetting) => {
     attempts.push(next);
-    throw new OmniRushServerError(500, "settings_write_failed", "The sub-agent setting could not be saved: EPERM", { code: "EPERM" });
+    throw new MarsServerError(500, "settings_write_failed", "The sub-agent setting could not be saved: EPERM", { code: "EPERM" });
   };
   await mount(<SubagentModelMenu client={client} />);
   expect(trigger()?.textContent).toBe("GPT 6 Astra");
@@ -157,18 +189,18 @@ test("the server client rejects a failed save with the server's readable message
     );
   }) as typeof fetch;
   try {
-    const server = createOmniRushServerClient({ baseUrl: "http://127.0.0.1:1", token: "token" });
+    const server = createMarsServerClient({ baseUrl: "http://127.0.0.1:1", token: "token" });
     const error = await server.setSubagentModel({ model: "gpt-6-sol", effort: "high" }).catch((caught: unknown) => caught);
-    expect(error).toBeInstanceOf(OmniRushServerError);
-    expect((error as InstanceType<typeof OmniRushServerError>).status).toBe(500);
-    expect((error as InstanceType<typeof OmniRushServerError>).code).toBe("settings_write_failed");
+    expect(error).toBeInstanceOf(MarsServerError);
+    expect((error as InstanceType<typeof MarsServerError>).status).toBe(500);
+    expect((error as InstanceType<typeof MarsServerError>).code).toBe("settings_write_failed");
     expect((error as Error).message).toBe("The sub-agent setting could not be saved: EBUSY");
-    expect(calls).toEqual([{ url: "http://127.0.0.1:1/omnirush/subagent-model", method: "PUT" }]);
+    expect(calls).toEqual([{ url: "http://127.0.0.1:1/mars/subagent-model", method: "PUT" }]);
 
     // A non-JSON error page still rejects with the status, not a JSON parse error.
     globalThis.fetch = (async () => new Response("<html>bad gateway</html>", { status: 502 })) as unknown as typeof fetch;
     const proxied = await server.setSubagentModel({ model: null, effort: null }).catch((caught: unknown) => caught);
-    expect(proxied).toBeInstanceOf(OmniRushServerError);
+    expect(proxied).toBeInstanceOf(MarsServerError);
     expect((proxied as Error).message).toBe("Request failed (502)");
   } finally {
     globalThis.fetch = originalFetch;

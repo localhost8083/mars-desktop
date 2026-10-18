@@ -10,8 +10,8 @@ const packagePath = resolve(repoRoot, "packages", "computer-use", "native");
 const iconPath = resolve(desktopRoot, "resources", "icons", "icon.icns");
 const productName = "ComputerUse";
 const helperExecutableName = "ComputerUse";
-const helperAppName = "OmniRush.ai Computer Use.app";
-const bundleIdentifier = "ai.omnirush.desktop.computer-use";
+const helperAppName = "MarsAI Computer Use.app";
+const bundleIdentifier = "ai.marsai.desktop.computer-use";
 
 const readArg = (name) => {
   const raw = process.argv.slice(2);
@@ -24,7 +24,7 @@ const readArg = (name) => {
 
 const hasFlag = (name) => process.argv.slice(2).includes(name);
 const outDir = resolve(readArg("--outdir") ?? join(desktopRoot, "resources", "helpers"));
-const force = hasFlag("--force") || process.env.OMNIRUSH_COMPUTER_USE_FORCE_BUILD === "1";
+const force = hasFlag("--force") || process.env.MARS_COMPUTER_USE_FORCE_BUILD === "1";
 const appPath = join(outDir, helperAppName);
 
 function run(command, args, options = {}) {
@@ -42,7 +42,7 @@ function run(command, args, options = {}) {
 }
 
 function signingIdentity() {
-  const fromEnv = process.env.OMNIRUSH_COMPUTER_USE_SIGN_IDENTITY;
+  const fromEnv = process.env.MARS_COMPUTER_USE_SIGN_IDENTITY;
   if (fromEnv) return fromEnv;
   const result = spawnSync("security", ["find-identity", "-v", "-p", "codesigning"], { encoding: "utf8" });
   if (result.status !== 0) return "-";
@@ -89,7 +89,7 @@ function infoPlist() {
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
   <key>CFBundleDisplayName</key>
-  <string>OmniRush.ai Computer Use</string>
+  <string>MarsAI Computer Use</string>
   <key>CFBundleExecutable</key>
   <string>${helperExecutableName}</string>
   <key>CFBundleIdentifier</key>
@@ -99,7 +99,7 @@ function infoPlist() {
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
-  <string>OmniRush.ai Computer Use</string>
+  <string>MarsAI Computer Use</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>

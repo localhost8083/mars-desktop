@@ -1,5 +1,5 @@
 /**
- * Web error monitoring for the omnirush.ai web deployment (Sentry, zero-dependency).
+ * Web error monitoring for the marsai.click web deployment (Sentry, zero-dependency).
  *
  * Principles (mirrors `analytics.ts`):
  * - Detection-first: report that a web instance failed to boot or hit an
@@ -8,22 +8,22 @@
  *   prompts, or tokens.
  * - Fire-and-forget: monitoring must never break or slow the app.
  * - Off by default: active only when the build is the web deployment
- *   (`VITE_OMNIRUSH_DEPLOYMENT=web`), `VITE_OMNIRUSH_SENTRY_DSN` is set, and
+ *   (`VITE_MARS_DEPLOYMENT=web`), `VITE_MARS_SENTRY_DSN` is set, and
  *   the page is not running inside Electron (the desktop app keeps its own
  *   consent-gated telemetry in `apps/desktop/electron/sentry.mjs`).
  * - Respects the same `analyticsEnabled` preference as product analytics.
  *
  * The pre-boot half lives as an inline script in `index.html` so a bundle
  * that never loads is still reported; once this module starts it takes over
- * via `window.__omnirushWebErrorMonitorActive`.
+ * via `window.__marsWebErrorMonitorActive`.
  */
 import { isAnalyticsEnabled } from "./analytics";
-import { getOmniRushDeployment } from "./omnirush-deployment";
+import { getMarsDeployment } from "./mars-deployment";
 import { isElectronRuntime } from "./runtime-env";
 
 declare global {
   interface Window {
-    __omnirushWebErrorMonitorActive?: boolean;
+    __marsWebErrorMonitorActive?: boolean;
   }
 }
 
@@ -56,7 +56,7 @@ export function shouldMonitorWebErrors(input: WebErrorMonitoringGate): boolean {
 
 /**
  * Strip query and fragment before reporting: sign-in and deep-link URLs can
- * carry credentials (`grant`, `omnirushToken`, `accessToken`) that must never
+ * carry credentials (`grant`, `marsToken`, `accessToken`) that must never
  * leave the page.
  */
 export function sanitizePageUrl(href: string): string {
@@ -155,10 +155,10 @@ function resourceUrl(target: EventTarget | null): string | null {
  */
 export function startWebErrorMonitoring() {
   if (started || typeof window === "undefined") return;
-  const dsn = String(import.meta.env.VITE_OMNIRUSH_SENTRY_DSN ?? "").trim();
+  const dsn = String(import.meta.env.VITE_MARS_SENTRY_DSN ?? "").trim();
   const gate: WebErrorMonitoringGate = {
     dsn,
-    deployment: getOmniRushDeployment(),
+    deployment: getMarsDeployment(),
     electronRuntime: isElectronRuntime(),
   };
   if (!shouldMonitorWebErrors(gate)) return;
@@ -167,9 +167,9 @@ export function startWebErrorMonitoring() {
 
   started = true;
   // Hand off from the pre-boot beacon in index.html.
-  window.__omnirushWebErrorMonitorActive = true;
-  const release = String(import.meta.env.VITE_OMNIRUSH_BUILD_SHA ?? "").trim()
-    || String(import.meta.env.VITE_OMNIRUSH_APP_VERSION ?? "").trim();
+  window.__marsWebErrorMonitorActive = true;
+  const release = String(import.meta.env.VITE_MARS_BUILD_SHA ?? "").trim()
+    || String(import.meta.env.VITE_MARS_APP_VERSION ?? "").trim();
 
   window.addEventListener(
     "error",

@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { connectionActionMcpApp, connectionActionPrompt, connectionActionReply, connectionStatusPrompt, ordinaryDiscoveryPrompt, ordinaryDiscoveryReply } from "../worlds/library.ts";
 
 const test = spec.world(connectionActionMcpApp, { timeout: 600_000 });
@@ -31,7 +31,7 @@ test(`desktop connects through ${entry.name} with one native card and confirms a
   expect(Array.isArray(tools)).toBe(true);
   expect(tools).toEqual(expect.arrayContaining([expect.objectContaining({ name: "execute_capability" })]));
   expect(tools).not.toEqual(expect.arrayContaining([expect.objectContaining({ name: "connection_action" })]));
-  const legacyUri = "ui://omnirush/connection-action/v1/view.html";
+  const legacyUri = "ui://mars/connection-action/v1/view.html";
   const resources = record((await gateway("resources/list")).result).resources;
   expect(Array.isArray(resources)).toBe(true);
   expect(resources).not.toEqual(expect.arrayContaining([expect.objectContaining({ uri: legacyUri })]));
@@ -64,7 +64,7 @@ test(`desktop connects through ${entry.name} with one native card and confirms a
   expect((await world.den.mocks.connector.requests()).filter(request => request.path === "/authorize")).toHaveLength(0);
   const compact = await probe.eval(() => {
     const card = document.querySelector<HTMLElement>('[data-testid="desktop-connection-card"]');
-    return { count: document.querySelectorAll('[data-testid="desktop-connection-card"]').length, height: card?.getBoundingClientRect().height, width: card?.getBoundingClientRect().width, hasChecklist: Boolean(card?.querySelector('ol')), embeddedApp: Boolean(document.querySelector<HTMLElement>('[data-mcp-app-resource="ui://omnirush/connection-action/v1/view.html"]')) };
+    return { count: document.querySelectorAll('[data-testid="desktop-connection-card"]').length, height: card?.getBoundingClientRect().height, width: card?.getBoundingClientRect().width, hasChecklist: Boolean(card?.querySelector('ol')), embeddedApp: Boolean(document.querySelector<HTMLElement>('[data-mcp-app-resource="ui://mars/connection-action/v1/view.html"]')) };
   });
   expect(compact).toMatchObject({ count: 1, hasChecklist: false, embeddedApp: false });
   if (!compact || typeof compact !== "object" || !("height" in compact) || typeof compact.height !== "number" || !("width" in compact) || typeof compact.width !== "number") throw new Error("The connection card was not rendered.");

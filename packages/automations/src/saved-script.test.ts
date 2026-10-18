@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { createAutomationSchema, createCloudAutomationSchema, updateAutomationSchema } from "@omnirush/types/automations"
+import { createAutomationSchema, createCloudAutomationSchema, updateAutomationSchema } from "@mars/types/automations"
 import { automationRevisionDigest } from "./contracts"
 
 const schedule = { kind: "daily" as const, timezone: "UTC", hour: 9, minute: 0 }
@@ -62,7 +62,7 @@ describe("saved Script Automations", () => {
       name: "Legacy",
       instructions: "Prepare a briefing",
       schedule,
-      model: { providerId: "omnirush", modelId: "model" },
+      model: { providerId: "mars", modelId: "model" },
     }).success).toBe(true)
 
     const common = {

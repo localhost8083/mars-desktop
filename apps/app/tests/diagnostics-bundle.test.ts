@@ -11,7 +11,7 @@ function baseInputs(): DiagnosticsBundleInputs {
     desktopRuntime: false,
     appInfo: null,
     engineInfo: null,
-    omnirushServerSettings: {},
+    marsServerSettings: {},
     hostInfo: null,
     developerLogs: [],
     perfLogs: [],
@@ -22,8 +22,8 @@ function baseInputs(): DiagnosticsBundleInputs {
       developerMode: false,
       hostConnectUrl: "",
       hostConnectUrlUsesMdns: false,
-      omnirushServerStatus: "disconnected",
-      omnirushServerUrl: "",
+      marsServerStatus: "disconnected",
+      marsServerUrl: "",
       runtimeWorkspaceId: null,
     },
   };
@@ -39,7 +39,7 @@ describe("diagnostics bundle", () => {
     const opencodeSecret = "opencode-password-1234";
     const input = baseInputs();
     input.desktopRuntime = true;
-    input.omnirushServerSettings = {
+    input.marsServerSettings = {
       urlOverride: "http://127.0.0.1:4096",
       token: settingsSecret,
       hostToken: settingsHostSecret,
@@ -68,7 +68,7 @@ describe("diagnostics bundle", () => {
       runtime: "direct",
       managedByServer: true,
       baseUrl: "http://127.0.0.1:4097",
-      projectDir: "/tmp/omnirush",
+      projectDir: "/tmp/mars",
       hostname: "127.0.0.1",
       port: 4097,
       opencodeUsername: "do-not-include-user",
@@ -85,8 +85,8 @@ describe("diagnostics bundle", () => {
     const parsed = JSON.parse(json);
 
     expect(json).toContain('"tokenPresent": true');
-    expect(parsed.omnirushServer.settings.tokenPresent).toBe(true);
-    expect(parsed.omnirushServer.host.lastStderr).toContain("[redacted]");
+    expect(parsed.marsServer.settings.tokenPresent).toBe(true);
+    expect(parsed.marsServer.host.lastStderr).toContain("[redacted]");
     expect(parsed.opencodeEngine.lastStderr).toContain("[redacted]");
     expect(json).not.toContain(settingsSecret);
     expect(json).not.toContain(settingsHostSecret);
@@ -134,9 +134,9 @@ describe("diagnostics bundle", () => {
 
     const parsed = JSON.parse(composeDiagnosticsBundleJson(input));
 
-    expect(parsed.omnirushServer.host.restarts).toHaveLength(2);
-    expect(parsed.omnirushServer.host.restarts[0]).toMatchObject({ action: "deferred", reason: "engine_reload_failed", busySessions: 3 });
-    expect(parsed.omnirushServer.host.pendingRestart.reason).toBe("engine_reload_failed");
+    expect(parsed.marsServer.host.restarts).toHaveLength(2);
+    expect(parsed.marsServer.host.restarts[0]).toMatchObject({ action: "deferred", reason: "engine_reload_failed", busySessions: 3 });
+    expect(parsed.marsServer.host.pendingRestart.reason).toBe("engine_reload_failed");
   });
 
   test("produces valid JSON without desktop info", () => {
@@ -145,8 +145,8 @@ describe("diagnostics bundle", () => {
 
     expect(parsed.app).toBeNull();
     expect(parsed.opencodeEngine).toBeNull();
-    expect(parsed.omnirushServer.host).toBeNull();
-    expect(parsed.omnirushServer.settings.tokenPresent).toBe(false);
+    expect(parsed.marsServer.host).toBeNull();
+    expect(parsed.marsServer.settings.tokenPresent).toBe(false);
   });
 
   test("carries the focused session and selected workspace IDs for support", () => {
@@ -229,7 +229,7 @@ describe("diagnostics bundle", () => {
       hostToken: null,
       managedOpencodeBinPath: null,
       managedOpencodeBinSource: null,
-      logFilePath: "C:\\Users\\someone\\AppData\\Roaming\\ai.omnirush.desktop\\logs\\omnirush-server.log",
+      logFilePath: "C:\\Users\\someone\\AppData\\Roaming\\ai.marsai.desktop\\logs\\mars-server.log",
       pid: null,
       lastStdout: null,
       lastStderr: null,
@@ -243,10 +243,10 @@ describe("diagnostics bundle", () => {
     expect(parsed.app.os).toBe("win32");
     expect(parsed.app.arch).toBe("x64");
     expect(parsed.runtime.platform).toBe("win32");
-    expect(parsed.omnirushServer.host.generation).toBe(3);
-    expect(parsed.omnirushServer.host.restartsThisLaunch).toBe(2);
+    expect(parsed.marsServer.host.generation).toBe(3);
+    expect(parsed.marsServer.host.restartsThisLaunch).toBe(2);
     // The log file path names the user's home folder; the bundle never carries it.
-    expect(json).not.toContain("omnirush-server.log");
+    expect(json).not.toContain("mars-server.log");
     expect(json).not.toContain("someone");
   });
 
@@ -278,7 +278,7 @@ describe("diagnostics bundle", () => {
     const parsed = JSON.parse(composeDiagnosticsBundleJson(input));
 
     expect(parsed.runtime.platform).toBe("Linux x86_64");
-    expect(parsed.omnirushServer.host.generation).toBeNull();
-    expect(parsed.omnirushServer.host.restartsThisLaunch).toBeNull();
+    expect(parsed.marsServer.host.generation).toBeNull();
+    expect(parsed.marsServer.host.restartsThisLaunch).toBeNull();
   });
 });

@@ -38,11 +38,11 @@ function installGatewayWindow() {
   Object.defineProperty(globalThis, "window", {
     configurable: true,
     value: {
-      __OMNIRUSH_GATEWAY__: { version: 1 },
+      __MARS_GATEWAY__: { version: 1 },
       addEventListener: () => undefined,
       dispatchEvent: () => true,
       localStorage: memoryStorage(),
-      location: { origin: "https://web.omnirush.example.com" },
+      location: { origin: "https://web.mars.example.com" },
       removeEventListener: () => undefined,
     },
   });
@@ -61,7 +61,7 @@ describe("gateway Den session reflection", () => {
     await initializeDenBootstrapConfig();
 
     writeDenSettings({
-      baseUrl: "https://app.omnirush.example.com",
+      baseUrl: "https://app.mars.example.com",
       authToken: "tok_gateway_session",
       activeOrgId: null,
       activeOrgSlug: null,
@@ -133,7 +133,7 @@ describe("gateway Den session reflection", () => {
     expect(second).toBe(first);
 
     writeDenSettings({
-      baseUrl: "https://app.omnirush.example.com",
+      baseUrl: "https://app.mars.example.com",
       authToken: "tok_gateway_session",
       activeOrgId: null,
       activeOrgSlug: null,
@@ -143,6 +143,6 @@ describe("gateway Den session reflection", () => {
     const afterToken = readDenBootstrapConfig();
     expect(afterToken).toBe(first);
     expect(readDenSettings().authToken).toBe("tok_gateway_session");
-    expect(readDenSettings().apiBaseUrl).toBe("https://web.omnirush.example.com/api/den");
+    expect(readDenSettings().apiBaseUrl).toBe("https://web.mars.example.com/api/den");
   });
 });

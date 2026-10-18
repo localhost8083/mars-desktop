@@ -30,7 +30,7 @@ const MICROSOFT_MESSAGES = [
       content: "The launch checklist is complete. The only remaining item is the final support handoff.",
     },
     from: { emailAddress: { name: "Ada Lovelace", address: "ada@example.test" } },
-    toRecipients: [{ emailAddress: { name: "OmniRush.ai Tester", address: "tester@example.test" } }],
+    toRecipients: [{ emailAddress: { name: "MarsAI Tester", address: "tester@example.test" } }],
     webLink: "https://outlook.office.test/mail/message-launch-readiness",
   },
   {
@@ -40,7 +40,7 @@ const MICROSOFT_MESSAGES = [
     bodyPreview: "Finance approved the Q3 budget with no changes.",
     body: { contentType: "text", content: "Finance approved the Q3 budget with no changes." },
     from: { emailAddress: { name: "Grace Hopper", address: "grace@example.test" } },
-    toRecipients: [{ emailAddress: { name: "OmniRush.ai Tester", address: "tester@example.test" } }],
+    toRecipients: [{ emailAddress: { name: "MarsAI Tester", address: "tester@example.test" } }],
     webLink: "https://outlook.office.test/mail/message-q3-budget",
   },
   {
@@ -53,7 +53,7 @@ const MICROSOFT_MESSAGES = [
       content: "Pilot customers highlighted faster setup and asked for clearer connection health.",
     },
     from: { emailAddress: { name: "Katherine Johnson", address: "katherine@example.test" } },
-    toRecipients: [{ emailAddress: { name: "OmniRush.ai Tester", address: "tester@example.test" } }],
+    toRecipients: [{ emailAddress: { name: "MarsAI Tester", address: "tester@example.test" } }],
     webLink: "https://outlook.office.test/mail/message-customer-feedback",
   },
 ];
@@ -67,7 +67,7 @@ const MICROSOFT_EVENTS = [
     end: { dateTime: "2026-07-10T09:30:00", timeZone: "America/Los_Angeles" },
     organizer: { emailAddress: { name: "Ada Lovelace", address: "ada@example.test" } },
     attendees: [],
-    location: { displayName: "OmniRush.ai Room" },
+    location: { displayName: "MarsAI Room" },
     isCancelled: false,
     webLink: "https://outlook.office.test/calendar/event-launch-review",
   },
@@ -92,7 +92,7 @@ const MICROSOFT_Q3_FILE = {
   lastModifiedDateTime: "2026-07-09T13:00:00Z",
   webUrl: "https://onedrive.office.test/files/file-q3-plan",
   file: { mimeType: "text/plain", hashes: { quickXorHash: "mock-hash" } },
-  parentReference: { driveId: "drive-omnirush-test", path: "/drive/root:" },
+  parentReference: { driveId: "drive-mars-test", path: "/drive/root:" },
 };
 
 const Q3_FILE_CONTENT = [
@@ -107,7 +107,7 @@ function sendJson(response, status, body, headers = {}) {
   response.writeHead(status, {
     "access-control-allow-origin": "*",
     "access-control-allow-methods": "GET,POST,DELETE,OPTIONS",
-    "access-control-allow-headers": "authorization,content-type,x-omnirush-host-token",
+    "access-control-allow-headers": "authorization,content-type,x-mars-host-token",
     "content-type": "application/json; charset=utf-8",
     ...headers,
   });
@@ -267,9 +267,9 @@ function handleMicrosoftGraph(request, response, url) {
 
   if (url.pathname === "/graph/v1.0/me" && request.method === "GET") {
     sendJson(response, 200, {
-      id: "microsoft-user-omnirush-test",
-      displayName: "OmniRush.ai Tester",
-      givenName: "OmniRush.ai",
+      id: "microsoft-user-mars-test",
+      displayName: "MarsAI Tester",
+      givenName: "MarsAI",
       surname: "Tester",
       mail: "tester@example.test",
       userPrincipalName: "tester@example.test",
@@ -285,10 +285,10 @@ function handleMicrosoftGraph(request, response, url) {
 
   if (url.pathname === "/graph/v1.0/me/messages" && request.method === "POST") {
     sendJson(response, 201, {
-      id: "draft-omnirush-test",
-      subject: "OmniRush.ai permission parity draft",
+      id: "draft-mars-test",
+      subject: "MarsAI permission parity draft",
       bodyPreview: "Drafted by the deterministic Microsoft Graph mock.",
-      webLink: "https://outlook.office.test/mail/draft-omnirush-test",
+      webLink: "https://outlook.office.test/mail/draft-mars-test",
       isDraft: true,
     });
     return true;
@@ -315,11 +315,11 @@ function handleMicrosoftGraph(request, response, url) {
 
   if (url.pathname === "/graph/v1.0/me/events" && request.method === "POST") {
     sendJson(response, 201, {
-      id: "event-omnirush-test",
-      subject: "OmniRush.ai permission parity review",
+      id: "event-mars-test",
+      subject: "MarsAI permission parity review",
       start: { dateTime: "2026-07-13T10:00:00Z", timeZone: "UTC" },
       end: { dateTime: "2026-07-13T10:30:00Z", timeZone: "UTC" },
-      webLink: "https://outlook.office.test/calendar/event-omnirush-test",
+      webLink: "https://outlook.office.test/calendar/event-mars-test",
     });
     return true;
   }
@@ -342,7 +342,7 @@ function handleMicrosoftGraph(request, response, url) {
     return true;
   }
 
-  if (url.pathname === "/graph/v1.0/me/drive/root:/OmniRush.ai/permission-parity.txt:/content" && request.method === "PUT") {
+  if (url.pathname === "/graph/v1.0/me/drive/root:/MarsAI/permission-parity.txt:/content" && request.method === "PUT") {
     sendJson(response, 201, {
       id: "file-permission-parity",
       name: "permission-parity.txt",
@@ -355,32 +355,32 @@ function handleMicrosoftGraph(request, response, url) {
 
   if (url.pathname === "/graph/v1.0/me/chats" && request.method === "GET") {
     sendJson(response, 200, graphEnvelope([{
-      id: "chat-omnirush-test",
-      topic: "OmniRush.ai launch",
+      id: "chat-mars-test",
+      topic: "MarsAI launch",
       chatType: "group",
-      webUrl: "https://teams.office.test/chats/chat-omnirush-test",
+      webUrl: "https://teams.office.test/chats/chat-mars-test",
       lastUpdatedDateTime: "2026-07-13T09:00:00Z",
     }]));
     return true;
   }
 
-  if (url.pathname === "/graph/v1.0/chats/chat-omnirush-test/messages" && request.method === "GET") {
+  if (url.pathname === "/graph/v1.0/chats/chat-mars-test/messages" && request.method === "GET") {
     sendJson(response, 200, graphEnvelope([{
       id: "teams-message-existing",
       createdDateTime: "2026-07-13T09:05:00Z",
       body: { contentType: "text", content: "Ready for the permission review." },
-      from: { user: { id: "microsoft-user-omnirush-test", displayName: "OmniRush.ai Tester" } },
+      from: { user: { id: "microsoft-user-mars-test", displayName: "MarsAI Tester" } },
       webUrl: "https://teams.office.test/messages/teams-message-existing",
     }]));
     return true;
   }
 
-  if (url.pathname === "/graph/v1.0/chats/chat-omnirush-test/messages" && request.method === "POST") {
+  if (url.pathname === "/graph/v1.0/chats/chat-mars-test/messages" && request.method === "POST") {
     sendJson(response, 201, {
       id: "teams-message-sent",
       createdDateTime: "2026-07-13T09:10:00Z",
       body: { contentType: "text", content: "Permission parity verified." },
-      from: { user: { id: "microsoft-user-omnirush-test", displayName: "OmniRush.ai Tester" } },
+      from: { user: { id: "microsoft-user-mars-test", displayName: "MarsAI Tester" } },
       webUrl: "https://teams.office.test/messages/teams-message-sent",
     });
     return true;
@@ -391,14 +391,14 @@ function handleMicrosoftGraph(request, response, url) {
 }
 
 function hasWorkerDualAuth(request) {
-  return request.headers["x-omnirush-host-token"] === MOCK_WORKER_HOST_TOKEN
+  return request.headers["x-mars-host-token"] === MOCK_WORKER_HOST_TOKEN
     && request.headers.authorization === `Bearer ${MOCK_WORKER_CLIENT_TOKEN}`;
 }
 
 function workerUnauthorized(response) {
   sendJson(response, 401, {
     error: "worker_mock_unauthorized",
-    message: "Both the OmniRush.ai host token and client bearer token are required.",
+    message: "Both the MarsAI host token and client bearer token are required.",
   });
 }
 
@@ -415,7 +415,7 @@ function workerMessages(session, includeReply) {
     messages.push(workerMessage(session, "user", session.messageId, session.prompt));
   }
   if (includeReply && session.prompt) {
-    messages.push(workerMessage(session, "assistant", `${session.messageId}-assistant`, `OmniRush.ai worker reply: ${session.prompt}`, session.messageId));
+    messages.push(workerMessage(session, "assistant", `${session.messageId}-assistant`, `MarsAI worker reply: ${session.prompt}`, session.messageId));
   }
   return messages;
 }

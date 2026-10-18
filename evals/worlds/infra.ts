@@ -1,5 +1,5 @@
 import { mkdir } from "node:fs/promises";
-import type { Seed } from "@omnirush/env";
+import type { Seed } from "@mars/env";
 import {
   createDaytonaK3sCluster,
   createPlacement,
@@ -9,20 +9,20 @@ import {
   provisionDaytonaK3sSandbox,
   SkipError,
   server,
-} from "@omnirush/env";
-import type { Place } from "@omnirush/env";
-import { app } from "@omnirush/env";
-import { daytonaSandbox, desktop } from "@omnirush/hosts";
+} from "@mars/env";
+import type { Place } from "@mars/env";
+import { app } from "@mars/env";
+import { daytonaSandbox, desktop } from "@mars/hosts";
 import { bootRemoteSession } from "../../worlds/remote-session.ts";
 import { bootCloudModelInfra } from "../../worlds/cloud-model-infra.ts";
-import { signIn as signInDen } from "@omnirush/behaviors";
+import { signIn as signInDen } from "@mars/behaviors";
 
 export async function emptyInfraWorld(_seed: Seed) {
   return {};
 }
 
 export async function oauthDenWorld(seed: Seed) {
-  if (process.env.OMNIRUSH_EVAL_DEN_API_URL?.trim()) throw new SkipError("The opencode OAuth proof requires a cold managed Den");
+  if (process.env.MARS_EVAL_DEN_API_URL?.trim()) throw new SkipError("The opencode OAuth proof requires a cold managed Den");
   const den = await seed.den({
     org: { name: "OAuth Lab", admin: { name: "OAuth Admin" }, members: {} },
   });
@@ -30,8 +30,8 @@ export async function oauthDenWorld(seed: Seed) {
 }
 
 export async function twoDaytonaDesktopsWorld(seed: Seed) {
-  const requestedA = process.env.OMNIRUSH_EVAL_DAYTONA_SANDBOX_A?.trim();
-  const requestedB = process.env.OMNIRUSH_EVAL_DAYTONA_SANDBOX_B?.trim();
+  const requestedA = process.env.MARS_EVAL_DAYTONA_SANDBOX_A?.trim();
+  const requestedB = process.env.MARS_EVAL_DAYTONA_SANDBOX_B?.trim();
   if (Boolean(requestedA) !== Boolean(requestedB)) throw new Error("Set both Daytona sandbox ids or neither.");
   if (requestedA && requestedA === requestedB) throw new Error("The two Daytona sandbox ids must differ.");
   const appA = requestedA
@@ -46,8 +46,8 @@ export async function twoDaytonaDesktopsWorld(seed: Seed) {
   if (sandboxA === sandboxB) throw new Error("The two Daytona sandbox ids must differ.");
   const stamp = Date.now();
   const [workspaceA, workspaceB] = await Promise.all([
-    seed.workspace(appA, `/tmp/omnirush-two-sandboxes-a-${stamp}`),
-    seed.workspace(appB, `/tmp/omnirush-two-sandboxes-b-${stamp}`),
+    seed.workspace(appA, `/tmp/mars-two-sandboxes-a-${stamp}`),
+    seed.workspace(appB, `/tmp/mars-two-sandboxes-b-${stamp}`),
   ]);
   return {
     appA,
@@ -76,13 +76,13 @@ export async function localDenSelfTestWorld(_seed: Seed, { place }: { place: Pla
 }
 
 export async function remoteSessionServerWorld(_seed: Seed) {
-  process.env.DATABASE_URL ??= "mysql://root:password@127.0.0.1:3306/omnirush_test";
+  process.env.DATABASE_URL ??= "mysql://root:password@127.0.0.1:3306/mars_test";
   process.env.DEN_DB_ENCRYPTION_KEY ??= "x".repeat(32);
   process.env.BETTER_AUTH_SECRET ??= "y".repeat(32);
   process.env.BETTER_AUTH_URL ??= "http://127.0.0.1:8790";
   process.env.DEN_API_PUBLIC_URL ??= "http://127.0.0.1:8790";
   const module = await import("../../ee/apps/den-api/src/mcp/remote-session-capabilities.js");
-  const workspace = "/tmp/omnirush-remote-session-world";
+  const workspace = "/tmp/mars-remote-session-world";
   await mkdir(workspace, { recursive: true });
   const stack = new AsyncDisposableStack();
   const headless = await bootRemoteSession(stack, {
@@ -103,7 +103,7 @@ export async function cloudModelInfraWorld(_seed: Seed, { place }: { place: Plac
 export async function remoteSessionRunnerWorld(_seed: Seed, { place }: { place: Place }) {
   const stack = new AsyncDisposableStack();
   const cloud = await bootCloudModelInfra(stack, place, { daytonaApiUrl: "http://127.0.0.1:9/daytona-guard" });
-  const workspace = "/tmp/omnirush-remote-session-world";
+  const workspace = "/tmp/mars-remote-session-world";
   await mkdir(workspace, { recursive: true });
   const worker = await bootRemoteSession(stack, {
     name: `remote-session-runner-worker-${process.pid}`,
@@ -127,9 +127,9 @@ export {
   provisionDaytonaK3sSandbox,
   server,
 };
-export { denFetch, signIn } from "@omnirush/behaviors";
-export type { DenSession } from "@omnirush/behaviors";
-export { readHeadlessRuntimeManifest, resolveHeadlessWorldRuntimePaths, stopHeadlessRuntime } from "@omnirush/world";
+export { denFetch, signIn } from "@mars/behaviors";
+export type { DenSession } from "@mars/behaviors";
+export { readHeadlessRuntimeManifest, resolveHeadlessWorldRuntimePaths, stopHeadlessRuntime } from "@mars/world";
 export { createDesktopAutomationRunner } from "../../apps/desktop/electron/automation-runner.mjs";
 export { bootDevHeadless } from "../../worlds/dev-headless.ts";
 export type {

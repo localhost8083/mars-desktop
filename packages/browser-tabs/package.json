@@ -1,8 +1,8 @@
 {
-  "name": "@omnirush/browser-tabs",
+  "name": "@mars/browser-tabs",
   "private": true,
   "type": "module",
-  "description": "Ownership, surfacing, and background-rendering policy for OmniRush.ai's built-in browser tabs.",
+  "description": "Ownership, surfacing, and background-rendering policy for MarsAI's built-in browser tabs.",
   "exports": {
     ".": {
       "types": "./index.d.ts",

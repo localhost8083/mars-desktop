@@ -3,8 +3,8 @@
 // runs the command inside the project's box through boxd and streams the
 // output back, with the exit code and signals of a local shell.
 //
-// Which box: OMNIRUSH_BOX_KEY names it (set on the engine by the CLI, or per
-// call by the box plugin); the box's record is <OMNIRUSH_BOX_HOME>/boxes/<key>.json,
+// Which box: MARS_BOX_KEY names it (set on the engine by the CLI, or per
+// call by the box plugin); the box's record is <MARS_BOX_HOME>/boxes/<key>.json,
 // written by the CLI or the desktop app. With no key, a record that is "off",
 // or a call that is not `-c <command>`, boxsh runs the real shell instead.
 package main
@@ -25,7 +25,7 @@ import (
 	"syscall"
 	"time"
 
-	"omnirush.ai/box/proto"
+	"marsai.click/box/proto"
 )
 
 var version = "dev"
@@ -62,14 +62,14 @@ func main() {
 		return
 	}
 	command, rest, login, ok := parseShellArgs(args)
-	key := strings.TrimSpace(os.Getenv("OMNIRUSH_BOX_KEY"))
+	key := strings.TrimSpace(os.Getenv("MARS_BOX_KEY"))
 	if !ok || key == "" {
 		native(args)
 		return
 	}
 	rec, err := waitReady(key)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "omnirush sandbox: %v\n", err)
+		fmt.Fprintf(os.Stderr, "mars sandbox: %v\n", err)
 		os.Exit(125)
 	}
 	if rec == nil {
@@ -93,7 +93,7 @@ func main() {
 	if err != nil {
 		if rec.Runtime == "" && rec.Backend != "" {
 			// A backend with no `exec` of its own (bubblewrap, the WSL distro): boxd is the only way in.
-			fmt.Fprintf(os.Stderr, "omnirush sandbox: the sandbox is not reachable (%v); `omnirush sandbox status` says why\n", err)
+			fmt.Fprintf(os.Stderr, "mars sandbox: the sandbox is not reachable (%v); `mars sandbox status` says why\n", err)
 			os.Exit(125)
 		}
 		// boxd is not reachable (restarting, crashed): run it with the runtime's exec instead.
@@ -142,11 +142,11 @@ func parseShellArgs(args []string) (command string, rest []string, login bool, o
 }
 
 func boxHome() string {
-	if v := os.Getenv("OMNIRUSH_BOX_HOME"); v != "" {
+	if v := os.Getenv("MARS_BOX_HOME"); v != "" {
 		return v
 	}
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".omnirush", "box")
+	return filepath.Join(home, ".mars", "box")
 }
 
 func readRecord(key string) (*Record, error) {
@@ -170,7 +170,7 @@ func readRecord(key string) (*Record, error) {
 // error the agent sees (failed, or never ready in time).
 func waitReady(key string) (*Record, error) {
 	limit := 180 * time.Second
-	if v, err := strconv.Atoi(os.Getenv("OMNIRUSH_BOX_WAIT_MS")); err == nil && v >= 0 {
+	if v, err := strconv.Atoi(os.Getenv("MARS_BOX_WAIT_MS")); err == nil && v >= 0 {
 		limit = time.Duration(v) * time.Millisecond
 	}
 	start := time.Now()
@@ -196,19 +196,19 @@ func waitReady(key string) (*Record, error) {
 				if msg == "" {
 					msg = "it could not start"
 				}
-				return nil, fmt.Errorf("the sandbox is not available (%s); run `omnirush sandbox status`", msg)
+				return nil, fmt.Errorf("the sandbox is not available (%s); run `mars sandbox status`", msg)
 			}
 		}
 		if time.Since(start)-pulled > limit || pulled > 61*time.Minute {
 			if err != nil {
 				return nil, fmt.Errorf("no sandbox record for this project (%v)", err)
 			}
-			return nil, errors.New("the sandbox did not start in time; run `omnirush sandbox status`")
+			return nil, errors.New("the sandbox did not start in time; run `mars sandbox status`")
 		}
 		if time.Since(start) > 1500*time.Millisecond {
-			msg := "omnirush: waiting for the sandbox to start..."
+			msg := "mars: waiting for the sandbox to start..."
 			if err == nil && rec.State == "pulling" {
-				msg = "omnirush: waiting for the sandbox image to download (once)..."
+				msg = "mars: waiting for the sandbox image to download (once)..."
 			}
 			if msg != said {
 				fmt.Fprintln(os.Stderr, msg)
@@ -286,15 +286,15 @@ func cygpath(rec *Record, command string, rest []string) (string, bool) {
 var passExact = map[string]bool{
 	"TERM": true, "COLORTERM": true, "NO_COLOR": true, "FORCE_COLOR": true, "CLICOLOR": true, "CLICOLOR_FORCE": true,
 	"TZ": true, "CI": true, "HTTP_PROXY": true, "HTTPS_PROXY": true, "NO_PROXY": true, "http_proxy": true,
-	"https_proxy": true, "no_proxy": true, "OMNIRUSH_TURN": true, "OMNIRUSH_CALL": true, "OMNIRUSH_SESSION": true,
-	"OMNIRUSH_LEDGER_OFF": true, "OMNIRUSH_PKGLOG_DIR": true, "PAGER": true, "GIT_PAGER": true, "GIT_TERMINAL_PROMPT": true, "DEBIAN_FRONTEND": true,
+	"https_proxy": true, "no_proxy": true, "MARS_TURN": true, "MARS_CALL": true, "MARS_SESSION": true,
+	"MARS_LEDGER_OFF": true, "MARS_PKGLOG_DIR": true, "PAGER": true, "GIT_PAGER": true, "GIT_TERMINAL_PROMPT": true, "DEBIAN_FRONTEND": true,
 }
 
 // forwardEnv keeps only what describes the terminal and the turn: the host's
 // environment (tokens, keys, PATH, HOME) never enters the box.
 func forwardEnv(environ []string) map[string]string {
 	extra := map[string]bool{}
-	for _, name := range strings.Split(os.Getenv("OMNIRUSH_BOX_PASS_ENV"), ",") {
+	for _, name := range strings.Split(os.Getenv("MARS_BOX_PASS_ENV"), ",") {
 		if name = strings.TrimSpace(name); name != "" {
 			extra[name] = true
 		}
@@ -307,7 +307,7 @@ func forwardEnv(environ []string) map[string]string {
 		}
 		k, v := kv[:i], kv[i+1:]
 		if passExact[k] || extra[k] {
-			if k == "OMNIRUSH_PKGLOG_DIR" && runtime.GOOS == "windows" {
+			if k == "MARS_PKGLOG_DIR" && runtime.GOOS == "windows" {
 				v = windowsToBox(v)
 			}
 			out[k] = v
@@ -316,7 +316,7 @@ func forwardEnv(environ []string) map[string]string {
 	return out
 }
 
-// Timing is one call's overhead record (OMNIRUSH_BOX_TIMING_LOG).
+// Timing is one call's overhead record (MARS_BOX_TIMING_LOG).
 type Timing struct {
 	T         int64   `json:"t"`
 	ConnectMs float64 `json:"connect_ms"`
@@ -329,7 +329,7 @@ type Timing struct {
 }
 
 func logTiming(t Timing) {
-	file := os.Getenv("OMNIRUSH_BOX_TIMING_LOG")
+	file := os.Getenv("MARS_BOX_TIMING_LOG")
 	if file == "" {
 		return
 	}
@@ -407,7 +407,7 @@ func runRemote(rec *Record, req proto.Request) (int, Timing, error) {
 				return 0, timing, err
 			}
 			out.Flush()
-			fmt.Fprintln(os.Stderr, "omnirush sandbox: the connection to the sandbox was lost")
+			fmt.Fprintln(os.Stderr, "mars sandbox: the connection to the sandbox was lost")
 			return 125, timing, nil
 		}
 		if !got {
@@ -425,7 +425,7 @@ func runRemote(rec *Record, req proto.Request) (int, Timing, error) {
 			_, _ = os.Stderr.Write(payload)
 		case proto.Fail:
 			out.Flush()
-			fmt.Fprintf(os.Stderr, "omnirush sandbox: %s\n", payload)
+			fmt.Fprintf(os.Stderr, "mars sandbox: %s\n", payload)
 		case proto.Exit:
 			var info proto.ExitInfo
 			_ = json.Unmarshal(payload, &info)
@@ -473,7 +473,7 @@ func runtimeExec(rec *Record, req proto.Request) int {
 		if errors.As(err, &ee) {
 			return ee.ExitCode()
 		}
-		fmt.Fprintf(os.Stderr, "omnirush sandbox: the sandbox is not reachable: %v\n", err)
+		fmt.Fprintf(os.Stderr, "mars sandbox: the sandbox is not reachable: %v\n", err)
 		return 125
 	}
 	return 0
@@ -484,7 +484,7 @@ func native(args []string) {
 	shell := realShell()
 	if runtime.GOOS != "windows" {
 		err := syscall.Exec(shell, append([]string{shell}, args...), os.Environ())
-		fmt.Fprintf(os.Stderr, "omnirush: could not run %s: %v\n", shell, err)
+		fmt.Fprintf(os.Stderr, "mars: could not run %s: %v\n", shell, err)
 		os.Exit(127)
 	}
 	cmd := exec.Command(shell, windowsArgs(shell, args)...)
@@ -494,7 +494,7 @@ func native(args []string) {
 		if errors.As(err, &ee) {
 			os.Exit(ee.ExitCode())
 		}
-		fmt.Fprintf(os.Stderr, "omnirush: could not run %s: %v\n", shell, err)
+		fmt.Fprintf(os.Stderr, "mars: could not run %s: %v\n", shell, err)
 		os.Exit(127)
 	}
 	os.Exit(0)
@@ -516,7 +516,7 @@ func windowsArgs(shell string, args []string) []string {
 }
 
 func realShell() string {
-	if v := os.Getenv("OMNIRUSH_BOX_REAL_SHELL"); v != "" {
+	if v := os.Getenv("MARS_BOX_REAL_SHELL"); v != "" {
 		return v
 	}
 	self, _ := os.Executable()

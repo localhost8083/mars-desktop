@@ -1,0 +1,45 @@
+name: mars-ui-mcp
+
+# mars-ui-mcp is a private workspace package. The desktop build bundles it
+# into the app (apps/desktop/scripts/prepare-ui-mcp.mjs) and runs it by path,
+# so there is deliberately no npm publish job: nothing should ever be launched
+# as `npx mars-ui-mcp`.
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - "packages/mars-ui-mcp/**"
+      - ".github/workflows/ci-mars-ui-mcp.yml"
+  pull_request:
+    branches: [dev]
+    paths:
+      - "packages/mars-ui-mcp/**"
+      - ".github/workflows/ci-mars-ui-mcp.yml"
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: packages/mars-ui-mcp
+
+jobs:
+  check:
+    name: Syntax check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Syntax check
+        run: node --check index.mjs
+
+      - name: Stays private
+        run: node -e "const p=require('./package.json'); if (p.private !== true || p.publishConfig) { console.error('mars-ui-mcp must stay private and unpublished'); process.exit(1); }"

@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { omnirushConfigDir } from "@omnirush/paths";
+import { marsConfigDir } from "@mars/paths";
 import type { Database as BunDatabase } from "bun:sqlite";
 import type { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 import type { DatabaseSync } from "node:sqlite";
@@ -34,10 +34,10 @@ export function importNodeSqlite(): Promise<typeof import("node:sqlite")> {
 }
 
 export function runtimeDbPath(config: ServerConfig): string {
-  const override = process.env.OMNIRUSH_RUNTIME_DB?.trim();
+  const override = process.env.MARS_RUNTIME_DB?.trim();
   if (override) return resolve(override);
   const configPath = config.configPath?.trim();
-  const configDir = configPath ? dirname(configPath) : omnirushConfigDir();
+  const configDir = configPath ? dirname(configPath) : marsConfigDir();
   return join(configDir, "runtime.sqlite");
 }
 

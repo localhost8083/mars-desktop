@@ -1,20 +1,20 @@
-# OmniRush.ai Server
+# MarsAI Server
 
-Filesystem-backed API for OmniRush.ai remote clients. This package provides the OmniRush.ai server layer described in `apps/app/pr/omnirush-server.md` and is intentionally independent from the desktop app.
+Filesystem-backed API for MarsAI remote clients. This package provides the MarsAI server layer described in `apps/app/pr/mars-server.md` and is intentionally independent from the desktop app.
 
 ## Quick start
 
 ```bash
-npm install -g omnirush-server
-omnirush-server --workspace /path/to/workspace --approval auto
+npm install -g mars-server
+mars-server --workspace /path/to/workspace --approval auto
 ```
 
-`omnirush-server` ships as a compiled binary, so Bun is not required at runtime.
+`mars-server` ships as a compiled binary, so Bun is not required at runtime.
 
 Or from source:
 
 ```bash
-pnpm --filter omnirush-server dev -- \
+pnpm --filter mars-server dev -- \
   --workspace /path/to/workspace \
   --approval auto
 ```
@@ -57,13 +57,13 @@ This prevents duplicate recovery admissions, not exactly-once execution of exter
 tools; uncertain earlier effects must be inspected or clarified before continuing.
 
 Desktop Automation and remote-command requests opt out with
-`x-omnirush-task-recovery: off`; their existing execution ownership is unchanged.
+`x-mars-task-recovery: off`; their existing execution ownership is unchanged.
 Runtime journey verification for actual Electron restarts on both engines remains
 separate from the focused coordinator and mocked-proxy tests.
 
 ## Config file
 
-Defaults to `~/.config/omnirush/server.json` (override with `OMNIRUSH_SERVER_CONFIG` or `--config`).
+Defaults to `~/.config/mars/server.json` (override with `MARS_SERVER_CONFIG` or `--config`).
 
 ```json
 {
@@ -85,33 +85,33 @@ Defaults to `~/.config/omnirush/server.json` (override with `OMNIRUSH_SERVER_CON
 
 ## Environment variables
 
-- `OMNIRUSH_SERVER_CONFIG` path to config JSON
-- `OMNIRUSH_HOST` / `OMNIRUSH_PORT`
-- `OMNIRUSH_TOKEN` client bearer token
-- `OMNIRUSH_HOST_TOKEN` host approval token
-- `OMNIRUSH_APPROVAL_MODE` (`manual` | `auto`)
-- `OMNIRUSH_APPROVAL_TIMEOUT_MS`
-- `OMNIRUSH_WORKSPACES` (JSON array or comma-separated list of paths)
-- `OMNIRUSH_CORS_ORIGINS` (comma-separated list or `*`)
-- `OMNIRUSH_OPENCODE_BASE_URL`
-- `OMNIRUSH_OPENCODE_DIRECTORY`
-- `OMNIRUSH_OPENCODE_USERNAME`
-- `OMNIRUSH_OPENCODE_PASSWORD`
+- `MARS_SERVER_CONFIG` path to config JSON
+- `MARS_HOST` / `MARS_PORT`
+- `MARS_TOKEN` client bearer token
+- `MARS_HOST_TOKEN` host approval token
+- `MARS_APPROVAL_MODE` (`manual` | `auto`)
+- `MARS_APPROVAL_TIMEOUT_MS`
+- `MARS_WORKSPACES` (JSON array or comma-separated list of paths)
+- `MARS_CORS_ORIGINS` (comma-separated list or `*`)
+- `MARS_OPENCODE_BASE_URL`
+- `MARS_OPENCODE_DIRECTORY`
+- `MARS_OPENCODE_USERNAME`
+- `MARS_OPENCODE_PASSWORD`
 
 Token management (scoped tokens):
 
-- `OMNIRUSH_TOKEN_STORE` path to token store JSON (default: alongside `server.json`)
+- `MARS_TOKEN_STORE` path to token store JSON (default: alongside `server.json`)
 
 File injection / artifacts:
 
-- `OMNIRUSH_INBOX_ENABLED` (`1` | `0`)
-- `OMNIRUSH_INBOX_MAX_BYTES` (default: 50MB, capped)
-- `OMNIRUSH_OUTBOX_ENABLED` (`1` | `0`)
+- `MARS_INBOX_ENABLED` (`1` | `0`)
+- `MARS_INBOX_MAX_BYTES` (default: 50MB, capped)
+- `MARS_OUTBOX_ENABLED` (`1` | `0`)
 
 Sandbox advertisement (for capability discovery):
 
-- `OMNIRUSH_SANDBOX_ENABLED` (`1` | `0`)
-- `OMNIRUSH_SANDBOX_BACKEND` (`docker` | `container` | `none`)
+- `MARS_SANDBOX_ENABLED` (`1` | `0`)
+- `MARS_SANDBOX_BACKEND` (`docker` | `container` | `none`)
 
 ## Endpoints
 
@@ -146,7 +146,7 @@ Token management (collaborator or owner bearer token):
 
 Inbox/outbox:
 
-- `POST /workspace/:id/inbox` (multipart upload into `.opencode/omnirush/inbox/`)
+- `POST /workspace/:id/inbox` (multipart upload into `.opencode/mars/inbox/`)
 - `GET /workspace/:id/artifacts`
 - `GET /workspace/:id/artifacts/:artifactId`
 - `POST /workspace/:id/files/sessions`
@@ -203,7 +203,7 @@ This feature does not change the app's existing account or data settings.
 
 Host APIs accept either:
 
-- `X-OmniRush-Host-Token: <token>` (legacy host token), or
+- `X-Mars-Host-Token: <token>` (legacy host token), or
 - `Authorization: Bearer <token>` where the token scope is `owner`.
 
 Approvals endpoints:
@@ -211,7 +211,7 @@ Approvals endpoints:
 - `GET /approvals`
 - `POST /approvals/:id` with `{ "reply": "allow" | "deny" }`
 
-Set `OMNIRUSH_APPROVAL_MODE=auto` to auto-approve during local development.
+Set `MARS_APPROVAL_MODE=auto` to auto-approve during local development.
 
 ## Automatic title recovery
 
@@ -224,7 +224,7 @@ model, credentials, conversation content, and normal chat options stay intact.
 Access, quota, transport, and unrelated request errors do not trigger an added
 recovery request. The engine's own transport retry policy still applies.
 
-Engine log records with service `omnirush.title` / message `Automatic title
+Engine log records with service `mars.title` / message `Automatic title
 generation` contain only session/provider/model IDs, outcome, recovery attempt,
 HTTP status, and the rejected parameter name. `accepted_after_recovery` means
 the provider accepted the retry; `title_available` separately confirms a real

@@ -1,6 +1,6 @@
 "use client";
 
-import { detectPlatform, type DetectedPlatform } from "@omnirush/ui/react";
+import { detectPlatform, type DetectedPlatform } from "@mars/ui/react";
 import { useEffect, useState } from "react";
 import {
   getDesktopHandoffGrant,

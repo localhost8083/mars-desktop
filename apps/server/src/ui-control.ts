@@ -21,7 +21,7 @@ export class UiControlMailbox {
     if (!this.connected()) {
       return Promise.resolve({
         ok: false,
-        error: "No OmniRush.ai window is connected to this server. Open the OmniRush.ai app or its web tab and try again.",
+        error: "No MarsAI window is connected to this server. Open the MarsAI app or its web tab and try again.",
       });
     }
 
@@ -36,7 +36,7 @@ export class UiControlMailbox {
     return new Promise<unknown>((resolve) => {
       const timeout = setTimeout(() => {
         this.requests.delete(id);
-        resolve({ ok: false, error: "The OmniRush.ai window did not answer within 5 seconds." });
+        resolve({ ok: false, error: "The MarsAI window did not answer within 5 seconds." });
       }, REQUEST_TIMEOUT_MS);
 
       this.requests.set(id, { request, delivered: false, resolve, timeout });

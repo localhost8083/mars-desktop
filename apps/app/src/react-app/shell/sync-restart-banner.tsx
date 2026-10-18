@@ -2,8 +2,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { RefreshCw } from "lucide-react";
 
-import { createOmniRushServerClient, type OmniRushCaptureStatus } from "../../app/lib/omnirush-server";
-import { resolveOmniRushConnection } from "./omnirush-connection";
+import { createMarsServerClient, type MarsCaptureStatus } from "../../app/lib/mars-server";
+import { resolveMarsConnection } from "./mars-connection";
 import { BANNER_CLASS, BANNER_HEIGHT_PX, bannerShiftStyle } from "./update-gate";
 
 export const SYNC_RESTART_BANNER_TEXT = "Session sync is restarting. Your work is safe; it will catch up automatically.";
@@ -17,7 +17,7 @@ const SLOW_START_MS = 10_000;
  * the server still answers, or slow to start. No answer (the server is
  * unreachable) and "off" (signed out) show none.
  */
-export function captureBannerVisible(status: OmniRushCaptureStatus | null, now: number): boolean {
+export function captureBannerVisible(status: MarsCaptureStatus | null, now: number): boolean {
   if (!status || status.running) return false;
   switch (status.mode) {
     case "restarting":
@@ -30,7 +30,7 @@ export function captureBannerVisible(status: OmniRushCaptureStatus | null, now: 
   }
 }
 
-/** GET /omnirush/capture/status every five seconds while the window is visible. Never blocks prompts. */
+/** GET /mars/capture/status every five seconds while the window is visible. Never blocks prompts. */
 export function useCaptureBannerVisible(): boolean {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -39,11 +39,11 @@ export function useCaptureBannerVisible(): boolean {
     const poll = async () => {
       if (inflight || document.visibilityState !== "visible") return;
       inflight = true;
-      let status: OmniRushCaptureStatus | null = null;
+      let status: MarsCaptureStatus | null = null;
       try {
-        const connection = await resolveOmniRushConnection();
+        const connection = await resolveMarsConnection();
         if (connection.normalizedBaseUrl && connection.resolvedToken) {
-          status = await createOmniRushServerClient({
+          status = await createMarsServerClient({
             baseUrl: connection.normalizedBaseUrl,
             token: connection.resolvedToken,
             hostToken: connection.resolvedHostToken,

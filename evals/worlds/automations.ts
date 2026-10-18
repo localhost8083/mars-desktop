@@ -1,4 +1,4 @@
-import type { Seed } from "@omnirush/env";
+import type { Seed } from "@mars/env";
 import { isRecord } from "./library.ts";
 
 /** A Den monitor signed in as admin with one Desktop-created Automation. */

@@ -1,10 +1,10 @@
-/** Compatibility exports; the implementation is owned by @omnirush/world. */
+/** Compatibility exports; the implementation is owned by @mars/world. */
 export {
   buildDetachedRespawnArgs,
   buildHeadlessCorsOrigins,
   buildHeadlessRuntimeManifest,
   buildHeadlessServerLaunch,
-  buildOmniRushServerArgs,
+  buildMarsServerArgs,
   isHeadlessStackCommand,
   mergeHeadlessServerConfig,
   normalizeDenTarget,

@@ -3,7 +3,7 @@ import { VOICE_SAMPLE_RATE, VoiceError, type AudioSource } from "./types";
 import { decodeWav } from "./wav";
 
 /** The test hook: a WAV file played in place of the microphone. */
-export const VOICE_INPUT_FILE_ENV = "OMNIRUSH_VOICE_INPUT_FILE";
+export const VOICE_INPUT_FILE_ENV = "MARS_VOICE_INPUT_FILE";
 
 export function voiceInputFileFromEnv(env: Record<string, string | undefined>): string | null {
   const value = env[VOICE_INPUT_FILE_ENV]?.trim();

@@ -1,4 +1,4 @@
-import { omnirushPluginPath } from "./omnirush-extensions-plugin-path.js";
+import { marsPluginPath } from "./mars-extensions-plugin-path.js";
 export function managedPolicyPluginPath(next = false): string {
-  return omnirushPluginPath(next ? "managed-policy-next" : "managed-policy");
+  return marsPluginPath(next ? "managed-policy-next" : "managed-policy");
 }

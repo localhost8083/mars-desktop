@@ -1,4 +1,4 @@
-import { DownloadOmniRushCard } from "@omnirush/ui/react";
+import { DownloadOmniRushCard } from "@mars/ui/react";
 import { SiteFooter } from "../../components/site-footer";
 import { SiteNav } from "../../components/site-nav";
 import { StructuredData } from "../../components/structured-data";

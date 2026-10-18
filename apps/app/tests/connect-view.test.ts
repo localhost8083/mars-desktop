@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "bun:test";
 
-import type { OmniRushCloudMcpHealth } from "../src/app/lib/omnirush-server";
+import type { MarsCloudMcpHealth } from "../src/app/lib/mars-server";
 import { readyCloudMcpToolIds } from "../src/react-app/domains/settings/cloud/agent-access-card";
 import {
   formatPluginConnectRowMeta,
@@ -16,7 +16,7 @@ const agentAccessSource = readFileSync(
   "utf8",
 );
 
-function cloudHealth(usable: boolean): OmniRushCloudMcpHealth {
+function cloudHealth(usable: boolean): MarsCloudMcpHealth {
   return {
     schemaVersion: 1,
     phase: usable ? "ready" : "cloud_tools_missing",
@@ -24,13 +24,13 @@ function cloudHealth(usable: boolean): OmniRushCloudMcpHealth {
     usableByCurrentModel: usable,
     connectCatalogEnabled: true,
     workspace: { id: "ws_1", type: "local", directory: "/workspace", path: "/workspace" },
-    desired: { present: true, name: "omnirush-cloud", revision: "rev", config: null, token: { present: true, metadata: {} } },
+    desired: { present: true, name: "mars-cloud", revision: "rev", config: null, token: { present: true, metadata: {} } },
     delivery: { state: usable ? "ready" : "pending", desiredRevision: "rev", appliedRevision: usable ? "rev" : null, updatedAt: 1, appliedAt: usable ? 1 : null, lastAttemptAt: 1 },
     engine: { status: usable ? "connected" : "failed" },
     tools: {
-      expected: ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
-      present: usable ? ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability", "other_tool"] : ["omnirush-cloud_search_capabilities"],
-      missing: usable ? [] : ["omnirush-cloud_execute_capability"],
+      expected: ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
+      present: usable ? ["mars-cloud_search_capabilities", "mars-cloud_execute_capability", "other_tool"] : ["mars-cloud_search_capabilities"],
+      missing: usable ? [] : ["mars-cloud_execute_capability"],
       providerProjection: { checked: true, present: [], missing: [] },
     },
     pluginCanaries: { expected: [], present: [], missing: [] },
@@ -44,8 +44,8 @@ describe("Agent access card helpers", () => {
   test("returns exact Cloud tools only when health is ready", () => {
     expect(readyCloudMcpToolIds(cloudHealth(false))).toEqual([]);
     expect(readyCloudMcpToolIds(cloudHealth(true))).toEqual([
-      "omnirush-cloud_search_capabilities",
-      "omnirush-cloud_execute_capability",
+      "mars-cloud_search_capabilities",
+      "mars-cloud_execute_capability",
     ]);
   });
 

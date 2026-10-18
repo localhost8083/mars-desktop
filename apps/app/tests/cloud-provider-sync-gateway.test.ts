@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
-import { createOmniRushServerClient } from "../src/app/lib/omnirush-server";
+import { createMarsServerClient } from "../src/app/lib/mars-server";
 import { createClient } from "../src/app/lib/opencode";
 import type { ProviderListItem, WorkspaceDisplay } from "../src/app/types";
 import { createProviderAuthStore } from "../src/react-app/domains/connections/provider-auth/store";
@@ -8,7 +8,7 @@ import { createProviderAuthStore } from "../src/react-app/domains/connections/pr
 const originalWindow = globalThis.window;
 const originalFetch = globalThis.fetch;
 const originalConsoleInfo = console.info;
-const originalDeployment = process.env.VITE_OMNIRUSH_DEPLOYMENT;
+const originalDeployment = process.env.VITE_MARS_DEPLOYMENT;
 
 type RecordedRequest = {
   url: string;
@@ -50,7 +50,7 @@ function installWindow(options: { origin: string; gateway?: boolean }) {
       dispatchEvent: () => true,
       localStorage,
       location: { origin: options.origin },
-      __OMNIRUSH_GATEWAY__: options.gateway ? { version: 1 } : undefined,
+      __MARS_GATEWAY__: options.gateway ? { version: 1 } : undefined,
     },
   });
   return localStorage;
@@ -82,10 +82,10 @@ function jsonResponse(payload: unknown, status = 200) {
 function cloudProviderPayload(options: { conflict?: boolean } = {}) {
   return {
     id: "lpr_test",
-    source: options.conflict ? "omnirush" : "custom",
-    providerId: options.conflict ? "omnirush" : "openai",
-    name: options.conflict ? "OmniRush.ai Models" : "Team OpenAI",
-    providerConfig: { env: [options.conflict ? "OMNIRUSH_API_KEY" : "OPENAI_API_KEY"] },
+    source: options.conflict ? "mars" : "custom",
+    providerId: options.conflict ? "mars" : "openai",
+    name: options.conflict ? "MarsAI Models" : "Team OpenAI",
+    providerConfig: { env: [options.conflict ? "MARS_API_KEY" : "OPENAI_API_KEY"] },
     hasApiKey: true,
     apiKey: "sk-test",
     models: [
@@ -102,9 +102,9 @@ function cloudProviderPayload(options: { conflict?: boolean } = {}) {
 }
 
 function installCloudSession(storage: Storage) {
-  storage.setItem("omnirush.den.baseUrl", "https://den.example");
-  storage.setItem("omnirush.den.authToken", "den-token");
-  storage.setItem("omnirush.den.activeOrgId", "org_test");
+  storage.setItem("mars.den.baseUrl", "https://den.example");
+  storage.setItem("mars.den.authToken", "den-token");
+  storage.setItem("mars.den.activeOrgId", "org_test");
 }
 
 function createProviderAuthTestStore(
@@ -112,9 +112,9 @@ function createProviderAuthTestStore(
 ) {
   const opencodeClient = createClient("https://engine.example", "/tmp/workspace_test", {
     token: "engine-token",
-    mode: "omnirush",
+    mode: "mars",
   });
-  const omnirushClient = createOmniRushServerClient({
+  const marsClient = createMarsServerClient({
     baseUrl: "https://server.example",
     token: "server-token",
     hostToken: "host-token",
@@ -143,12 +143,12 @@ function createProviderAuthTestStore(
     providerBaseUrl: () => "https://engine.example",
     selectedWorkspaceRoot: () => "/tmp/workspace_test",
     runtimeWorkspaceId: () => "ws_1",
-    omnirushServer: {
+    marsServer: {
       getSnapshot: () => ({
-        omnirushServerStatus: "connected",
-        omnirushServerClient: omnirushClient,
-        omnirushServerAuth: { token: "server-token", hostToken: "host-token" },
-        omnirushServerCapabilities: {
+        marsServerStatus: "connected",
+        marsServerClient: marsClient,
+        marsServerAuth: { token: "server-token", hostToken: "host-token" },
+        marsServerCapabilities: {
           config: configCapabilities,
           providerSync: configCapabilities.providerSync,
         },
@@ -207,7 +207,7 @@ function installProviderSyncFetch(
         return jsonResponse({ llmProvider: cloudProviderPayload(options) });
       }
       if (url.origin === "https://server.example" && url.pathname === "/workspace/ws_1/config" && method === "GET") {
-        return jsonResponse({ opencode: {}, omnirush: {} });
+        return jsonResponse({ opencode: {}, mars: {} });
       }
       if (url.origin === "https://server.example" && url.pathname === "/den-session" && method === "PUT") {
         return new Response(null, { status: 204 });
@@ -236,7 +236,7 @@ function installProviderSyncFetch(
       }
       if (url.origin === "https://server.example" && url.pathname === "/workspace/ws_1/opencode-config") {
         return jsonResponse(options.conflict
-          ? { content: '{"provider":{"omnirush":{"name":"Local OmniRush.ai"}}}' }
+          ? { content: '{"provider":{"mars":{"name":"Local MarsAI"}}}' }
           : null);
       }
       if (url.origin === "https://server.example" && url.pathname === "/workspace/ws_1/engine/reload") {
@@ -271,7 +271,7 @@ function installProviderSyncFetch(
 
 describe("cloud provider sync in gateway mode", () => {
   beforeEach(() => {
-    process.env.VITE_OMNIRUSH_DEPLOYMENT = "web";
+    process.env.VITE_MARS_DEPLOYMENT = "web";
     console.info = () => undefined;
   });
 
@@ -286,14 +286,14 @@ describe("cloud provider sync in gateway mode", () => {
     });
     console.info = originalConsoleInfo;
     if (originalDeployment === undefined) {
-      delete process.env.VITE_OMNIRUSH_DEPLOYMENT;
+      delete process.env.VITE_MARS_DEPLOYMENT;
     } else {
-      process.env.VITE_OMNIRUSH_DEPLOYMENT = originalDeployment;
+      process.env.VITE_MARS_DEPLOYMENT = originalDeployment;
     }
   });
 
   test("returns a server-handled outcome without network calls or error state behind the gateway", async () => {
-    const storage = installWindow({ origin: "https://web.omnirush.example.com", gateway: true });
+    const storage = installWindow({ origin: "https://web.mars.example.com", gateway: true });
     installCloudSession(storage);
     const requests: RecordedRequest[] = [];
     installProviderSyncFetch(requests);
@@ -340,7 +340,7 @@ describe("cloud provider sync in gateway mode", () => {
     expect(store.getSnapshot().lastSyncError).toEqual({});
   });
 
-  test("records a hand-authored OmniRush.ai collision once and skips later automatic retries", async () => {
+  test("records a hand-authored MarsAI collision once and skips later automatic retries", async () => {
     const storage = installWindow({ origin: "https://self-hosted.example" });
     installCloudSession(storage);
     const requests: RecordedRequest[] = [];
@@ -351,7 +351,7 @@ describe("cloud provider sync in gateway mode", () => {
 
     expect(store.getSnapshot().lastSyncError.lpr_test).toMatchObject({
       kind: "conflict",
-      message: expect.stringContaining("omnirush already has a provider block"),
+      message: expect.stringContaining("mars already has a provider block"),
     });
     expect(store.getSnapshot().importedCloudProviders.lpr_test).toBeUndefined();
     const firstConnectCount = requests.filter(
@@ -370,7 +370,7 @@ describe("cloud provider sync in gateway mode", () => {
 
 describe("cloud provider sync in server-capability mode", () => {
   beforeEach(() => {
-    process.env.VITE_OMNIRUSH_DEPLOYMENT = "web";
+    process.env.VITE_MARS_DEPLOYMENT = "web";
     console.info = () => undefined;
   });
 
@@ -378,8 +378,8 @@ describe("cloud provider sync in server-capability mode", () => {
     Object.defineProperty(globalThis, "window", { configurable: true, value: originalWindow });
     Object.defineProperty(globalThis, "fetch", { configurable: true, value: originalFetch });
     console.info = originalConsoleInfo;
-    if (originalDeployment === undefined) delete process.env.VITE_OMNIRUSH_DEPLOYMENT;
-    else process.env.VITE_OMNIRUSH_DEPLOYMENT = originalDeployment;
+    if (originalDeployment === undefined) delete process.env.VITE_MARS_DEPLOYMENT;
+    else process.env.VITE_MARS_DEPLOYMENT = originalDeployment;
   });
 
   test("posts run-now without fetching Den providers in the renderer", async () => {
@@ -425,7 +425,7 @@ describe("cloud provider sync in server-capability mode", () => {
     await Bun.sleep(10);
     expect(requests.filter((request) => new URL(request.url).pathname === "/cloud-provider-sync/run")).toHaveLength(1);
 
-    storage.setItem("omnirush.den.activeOrgId", "org_changed");
+    storage.setItem("mars.den.activeOrgId", "org_changed");
     const changedContext = [
       store.runCloudProviderSync("sign_in"),
       strictModeRemountStore.runCloudProviderSync("app_resume"),

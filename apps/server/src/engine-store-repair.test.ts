@@ -52,7 +52,7 @@ describe("repairEngineStore", () => {
     const db = store();
     const good = {
       permission: JSON.stringify([{ permission: "edit", pattern: "*", action: "allow" }]),
-      model: JSON.stringify({ id: "gpt-6-astra", providerID: "omnirush" }),
+      model: JSON.stringify({ id: "gpt-6-astra", providerID: "mars" }),
       revert: JSON.stringify({ messageID: "msg_1", snapshot: "abc" }),
       metadata: JSON.stringify({ a: 1 }),
       summary_diffs: "[]",
@@ -108,7 +108,7 @@ describe("repairEngineStore", () => {
 
   test("a store with nothing damaged is left alone, with no backup", async () => {
     const db = store();
-    addSession(db, "ses_good", { model: JSON.stringify({ id: "gpt", providerID: "omnirush" }) });
+    addSession(db, "ses_good", { model: JSON.stringify({ id: "gpt", providerID: "mars" }) });
     db.close();
     const result = await repairEngineStore({ file });
     expect(result).toMatchObject({ checked: true, repaired: [], backup: null, saved: null });
@@ -135,9 +135,9 @@ describe("repairEngineStore", () => {
   });
 
   test("finds the desktop engine's store and shares one check between engines started together", async () => {
-    const env = { OMNIRUSH_ENGINE_DATA_HOME: dir, OPENCODE_DB: file } as NodeJS.ProcessEnv;
+    const env = { MARS_ENGINE_DATA_HOME: dir, OPENCODE_DB: file } as NodeJS.ProcessEnv;
     expect(engineStorePath(env)).toBe(file);
-    expect(engineStorePath({ OMNIRUSH_ENGINE_DATA_HOME: dir } as NodeJS.ProcessEnv)).toBe(join(dir, "omnirush", "opencode.db"));
+    expect(engineStorePath({ MARS_ENGINE_DATA_HOME: dir } as NodeJS.ProcessEnv)).toBe(join(dir, "mars", "opencode.db"));
     expect(engineStorePath({ OPENCODE_DB: ":memory:" } as NodeJS.ProcessEnv)).toBeNull();
     const db = store();
     addSession(db, "ses_bad", { permission: "{}" });

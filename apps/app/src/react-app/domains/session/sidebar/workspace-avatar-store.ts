@@ -46,7 +46,7 @@ export const useWorkspaceAvatarStore = create<WorkspaceAvatarStore>()(
         }),
     }),
     {
-      name: "omnirush.workspaceAvatars.v1",
+      name: "mars.workspaceAvatars.v1",
       storage: createJSONStorage(() => localStorage),
     },
   ),

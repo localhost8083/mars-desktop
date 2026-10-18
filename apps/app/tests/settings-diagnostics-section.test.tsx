@@ -31,7 +31,7 @@ describe("settings diagnostics section", () => {
     expect(markup).toContain("Copy diagnostics");
     expect(markup).toContain("Export diagnostics");
     expect(markup).toContain("Open logs folder");
-    expect(markup).toContain("omnirush-server.log");
+    expect(markup).toContain("mars-server.log");
   });
 
   test("hides the logs folder button outside the desktop app", () => {
@@ -53,10 +53,10 @@ describe("settings diagnostics section", () => {
     const result = await exportDiagnostics(deps);
     expect(result.ok).toBe(true);
     expect(calls.saved).toEqual([
-      { filename: "omnirush-diagnostics-2026-09-24T08-32-30-000Z.json", content: '{"app":{"version":"1.1.1"}}' },
+      { filename: "mars-diagnostics-2026-09-24T08-32-30-000Z.json", content: '{"app":{"version":"1.1.1"}}' },
     ]);
     expect(diagnosticsExportFileName(new Date("2026-01-02T03:04:05.006Z"))).toBe(
-      "omnirush-diagnostics-2026-01-02T03-04-05-006Z.json",
+      "mars-diagnostics-2026-01-02T03-04-05-006Z.json",
     );
   });
 

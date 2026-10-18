@@ -10,7 +10,7 @@ export function createNativeDesktop() {
   let nextId = 0, closed = false;
   let readyResolve;
   const ready = new Promise((resolve) => { readyResolve = resolve; });
-  const readyTimer = setTimeout(() => readyResolve({ supported: false, error: "Desktop access did not start. Restart OmniRush.ai." }), 10_000);
+  const readyTimer = setTimeout(() => readyResolve({ supported: false, error: "Desktop access did not start. Restart MarsAI." }), 10_000);
   worker.on("message", (value) => {
     if (!record(value)) return;
     if (value.event === "ready") { clearTimeout(readyTimer); readyResolve(value); }
@@ -29,7 +29,7 @@ export function createNativeDesktop() {
     for (const listener of listeners) listener({ event: "unavailable" });
   };
   worker.on("error", fail);
-  worker.on("exit", () => fail(new Error("Desktop access stopped. Restart OmniRush.ai.")));
+  worker.on("exit", () => fail(new Error("Desktop access stopped. Restart MarsAI.")));
   return {
     ready,
     grantForeground() {

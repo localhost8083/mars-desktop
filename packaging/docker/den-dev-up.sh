@@ -3,11 +3,11 @@ set -euo pipefail
 
 # Bring up a local Den testability stack with random host ports.
 #
-# Usage (from _repos/omnirush repo root):
+# Usage (from _repos/mars repo root):
 #   packaging/docker/den-dev-up.sh
 #
 # Outputs:
-# - OmniRush.ai web app URL
+# - MarsAI web app URL
 # - Den control plane demo/API URL
 # - Runtime env file path with ports + project name
 #
@@ -120,7 +120,7 @@ append_origin() {
 }
 
 DEV_ID="$(node -e "console.log(require('crypto').randomUUID().slice(0, 8))")"
-PROJECT="omnirush-den-dev-$DEV_ID"
+PROJECT="mars-den-dev-$DEV_ID"
 DEN_WATCH_OTP_CODES="${DEN_WATCH_OTP_CODES:-1}"
 
 DEN_API_PORT="${DEN_API_PORT:-$(pick_port)}"
@@ -141,7 +141,7 @@ DEN_BETTER_AUTH_SECRET="${DEN_BETTER_AUTH_SECRET:-$(random_hex 32)}"
 DEN_DB_ENCRYPTION_KEY="${DEN_DB_ENCRYPTION_KEY:-dev-den-db-encryption-key-please-change-1234567890}"
 DEN_BETTER_AUTH_URL="${DEN_BETTER_AUTH_URL:-http://$PUBLIC_HOST:$DEN_WEB_PORT}"
 DEN_ORG_MODE="${DEN_ORG_MODE:-single_org}"
-DEN_SINGLE_ORG_NAME="${DEN_SINGLE_ORG_NAME:-OmniRush.ai}"
+DEN_SINGLE_ORG_NAME="${DEN_SINGLE_ORG_NAME:-MarsAI}"
 DEN_SINGLE_ORG_SLUG="${DEN_SINGLE_ORG_SLUG:-default}"
 DEN_SINGLE_ORG_OWNER_EMAILS="${DEN_SINGLE_ORG_OWNER_EMAILS:-}"
 DEN_SINGLE_ORG_ALLOW_PUBLIC_SIGNUP="${DEN_SINGLE_ORG_ALLOW_PUBLIC_SIGNUP:-false}"
@@ -270,13 +270,13 @@ if [ -n "$OTP_LOG_PID" ]; then
 fi
 
 echo "" >&2
-echo "OmniRush.ai web UI:        http://localhost:$DEN_WEB_PORT" >&2
-echo "OmniRush.ai web UI (LAN/public):      http://$PUBLIC_HOST:$DEN_WEB_PORT" >&2
+echo "MarsAI web UI:        http://localhost:$DEN_WEB_PORT" >&2
+echo "MarsAI web UI (LAN/public):      http://$PUBLIC_HOST:$DEN_WEB_PORT" >&2
 if [ -n "$LAN_IPV4" ]; then
-  echo "OmniRush.ai web UI (LAN IP):          http://$LAN_IPV4:$DEN_WEB_PORT" >&2
+  echo "MarsAI web UI (LAN IP):          http://$LAN_IPV4:$DEN_WEB_PORT" >&2
 fi
 if [ -n "$TAILSCALE_DNS_NAME" ]; then
-  echo "OmniRush.ai web UI (Tailscale):       http://$TAILSCALE_DNS_NAME:$DEN_WEB_PORT" >&2
+  echo "MarsAI web UI (Tailscale):       http://$TAILSCALE_DNS_NAME:$DEN_WEB_PORT" >&2
 fi
 echo "Den demo/API:          http://localhost:$DEN_API_PORT" >&2
 echo "Den demo/API (LAN/public):         http://$PUBLIC_HOST:$DEN_API_PORT" >&2

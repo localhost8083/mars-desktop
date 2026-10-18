@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 import { createManagedOpencodeServer, type ManagedOpencodeServer } from "./managed-opencode.js";
-import { buildOmniRushRuntimeConfigObjectFromSnapshot } from "./omnirush-runtime-config.js";
+import { buildMarsRuntimeConfigObjectFromSnapshot } from "./mars-runtime-config.js";
 
 const repoRoot = resolve(import.meta.dir, "../../..");
 const sidecarDir = join(repoRoot, "apps/desktop/resources/sidecars");
@@ -34,7 +34,7 @@ function hasExactHttpUrl(value: unknown, expectedUrl: string): boolean {
 }
 
 function findEngine(): string | null {
-  const explicit = process.env.OMNIRUSH_TEST_OPENCODE_PATH;
+  const explicit = process.env.MARS_TEST_OPENCODE_PATH;
   if (explicit && existsSync(explicit)) return explicit;
   const arch = process.arch === "arm64" ? "aarch64" : "x86_64";
   const name = process.platform === "darwin"
@@ -164,13 +164,13 @@ describeMaybe("authorization-required MCP tool error pass-through", () => {
       },
     });
 
-    const runtime = buildOmniRushRuntimeConfigObjectFromSnapshot({});
+    const runtime = buildMarsRuntimeConfigObjectFromSnapshot({});
     const configPath = join(dataDir, "runtime-opencode-config.json");
     writeFileSync(configPath, JSON.stringify({
       $schema: "https://opencode.ai/config.json",
       formatter: false,
       lsp: false,
-      default_agent: "omnirush",
+      default_agent: "mars",
       agent: runtime.agent,
       model: "test/test-model",
       provider: {
@@ -260,7 +260,7 @@ describeMaybe("authorization-required MCP tool error pass-through", () => {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        agent: "omnirush",
+        agent: "mars",
         model: { providerID: "test", modelID: "test-model" },
         parts: [{ type: "text", text: "Use Salesforce to find the account." }],
       }),

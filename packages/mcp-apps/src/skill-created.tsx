@@ -1,10 +1,10 @@
-import { skillCreatedPayloadSchema } from "@omnirush/types/skill-created-app"
+import { skillCreatedPayloadSchema } from "@mars/types/skill-created-app"
 import { mountMcpApp } from "./shared/bridge"
 import { AppHeader, ArrowIcon, CardBody, CardFooter, CheckIcon, KeyValueGrid } from "./shared/ui"
 import "./shared/theme.css"
 
 mountMcpApp({
-  name: "OmniRush.ai Skill Saved",
+  name: "MarsAI Skill Saved",
   waitingLabel: "Finishing your skill...",
   schema: skillCreatedPayloadSchema,
   render: (payload, app) => {

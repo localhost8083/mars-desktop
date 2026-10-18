@@ -8,7 +8,7 @@ import {
   EGRESS_DIAGNOSTIC_RUN_HEADER,
   EGRESS_DIAGNOSTIC_SIGNATURE_HEADER,
   egressDiagnosticRunSchema,
-} from "@omnirush/types/den/egress-diagnostics"
+} from "@mars/types/den/egress-diagnostics"
 import { runEgressDiagnostic } from "../src/egress-diagnostics"
 
 const origin = "https://diagnostic.omnirush.test"

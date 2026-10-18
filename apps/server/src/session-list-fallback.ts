@@ -13,7 +13,7 @@
  * instance), filtered here by directory with platform-aware comparison.
  */
 
-export const SESSION_LIST_FALLBACK_DEADLINE_ENV = "OMNIRUSH_SESSION_LIST_FALLBACK_MS";
+export const SESSION_LIST_FALLBACK_DEADLINE_ENV = "MARS_SESSION_LIST_FALLBACK_MS";
 const DEFAULT_DEADLINE_MS = 6_000;
 const PAGE_SIZE = 500;
 const MAX_SCANNED = 5_000;

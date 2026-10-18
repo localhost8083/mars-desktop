@@ -1,9 +1,9 @@
 // Trusted Ed25519 public keys for verifying connect links
-// (omnirush://connect?token=<JWT>), keyed by the token's `kid` header.
+// (mars://connect?token=<JWT>), keyed by the token's `kid` header.
 //
 // These are VERIFICATION keys only — safe to publish. The matching private
 // keys are held by the deployment operator that mints connect links (for
-// OmniRush.ai Cloud: the vendor's secret store) and never enter this repository.
+// MarsAI Cloud: the vendor's secret store) and never enter this repository.
 // Rotation: generate a fresh pair with scripts/generate-connect-link-keypair.mjs,
 // add the new public key here under its kid, ship a release, flip the minting
 // side to the new kid, then drop the old entry in a later release.
@@ -20,7 +20,7 @@ MCowBQYDK2VwAyEA9XFgVZM5y/kpwpsrTWy1glrB2sw+XiUjyntDPrxTTt8=
 
 /**
  * The key map the running app trusts. Packaged builds use exactly the
- * embedded vendor keys. Dev mode (OMNIRUSH_DEV_MODE=1) may add ONE ephemeral
+ * embedded vendor keys. Dev mode (MARS_DEV_MODE=1) may add ONE ephemeral
  * test key from the environment so evals and local e2e can mint their own
  * tokens without weakening packaged builds.
  *
@@ -28,9 +28,9 @@ MCowBQYDK2VwAyEA9XFgVZM5y/kpwpsrTWy1glrB2sw+XiUjyntDPrxTTt8=
  */
 export function resolveConnectLinkPublicKeys() {
   const keys = { ...VENDOR_CONNECT_LINK_PUBLIC_KEYS };
-  if (process.env.OMNIRUSH_DEV_MODE === "1") {
-    const testPem = process.env.OMNIRUSH_CONNECT_TEST_PUBLIC_KEY_PEM?.trim();
-    const testKid = process.env.OMNIRUSH_CONNECT_TEST_PUBLIC_KEY_KID?.trim();
+  if (process.env.MARS_DEV_MODE === "1") {
+    const testPem = process.env.MARS_CONNECT_TEST_PUBLIC_KEY_PEM?.trim();
+    const testKid = process.env.MARS_CONNECT_TEST_PUBLIC_KEY_KID?.trim();
     if (testPem && testKid) {
       keys[testKid] = testPem;
     }

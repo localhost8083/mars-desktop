@@ -1,11 +1,11 @@
 /**
- * Mandatory client update: what omnirush.ai says about this app's version.
+ * Mandatory client update: what marsai.click says about this app's version.
  *
  * Three signals, newest wins:
- * - `client_update` on /device/me (and on the sign-in and refresh JSON):
+ * - `client_update` on /oauth/userinfo (and on the sign-in and refresh JSON):
  *   `{required, product, current, minimum, deadline, blocked, message,
  *   download_url}`. Only `product: "gui"` (or none) applies to this app.
- * - `x-omnirush-update-required: <minimum>; deadline=<iso>` on gateway
+ * - `x-mars-update-required: <minimum>; deadline=<iso>` on gateway
  *   responses before the deadline.
  * - HTTP 426 `{"error":{"code":"update_required",...}}` on model requests
  *   after it.
@@ -17,16 +17,16 @@
  * capture service keeps flushing whatever this version recorded.
  */
 
-export const UPDATE_GATE_CHANNEL = "omnirush:update-gate:changed";
-/** Names this app and its version on every request to omnirush.ai: `gui/<version>`. */
-export const CLIENT_HEADER = "X-OmniRush-Client";
+export const UPDATE_GATE_CHANNEL = "mars:update-gate:changed";
+/** Names this app and its version on every request to marsai.click: `gui/<version>`. */
+export const CLIENT_HEADER = "X-Mars-Client";
 
 /** `gui/<version>` for a plain version string, or null (never a malformed header). */
 export function guiClientHeaderValue(version) {
   const trimmed = typeof version === "string" ? version.trim().replace(/^v/i, "") : "";
   return /^[0-9A-Za-z][0-9A-Za-z.+-]{0,63}$/.test(trimmed) ? `gui/${trimmed}` : null;
 }
-export const DEFAULT_DOWNLOAD_URL = "https://omnirush.ai/download";
+export const DEFAULT_DOWNLOAD_URL = "https://marsai.click/download";
 
 /**
  * @typedef {{
@@ -95,7 +95,7 @@ export function compareVersions(left, right) {
 }
 
 /**
- * `client_update` from a /device/me, sign-in or refresh payload. Null when
+ * `client_update` from a /oauth/userinfo, sign-in or refresh payload. Null when
  * absent, malformed, or addressed to another product (the CLI).
  * @returns {ClientUpdate | null}
  */
@@ -115,7 +115,7 @@ export function parseClientUpdate(value) {
 }
 
 /**
- * `x-omnirush-update-required: 3.1.0; deadline=2026-10-05T12:00:00Z`.
+ * `x-mars-update-required: 3.1.0; deadline=2026-10-05T12:00:00Z`.
  * @returns {{ minimum: string, deadline: string | null } | null}
  */
 export function parseUpdateRequiredHeader(value) {

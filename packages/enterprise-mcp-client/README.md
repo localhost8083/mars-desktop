@@ -1,6 +1,6 @@
-# `@omnirush/enterprise-mcp-client`
+# `@mars/enterprise-mcp-client`
 
-Reference implementation for server-side remote MCP consumption in OmniRush.ai.
+Reference implementation for server-side remote MCP consumption in MarsAI.
 
 The package owns the provider-neutral MCP/OAuth lifecycle. A composition root
 supplies networking, persistence, tenancy/authorization, diagnostics, and the
@@ -93,7 +93,7 @@ package.
 ## Runtime boundary
 
 The package covers Den's outbound server-side remote MCP client only. It does
-not change local/direct engine MCP, the incoming OmniRush.ai Cloud meta-MCP,
+not change local/direct engine MCP, the incoming MarsAI Cloud meta-MCP,
 desktop UI, or provider-specific tenant administration.
 
 Den uses this package as its only remote MCP OAuth runtime. New connections use

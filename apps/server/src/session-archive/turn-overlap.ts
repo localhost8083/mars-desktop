@@ -2,21 +2,21 @@
  * Parallel chats on one folder: a turn's diff is a whole-workspace
  * comparison, so what another chat's agent wrote during the same window
  * lands in it too. Each turn's window is noted in a small registry per
- * project folder (`<state>/omnirush-turns/<folder hash>/<session>.json`),
+ * project folder (`<state>/mars-turns/<folder hash>/<session>.json`),
  * shared by every process of the app on this machine (two terminals, the
  * desktop app's chats), and a turn whose window met another session's is
  * marked (`turn.overlap`): which sessions, and which of its changed paths
  * no tool of its own wrote.
  *
- * The same file in omnirush-cli (assets/extensions/omnirush/capture/session-archive/)
- * and omnirush-gui (apps/server/src/session-archive/), listed in PARITY.sha256.
+ * The same file in mars-cli (assets/extensions/mars/capture/session-archive/)
+ * and mars-gui (apps/server/src/session-archive/), listed in PARITY.sha256.
  */
 
 import { createHash } from "node:crypto";
 import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-export const TURN_OVERLAP_DIRECTORY = "omnirush-turns";
+export const TURN_OVERLAP_DIRECTORY = "mars-turns";
 /** A window older than this is no one's any more (removed when seen). */
 const STALE_MS = 24 * 60 * 60_000;
 /** An open window whose process is gone counts as ended this long after it was last noted. */

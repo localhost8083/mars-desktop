@@ -27,7 +27,7 @@ test("client_update for the GUI is parsed; the CLI's is ignored", () => {
     deadline: "2026-10-04T17:12:00Z",
     blocked: false,
     message: "Update to 3.1.0",
-    download_url: "https://omnirush.ai/download",
+    download_url: "https://marsai.click/download",
   }), {
     required: true,
     blocked: false,
@@ -35,7 +35,7 @@ test("client_update for the GUI is parsed; the CLI's is ignored", () => {
     minimum: "3.1.0",
     deadline: DEADLINE,
     message: "Update to 3.1.0",
-    downloadUrl: "https://omnirush.ai/download",
+    downloadUrl: "https://marsai.click/download",
   });
   assert.equal(parseClientUpdate({ required: true, product: "cli", minimum: "1.0.0" }), null);
   assert.equal(parseClientUpdate(null), null);
@@ -66,12 +66,12 @@ test("required before the deadline shows the banner state; the deadline passing 
   let now = NOW;
   const { subject, changes } = gate("3.0.2", () => now);
   const state = subject.signal({ kind: "profile", clientUpdate: parseClientUpdate({
-    required: true, product: "gui", minimum: "3.1.0", deadline: DEADLINE, download_url: "https://omnirush.ai/dl",
+    required: true, product: "gui", minimum: "3.1.0", deadline: DEADLINE, download_url: "https://marsai.click/dl",
   }) });
   assert.equal(state.status, "required");
   assert.equal(state.minimum, "3.1.0");
   assert.equal(state.deadline, DEADLINE);
-  assert.equal(state.downloadUrl, "https://omnirush.ai/dl");
+  assert.equal(state.downloadUrl, "https://marsai.click/dl");
   assert.equal(state.source, "profile");
   now = Date.parse(DEADLINE) + 1;
   assert.equal(subject.state().status, "blocked");
@@ -83,11 +83,11 @@ test("client_update.blocked, or a 426 seen, blocks; the server lifting it clears
   const { subject, changes } = gate();
   assert.equal(subject.signal({ kind: "profile", clientUpdate: parseClientUpdate({ required: true, blocked: true, minimum: "3.1.0" }) }).status, "blocked");
   assert.equal(subject.signal({ kind: "profile", clientUpdate: parseClientUpdate({ required: false }) }).status, "none");
-  const rejected = subject.signal({ kind: "rejection", message: "Update OmniRush.ai" });
+  const rejected = subject.signal({ kind: "rejection", message: "Update MarsAI" });
   assert.equal(rejected.status, "blocked");
-  assert.equal(rejected.message, "Update OmniRush.ai");
+  assert.equal(rejected.message, "Update MarsAI");
   assert.equal(rejected.source, "rejection");
-  // /device/me without client_update is authoritative too.
+  // The profile JSON (no client_update in it) is authoritative too.
   assert.equal(subject.signal({ kind: "profile", clientUpdate: null }).status, "none");
   assert.deepEqual(changes.map((state) => state.status), ["blocked", "none", "blocked", "none"]);
   subject.dispose();

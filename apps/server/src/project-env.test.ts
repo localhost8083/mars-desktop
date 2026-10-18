@@ -43,7 +43,7 @@ const DOTENV = [
   "",
 ].join("\n");
 
-function tempDir(prefix = "omnirush-penv-") {
+function tempDir(prefix = "mars-penv-") {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
@@ -238,7 +238,7 @@ test.skipIf(!hasZstd || process.platform === "win32")("the upload envelope carri
     "package.json": "{}",
   });
   execFileSync("git", ["init", "-q"], { cwd: root });
-  const stateDir = tempDir("omnirush-penv-state-");
+  const stateDir = tempDir("mars-penv-state-");
   const envelopes = [];
   const workspaceSync = new uploader.SessionUploader({
     stateDir,

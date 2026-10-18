@@ -1,8 +1,8 @@
-import type { BrowserEvaluation, EvaluateOptions } from "@omnirush/cdp";
-import type { DenFetchResult, DenSession, NativeConnectorInput } from "@omnirush/behaviors";
-import type { AttachedSurface, Surface } from "@omnirush/cdp";
-import type { StartMockMcpOptions } from "@omnirush/labs";
-import type { DaytonaExec, DesktopHandle } from "@omnirush/hosts";
+import type { BrowserEvaluation, EvaluateOptions } from "@mars/cdp";
+import type { DenFetchResult, DenSession, NativeConnectorInput } from "@mars/behaviors";
+import type { AttachedSurface, Surface } from "@mars/cdp";
+import type { StartMockMcpOptions } from "@mars/labs";
+import type { DaytonaExec, DesktopHandle } from "@mars/hosts";
 import type { App } from "./desktop-app.ts";
 import type { Den, ServerOptions } from "./den.ts";
 import type { FaultProxy } from "./faults.ts";

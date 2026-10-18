@@ -20,7 +20,7 @@ import { readTar, type TarMemberRead } from "./test-helpers.js";
 import { sseFrames, toolStartSession, watchToolStarts } from "./tool-start.js";
 
 // Capture v2 – byte-exact project state, the desktop's side. The CLI runs the
-// same modules (omnirush-cli assets/extensions/omnirush/capture/session-archive)
+// same modules (mars-cli assets/extensions/mars/capture/session-archive)
 // against the same vectors (__fixtures__/capture_v2_vectors.json).
 
 type Json = Record<string, unknown>;
@@ -66,7 +66,7 @@ const POLICY_V2 = { all_folders: true, touched_files: true, capture_v2: true };
 type Opened = { members: Map<string, TarMemberRead>; order: string[]; manifest: { schema: string; trigger?: string; turn: number; files: Entry[]; deleted?: string[]; workspace: Json; archive_id: string }; state: StateDoc | null; unstable: string[]; entry: (path: string) => Entry | undefined; bytes: (path: string) => Buffer | undefined };
 
 function rig(policy: Json = POLICY_V2) {
-  const stateDir = temp("omnirush-v2-state-");
+  const stateDir = temp("mars-v2-state-");
   const keyring = sealKeyring([randomBytes(32)]);
   const { publicRaw, kid } = [...keyring.values()][0]!;
   const request = async (route: string) => route === "archives/key"
@@ -76,17 +76,17 @@ function rig(policy: Json = POLICY_V2) {
   stops.push(() => archiver.stop({ budgetMs: 1000 }));
   const open = async (result: Awaited<ReturnType<SessionArchiver["captureBase"]>>): Promise<Opened> => {
     if (result.status !== "queued") throw new Error(`not queued: ${JSON.stringify(result)}`);
-    const sealed = readFileSync(join(stateDir, "omnirush-archive", "pending", `${result.archiveId}.orseal`));
+    const sealed = readFileSync(join(stateDir, "mars-archive", "pending", `${result.archiveId}.orseal`));
     const members = readTar(zstdDecompressSync(await openSealedBuffer(sealed, keyring)));
     const byName = new Map(members.map((member) => [member.name.replace(/\/$/, ""), member]));
     const json = (name: string) => (byName.has(name) ? JSON.parse(byName.get(name)!.content.toString("utf8")) : null);
-    const manifest = json("__omnirush__/manifest.json");
+    const manifest = json("__mars__/manifest.json");
     return {
       members: byName,
       order: members.map((member) => member.name),
       manifest,
-      state: json("__omnirush__/state.json"),
-      unstable: json("__omnirush__/unstable.json")?.paths ?? [],
+      state: json("__mars__/state.json"),
+      unstable: json("__mars__/unstable.json")?.paths ?? [],
       entry: (path) => manifest.files.find((item: Entry) => item.path === path),
       bytes: (path) => (byName.get(path)?.typeflag === "0" ? byName.get(path)!.content : undefined),
     };
@@ -110,7 +110,7 @@ describe("capture v2", () => {
 
   test("#8 #4 #12: a folder without git: the start manifest before the prompt, then a byte-exact base with binaries over 4 MiB, lockfiles, modes, symlinks and the exclusions with their reasons", async () => {
     const { archiver, open } = rig();
-    const root = temp("omnirush-v2-folder-");
+    const root = temp("mars-v2-folder-");
     write(join(root, "README.md"), "# demo\n");
     const big = write(join(root, "data", "big.bin"), randomBytes(5 * 1024 * 1024 + 7));
     const pdf = write(join(root, "doc.pdf"), "%PDF-1.4\n%all ascii\n%%EOF\n");
@@ -125,8 +125,8 @@ describe("capture v2", () => {
     expect(await archiver.startManifest(sessionId, root)).toBe("complete");
     expect(archiver.hasStartManifest(sessionId)).toBe(true);
     const base = await open(await archiver.captureBase(sessionId, root, 0));
-    expect(base.manifest.schema).toBe("omnirush.archive.v2");
-    expect(base.order.slice(0, 2)).toEqual(["__omnirush__/manifest.json", "__omnirush__/state.json"]);
+    expect(base.manifest.schema).toBe("mars.archive.v2");
+    expect(base.order.slice(0, 2)).toEqual(["__mars__/manifest.json", "__mars__/state.json"]);
     expect(base.state!.state).toEqual({ kind: "start", turn: 0 });
     expect(base.state!.start_capture).toBe("complete");
     expect(base.state!.archive_id).toBe(base.manifest.archive_id);
@@ -145,11 +145,11 @@ describe("capture v2", () => {
 
   test("#8: the gate's cap makes a partial start; a file changed after the manifest is unstable", async () => {
     const { archiver, open } = rig();
-    const root = temp("omnirush-v2-partial-");
+    const root = temp("mars-v2-partial-");
     write(join(root, "a.txt"), "before\n");
     expect(await archiver.startManifest("ses_v2_partial_cap", root, 0)).toBe("partial");
     expect((await open(await archiver.captureBase("ses_v2_partial_cap", root, 0))).state!.start_capture).toBe("partial");
-    const other = temp("omnirush-v2-unstable-");
+    const other = temp("mars-v2-unstable-");
     write(join(other, "a.txt"), "before\n");
     expect(await archiver.startManifest("ses_v2_unstable_1", other)).toBe("complete");
     write(join(other, "a.txt"), "changed before the base was packed\n");
@@ -160,7 +160,7 @@ describe("capture v2", () => {
 
   test("#9: pre_tool, after and final states", async () => {
     const { archiver, open } = rig();
-    const root = temp("omnirush-v2-states-");
+    const root = temp("mars-v2-states-");
     write(join(root, "src", "app.py"), "print(1)\n");
     git(root, "init", "-q");
     git(root, "add", ".");
@@ -182,7 +182,7 @@ describe("capture v2", () => {
 
   test("#23: .git byte for byte; the archived config without credentials, the user's untouched", async () => {
     const { archiver, open } = rig();
-    const root = temp("omnirush-v2-git-");
+    const root = temp("mars-v2-git-");
     write(join(root, "a.txt"), "one\n");
     git(root, "init", "-q");
     git(root, "add", ".");
@@ -210,7 +210,7 @@ describe("capture v2", () => {
 
   test("#23: a git config over the scrub cap is left out as too_large, never archived raw; a submodule config too", async () => {
     const { archiver, open } = rig();
-    const root = temp("omnirush-v2-bigconfig-");
+    const root = temp("mars-v2-bigconfig-");
     write(join(root, "a.txt"), "a\n");
     git(root, "init", "-q");
     const padding = `# ${"x".repeat(120)}\n`.repeat(9_000);
@@ -230,8 +230,8 @@ describe("capture v2", () => {
   });
 
   test("#11: attachments from outside the project never copy credentials (~/.ssh, ~/.aws, .env); source paths name home as ~", async () => {
-    const stateDir = temp("omnirush-v2-attach-state-");
-    const home = temp("omnirush-v2-home-");
+    const stateDir = temp("mars-v2-attach-state-");
+    const home = temp("mars-v2-home-");
     const root = join(home, "work", "proj");
     write(join(root, "a.txt"), "a\n");
     write(join(home, ".ssh", "id_ed25519"), "-----BEGIN OPENSSH PRIVATE KEY-----\n");
@@ -254,7 +254,7 @@ describe("capture v2", () => {
 
   test("#15: the repository above the folder, one in a subfolder, and one without commits", async () => {
     const { archiver, open } = rig();
-    const outer = temp("omnirush-v2-outer-");
+    const outer = temp("mars-v2-outer-");
     write(join(outer, "top.txt"), "outer\n");
     git(outer, "init", "-q");
     git(outer, "add", ".");
@@ -295,13 +295,13 @@ describe("capture v2", () => {
   });
 
   test("#15: an inherited GIT_DIR does not empty the git block", async () => {
-    const root = temp("omnirush-v2-gitenv-");
+    const root = temp("mars-v2-gitenv-");
     write(join(root, "a.txt"), "a\n");
     git(root, "init", "-q");
     git(root, "add", ".");
     git(root, "commit", "-qm", "a");
     const saved = process.env.GIT_DIR;
-    process.env.GIT_DIR = join(temp("omnirush-v2-gitenv-other-"), "nothing.git");
+    process.env.GIT_DIR = join(temp("mars-v2-gitenv-other-"), "nothing.git");
     try {
       expect((await collectGitBlock(root))?.commit).toMatch(/^[0-9a-f]{40}$/);
       expect((await discoverRepos(root, [{ path: ".git", gitfile: false }]))[0]!.error).toBeNull();
@@ -314,7 +314,7 @@ describe("capture v2", () => {
 
   test("#14: gitignored files the agent read or ran are archived byte for byte", async () => {
     const { archiver, open } = rig();
-    const root = temp("omnirush-v2-ignored-");
+    const root = temp("mars-v2-ignored-");
     write(join(root, ".gitignore"), ".venv/\ndata/\n");
     write(join(root, "main.py"), "import csv\n");
     git(root, "init", "-q");
@@ -337,7 +337,7 @@ describe("capture v2", () => {
 
   test("#11: prompt attachments under __attachments__ with their message id and source path", async () => {
     const { archiver, open } = rig();
-    const root = temp("omnirush-v2-attach-");
+    const root = temp("mars-v2-attach-");
     write(join(root, "a.txt"), "a\n");
     git(root, "init", "-q");
     git(root, "add", ".");
@@ -368,19 +368,19 @@ describe("capture v2", () => {
 
   test("a v1 server: no state.json, schema v1, git configs still scrubbed", async () => {
     const { archiver, open } = rig({ all_folders: false, touched_files: true });
-    const root = temp("omnirush-v2-v1-");
+    const root = temp("mars-v2-v1-");
     write(join(root, "a.txt"), "a\n");
     git(root, "init", "-q");
     git(root, "remote", "add", "origin", "https://x:tok_v1secret@example.com/r.git");
     const base = await open(await archiver.captureBase("ses_v2_on_v1_server", root, 0));
-    expect(base.manifest.schema).toBe("omnirush.archive.v1");
+    expect(base.manifest.schema).toBe("mars.archive.v1");
     expect(base.state).toBeNull();
     expect(base.bytes(".git/config")!.toString("utf8")).not.toContain("tok_v1secret");
   });
 
   test("#11: an @file typed in the prompt that reached the engine as text is archived (source: mention); an e-mail, a missing or a credential file is not", async () => {
     const { archiver, open } = rig();
-    const root = temp("omnirush-v2-mention-");
+    const root = temp("mars-v2-mention-");
     const logo = write(join(root, "assets", "logo.png"), Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47]), randomBytes(96)]));
     const notes = write(join(root, "my notes.md"), "# notes\n");
     write(join(root, ".env"), "TOKEN=x\n");
@@ -420,7 +420,7 @@ describe("capture v2", () => {
   });
 
   test("text snapshots in a git repository: a nested repository's files are listed, and a gitignored .env counts as denied", async () => {
-    const root = temp("omnirush-v2-nested-snapshot-");
+    const root = temp("mars-v2-nested-snapshot-");
     write(join(root, "README.md"), "hi\n");
     write(join(root, ".gitignore"), "build/\n.env\n");
     write(join(root, ".env"), "API_KEY=abcdef0123456789\n");
@@ -460,7 +460,7 @@ describe("capture v2", () => {
   });
 
   test("text snapshots: binaries with their raw digest, symlinks with their target, modes", async () => {
-    const root = temp("omnirush-v2-snapshot-");
+    const root = temp("mars-v2-snapshot-");
     write(join(root, "notes.md"), "# notes\n");
     write(join(root, "tool.sh"), "#!/bin/sh\n", 0o755);
     const png = write(join(root, "img.png"), Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47]), randomBytes(2_000)]));

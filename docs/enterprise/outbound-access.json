@@ -6,7 +6,7 @@
       "components": ["server"],
       "purpose": "Google Workspace OAuth authorization page opened when a user connects Google Workspace.",
       "requirement": "opt-in",
-      "blockedEffect": "Users cannot complete Google Workspace sign-in from OmniRush.ai.",
+      "blockedEffect": "Users cannot complete Google Workspace sign-in from MarsAI.",
       "override": null
     },
     {
@@ -22,10 +22,10 @@
       "host": "api.github.com",
       "kind": "fetched",
       "components": ["server"],
-      "purpose": "GitHub API calls for importing and previewing GitHub-hosted Claude Code/OmniRush.ai plugins.",
+      "purpose": "GitHub API calls for importing and previewing GitHub-hosted Claude Code/MarsAI plugins.",
       "requirement": "opt-in",
       "blockedEffect": "GitHub plugin import cannot inspect repositories, branches, or plugin manifests.",
-      "override": "OMNIRUSH_GITHUB_API_BASE"
+      "override": "MARS_GITHUB_API_BASE"
     },
     {
       "host": "api.githubcopilot.com",
@@ -69,7 +69,7 @@
       "components": ["server"],
       "purpose": "Source-code comment pointing maintainers to the Claude Code plugin format reference.",
       "requirement": "optional",
-      "blockedEffect": "No runtime effect; it is not opened or fetched by OmniRush.ai.",
+      "blockedEffect": "No runtime effect; it is not opened or fetched by MarsAI.",
       "override": null
     },
     {
@@ -87,7 +87,7 @@
       "components": ["den"],
       "purpose": "Container registry for self-hosted Den API, web, inference images, and Helm chart pulls.",
       "requirement": "required",
-      "blockedEffect": "A self-hosted Den deployment cannot pull OmniRush.ai images or the Helm chart from GitHub Container Registry.",
+      "blockedEffect": "A self-hosted Den deployment cannot pull MarsAI images or the Helm chart from GitHub Container Registry.",
       "override": "container registry mirror / Helm image.repository values"
     },
     {
@@ -114,7 +114,7 @@
       "components": ["renderer"],
       "purpose": "Sample link in the deterministic demo transcript used to exercise link rendering.",
       "requirement": "optional",
-      "blockedEffect": "Clicking that sample Linear link fails; OmniRush.ai functionality is unaffected.",
+      "blockedEffect": "Clicking that sample Linear link fails; MarsAI functionality is unaffected.",
       "override": null
     },
     {
@@ -187,15 +187,15 @@
       "purpose": "Google OAuth token exchange, refresh, and revocation for Google Workspace connections.",
       "requirement": "opt-in",
       "blockedEffect": "Google Workspace accounts cannot finish OAuth, refresh tokens, or revoke tokens cleanly.",
-      "override": "OMNIRUSH_GOOGLE_WORKSPACE_TOKEN_BROKER_URL for token exchange/refresh only"
+      "override": "MARS_GOOGLE_WORKSPACE_TOKEN_BROKER_URL for token exchange/refresh only"
     },
     {
       "host": "release-assets.githubusercontent.com",
       "kind": "redirect-target",
       "components": ["desktop", "installer"],
-      "purpose": "Current GitHub release-asset download target reached after github.com redirects installer and updater downloads. Verified live against a real OmniRush.ai release asset.",
+      "purpose": "Current GitHub release-asset download target reached after github.com redirects installer and updater downloads. Verified live against a real MarsAI release asset.",
       "requirement": "required-in-practice",
-      "blockedEffect": "OmniRush.ai downloads start from github.com and then fail partway through when the redirect target is blocked.",
+      "blockedEffect": "MarsAI downloads start from github.com and then fail partway through when the redirect target is blocked.",
       "override": null
     },
     {
@@ -204,7 +204,7 @@
       "components": ["desktop", "installer"],
       "purpose": "Legacy GitHub release-asset download target. GitHub has migrated to release-assets.githubusercontent.com, but allow both so older clients and any staged rollback keep working.",
       "requirement": "required-in-practice",
-      "blockedEffect": "OmniRush.ai downloads start from github.com and then fail partway through if GitHub serves this legacy redirect target and it is blocked.",
+      "blockedEffect": "MarsAI downloads start from github.com and then fail partway through if GitHub serves this legacy redirect target and it is blocked.",
       "override": null
     },
     {
@@ -217,13 +217,13 @@
       "override": null
     },
     {
-      "host": "omnirush.ai",
+      "host": "marsai.click",
       "kind": "fetched",
       "components": ["desktop"],
-      "purpose": "omnirush.ai account sign-in (device authorization) and the model gateway at /omnirush/v1 that serves the Astra and Sol models.",
+      "purpose": "marsai.click account sign-in (device authorization) and the model gateway at /mars/v1 that serves the Astra and Sol models.",
       "requirement": "required",
       "blockedEffect": "Sign-in fails and the Astra and Sol models are unavailable.",
-      "override": "OMNIRUSH_GATEWAY_URL"
+      "override": "MARS_GATEWAY_URL"
     },
     {
       "host": "opencode.ai",
@@ -250,7 +250,7 @@
       "purpose": "Raw file downloads for GitHub-hosted plugin manifests, MCP configs, skills, commands, and agents.",
       "requirement": "opt-in",
       "blockedEffect": "GitHub plugin import can discover metadata but cannot download component contents.",
-      "override": "OMNIRUSH_GITHUB_RAW_BASE"
+      "override": "MARS_GITHUB_RAW_BASE"
     },
     {
       "host": "registry.npmjs.org",
@@ -265,7 +265,7 @@
       "host": "schemas.agentskills.io",
       "kind": "schema-string",
       "components": ["server"],
-      "purpose": "Skill index $schema identifier used for validation; OmniRush.ai does not fetch the schema URL.",
+      "purpose": "Skill index $schema identifier used for validation; MarsAI does not fetch the schema URL.",
       "requirement": "optional",
       "blockedEffect": "No runtime network effect.",
       "override": null
@@ -277,7 +277,7 @@
       "purpose": "Optional product analytics endpoint when analytics are enabled and a PostHog key is configured.",
       "requirement": "optional",
       "blockedEffect": "Analytics events are dropped silently; user-facing app behavior is unaffected.",
-      "override": "VITE_OMNIRUSH_POSTHOG_HOST; users can disable analytics with the analyticsEnabled preference"
+      "override": "VITE_MARS_POSTHOG_HOST; users can disable analytics with the analyticsEnabled preference"
     },
     {
       "host": "www.google.com",

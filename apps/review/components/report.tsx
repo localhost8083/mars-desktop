@@ -1,5 +1,5 @@
-import { summarizeReview } from "@omnirush/review";
-import type { ReviewEvidence, ReviewReport } from "@omnirush/review";
+import { summarizeReview } from "@mars/review";
+import type { ReviewEvidence, ReviewReport } from "@mars/review";
 
 function Judgments({ items }: { items: ReviewEvidence["judgments"] }) {
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { detectPlatform } from "@omnirush/ui/react";
+import { detectPlatform } from "@mars/ui/react";
 import { useEffect, useState } from "react";
 
 const BACKDROP: Record<"macos" | "windows", string> = {

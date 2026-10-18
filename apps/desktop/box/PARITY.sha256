@@ -1,4 +1,4 @@
-# The sandbox image sources: the same files in omnirush-cli (box/) and omnirush-gui (apps/desktop/box/).
+# The sandbox image sources: the same files in marscli (box/) and mars-gui (apps/desktop/box/).
 # A change to one must be ported to the other and this list updated in both (scripts/box/pins.mjs refreshes the pins' list).
 c314a88a6333258f07228d9472629cb4f1365807786cfbce285b560616a03f53  VERSION
 4318ca0c74f47444ba42bab9e02f603188e12c9ef02001c1062d0e5ab04452c3  images/base/Dockerfile

@@ -1,18 +1,18 @@
-import { denFetch } from "@omnirush/behaviors";
-import type { DenSession } from "@omnirush/behaviors";
+import { denFetch } from "@mars/behaviors";
+import type { DenSession } from "@mars/behaviors";
 import { expect } from "vitest";
-import { localMysqlIsRunning, needs, server, test } from "@omnirush/testkit";
+import { localMysqlIsRunning, needs, server, test } from "@mars/testkit";
 
 // Reproduces Sentry DEN-API-Z (config object insert) and DEN-API-1K (version
 // update): a SKILL.md whose derived search_text projection exceeds the MySQL
 // TEXT column's 65,535-byte cap failed the whole write with errno 1406 on
 // strict-mode MySQL/Vitess and surfaced as HTTP 500.
-const e2eTestsEnabled = process.env.OMNIRUSH_EVAL_E2E_TESTS === "1";
-const localPlacement = process.env.OMNIRUSH_EVAL_DAYTONA !== "1" && !process.env.OMNIRUSH_EVAL_DEN_API_URL?.trim();
-const mysqlOverride = Boolean(process.env.OMNIRUSH_EVAL_MYSQL_URL?.trim());
+const e2eTestsEnabled = process.env.MARS_EVAL_E2E_TESTS === "1";
+const localPlacement = process.env.MARS_EVAL_DAYTONA !== "1" && !process.env.MARS_EVAL_DEN_API_URL?.trim();
+const mysqlOverride = Boolean(process.env.MARS_EVAL_MYSQL_URL?.trim());
 const mysqlOpen = !localPlacement || mysqlOverride || (await localMysqlIsRunning());
 const title = !e2eTestsEnabled
-  ? "oversized multibyte skill projection skipped — needs: set OMNIRUSH_EVAL_E2E_TESTS=1"
+  ? "oversized multibyte skill projection skipped — needs: set MARS_EVAL_E2E_TESTS=1"
   : !mysqlOpen
     ? "oversized multibyte skill projection skipped — needs MySQL on 127.0.0.1:3306"
     : "an oversized multibyte SKILL.md saves cleanly and only its derived search projection is clamped";
@@ -56,7 +56,7 @@ async function activeOrganizationId(session: DenSession): Promise<string> {
 }
 
 test.skipIf(!e2eTestsEnabled || !mysqlOpen)(title, async ({ evidence, place }) => {
-  needs({ optIn: ["OMNIRUSH_EVAL_E2E_TESTS"] });
+  needs({ optIn: ["MARS_EVAL_E2E_TESTS"] });
 
   const unique = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`;
   await using den = await server({
@@ -67,7 +67,7 @@ test.skipIf(!e2eTestsEnabled || !mysqlOpen)(title, async ({ evidence, place }) =
   const orgId = await activeOrganizationId(admin);
   const orgHeaders = {
     authorization: `Bearer ${admin.token}`,
-    "x-omnirush-org-id": orgId,
+    "x-mars-org-id": orgId,
   };
 
   // Large multibyte bodies over the Daytona preview proxy need a wider, still

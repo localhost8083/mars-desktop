@@ -9,18 +9,18 @@ import {
   commandMatchesPackagedSidecar,
   createRuntimeManager,
   embeddedServerImportUrl,
-  migrateOmniRushServerTokenStore,
+  migrateMarsServerTokenStore,
   prepareRuntimeWorkspaceRoot,
   prioritizeWorkspacePaths,
   resetRuntimeStatesAfterFailedServerStart,
   resolveEvalLocalServerDelayMs,
-  resolveOmniRushServerConfigPath,
-  resolveOmniRushServerLogFile,
-  resolveOmniRushServerReuse,
+  resolveMarsServerConfigPath,
+  resolveMarsServerLogFile,
+  resolveMarsServerReuse,
   seedWorkspacePathsForEmbeddedServer,
-  selectStickyOmniRushPortWorkspace,
+  selectStickyMarsPortWorkspace,
   snapshotEngineState,
-  snapshotOmniRushServerState,
+  snapshotMarsServerState,
   uploadQueueClearMarkerPath,
 } from "./runtime.mjs";
 import {
@@ -59,11 +59,11 @@ describe("workspace root preparation", () => {
   });
 
   it("returns the runtime lifecycle to idle after root preparation fails", async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-runtime-root-"));
+    const root = await mkdtemp(path.join(os.tmpdir(), "mars-runtime-root-"));
     try {
       const manager = createRuntimeManager({
         app: {
-          getPath: (name) => name === "exe" ? path.join(root, "OmniRush.ai.exe") : root,
+          getPath: (name) => name === "exe" ? path.join(root, "MarsAI.exe") : root,
           isPackaged: false,
         },
         desktopRoot: path.dirname(fileURLToPath(import.meta.url)),
@@ -83,7 +83,7 @@ describe("workspace root preparation", () => {
       assert.equal(status.lifecycleState, "idle");
       assert.equal(status.engine.running, false);
       assert.equal(status.engine.projectDir, null);
-      assert.equal(status.omnirushServer.running, false);
+      assert.equal(status.marsServer.running, false);
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -96,24 +96,24 @@ describe("bundled OpenCode runtime", () => {
     const constants = JSON.parse(await readFile(path.resolve(here, "../../../constants.json"), "utf8"));
     const release = JSON.parse(await readFile(path.resolve(here, "../scripts/engine-release.json"), "utf8"));
 
-    // OmniRush.ai's build of opencode 1.18.32 (engine-1.18.32-r3 of
-    // omnirush-ai/omnirush-cli), the engine the CLI ships; the 2.x engine
+    // MarsAI's build of opencode 1.18.32 (engine-1.18.32-r3 of
+    // mars-ai/mars-cli), the engine the CLI ships; the 2.x engine
     // bundled from 2.2.0 is gone (its sessions are imported, engine2/import.ts).
     assert.equal(constants.opencodeVersion, "v1.18.32");
     assert.equal(release.version, "1.18.32");
     // A public pre-release of this repo, never marked latest: no token needed.
-    assert.equal(release.repo, "omnirush-ai/omnirush-gui");
+    assert.equal(release.repo, "localhost8083/mars-desktop");
     assert.equal(release.tag, "engine-1.18.32-r3");
     for (const target of ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"]) {
-      assert.match(release.assets[target].name, /^omnirush-engine-[a-z0-9-]+-1\.18\.32\.tar\.gz$/);
+      assert.match(release.assets[target].name, /^mars-engine-[a-z0-9-]+-1\.18\.32\.tar\.gz$/);
       assert.match(release.assets[target].sha256, /^[0-9a-f]{64}$/);
     }
   });
 });
 
-describe("omnirush server snapshot", () => {
+describe("mars server snapshot", () => {
   it("reports a running in-process server", () => {
-    const snapshot = snapshotOmniRushServerState({
+    const snapshot = snapshotMarsServerState({
       child: null,
       childExited: true,
       inProcess: true,
@@ -122,39 +122,39 @@ describe("omnirush server snapshot", () => {
   });
 
   it("exposes the server log file so Settings > Debug can point at it", () => {
-    const withLog = snapshotOmniRushServerState({
+    const withLog = snapshotMarsServerState({
       child: null,
       childExited: true,
       inProcess: true,
-      logFilePath: "/tmp/userData/logs/omnirush-server.log",
+      logFilePath: "/tmp/userData/logs/mars-server.log",
     });
-    assert.equal(withLog.logFilePath, "/tmp/userData/logs/omnirush-server.log");
-    const withoutLog = snapshotOmniRushServerState({ child: null, childExited: true, inProcess: false });
+    assert.equal(withLog.logFilePath, "/tmp/userData/logs/mars-server.log");
+    const withoutLog = snapshotMarsServerState({ child: null, childExited: true, inProcess: false });
     assert.equal(withoutLog.logFilePath, null);
   });
 });
 
-describe("resolveOmniRushServerLogFile", () => {
-  it("defaults to logs/omnirush-server.log under the user data dir", () => {
+describe("resolveMarsServerLogFile", () => {
+  it("defaults to logs/mars-server.log under the user data dir", () => {
     assert.equal(
-      resolveOmniRushServerLogFile("/tmp/userData", {}),
-      path.join("/tmp/userData", "logs", "omnirush-server.log"),
+      resolveMarsServerLogFile("/tmp/userData", {}),
+      path.join("/tmp/userData", "logs", "mars-server.log"),
     );
   });
 
-  it("prefers an explicit OMNIRUSH_SERVER_LOG_FILE", () => {
+  it("prefers an explicit MARS_SERVER_LOG_FILE", () => {
     assert.equal(
-      resolveOmniRushServerLogFile("/tmp/userData", { OMNIRUSH_SERVER_LOG_FILE: "  /var/log/ow.log " }),
+      resolveMarsServerLogFile("/tmp/userData", { MARS_SERVER_LOG_FILE: "  /var/log/ow.log " }),
       "/var/log/ow.log",
     );
     assert.equal(
-      resolveOmniRushServerLogFile("/tmp/userData", { OMNIRUSH_SERVER_LOG_FILE: "   " }),
-      path.join("/tmp/userData", "logs", "omnirush-server.log"),
+      resolveMarsServerLogFile("/tmp/userData", { MARS_SERVER_LOG_FILE: "   " }),
+      path.join("/tmp/userData", "logs", "mars-server.log"),
     );
   });
 });
 
-describe("resolveOmniRushServerReuse", () => {
+describe("resolveMarsServerReuse", () => {
   const healthy = {
     forceRestart: undefined,
     inProcess: true,
@@ -167,7 +167,7 @@ describe("resolveOmniRushServerReuse", () => {
   };
 
   it("reuses the running server for the same workspace", () => {
-    assert.deepEqual(resolveOmniRushServerReuse(healthy), { reuse: true, retarget: false });
+    assert.deepEqual(resolveMarsServerReuse(healthy), { reuse: true, retarget: false });
   });
 
   it("retargets instead of restarting when a different workspace is requested", () => {
@@ -175,14 +175,14 @@ describe("resolveOmniRushServerReuse", () => {
     // workspace is routed) used to tear the server down here, aborting every
     // in-flight run in the workspace being left.
     assert.deepEqual(
-      resolveOmniRushServerReuse({ ...healthy, requestedProjectDir: "/Users/person/workspace-b" }),
+      resolveMarsServerReuse({ ...healthy, requestedProjectDir: "/Users/person/workspace-b" }),
       { reuse: true, retarget: true },
     );
   });
 
   it("treats case-only path differences as the same workspace on win32", () => {
     assert.deepEqual(
-      resolveOmniRushServerReuse({
+      resolveMarsServerReuse({
         ...healthy,
         platform: "win32",
         currentProjectDir: "C:\\Work\\Space",
@@ -194,19 +194,19 @@ describe("resolveOmniRushServerReuse", () => {
 
   it("gives up the server only for an explicit restart, host rebind, or unhealthy runtime", () => {
     assert.deepEqual(
-      resolveOmniRushServerReuse({ ...healthy, forceRestart: true }),
+      resolveMarsServerReuse({ ...healthy, forceRestart: true }),
       { reuse: false, retarget: false },
     );
     assert.deepEqual(
-      resolveOmniRushServerReuse({ ...healthy, requestedRemoteAccess: true }),
+      resolveMarsServerReuse({ ...healthy, requestedRemoteAccess: true }),
       { reuse: false, retarget: false },
     );
     assert.deepEqual(
-      resolveOmniRushServerReuse({ ...healthy, lifecycleState: "starting" }),
+      resolveMarsServerReuse({ ...healthy, lifecycleState: "starting" }),
       { reuse: false, retarget: false },
     );
     assert.deepEqual(
-      resolveOmniRushServerReuse({ ...healthy, inProcess: false }),
+      resolveMarsServerReuse({ ...healthy, inProcess: false }),
       { reuse: false, retarget: false },
     );
   });
@@ -244,17 +244,17 @@ describe("seedWorkspacePathsForEmbeddedServer", () => {
   });
 });
 
-describe("selectStickyOmniRushPortWorkspace", () => {
+describe("selectStickyMarsPortWorkspace", () => {
   it("uses the requested workspace even when server config owns workspace loading", () => {
     assert.equal(
-      selectStickyOmniRushPortWorkspace(["/workspace/current"], []),
+      selectStickyMarsPortWorkspace(["/workspace/current"], []),
       "/workspace/current",
     );
   });
 
   it("falls back to server workspace paths when no requested path is available", () => {
     assert.equal(
-      selectStickyOmniRushPortWorkspace([], ["/workspace/from-server"]),
+      selectStickyMarsPortWorkspace([], ["/workspace/from-server"]),
       "/workspace/from-server",
     );
   });
@@ -262,11 +262,11 @@ describe("selectStickyOmniRushPortWorkspace", () => {
 
 describe("resolveEvalLocalServerDelayMs", () => {
   it("enables only positive finite eval delays", () => {
-    assert.equal(resolveEvalLocalServerDelayMs({ OMNIRUSH_EVAL_LOCAL_SERVER_DELAY_MS: "3000" }), 3000);
-    assert.equal(resolveEvalLocalServerDelayMs({ OMNIRUSH_EVAL_LOCAL_SERVER_DELAY_MS: "0" }), 0);
-    assert.equal(resolveEvalLocalServerDelayMs({ OMNIRUSH_EVAL_LOCAL_SERVER_DELAY_MS: "-1" }), 0);
-    assert.equal(resolveEvalLocalServerDelayMs({ OMNIRUSH_EVAL_LOCAL_SERVER_DELAY_MS: "Infinity" }), 0);
-    assert.equal(resolveEvalLocalServerDelayMs({ OMNIRUSH_EVAL_LOCAL_SERVER_DELAY_MS: "invalid" }), 0);
+    assert.equal(resolveEvalLocalServerDelayMs({ MARS_EVAL_LOCAL_SERVER_DELAY_MS: "3000" }), 3000);
+    assert.equal(resolveEvalLocalServerDelayMs({ MARS_EVAL_LOCAL_SERVER_DELAY_MS: "0" }), 0);
+    assert.equal(resolveEvalLocalServerDelayMs({ MARS_EVAL_LOCAL_SERVER_DELAY_MS: "-1" }), 0);
+    assert.equal(resolveEvalLocalServerDelayMs({ MARS_EVAL_LOCAL_SERVER_DELAY_MS: "Infinity" }), 0);
+    assert.equal(resolveEvalLocalServerDelayMs({ MARS_EVAL_LOCAL_SERVER_DELAY_MS: "invalid" }), 0);
   });
 });
 
@@ -274,8 +274,8 @@ describe("commandMatchesPackagedSidecar", () => {
   it("matches packaged opencode sidecars with platform suffixes", () => {
     assert.equal(
       commandMatchesPackagedSidecar(
-        "/Applications/OmniRush.ai.app/Contents/Resources/sidecars/opencode-aarch64-apple-darwin serve --hostname 127.0.0.1 --port 49174 --cors *",
-        ["/Applications/OmniRush.ai.app/Contents/Resources/sidecars"],
+        "/Applications/MarsAI.app/Contents/Resources/sidecars/opencode-aarch64-apple-darwin serve --hostname 127.0.0.1 --port 49174 --cors *",
+        ["/Applications/MarsAI.app/Contents/Resources/sidecars"],
       ),
       true,
     );
@@ -285,7 +285,7 @@ describe("commandMatchesPackagedSidecar", () => {
     assert.equal(
       commandMatchesPackagedSidecar(
         "/usr/local/bin/opencode serve --hostname 127.0.0.1 --port 49174",
-        ["/Applications/OmniRush.ai.app/Contents/Resources/sidecars"],
+        ["/Applications/MarsAI.app/Contents/Resources/sidecars"],
       ),
       false,
     );
@@ -294,7 +294,7 @@ describe("commandMatchesPackagedSidecar", () => {
 
 describe("embeddedServerImportUrl", () => {
   it("returns the same file URL for unchanged metadata", async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "omnirush-runtime-"));
+    const dir = await mkdtemp(path.join(os.tmpdir(), "mars-runtime-"));
     try {
       const embeddedPath = path.join(dir, "embedded.js");
       await writeFile(embeddedPath, "export const value = 1;\n");
@@ -314,7 +314,7 @@ describe("embeddedServerImportUrl", () => {
   });
 
   it("changes when the file metadata changes", async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "omnirush-runtime-"));
+    const dir = await mkdtemp(path.join(os.tmpdir(), "mars-runtime-"));
     try {
       const embeddedPath = path.join(dir, "embedded.js");
       await writeFile(embeddedPath, "export const value = 1;\n");
@@ -329,32 +329,32 @@ describe("embeddedServerImportUrl", () => {
   });
 
   it("falls back to the plain file URL if stat fails", () => {
-    const missingPath = path.join(os.tmpdir(), "omnirush-missing-embedded.js");
+    const missingPath = path.join(os.tmpdir(), "mars-missing-embedded.js");
 
     assert.equal(embeddedServerImportUrl(missingPath), pathToFileURL(missingPath).href);
   });
 });
 
-describe("resolveOmniRushServerConfigPath", () => {
+describe("resolveMarsServerConfigPath", () => {
   it("respects explicit server config path", () => {
     assert.equal(
-      resolveOmniRushServerConfigPath({ OMNIRUSH_SERVER_CONFIG: "/tmp/omnirush/server.json" }),
-      "/tmp/omnirush/server.json",
+      resolveMarsServerConfigPath({ MARS_SERVER_CONFIG: "/tmp/mars/server.json" }),
+      "/tmp/mars/server.json",
     );
   });
 
   it("uses XDG config home on Unix", () => {
     if (process.platform === "win32") return;
     assert.equal(
-      resolveOmniRushServerConfigPath({ XDG_CONFIG_HOME: "/tmp/xdg" }),
-      "/tmp/xdg/omnirush/server.json",
+      resolveMarsServerConfigPath({ XDG_CONFIG_HOME: "/tmp/xdg" }),
+      "/tmp/xdg/mars/server.json",
     );
   });
 });
 
-describe("OmniRush.ai server credential persistence", () => {
+describe("MarsAI server credential persistence", () => {
   it("deterministically migrates legacy workspace credentials into one server bundle", () => {
-    const migrated = migrateOmniRushServerTokenStore({
+    const migrated = migrateMarsServerTokenStore({
       version: 1,
       workspaces: {
         "/workspace/z": {
@@ -387,7 +387,7 @@ describe("OmniRush.ai server credential persistence", () => {
         updatedAt: 20,
       },
     });
-    assert.deepEqual(migrateOmniRushServerTokenStore(migrated), migrated);
+    assert.deepEqual(migrateMarsServerTokenStore(migrated), migrated);
   });
 });
 
@@ -557,10 +557,10 @@ describe("built-in server restart guard", () => {
 });
 
 describe("built-in server restart record", () => {
-  it("writes each restart to omnirush-server.log and the history, newest first", async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-restart-log-"));
+  it("writes each restart to mars-server.log and the history, newest first", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "mars-restart-log-"));
     try {
-      const serverLogFile = path.join(root, "logs", "omnirush-server.log");
+      const serverLogFile = path.join(root, "logs", "mars-server.log");
       appendRuntimeRestartRecord({
         serverLogFile,
         now: () => new Date("2026-09-24T07:11:00.000Z"),
@@ -591,9 +591,9 @@ describe("built-in server restart record", () => {
   });
 
   it("skips torn lines and reports an empty history when there is none", async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-restart-log-"));
+    const root = await mkdtemp(path.join(os.tmpdir(), "mars-restart-log-"));
     try {
-      const serverLogFile = path.join(root, "omnirush-server.log");
+      const serverLogFile = path.join(root, "mars-server.log");
       assert.deepEqual(await readRuntimeRestartRecords(serverLogFile), []);
       await writeFile(runtimeRestartLogPath(serverLogFile), '{"at":"2026-09-24T00:00:00.000Z","action":"started"}\n{"at":"2026-09-24T', "utf8");
       assert.deepEqual((await readRuntimeRestartRecords(serverLogFile)).map((record) => record.action), ["started"]);
@@ -603,27 +603,27 @@ describe("built-in server restart record", () => {
   });
 
   it("returns the history and any pending restart with the server info", async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-runtime-restarts-"));
-    const previous = process.env.OMNIRUSH_SERVER_LOG_FILE;
-    delete process.env.OMNIRUSH_SERVER_LOG_FILE;
+    const root = await mkdtemp(path.join(os.tmpdir(), "mars-runtime-restarts-"));
+    const previous = process.env.MARS_SERVER_LOG_FILE;
+    delete process.env.MARS_SERVER_LOG_FILE;
     try {
       appendRuntimeRestartRecord({
-        serverLogFile: resolveOmniRushServerLogFile(root),
+        serverLogFile: resolveMarsServerLogFile(root),
         record: { kind: "engine", action: "restarted", reason: "engine_unreachable:process_exited", source: "engine-pool-watchdog" },
       });
       const manager = createRuntimeManager({
-        app: { getPath: (name) => name === "exe" ? path.join(root, "OmniRush.ai.exe") : root, isPackaged: false },
+        app: { getPath: (name) => name === "exe" ? path.join(root, "MarsAI.exe") : root, isPackaged: false },
         desktopRoot: path.dirname(fileURLToPath(import.meta.url)),
         listLocalWorkspacePaths: async () => [],
         localManagedMcpVaultKey: "test-key",
       });
-      const info = await manager.omnirushServerInfo();
+      const info = await manager.marsServerInfo();
       assert.equal(info.running, false);
       assert.equal(info.pendingRestart, null);
       assert.deepEqual(info.restarts.map((record) => record.reason), ["engine_unreachable:process_exited"]);
     } finally {
-      if (previous === undefined) delete process.env.OMNIRUSH_SERVER_LOG_FILE;
-      else process.env.OMNIRUSH_SERVER_LOG_FILE = previous;
+      if (previous === undefined) delete process.env.MARS_SERVER_LOG_FILE;
+      else process.env.MARS_SERVER_LOG_FILE = previous;
       await rm(root, { recursive: true, force: true });
     }
   });
@@ -631,15 +631,15 @@ describe("built-in server restart record", () => {
 
 describe("upload queue clear marker", () => {
   it("a user's sign-out leaves a marker in the user data folder for the next server start", async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-runtime-queue-clear-"));
+    const root = await mkdtemp(path.join(os.tmpdir(), "mars-runtime-queue-clear-"));
     try {
       const manager = createRuntimeManager({
-        app: { getPath: (name) => name === "exe" ? path.join(root, "OmniRush.ai.exe") : root, isPackaged: false },
+        app: { getPath: (name) => name === "exe" ? path.join(root, "MarsAI.exe") : root, isPackaged: false },
         desktopRoot: path.dirname(fileURLToPath(import.meta.url)),
         listLocalWorkspacePaths: async () => [],
         localManagedMcpVaultKey: "test-key",
       });
-      assert.equal(uploadQueueClearMarkerPath(root), path.join(root, "omnirush-upload-queue-clear"));
+      assert.equal(uploadQueueClearMarkerPath(root), path.join(root, "mars-upload-queue-clear"));
       await manager.markUploadQueueClear();
       assert.match(await readFile(uploadQueueClearMarkerPath(root), "utf8"), /^\d{4}-\d{2}-\d{2}T/);
     } finally {

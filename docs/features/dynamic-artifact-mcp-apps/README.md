@@ -1,6 +1,6 @@
 # Workflow Artifacts as MCP Apps
 
-OmniRush.ai exposes Workflow results as portable, standards-based
+MarsAI exposes Workflow results as portable, standards-based
 MCP Apps. A supporting MCP host can render an artifact inline; every other MCP
 client still receives a useful Markdown result.
 
@@ -37,7 +37,7 @@ the `2026-01-26` MCP Apps protocol:
 - server capability: `extensions.io.modelcontextprotocol/ui.mimeTypes`
   contains `text/html;profile=mcp-app`;
 - tool metadata: `_meta.ui.resourceUri` points to
-  `ui://omnirush/workflow-artifact/v1/view.html` (with the compatibility metadata
+  `ui://mars/workflow-artifact/v1/view.html` (with the compatibility metadata
   emitted by the official MCP Apps server helpers);
 - resource delivery: `resources/read` returns one self-contained HTML5 document
   with MIME type `text/html;profile=mcp-app`;
@@ -50,7 +50,7 @@ the `2026-01-26` MCP Apps protocol:
   external code, performs no network requests, and inserts artifact values with
   DOM text APIs rather than HTML interpolation.
 
-The shared payload schema lives in `@omnirush/types/workflows` so a host
+The shared payload schema lives in `@mars/types/workflows` so a host
 can validate the data contract independently of this presentation resource.
 
 ## UI behavior
@@ -83,7 +83,7 @@ state.
 
 ## Next interoperable slice
 
-The provider side is deliberately usable without an OmniRush.ai-specific host.
+The provider side is deliberately usable without an MarsAI-specific host.
 The next slice is a generic MCP Apps host in the desktop conversation surface:
 negotiate the UI extension with upstream MCP servers, preserve tool/resource
 metadata and structured results through the runtime, sandbox `ui://` resources,

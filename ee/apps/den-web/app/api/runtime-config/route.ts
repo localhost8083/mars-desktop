@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { joinBaseUrl, readBaseUrlEnv } from "@omnirush/types/url";
+import { joinBaseUrl, readBaseUrlEnv } from "@mars/types/url";
 import { denUrls } from "@omnirush-ee/utils";
 import { DEFAULT_OMNIRUSH_WEB_URL } from "../../(den)/_lib/runtime-config";
 

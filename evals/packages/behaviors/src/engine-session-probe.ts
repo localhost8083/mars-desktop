@@ -1,5 +1,5 @@
-import { browserScript } from "@omnirush/cdp";
-import type { Surface } from "@omnirush/cdp";
+import { browserScript } from "@mars/cdp";
+import type { Surface } from "@mars/cdp";
 
 import { evalIn } from "./desktop.ts";
 
@@ -164,7 +164,7 @@ async function requestFromSurface(
     throw new Error(`Could not serialize engine session probe body for ${path}`);
   }
   const value = await evalIn(surface, browserScript(async (path, value, inputValue, inputValue2) => {
-    const info = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("omnirushServerInfo");
+    const info = await window.__MARS_ELECTRON__?.invokeDesktop?.("marsServerInfo");
     if (!info?.running || !info.baseUrl) return { status: 0, body: { error: "local_server_unavailable" } };
     const baseUrl = String(info.baseUrl);
     let end = baseUrl.length;

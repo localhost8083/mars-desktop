@@ -13,13 +13,13 @@ import {
 } from "./desktop-distribution.mjs";
 
 describe("resolveDesktopDistribution", () => {
-  it("brands the local public desktop build as OmniRush.ai", () => {
+  it("brands the local public desktop build as MarsAI", () => {
     assert.deepEqual(PUBLIC_DESKTOP_DISTRIBUTION, {
       flavor: "public",
-      appName: "omnirush.ai",
-      displayName: "omnirush",
-      appIdentifier: "ai.omnirush.desktop",
-      protocolScheme: "omnirush",
+      appName: "marsai.click",
+      displayName: "mars",
+      appIdentifier: "ai.marsai.desktop",
+      protocolScheme: "mars",
       requireSignin: false,
       requireActivation: false,
       alphaUpdateFeedUrl: null,
@@ -35,10 +35,10 @@ describe("resolveDesktopDistribution", () => {
       }),
       {
         flavor: "cloud",
-        appName: "omnirush.ai Cloud",
-        displayName: "omnirush.ai Cloud",
-        appIdentifier: "ai.omnirush.desktop",
-        protocolScheme: "omnirush",
+        appName: "marsai.click Cloud",
+        displayName: "marsai.click Cloud",
+        appIdentifier: "ai.marsai.desktop",
+        protocolScheme: "mars",
         requireSignin: true,
         requireActivation: false,
         alphaUpdateFeedUrl: null,
@@ -55,10 +55,10 @@ describe("resolveDesktopDistribution", () => {
 
     assert.deepEqual(distribution, {
       flavor: "enterprise",
-      appName: "omnirush.ai Enterprise",
-      displayName: "omnirush.ai Enterprise",
-      appIdentifier: "ai.omnirush.desktop",
-      protocolScheme: "omnirush",
+      appName: "marsai.click Enterprise",
+      displayName: "marsai.click Enterprise",
+      appIdentifier: "ai.marsai.desktop",
+      protocolScheme: "mars",
       requireSignin: true,
       requireActivation: true,
       alphaUpdateFeedUrl: null,
@@ -169,7 +169,7 @@ describe("enterpriseActivationComplete", () => {
     assert.equal(enterpriseActivationComplete({
       enterpriseActivation: {
         activatedAt: "2026-07-27T10:00:00.000Z",
-        denBaseUrl: "https://omnirush.example.com",
+        denBaseUrl: "https://mars.example.com",
       },
     }), true);
   });

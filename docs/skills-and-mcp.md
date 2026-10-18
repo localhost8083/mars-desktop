@@ -1,14 +1,14 @@
-# Skills and MCP servers in the omnirush.ai desktop app
+# Skills and MCP servers in the marsai.click desktop app
 
-This document describes how a user adds a skill and an MCP server in the desktop app, where the files live, how they reach the bundled engine (the OpenCode sidecar that serves the omnirush.ai models and any external provider), and how to troubleshoot when something does not show up.
+This document describes how a user adds a skill and an MCP server in the desktop app, where the files live, how they reach the bundled engine (the OpenCode sidecar that serves the marsai.click models and any external provider), and how to troubleshoot when something does not show up.
 
-The same flows apply to every model: the omnirush.ai models (GPT 6 Astra, GPT-5.6 Sol and any other model the account's catalog lists, such as Meta Muse, via the local gateway broker) and external providers (OpenAI, Anthropic, and others) all run in the same engine and see the same skills and MCP tools.
+The same flows apply to every model: the marsai.click models (GPT 6 Astra, GPT-5.6 Sol and any other model the account's catalog lists, such as Meta Muse, via the local gateway broker) and external providers (OpenAI, Anthropic, and others) all run in the same engine and see the same skills and MCP tools.
 
 ## Moving parts
 
 | Piece | Where | Role |
 | --- | --- | --- |
-| Desktop shell | `apps/desktop/electron/main.mjs` | Starts the local server (embedded) with the bundled engine sidecar, holds the omnirush.ai account credentials. |
+| Desktop shell | `apps/desktop/electron/main.mjs` | Starts the local server (embedded) with the bundled engine sidecar, holds the marsai.click account credentials. |
 | Local server | `apps/server/src/server.ts` and friends | HTTP API the app talks to (`/workspace/:id/skills`, `/workspace/:id/mcp`), owns the runtime DB and the engine-visible config file. |
 | Engine sidecar | `apps/desktop/resources/sidecars/opencode-*` (`opencode serve`) | Loads skills from disk, connects MCP servers, exposes the `skill` tool and MCP tools to the model. |
 | Settings UI | `apps/app/src/react-app/domains/settings/pages/extensions-view.tsx`, `mcp-view.tsx`, `library-add-*.tsx` | The Library: lists skills and MCP servers, adds and removes them. |
@@ -57,12 +57,12 @@ The workspace root is the folder that contains `.git`; the server walks up from 
 
 1. Open Settings, then Library (the Extensions tab). Choose the Skills filter.
 2. Click Add, choose Skill.
-   - Signed in to an omnirush.ai Cloud organization: the Cloud authoring modal opens and the skill is stored in the organization Library (a private plugin). It reaches the engine through omnirush.ai Connect.
-   - Signed in with an omnirush.ai account only (or not signed in to Cloud): the workspace skill modal opens. Enter the name, the description and the Markdown body. The app sends `POST /workspace/:id/skills` to the local server, which validates the name and description, adds the frontmatter, writes `.opencode/skills/<name>/SKILL.md`, records an audit entry and emits a `skills` reload event.
+   - Signed in to an marsai.click Cloud organization: the Cloud authoring modal opens and the skill is stored in the organization Library (a private plugin). It reaches the engine through marsai.click Connect.
+   - Signed in with an marsai.click account only (or not signed in to Cloud): the workspace skill modal opens. Enter the name, the description and the Markdown body. The app sends `POST /workspace/:id/skills` to the local server, which validates the name and description, adds the frontmatter, writes `.opencode/skills/<name>/SKILL.md`, records an audit entry and emits a `skills` reload event.
 3. The Library refreshes and shows the new skill card with its path. Open it to read the content or reveal the file in Finder.
 4. Reload the engine when the app prompts for it (see Troubleshooting for why this matters).
 
-To remove a skill, open its card and choose Remove. The server deletes the skill folder (`DELETE /workspace/:id/skills/:name`) and emits a `skills` reload event. Skills that come from omnirush.ai Connect cannot be removed locally.
+To remove a skill, open its card and choose Remove. The server deletes the skill folder (`DELETE /workspace/:id/skills/:name`) and emits a `skills` reload event. Skills that come from marsai.click Connect cannot be removed locally.
 
 You can also drop a `SKILL.md` folder into `.opencode/skills/` by hand; the server's reload watcher notices `SKILL.md` changes under `.opencode/skills` and marks a reload as required.
 
@@ -70,7 +70,7 @@ You can also drop a `SKILL.md` folder into `.opencode/skills/` by hand; the serv
 
 Skills are files, not config. The engine reads them from disk when it builds its project instance:
 
-- The engine-visible config file (`runtime-opencode-config.json` in the server state directory, passed as `OPENCODE_CONFIG`) does not contain skills. It contains the omnirush.ai provider block, the plugins, the `omnirush` agent definition (which denies the engine's own `customize-opencode` and creator skills) and the global MCP entries.
+- The engine-visible config file (`runtime-opencode-config.json` in the server state directory, passed as `OPENCODE_CONFIG`) does not contain skills. It contains the marsai.click provider block, the plugins, the `mars` agent definition (which denies the engine's own `customize-opencode` and creator skills) and the global MCP entries.
 - The engine scans the skill directories when it creates the instance for the workspace directory. `GET /skill` on the engine (proxied by the server for the v2 preview as `/api/skill`) returns the catalog with `name`, `description`, `location` and `content`.
 - The catalog is cached for the life of the instance. A new, changed or removed skill becomes visible after the instance is rebuilt (`POST /instance/dispose` on the engine), which the app calls the engine reload.
 
@@ -85,9 +85,9 @@ The server's list (`GET /workspace/:id/skills?includeGlobal=true`) reads the sam
 | Local (stdio) | `{"type":"local","command":["node","/path/server.mjs"],"environment":{...},"enabled":true}` | Library, Add, MCP server (local), or Advanced, Add MCP. |
 | Remote (HTTP) | `{"type":"remote","url":"https://...","headers":{...},"enabled":true}` | Library, Add, MCP server (remote). |
 | Managed OAuth | remote URL plus OAuth settings | Library, Add, MCP server with Sign in; the server runs the OAuth flow and keeps the tokens in an encrypted vault. |
-| omnirush.ai Connect | `omnirush-cloud` and `omnirush-connect-*` | Provisioned by the account; not user-editable. |
+| marsai.click Connect | `mars-cloud` and `mars-connect-*` | Provisioned by the account; not user-editable. |
 
-MCP names must be alphanumeric with `-` or `_` and must not start with `-`. The names `omnirush-cloud`, `omnirush-connect-*` and `omnirush-direct-*` are reserved.
+MCP names must be alphanumeric with `-` or `_` and must not start with `-`. The names `mars-cloud`, `mars-connect-*` and `mars-direct-*` are reserved.
 
 ### Adding an MCP server in the desktop app
 
@@ -101,7 +101,7 @@ To remove a server, open its card and choose Remove. The server deletes the runt
 ### Where MCP config lives
 
 - Workspace MCP servers added from the app: the workspace row of the runtime DB. They are never written into the user's `opencode.json`.
-- Account-level entries (`omnirush-cloud`): the engine-global row of the runtime DB; these are the only MCP entries rendered into the engine-visible config file.
+- Account-level entries (`mars-cloud`): the engine-global row of the runtime DB; these are the only MCP entries rendered into the engine-visible config file.
 - Static entries from `<workspace>/.opencode/opencode.json` or `~/.config/opencode/opencode.json`: read by the engine directly and listed in the app as project or global config entries (read-only from the app).
 
 ### How MCP servers reach the engine
@@ -110,14 +110,14 @@ To remove a server, open its card and choose Remove. The server deletes the runt
 - The engine spawns local servers (stdio) or opens the HTTP transport, completes the MCP handshake (`initialize`, `notifications/initialized`) and calls `tools/list`. Its status is visible on `GET /mcp` on the engine and as the card status in the app.
 - MCP tools are exposed to the model as `<server>_<tool>` at prompt time. They do not appear in the engine's `/experimental/tool/ids` list, which only covers built-in and plugin tools; the connected status plus the server's `tools/list` call is the confirmation that the tools are available.
 
-### Coexistence with the omnirush.ai provider
+### Coexistence with the marsai.click provider
 
 The engine-visible config file is rendered from the engine-global runtime row plus static built-ins:
 
-- `provider.omnirush` (the omnirush.ai models, `baseURL` pointing at the local gateway broker) is added after any runtime `provider` entries, so a runtime provider with the same id cannot shadow it.
-- `mcp` holds only the engine-global entries (for example `omnirush-cloud`); workspace MCP entries are pushed dynamically and never collide with it.
+- `provider.mars` (the marsai.click models, `baseURL` pointing at the local gateway broker) is added after any runtime `provider` entries, so a runtime provider with the same id cannot shadow it.
+- `mcp` holds only the engine-global entries (for example `mars-cloud`); workspace MCP entries are pushed dynamically and never collide with it.
 - `disabled_providers` is copied through untouched.
-- `model` defaults to the account catalog's default model (`omnirush/gpt-6-astra`) when the account is signed in. The `omnirush` provider's models come from the catalog the server syncs from `GET /omnirush/v1/models` (ids, names, efforts, limits and input types only); its package, base URL and credentials never do.
+- `model` defaults to the account catalog's default model (`mars/gpt-6-astra`) when the account is signed in. The `mars` provider's models come from the catalog the server syncs from `GET /mars/v1/models` (ids, names, efforts, limits and input types only); its package, base URL and credentials never do.
 
 Adding skills or MCP servers never modifies the provider block.
 
@@ -125,7 +125,7 @@ Adding skills or MCP servers never modifies the provider block.
 
 The flows above were exercised against the bundled sidecar (`opencode` 1.18.18, `opencode serve`) in an isolated `HOME` with the server started through the embedded API and a loopback stub as the gateway:
 
-- `POST /workspace/:id/skills` wrote `.opencode/skills/release-notes/SKILL.md`; `GET /workspace/:id/skills` and `GET /workspace/:id/skills/release-notes` returned it with the trigger extracted from the "When to use" section. After an engine instance rebuild, the engine's `GET /skill` listed it with the exact body; the generated config file kept `provider.omnirush`, `model`, the 11 plugins and `mcp: {}` unchanged.
+- `POST /workspace/:id/skills` wrote `.opencode/skills/release-notes/SKILL.md`; `GET /workspace/:id/skills` and `GET /workspace/:id/skills/release-notes` returned it with the trigger extracted from the "When to use" section. After an engine instance rebuild, the engine's `GET /skill` listed it with the exact body; the generated config file kept `provider.mars`, `model`, the 11 plugins and `mcp: {}` unchanged.
 - `POST /workspace/:id/mcp` with a local stdio fixture (`node mcp-stdio-fixture.mjs`) produced `engineSync.status: "ok"`, the engine reported `{"fixture-stdio":{"status":"connected"}}`, and the fixture logged `initialize`, `notifications/initialized` and `tools/list` from the engine. Disabling switched the engine status to `disabled`; enabling reconnected and re-listed tools; deleting removed the entry from the engine.
 
 ## Troubleshooting
@@ -151,25 +151,25 @@ The engine caches its skill catalog per project instance and needs an instance r
 **Removing an MCP server left tools behind in a running session.**
 The engine drops the registration immediately, but a session that already started a turn keeps its captured tool set until the turn ends.
 
-**The app reports "Configuration is invalid at … V2 permissions are not supported by OmniRush V1", or a workspace answers `opencode_config_invalid`.**
-The bundled engine is OpenCode V1 (pinned in `constants.json`). Since engine 1.18.32 a `permissions` key in a user-owned `opencode.json(c)` — top level, or under `agent`, `agents` or `mode.<name>` — is rejected instead of ignored. The server checks those files before spawning the engine: a `permissions` key in the global file (`~/.config/opencode/opencode.json(c)`, `config.json`, or the `OPENCODE_CONFIG_DIR` directory) stops startup with the message above naming the file; a `permissions` key in `<workspace>/.opencode/opencode.json(c)` or `<workspace>/opencode.json(c)` is logged as a warning, the engine still starts, server routes that read the engine for that workspace return `422 opencode_config_invalid` with the engine's message and the file path in `details`, and the native engine proxy passes the engine's own `400 ConfigInvalidError` body through unchanged. Other V2-only keys (`plugins`, `providers`, `websearch`, `warming`, …) are dropped with a "configuration compatibility diagnostic" warning in the engine log and do not block anything. Fix: rename `permissions` to `permission` (V1 rules) or remove it, then restart OmniRush.ai.
+**The app reports "Configuration is invalid at … V2 permissions are not supported by Mars V1", or a workspace answers `opencode_config_invalid`.**
+The bundled engine is OpenCode V1 (pinned in `constants.json`). Since engine 1.18.32 a `permissions` key in a user-owned `opencode.json(c)` — top level, or under `agent`, `agents` or `mode.<name>` — is rejected instead of ignored. The server checks those files before spawning the engine: a `permissions` key in the global file (`~/.config/opencode/opencode.json(c)`, `config.json`, or the `OPENCODE_CONFIG_DIR` directory) stops startup with the message above naming the file; a `permissions` key in `<workspace>/.opencode/opencode.json(c)` or `<workspace>/opencode.json(c)` is logged as a warning, the engine still starts, server routes that read the engine for that workspace return `422 opencode_config_invalid` with the engine's message and the file path in `details`, and the native engine proxy passes the engine's own `400 ConfigInvalidError` body through unchanged. Other V2-only keys (`plugins`, `providers`, `websearch`, `warming`, …) are dropped with a "configuration compatibility diagnostic" warning in the engine log and do not block anything. Fix: rename `permissions` to `permission` (V1 rules) or remove it, then restart MarsAI.
 
 **Which engine does the app run?**
-OmniRush.ai's own build of opencode 1.18.32, the engine the OmniRush CLI ships (release `engine-1.18.32-r2` of omnirush-ai/omnirush-cli, copied to the public pre-release `engine-1.18.32-r2` of this repo, which is never marked latest; sha256-pinned per platform in `apps/desktop/scripts/engine-release.json`; `prepare-sidecar.mjs` downloads it without a token, or takes a local copy from `OMNIRUSH_ENGINE_ARCHIVE`). The server starts it directly (`managed-opencode.ts`) and OmniRush.ai's engine plugins load from the `plugin` list of the runtime config. Desktop 2.2.0 – 3.x ran the opencode 2.x engine behind an adapter; that adapter is gone.
+MarsAI's own build of opencode 1.18.32, the engine the Mars CLI ships (release `engine-1.18.32-r2` of mars-ai/mars-cli, copied to the public pre-release `engine-1.18.32-r2` of this repo, which is never marked latest; sha256-pinned per platform in `apps/desktop/scripts/engine-release.json`; `prepare-sidecar.mjs` downloads it without a token, or takes a local copy from `MARS_ENGINE_ARCHIVE`). The server starts it directly (`managed-opencode.ts`) and MarsAI's engine plugins load from the `plugin` list of the runtime config. Desktop 2.2.0 – 3.x ran the opencode 2.x engine behind an adapter; that adapter is gone.
 
 **My sessions from desktop 2.2.0 – 3.x: are they still there?**
 Yes. The 2.x engine kept them (and the 1.x sessions of earlier releases, which it moved in on its first start) in `~/.local/share/opencode/opencode.db`, in tables the 1.x engine cannot read. The first start of this release copies every session from there into the engine's own store, once (`apps/server/src/engine2/import.ts`):
-- the 2.x store is opened read-only and never changed, so an older OmniRush.ai still opens it;
+- the 2.x store is opened read-only and never changed, so an older MarsAI still opens it;
 - each session becomes the 1.x export document (`apps/server/src/engine2/shapes.ts`: messages, tool calls and their results exactly as the 2.x engine recorded them, sub-agent sessions with their parents) and the engine writes it itself with `opencode import`, run in the session's folder with no plugins, no project or user config and no network; ids are kept, so a session is never written twice;
 - the import runs in the background after the engine started; sessions appear in the session lists as they are written;
 - an imported session keeps its earlier turns exactly as the 2.x engine recorded them; when it is continued, its uploads carry `environment.imported_from` (for example `opencode 2.0.18`), and the session record keeps its 2.x `version`;
-- progress is recorded in `<userData>/engine-data/omnirush/desktop-engine2-import.json`: a session whose folder no longer exists is skipped and imported once the folder is back, a session the engine refuses is tried again on the next starts (three times at most) and the reason is kept there;
-- `OMNIRUSH_ENGINE2_IMPORT=0` turns the import off; a run with an explicit `OPENCODE_DB` skips it.
-Provider and MCP sign-ins the engine kept as files in `~/.local/share/opencode/` (`auth.json`, `mcp-auth.json`) are copied into the engine's data directory (`<userData>/engine-data/omnirush/`) once, never over a file already there. The 2.x engine kept newer sign-ins inside its database; those are not copied and have to be signed in again.
+- progress is recorded in `<userData>/engine-data/mars/desktop-engine2-import.json`: a session whose folder no longer exists is skipped and imported once the folder is back, a session the engine refuses is tried again on the next starts (three times at most) and the reason is kept there;
+- `MARS_ENGINE2_IMPORT=0` turns the import off; a run with an explicit `OPENCODE_DB` skips it.
+Provider and MCP sign-ins the engine kept as files in `~/.local/share/opencode/` (`auth.json`, `mcp-auth.json`) are copied into the engine's data directory (`<userData>/engine-data/mars/`) once, never over a file already there. The 2.x engine kept newer sign-ins inside its database; those are not copied and have to be signed in again.
 
 **Where are the files?**
-- Server state directory: `~/.config/omnirush/` (or the directory of `OMNIRUSH_SERVER_CONFIG`), containing `runtime.sqlite` (runtime DB), `runtime-opencode-config.json` (engine-visible config) and the managed MCP vault.
-- Engine data: `<userData>/engine-data/omnirush/` (the `opencode.db` session database, snapshots, sign-ins, logs under `log/`), the app's own: the OmniRush CLI's engine keeps its data in `~/.local/share/omnirush/` and never sees the app's sessions. The engine runs with `XDG_DATA_HOME=<userData>/engine-data`; commands the agent runs get the user's own `XDG_DATA_HOME` back. `OMNIRUSH_ENGINE_DATA_HOME` overrides the location. The engine also reads the global opencode config directory (`~/.config/opencode/`, or `OPENCODE_CONFIG_DIR`) for the app's global skills and config.
+- Server state directory: `~/.config/mars/` (or the directory of `MARS_SERVER_CONFIG`), containing `runtime.sqlite` (runtime DB), `runtime-opencode-config.json` (engine-visible config) and the managed MCP vault.
+- Engine data: `<userData>/engine-data/mars/` (the `opencode.db` session database, snapshots, sign-ins, logs under `log/`), the app's own: the Mars CLI's engine keeps its data in `~/.local/share/mars/` and never sees the app's sessions. The engine runs with `XDG_DATA_HOME=<userData>/engine-data`; commands the agent runs get the user's own `XDG_DATA_HOME` back. `MARS_ENGINE_DATA_HOME` overrides the location. The engine also reads the global opencode config directory (`~/.config/opencode/`, or `OPENCODE_CONFIG_DIR`) for the app's global skills and config.
 - The 2.x engine's store of desktop 2.2.0 – 3.x: `~/.local/share/opencode/opencode.db` (read once by the import above, never written).
 - Audit log: `<workspace>/.opencode/` audit entries record every skill and MCP change with the actor.
 

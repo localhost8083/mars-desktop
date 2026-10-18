@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { appDenTlsFaultWorld } from "../worlds/first-run.ts";
 
 const test = spec.world(appDenTlsFaultWorld, {
@@ -9,16 +9,16 @@ const test = spec.world(appDenTlsFaultWorld, {
 
 test("a desktop pointed at a TLS-intercepted Den never claims it is connected, and diagnostics name the interception", async ({ world, user, step }) => {
   await step("The welcome surface offers cloud sign-in without a crash", async () => {
-    await user.see("Sign in to OmniRush.ai Cloud");
+    await user.see("Sign in to MarsAI Cloud");
     await user.notSee({ text: /Something went wrong/ });
-    await user.click("Sign in to OmniRush.ai Cloud");
+    await user.click("Sign in to MarsAI Cloud");
     await user.looks([
-      "An OmniRush.ai screen offering to sign in to OmniRush.ai Cloud is visible",
+      "An MarsAI screen offering to sign in to MarsAI Cloud is visible",
       "No error or 'Something went wrong' crash message is visible yet",
     ]);
   });
 
-  for (const falseSuccess of ["Signed in as", "Synced", "Connected to OmniRush.ai Cloud"]) {
+  for (const falseSuccess of ["Signed in as", "Synced", "Connected to MarsAI Cloud"]) {
     await user.notSee({ text: new RegExp(falseSuccess) });
   }
 

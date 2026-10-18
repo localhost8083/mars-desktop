@@ -1,15 +1,15 @@
 import type { WorkspaceConnectionState } from "../../../app/types";
 import type { WorkspaceInfo } from "../../../app/lib/desktop";
 import {
-  createOmniRushServerClient,
-  normalizeOmniRushServerUrl,
-  parseOmniRushWorkspaceIdFromUrl,
-  type OmniRushServerClient,
-} from "../../../app/lib/omnirush-server";
+  createMarsServerClient,
+  normalizeMarsServerUrl,
+  parseMarsWorkspaceIdFromUrl,
+  type MarsServerClient,
+} from "../../../app/lib/mars-server";
 import { redactTokenLikeText } from "../../../app/utils";
 
 export type RemoteWorkspaceConnectionTarget = {
-  kind: "omnirush";
+  kind: "mars";
   baseUrl: string;
   endpointLabel: string;
   token: string;
@@ -29,9 +29,9 @@ export type RemoteWorkspaceConnectionResult = {
 type TestOptions = {
   now?: () => number;
   createClient?: (target: RemoteWorkspaceConnectionTarget) => Pick<
-    OmniRushServerClient,
+    MarsServerClient,
     "health" | "capabilities" | "status" | "listWorkspaces"
-  > | Promise<Pick<OmniRushServerClient, "health" | "capabilities" | "status" | "listWorkspaces">>;
+  > | Promise<Pick<MarsServerClient, "health" | "capabilities" | "status" | "listWorkspaces">>;
 };
 
 function trim(value: string | null | undefined) {
@@ -59,7 +59,7 @@ function endpointLabel(baseUrl: string) {
   }
 }
 
-function stripOmniRushWorkspaceMount(baseUrl: string) {
+function stripMarsWorkspaceMount(baseUrl: string) {
   try {
     const url = new URL(baseUrl);
     const segments = url.pathname.split("/").filter(Boolean);
@@ -104,7 +104,7 @@ function rejectedTokenMessage(target: RemoteWorkspaceConnectionTarget) {
 }
 
 function remoteSupportMessage(message: string) {
-  return `${message} Upgrade the omnirush.ai host and try again. If this continues, open an issue at https://github.com/omnirush-ai/omnirush-gui/issues.`;
+  return `${message} Upgrade the marsai.click host and try again. If this continues, open an issue at https://github.com/mars-ai/mars-gui/issues.`;
 }
 
 export function redactRemoteDiagnosticText(value: string): string {
@@ -117,11 +117,11 @@ export function getRemoteWorkspaceConnectionKey(workspace: WorkspaceInfo): strin
     workspace.workspaceType,
     workspace.remoteType ?? "",
     trim(workspace.baseUrl),
-    trim(workspace.omnirushHostUrl),
-    trim(workspace.omnirushWorkspaceId),
-    trim(workspace.omnirushToken),
-    trim(workspace.omnirushClientToken),
-    trim(workspace.omnirushHostToken),
+    trim(workspace.marsHostUrl),
+    trim(workspace.marsWorkspaceId),
+    trim(workspace.marsToken),
+    trim(workspace.marsClientToken),
+    trim(workspace.marsHostToken),
   ].join("\u001f");
 }
 
@@ -129,20 +129,20 @@ function displayWorkspaceName(workspace: unknown) {
   if (!workspace || typeof workspace !== "object") return "";
   const value = workspace as {
     displayName?: string | null;
-    omnirushWorkspaceName?: string | null;
+    marsWorkspaceName?: string | null;
     name?: string | null;
     id?: string | null;
   };
   return (
     trim(value.displayName) ||
-    trim(value.omnirushWorkspaceName) ||
+    trim(value.marsWorkspaceName) ||
     trim(value.name) ||
     trim(value.id)
   );
 }
 
 function defaultCreateClient(target: RemoteWorkspaceConnectionTarget) {
-  return createOmniRushServerClient({
+  return createMarsServerClient({
     baseUrl: target.baseUrl,
     token: target.token || undefined,
   });
@@ -160,18 +160,18 @@ export function resolveRemoteWorkspaceConnectionTarget(workspace: WorkspaceInfo)
     };
   }
 
-  if (workspace.remoteType && workspace.remoteType !== "omnirush") {
+  if (workspace.remoteType && workspace.remoteType !== "mars") {
     return {
       ok: false,
       state: {
         status: "error",
-        message: "Connection diagnostics are only available for omnirush.ai remote workers.",
+        message: "Connection diagnostics are only available for marsai.click remote workers.",
         checkedAt: Date.now(),
       },
     };
   }
 
-  const rawHostUrl = trim(workspace.omnirushHostUrl) || trim(workspace.baseUrl);
+  const rawHostUrl = trim(workspace.marsHostUrl) || trim(workspace.baseUrl);
   if (!rawHostUrl) {
     return {
       ok: false,
@@ -183,7 +183,7 @@ export function resolveRemoteWorkspaceConnectionTarget(workspace: WorkspaceInfo)
     };
   }
 
-  const normalizedHostUrl = normalizeOmniRushServerUrl(rawHostUrl);
+  const normalizedHostUrl = normalizeMarsServerUrl(rawHostUrl);
   if (!normalizedHostUrl || !isValidHttpEndpoint(normalizedHostUrl)) {
     return {
       ok: false,
@@ -196,20 +196,20 @@ export function resolveRemoteWorkspaceConnectionTarget(workspace: WorkspaceInfo)
   }
 
   const workspaceId =
-    trim(workspace.omnirushWorkspaceId) ||
-    parseOmniRushWorkspaceIdFromUrl(normalizedHostUrl) ||
-    parseOmniRushWorkspaceIdFromUrl(trim(workspace.baseUrl)) ||
+    trim(workspace.marsWorkspaceId) ||
+    parseMarsWorkspaceIdFromUrl(normalizedHostUrl) ||
+    parseMarsWorkspaceIdFromUrl(trim(workspace.baseUrl)) ||
     null;
-  const hostBaseUrl = stripOmniRushWorkspaceMount(normalizedHostUrl);
+  const hostBaseUrl = stripMarsWorkspaceMount(normalizedHostUrl);
   const token =
-    trim(workspace.omnirushToken) ||
-    trim(workspace.omnirushClientToken) ||
-    trim(workspace.omnirushHostToken);
+    trim(workspace.marsToken) ||
+    trim(workspace.marsClientToken) ||
+    trim(workspace.marsHostToken);
 
   return {
     ok: true,
     target: {
-      kind: "omnirush",
+      kind: "mars",
       baseUrl: hostBaseUrl,
       endpointLabel: endpointLabel(hostBaseUrl),
       token,
@@ -254,7 +254,7 @@ export async function testRemoteWorkspaceConnection(
 
   if (!target.token) {
     return fail(
-      remoteSupportMessage(`Token is missing for ${target.endpointLabel}. Edit connection and paste a valid omnirush.ai token.`),
+      remoteSupportMessage(`Token is missing for ${target.endpointLabel}. Edit connection and paste a valid marsai.click token.`),
       checkedAt,
     );
   }

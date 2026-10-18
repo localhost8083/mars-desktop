@@ -7,12 +7,12 @@ set -euo pipefail
 # Usage:
 #   bash .devcontainer/setup-daytona-secrets-volume.sh [.newtoken] [openai.env]
 
-VOLUME_NAME="${DAYTONA_SECRETS_VOLUME:-omnirush-eval-secrets}"
+VOLUME_NAME="${DAYTONA_SECRETS_VOLUME:-mars-eval-secrets}"
 MOUNT_PATH="${DAYTONA_SECRETS_MOUNT:-/daytona-secrets}"
 LOCAL_ENV_FILE="${1:-.newtoken}"
 DEST_ENV_FILE="${2:-openai.env}"
-SANDBOX="omnirush-secrets-setup-$(date +%Y%m%d-%H%M%S)"
-SNAPSHOT_NAME="${DAYTONA_EVAL_SNAPSHOT:-omnirush-eval-vnc}"
+SANDBOX="mars-secrets-setup-$(date +%Y%m%d-%H%M%S)"
+SNAPSHOT_NAME="${DAYTONA_EVAL_SNAPSHOT:-mars-eval-vnc}"
 
 volume_field() {
   local name="$1"
@@ -69,7 +69,7 @@ SNAPSHOT_ID="$(daytona snapshot list -f json | node -e 'const name = process.arg
 
 if [ -z "$SNAPSHOT_ID" ]; then
   echo "ERROR: Daytona snapshot '$SNAPSHOT_NAME' not found." >&2
-  echo "Create it with: bash .devcontainer/create-daytona-omnirush-snapshot.sh" >&2
+  echo "Create it with: bash .devcontainer/create-daytona-mars-snapshot.sh" >&2
   exit 1
 fi
 

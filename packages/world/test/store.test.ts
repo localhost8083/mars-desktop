@@ -8,7 +8,7 @@ import { parseScriptWorldSnapshot, readScriptWorldSnapshot } from "../src/script
 import { WorldStateStore } from "../src/store.ts";
 
 test("local world state is owner-only and addressable by world name", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-world-store-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-world-store-"));
   try {
     const store = new WorldStateStore(join(root, "worlds"));
     const path = await store.save("demo", '{"name":"demo"}');
@@ -72,7 +72,7 @@ test("script world snapshots parse v1 and strict v2 receipts", () => {
 });
 
 test("script world snapshot reads tolerate a receipt being written byte by byte", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-world-receipt-race-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-world-receipt-race-"));
   const path = join(root, "demo.json");
   const expected = {
     version: 2 as const,

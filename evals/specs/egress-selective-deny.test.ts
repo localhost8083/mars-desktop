@@ -2,13 +2,13 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { outboundManifestFromUnknown, startEgressLab } from "@omnirush/labs";
+import { outboundManifestFromUnknown, startEgressLab } from "@mars/labs";
 import {
   diagnoseEgressLabProduct,
   productDiagnosticsPrecondition,
   readDeniedHostFacts,
-} from "@omnirush/behaviors";
-import { matchVerdictExpectations } from "@omnirush/matchers";
+} from "@mars/behaviors";
+import { matchVerdictExpectations } from "@mars/matchers";
 
 const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
 const manifestPath = join(repoRoot, "docs", "enterprise", "outbound-access.json");

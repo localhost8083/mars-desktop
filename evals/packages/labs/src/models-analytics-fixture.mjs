@@ -45,7 +45,7 @@ async function arrange(command, orgId, inferenceUrl) {
         });
     }
     else if (command === "configure") {
-        const providers = await db.select().from(schema.LlmProviderTable).where(and(eq(schema.LlmProviderTable.organizationId, id), eq(schema.LlmProviderTable.source, "omnirush")));
+        const providers = await db.select().from(schema.LlmProviderTable).where(and(eq(schema.LlmProviderTable.organizationId, id), eq(schema.LlmProviderTable.source, "mars")));
         for (const provider of providers) {
             const key = modelsFixtureKey(provider.createdByOrgMembershipId);
             await db.update(schema.LlmProviderTable).set({ apiKey: key, providerConfig: {
@@ -77,7 +77,7 @@ async function serveWitness() {
         ? await (await import("./paid-usage-fixture.mjs")).paidUsageFixture() : null;
     if (process.env.MODELS_DPA_FIXTURE === "1") {
         const url = new URL(process.env.DATABASE_URL);
-        if (url.hostname !== "127.0.0.1" || !/^\/(omnirush_eval_|omnirush_den$)/.test(url.pathname)) throw new Error("DPA witness requires an isolated testkit database");
+        if (url.hostname !== "127.0.0.1" || !/^\/(mars_eval_|omnirush_den$)/.test(url.pathname)) throw new Error("DPA witness requires an isolated testkit database");
         const { createConnection } = createRequire(new URL("../../env/package.json", import.meta.url))("mysql2/promise");
         const connection = await createConnection(process.env.DATABASE_URL);
         const lock = await createConnection(process.env.DATABASE_URL);
@@ -103,7 +103,7 @@ async function serveWitness() {
             } else if (action === "audit-restore") {
                 await connection.query("ALTER TABLE audit_event RENAME COLUMN fixture_payload_unavailable TO payload");
             } else if (action === "rename-managed") {
-                await connection.execute("UPDATE llm_provider SET name = 'Customer-looking renamed provider' WHERE organization_id = ? AND source = 'omnirush'", [orgId]);
+                await connection.execute("UPDATE llm_provider SET name = 'Customer-looking renamed provider' WHERE organization_id = ? AND source = 'mars'", [orgId]);
             } else if (action === "stripe-hold") {
                 holdStripe = true;
             } else if (action === "stripe-release") {
@@ -113,7 +113,7 @@ async function serveWitness() {
             } else if (action === "remove-member-access") {
                 // Arrange missing access for the non-admin member, never for the warm test key.
                 await connection.execute("UPDATE inference_keys SET status = 'revoked' WHERE organization_id = ? AND org_membership_id = ?", [orgId, input.memberId]);
-                await connection.execute("DELETE FROM llm_provider WHERE organization_id = ? AND created_by_org_membership_id = ? AND source = 'omnirush'", [orgId, input.memberId]);
+                await connection.execute("DELETE FROM llm_provider WHERE organization_id = ? AND created_by_org_membership_id = ? AND source = 'mars'", [orgId, input.memberId]);
             } else if (action !== "state") throw new Error("Unknown DPA witness action");
             if (action !== "state") return { ok: true };
             const [organizations] = await connection.execute("SELECT metadata FROM organization WHERE id = ?", [orgId]);

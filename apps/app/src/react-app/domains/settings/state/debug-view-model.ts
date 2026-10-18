@@ -7,21 +7,21 @@ import {
   engineStart as engineStartCmd,
   getDesktopBootstrapConfig,
   debugDesktopBootstrapConfig,
-  nukeOmniRushAndOpencodeConfigPreview,
-  nukeOmniRushAndOpencodeConfigAndExit,
+  nukeMarsAndOpencodeConfigPreview,
+  nukeMarsAndOpencodeConfigAndExit,
   openDesktopUrl,
-  omnirushServerInfo as omnirushServerInfoCmd,
-  omnirushServerRestart as omnirushServerRestartCmd,
+  marsServerInfo as marsServerInfoCmd,
+  marsServerRestart as marsServerRestartCmd,
   pickFile,
   revealDesktopItemInDir,
-  resetOmniRushState,
+  resetMarsState,
   updaterEnvironment as updaterEnvironmentCmd,
   workspaceBootstrap as workspaceBootstrapCmd,
   type AppBuildInfo,
   type DesktopBootstrapConfig,
   type EngineInfo,
   type NukeManifestPreview,
-  type OmniRushServerInfo,
+  type MarsServerInfo,
 } from "../../../../app/lib/desktop";
 import { createDenClient, readDenSettings } from "../../../../app/lib/den";
 import {
@@ -31,9 +31,9 @@ import {
 import { downloadTextAsFile } from "../../../../app/lib/download";
 
 import {
-  writeOmniRushServerSettings,
-  type OmniRushRuntimeConfigStatus,
-} from "../../../../app/lib/omnirush-server";
+  writeMarsServerSettings,
+  type MarsRuntimeConfigStatus,
+} from "../../../../app/lib/mars-server";
 import {
   clearStartupPreference,
   isDesktopRuntime,
@@ -44,30 +44,30 @@ import {
 import { t } from "../../../../i18n";
 import type { DebugViewProps } from "../pages/debug-view";
 import type { ReleaseChannel } from "../../../../app/types";
-import type { OmniRushServerStore, OmniRushServerStoreSnapshot } from "../../connections/omnirush-server-store";
+import type { MarsServerStore, MarsServerStoreSnapshot } from "../../connections/mars-server-store";
 
 type DebugViewModelProps = Omit<DebugViewProps, "agentContextDiagnostics">;
 
-const STARTUP_PREFERENCE_KEY = "omnirush.startupPreference";
-const ENGINE_SOURCE_KEY = "omnirush.engineSource";
-const ENGINE_CUSTOM_BIN_KEY = "omnirush.engineCustomBinPath";
-const OPENCODE_ENABLE_EXA_KEY = "omnirush.opencodeEnableExa";
+const STARTUP_PREFERENCE_KEY = "mars.startupPreference";
+const ENGINE_SOURCE_KEY = "mars.engineSource";
+const ENGINE_CUSTOM_BIN_KEY = "mars.engineCustomBinPath";
+const OPENCODE_ENABLE_EXA_KEY = "mars.opencodeEnableExa";
 const NUKE_CONFIRMATION_WORD = "NUKE";
 const NUKE_SIGN_OUT_TIMEOUT_MS = 5000;
 
 type ResetModalMode = "onboarding" | "all";
 
 const ONBOARDING_LOCAL_STORAGE_KEYS = [
-  "omnirush.acknowledgedProviders",
-  "omnirush.orgOnboardingSeen",
-  "omnirush.reloadAfterOrgOnboarding",
-  "omnirush.seenProviderIds",
+  "mars.acknowledgedProviders",
+  "mars.orgOnboardingSeen",
+  "mars.reloadAfterOrgOnboarding",
+  "mars.seenProviderIds",
 ];
 
 type UseDebugViewModelOptions = {
   developerMode: boolean;
-  omnirushServerStore: OmniRushServerStore;
-  omnirushServerSnapshot: OmniRushServerStoreSnapshot;
+  marsServerStore: MarsServerStore;
+  marsServerSnapshot: MarsServerStoreSnapshot;
   runtimeWorkspaceId: string | null;
   selectedWorkspaceRoot: string;
   setRouteError: (value: string | null) => void;
@@ -100,7 +100,7 @@ function clearStoredString(key: string): void {
   }
 }
 
-function clearOmniRushLocalStorageForReset(mode: ResetModalMode): void {
+function clearMarsLocalStorageForReset(mode: ResetModalMode): void {
   if (typeof window === "undefined") return;
   try {
     if (mode === "all") {
@@ -110,11 +110,11 @@ function clearOmniRushLocalStorageForReset(mode: ResetModalMode): void {
     for (const key of ONBOARDING_LOCAL_STORAGE_KEYS) {
       window.localStorage.removeItem(key);
     }
-    const raw = window.localStorage.getItem("omnirush.preferences");
+    const raw = window.localStorage.getItem("mars.preferences");
     if (raw) {
       const prefs = JSON.parse(raw);
       prefs.hasCompletedOnboarding = false;
-      window.localStorage.setItem("omnirush.preferences", JSON.stringify(prefs));
+      window.localStorage.setItem("mars.preferences", JSON.stringify(prefs));
     }
   } catch {
     // ignore persistence failures
@@ -205,7 +205,7 @@ function formatOpencodeBinary(info: EngineInfo | null) {
   return formatBinaryWithSource(info?.opencodeBinPath, info?.opencodeBinSource);
 }
 
-function formatManagedOpencodeBinary(info: OmniRushServerInfo | null) {
+function formatManagedOpencodeBinary(info: MarsServerInfo | null) {
   return formatBinaryWithSource(
     info?.managedOpencodeBinPath,
     info?.managedOpencodeBinSource,
@@ -219,7 +219,7 @@ function formatBinaryWithSource(path: string | null | undefined, source: string 
   return sourceLabel ? `${binary} (${sourceLabel})` : binary;
 }
 
-function describeOmniRushServer(info: OmniRushServerInfo | null) {
+function describeMarsServer(info: MarsServerInfo | null) {
   const running = Boolean(info?.running);
   return {
     ...statusPill(running),
@@ -259,8 +259,8 @@ function describeOpencodeConnect(engine: EngineInfo | null) {
 export function useDebugViewModel(options: UseDebugViewModelOptions) {
   const {
     developerMode,
-    omnirushServerStore,
-    omnirushServerSnapshot,
+    marsServerStore,
+    marsServerSnapshot,
     runtimeWorkspaceId,
     selectedWorkspaceRoot,
     setRouteError,
@@ -273,21 +273,21 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
   const [appBuild, setAppBuild] = useState<AppBuildInfo | null>(null);
   const [bootstrapPrepared, setBootstrapPrepared] = useState<DesktopBootstrapConfig["prepared"]>(null);
   const [bootstrapConfigDebug, setBootstrapConfigDebug] = useState<unknown>(null);
-  const [runtimeConfigStatus, setRuntimeConfigStatus] = useState<OmniRushRuntimeConfigStatus | null>(null);
+  const [runtimeConfigStatus, setRuntimeConfigStatus] = useState<MarsRuntimeConfigStatus | null>(null);
   const [runtimeConfigStatusError, setRuntimeConfigStatusError] = useState<string | null>(null);
   const [runtimeDebugStatus, setRuntimeDebugStatus] = useState<string | null>(null);
   const [opencodeRestarting, setOpencodeRestarting] = useState(false);
-  const [omnirushServerRestarting, setOmniRushServerRestarting] = useState(false);
+  const [marsServerRestarting, setMarsServerRestarting] = useState(false);
   const [opencodeServiceStatus, setOpencodeServiceStatus] = useState<{
     tone: "success" | "error";
     message: string;
   } | null>(null);
-  const [omnirushServiceStatus, setOmniRushServiceStatus] = useState<{
+  const [marsServiceStatus, setMarsServiceStatus] = useState<{
     tone: "success" | "error";
     message: string;
   } | null>(null);
   const [opencodeLogStatus, setOpencodeLogStatus] = useState<string | null>(null);
-  const [omnirushLogStatus, setOmniRushLogStatus] = useState<string | null>(null);
+  const [marsLogStatus, setMarsLogStatus] = useState<string | null>(null);
   const [serviceRestartError, setServiceRestartError] = useState<string | null>(null);
   const [resetModalBusy, setResetModalBusy] = useState(false);
   const [nukeConfigBusy, setNukeConfigBusy] = useState(false);
@@ -365,7 +365,7 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
 
   useEffect(() => {
     if (!developerMode) return;
-    const client = omnirushServerSnapshot.omnirushServerClient;
+    const client = marsServerSnapshot.marsServerClient;
     const workspaceId = runtimeWorkspaceId?.trim();
     if (!client || !workspaceId) {
       setRuntimeConfigStatus(null);
@@ -389,7 +389,7 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
     return () => {
       cancelled = true;
     };
-  }, [developerMode, omnirushServerSnapshot.omnirushServerClient, runtimeWorkspaceId]);
+  }, [developerMode, marsServerSnapshot.marsServerClient, runtimeWorkspaceId]);
 
   useEffect(() => {
     if (!developerMode || !isDesktopRuntime()) return;
@@ -423,13 +423,13 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
       appVersionLabel: appBuild?.version ?? "—",
       appCommitLabel: appBuild?.gitSha ?? "—",
       opencodeVersionLabel: engineInfoState?.baseUrl ? "managed" : "—",
-      omnirushServerVersionLabel: omnirushServerSnapshot.omnirushServerDiagnostics?.version ?? "—",
+      marsServerVersionLabel: marsServerSnapshot.marsServerDiagnostics?.version ?? "—",
     }),
     [
       appBuild?.gitSha,
       appBuild?.version,
       engineInfoState?.baseUrl,
-      omnirushServerSnapshot.omnirushServerDiagnostics?.version,
+      marsServerSnapshot.marsServerDiagnostics?.version,
     ],
   );
 
@@ -438,13 +438,13 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
       collectedAt: new Date().toISOString(),
       app: appBuild ?? null,
       engine: engineInfoState,
-      omnirushServer: {
-        hostInfo: omnirushServerSnapshot.omnirushServerHostInfo,
-        diagnostics: omnirushServerSnapshot.omnirushServerDiagnostics,
-        capabilities: omnirushServerSnapshot.omnirushServerCapabilities,
-        settings: omnirushServerSnapshot.omnirushServerSettings,
-        status: omnirushServerSnapshot.omnirushServerStatus,
-        url: omnirushServerSnapshot.omnirushServerUrl,
+      marsServer: {
+        hostInfo: marsServerSnapshot.marsServerHostInfo,
+        diagnostics: marsServerSnapshot.marsServerDiagnostics,
+        capabilities: marsServerSnapshot.marsServerCapabilities,
+        settings: marsServerSnapshot.marsServerSettings,
+        status: marsServerSnapshot.marsServerStatus,
+        url: marsServerSnapshot.marsServerUrl,
       },
       runtimeWorkspaceId,
       selectedWorkspaceRoot,
@@ -454,12 +454,12 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
     appBuild,
     bootstrapPrepared,
     engineInfoState,
-    omnirushServerSnapshot.omnirushServerCapabilities,
-    omnirushServerSnapshot.omnirushServerDiagnostics,
-    omnirushServerSnapshot.omnirushServerHostInfo,
-    omnirushServerSnapshot.omnirushServerSettings,
-    omnirushServerSnapshot.omnirushServerStatus,
-    omnirushServerSnapshot.omnirushServerUrl,
+    marsServerSnapshot.marsServerCapabilities,
+    marsServerSnapshot.marsServerDiagnostics,
+    marsServerSnapshot.marsServerHostInfo,
+    marsServerSnapshot.marsServerSettings,
+    marsServerSnapshot.marsServerStatus,
+    marsServerSnapshot.marsServerUrl,
     runtimeWorkspaceId,
     selectedWorkspaceRoot,
   ]);
@@ -474,9 +474,9 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
   );
 
   const engineCard = useMemo(() => describeEngine(engineInfoState), [engineInfoState]);
-  const omnirushCard = useMemo(
-    () => describeOmniRushServer(omnirushServerSnapshot.omnirushServerHostInfo),
-    [omnirushServerSnapshot.omnirushServerHostInfo],
+  const marsCard = useMemo(
+    () => describeMarsServer(marsServerSnapshot.marsServerHostInfo),
+    [marsServerSnapshot.marsServerHostInfo],
   );
   const opencodeConnectCard = useMemo(
     () => describeOpencodeConnect(engineInfoState),
@@ -495,7 +495,7 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
   const onExportRuntimeDebugReport = useCallback(async () => {
     try {
       downloadTextAsFile(
-        `omnirush-runtime-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
+        `mars-runtime-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
         runtimeDebugReportJson,
         "application/json",
       );
@@ -522,7 +522,7 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
   const onExportDeveloperLog = useCallback(async () => {
     try {
       downloadTextAsFile(
-        `omnirush-developer-${new Date().toISOString().replace(/[:.]/g, "-")}.log`,
+        `mars-developer-${new Date().toISOString().replace(/[:.]/g, "-")}.log`,
         developerLog.join("\n"),
         "text/plain",
       );
@@ -569,11 +569,11 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
       const env = await updaterEnvironmentCmd() as { appBundlePath?: string };
       const appBundlePath = env.appBundlePath?.trim();
       if (!appBundlePath) {
-        setElectronMigrationStatus("Could not resolve the current omnirush.ai.app bundle path.");
+        setElectronMigrationStatus("Could not resolve the current marsai.click.app bundle path.");
         return;
       }
       await revealDesktopItemInDir(`${appBundlePath}.migrate-bak`);
-      setElectronMigrationStatus("Requested Finder reveal for omnirush.ai.app.migrate-bak. The backup exists after an install handoff completes.");
+      setElectronMigrationStatus("Requested Finder reveal for marsai.click.app.migrate-bak. The backup exists after an install handoff completes.");
     } catch (error) {
       setElectronMigrationStatus(error instanceof Error ? error.message : safeStringify(error));
     }
@@ -589,7 +589,7 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
 
   useEffect(() => {
     if (!developerMode || !isElectronRuntime()) return;
-    const bridge = window.__OMNIRUSH_ELECTRON__?.updater;
+    const bridge = window.__MARS_ELECTRON__?.updater;
     if (!bridge?.getChannel) return;
     let cancelled = false;
     void bridge.getChannel()
@@ -612,7 +612,7 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
       setElectronAlphaUpdaterStatus("Electron alpha updates are macOS-only for now.");
       return;
     }
-    const bridge = window.__OMNIRUSH_ELECTRON__?.updater;
+    const bridge = window.__MARS_ELECTRON__?.updater;
     if (!bridge?.setChannel) {
       setElectronAlphaUpdaterStatus("Electron updater bridge is unavailable.");
       return;
@@ -638,7 +638,7 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
       setElectronAlphaUpdaterStatus("Electron update checks are available only in the Electron desktop app.");
       return;
     }
-    const bridge = window.__OMNIRUSH_ELECTRON__?.updater;
+    const bridge = window.__MARS_ELECTRON__?.updater;
     if (!bridge?.check) {
       setElectronAlphaUpdaterStatus("Electron updater bridge is unavailable.");
       return;
@@ -714,7 +714,7 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
       );
     }
 
-    // Collect ALL local workspace paths so omnirush-server is started with
+    // Collect ALL local workspace paths so mars-server is started with
     // --workspace <path> for every registered local workspace. Mirrors the
     // Solid reference (context/workspace.ts::resolveWorkspacePaths) so that
     // `client.listWorkspaces()` later returns the full set, not just the
@@ -741,15 +741,15 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
       runtime: "direct",
       workspacePaths,
       opencodeEnableExa: readOpencodeEnableExa(),
-      omnirushRemoteAccess:
-        optionsRef.current.omnirushServerSnapshot.omnirushServerSettings
+      marsRemoteAccess:
+        optionsRef.current.marsServerSnapshot.marsServerSettings
           .remoteAccessEnabled === true,
     });
 
-    // engine_start restarts omnirush-server on a NEW port and lets that server
+    // engine_start restarts mars-server on a NEW port and lets that server
     // manage OpenCode. Re-read host info and persist the fresh URL/token.
     try {
-      const hostInfo = (await omnirushServerInfoCmd()) as {
+      const hostInfo = (await marsServerInfoCmd()) as {
         baseUrl?: string;
         ownerToken?: string;
         clientToken?: string;
@@ -758,7 +758,7 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
         remoteAccessEnabled?: boolean;
       } | null;
       if (hostInfo?.baseUrl) {
-        writeOmniRushServerSettings({
+        writeMarsServerSettings({
           urlOverride: hostInfo.baseUrl,
           token: hostInfo.ownerToken?.trim() || hostInfo.clientToken?.trim() || undefined,
           hostToken: hostInfo.hostToken?.trim() || undefined,
@@ -766,17 +766,17 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
           remoteAccessEnabled: hostInfo.remoteAccessEnabled === true,
         });
         if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("omnirush-server-settings-changed"));
+          window.dispatchEvent(new CustomEvent("mars-server-settings-changed"));
         }
       }
     } catch {
       // best-effort: if this fails, the host-info poller will catch up in ~10s.
     }
 
-    await omnirushServerStore.reconnectOmniRushServer();
+    await marsServerStore.reconnectMarsServer();
     await refreshEngineInfo();
     return info;
-  }, [omnirushServerStore, refreshEngineInfo]);
+  }, [marsServerStore, refreshEngineInfo]);
 
   const onRestartOpencode = useCallback(async () => {
     if (!isDesktopRuntime()) return;
@@ -787,14 +787,14 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
       await bootFullEngineStack();
       setOpencodeServiceStatus({
         tone: "success",
-        message: t("settings.restart_succeeded_template", { service: "omnirush.ai" }),
+        message: t("settings.restart_succeeded_template", { service: "marsai.click" }),
       });
-      pushDeveloperLog("Restarted omnirush.ai via engine_start");
+      pushDeveloperLog("Restarted marsai.click via engine_start");
     } catch (error) {
       const message = error instanceof Error ? error.message : safeStringify(error);
       setOpencodeServiceStatus({
         tone: "error",
-        message: `${t("settings.restart_failed_template", { service: "omnirush.ai" })} ${message}`,
+        message: `${t("settings.restart_failed_template", { service: "marsai.click" })} ${message}`,
       });
       setServiceRestartError(message);
     } finally {
@@ -802,36 +802,36 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
     }
   }, [bootFullEngineStack, pushDeveloperLog]);
 
-  const onRestartOmniRushServer = useCallback(async () => {
+  const onRestartMarsServer = useCallback(async () => {
     if (!isDesktopRuntime()) return;
-    setOmniRushServerRestarting(true);
-    setOmniRushServiceStatus(null);
+    setMarsServerRestarting(true);
+    setMarsServiceStatus(null);
     setServiceRestartError(null);
     try {
-      await omnirushServerRestartCmd({
+      await marsServerRestartCmd({
         reason: "debug_view_restart",
         userInitiated: true,
-        remoteAccessEnabled: omnirushServerSnapshot.omnirushServerSettings.remoteAccessEnabled === true,
+        remoteAccessEnabled: marsServerSnapshot.marsServerSettings.remoteAccessEnabled === true,
       });
-      setOmniRushServiceStatus({
+      setMarsServiceStatus({
         tone: "success",
-        message: t("settings.restart_succeeded_template", { service: "omnirush.ai server" }),
+        message: t("settings.restart_succeeded_template", { service: "marsai.click server" }),
       });
-      pushDeveloperLog("Restarted omnirush-server");
-      await omnirushServerStore.reconnectOmniRushServer();
+      pushDeveloperLog("Restarted mars-server");
+      await marsServerStore.reconnectMarsServer();
     } catch (error) {
       const message = error instanceof Error ? error.message : safeStringify(error);
-      setOmniRushServiceStatus({
+      setMarsServiceStatus({
         tone: "error",
-        message: `${t("settings.restart_failed_template", { service: "omnirush.ai server" })} ${message}`,
+        message: `${t("settings.restart_failed_template", { service: "marsai.click server" })} ${message}`,
       });
       setServiceRestartError(message);
     } finally {
-      setOmniRushServerRestarting(false);
+      setMarsServerRestarting(false);
     }
   }, [
-    omnirushServerSnapshot.omnirushServerSettings.remoteAccessEnabled,
-    omnirushServerStore,
+    marsServerSnapshot.marsServerSettings.remoteAccessEnabled,
+    marsServerStore,
     pushDeveloperLog,
   ]);
 
@@ -855,7 +855,7 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
     }
     try {
       await navigator.clipboard.writeText(text);
-      setOpencodeLogStatus(t("settings.copied_service_logs", { service: "omnirush.ai" }));
+      setOpencodeLogStatus(t("settings.copied_service_logs", { service: "marsai.click" }));
     } catch (error) {
       setOpencodeLogStatus(error instanceof Error ? error.message : safeStringify(error));
     }
@@ -869,7 +869,7 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
     }
     try {
       downloadTextAsFile(
-        `omnirush-opencode-${new Date().toISOString().replace(/[:.]/g, "-")}.log`,
+        `mars-opencode-${new Date().toISOString().replace(/[:.]/g, "-")}.log`,
         text,
         "text/plain",
       );
@@ -879,39 +879,39 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
     }
   }, [engineInfoState?.lastStderr, engineInfoState?.lastStdout, formatServiceLogs]);
 
-  const onCopyOmniRushLogs = useCallback(async () => {
-    const info = omnirushServerSnapshot.omnirushServerHostInfo;
+  const onCopyMarsLogs = useCallback(async () => {
+    const info = marsServerSnapshot.marsServerHostInfo;
     const text = formatServiceLogs(info?.lastStdout, info?.lastStderr);
     if (!text) {
-      setOmniRushLogStatus(t("settings.no_logs_captured"));
+      setMarsLogStatus(t("settings.no_logs_captured"));
       return;
     }
     try {
       await navigator.clipboard.writeText(text);
-      setOmniRushLogStatus(t("settings.copied_service_logs", { service: "omnirush.ai server" }));
+      setMarsLogStatus(t("settings.copied_service_logs", { service: "marsai.click server" }));
     } catch (error) {
-      setOmniRushLogStatus(error instanceof Error ? error.message : safeStringify(error));
+      setMarsLogStatus(error instanceof Error ? error.message : safeStringify(error));
     }
-  }, [formatServiceLogs, omnirushServerSnapshot.omnirushServerHostInfo]);
+  }, [formatServiceLogs, marsServerSnapshot.marsServerHostInfo]);
 
-  const onExportOmniRushLogs = useCallback(async () => {
-    const info = omnirushServerSnapshot.omnirushServerHostInfo;
+  const onExportMarsLogs = useCallback(async () => {
+    const info = marsServerSnapshot.marsServerHostInfo;
     const text = formatServiceLogs(info?.lastStdout, info?.lastStderr);
     if (!text) {
-      setOmniRushLogStatus(t("settings.no_logs_captured"));
+      setMarsLogStatus(t("settings.no_logs_captured"));
       return;
     }
     try {
       downloadTextAsFile(
-        `omnirush-server-${new Date().toISOString().replace(/[:.]/g, "-")}.log`,
+        `mars-server-${new Date().toISOString().replace(/[:.]/g, "-")}.log`,
         text,
         "text/plain",
       );
-      setOmniRushLogStatus(t("settings.exported_developer_log"));
+      setMarsLogStatus(t("settings.exported_developer_log"));
     } catch (error) {
-      setOmniRushLogStatus(error instanceof Error ? error.message : safeStringify(error));
+      setMarsLogStatus(error instanceof Error ? error.message : safeStringify(error));
     }
-  }, [formatServiceLogs, omnirushServerSnapshot.omnirushServerHostInfo]);
+  }, [formatServiceLogs, marsServerSnapshot.marsServerHostInfo]);
 
   const [resetStatus, setResetStatus] = useState<string | null>(null);
 
@@ -920,22 +920,22 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
       if (!isDesktopRuntime()) return;
       const message =
         mode === "all"
-          ? "Reset ALL omnirush.ai app data? Open sessions and workspaces will be removed."
+          ? "Reset ALL marsai.click app data? Open sessions and workspaces will be removed."
           : "Reset onboarding state only?";
       if (typeof window !== "undefined" && !window.confirm(message)) {
         return;
       }
       setResetModalBusy(true);
       setResetStatus(null);
-      void resetOmniRushState(mode)
+      void resetMarsState(mode)
         .then(async () => {
-          clearOmniRushLocalStorageForReset(mode);
+          clearMarsLocalStorageForReset(mode);
           setResetStatus(
             mode === "all"
-              ? "Reset omnirush.ai state. Restart the app to see changes."
+              ? "Reset marsai.click state. Restart the app to see changes."
               : "Reset onboarding state. Restart the app to see changes.",
           );
-          pushDeveloperLog(`reset_omnirush_state mode=${mode}`);
+          pushDeveloperLog(`reset_mars_state mode=${mode}`);
         })
         .catch((error) => {
           setRouteError(error instanceof Error ? error.message : safeStringify(error));
@@ -952,7 +952,7 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
     setNukePreviewBusy(true);
     setNukeConfigStatus(null);
     try {
-      const preview = await nukeOmniRushAndOpencodeConfigPreview({ preserveBootstrap: true });
+      const preview = await nukeMarsAndOpencodeConfigPreview({ preserveBootstrap: true });
       setNukeManifestPreview(preview);
       setNukeConfirmationText("");
       setNukeDeleteBootstrap(false);
@@ -970,7 +970,7 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
     setNukePreviewBusy(true);
     setNukeConfigStatus(null);
     try {
-      const preview = await nukeOmniRushAndOpencodeConfigPreview({ preserveBootstrap: !deleteBootstrap });
+      const preview = await nukeMarsAndOpencodeConfigPreview({ preserveBootstrap: !deleteBootstrap });
       setNukeManifestPreview(preview);
     } catch (error) {
       setNukeDeleteBootstrap(!deleteBootstrap);
@@ -985,13 +985,13 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
     setNukeDialogOpen(false);
   }, [nukeConfigBusy]);
 
-  const onConfirmNukeOmniRushAndOpencodeConfig = useCallback(async () => {
+  const onConfirmNukeMarsAndOpencodeConfig = useCallback(async () => {
     if (!isDesktopRuntime() || nukeConfirmationText.trim().toUpperCase() !== NUKE_CONFIRMATION_WORD) return;
     setNukeConfigBusy(true);
     setNukeConfigStatus(null);
     try {
       await revokeDenSessionBeforeNuke();
-      await nukeOmniRushAndOpencodeConfigAndExit({ preserveBootstrap: !nukeDeleteBootstrap });
+      await nukeMarsAndOpencodeConfigAndExit({ preserveBootstrap: !nukeDeleteBootstrap });
     } catch (error) {
       setNukeConfigStatus(error instanceof Error ? error.message : safeStringify(error));
       setNukeConfigBusy(false);
@@ -1013,8 +1013,8 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
       anyActiveRuns: false,
       startupPreference: "server",
       startupLabel:
-        omnirushServerSnapshot.omnirushServerStatus === "connected"
-          ? t("settings.omnirush_server_label")
+        marsServerSnapshot.marsServerStatus === "connected"
+          ? t("settings.mars_server_label")
           : t("status.disconnected_label"),
       runtimeSummary,
       runtimeDebugReportJson,
@@ -1066,34 +1066,34 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
       startupStatus,
       workspaceDebugEventsStatus,
       opencodeRestarting,
-      omnirushServerRestarting,
+      marsServerRestarting,
       opencodeServiceStatus,
-      omnirushServiceStatus,
+      marsServiceStatus,
       opencodeLogStatus,
-      omnirushLogStatus,
+      marsLogStatus,
       onCopyOpencodeLogs,
       onExportOpencodeLogs,
-      onCopyOmniRushLogs,
-      onExportOmniRushLogs,
+      onCopyMarsLogs,
+      onExportMarsLogs,
       serviceRestartError,
       onRestartOpencode,
-      onRestartOmniRushServer,
+      onRestartMarsServer,
       engineCard,
       opencodeConnectCard,
-      omnirushCard,
-      omnirushServerDiagnostics: omnirushServerSnapshot.omnirushServerDiagnostics,
+      marsCard,
+      marsServerDiagnostics: marsServerSnapshot.marsServerDiagnostics,
       runtimeWorkspaceId,
-      omnirushServerCapabilities: omnirushServerSnapshot.omnirushServerCapabilities,
+      marsServerCapabilities: marsServerSnapshot.marsServerCapabilities,
       pendingPermissions: {},
       events: [],
       workspaceDebugEvents: [],
       safeStringify,
       onClearWorkspaceDebugEvents,
-      omnirushAuditEntries: omnirushServerSnapshot.omnirushAuditEntries,
-      omnirushAuditStatus: auditStatusPill(omnirushServerSnapshot.omnirushAuditStatus),
-      omnirushAuditError: omnirushServerSnapshot.omnirushAuditError,
+      marsAuditEntries: marsServerSnapshot.marsAuditEntries,
+      marsAuditStatus: auditStatusPill(marsServerSnapshot.marsAuditStatus),
+      marsAuditError: marsServerSnapshot.marsAuditError,
       opencodeConnectStatus: null,
-      opencodeDevModeEnabled: appBuild?.omnirushDevMode === true,
+      opencodeDevModeEnabled: appBuild?.marsDevMode === true,
       nukeConfigBusy,
       nukeConfigStatus,
       nukePreviewBusy,
@@ -1105,10 +1105,10 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
       onCloseNukeDialog,
       onSetNukeConfirmationText: setNukeConfirmationText,
       onSetNukeDeleteBootstrap,
-      onConfirmNukeOmniRushAndOpencodeConfig,
+      onConfirmNukeMarsAndOpencodeConfig,
     }),
     [
-      appBuild?.omnirushDevMode,
+      appBuild?.marsDevMode,
       developerLog,
       developerLogStatus,
       developerMode,
@@ -1143,7 +1143,7 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
       onExportRuntimeDebugReport,
       onInstallElectronPreviewFromTauri,
       onCheckElectronAlphaUpdates,
-      onConfirmNukeOmniRushAndOpencodeConfig,
+      onConfirmNukeMarsAndOpencodeConfig,
       onOpenElectronPreviewRelease,
       onOpenNukeDialog,
       onOpenResetModal,
@@ -1153,33 +1153,33 @@ export function useDebugViewModel(options: UseDebugViewModelOptions) {
       onRevealElectronMigrationBackup,
       onResetStartupPreference,
       onRestartOpencode,
-      onRestartOmniRushServer,
+      onRestartMarsServer,
       onSetElectronAlphaUpdaterChannel,
       onSetElectronMigrationSha512,
       onSetElectronMigrationUrl,
       onSetEngineSource,
       onStopHost,
       onCopyOpencodeLogs,
-      onCopyOmniRushLogs,
+      onCopyMarsLogs,
       onExportOpencodeLogs,
-      onExportOmniRushLogs,
+      onExportMarsLogs,
       opencodeConnectCard,
       opencodeLogStatus,
       opencodeRestarting,
       opencodeServiceStatus,
-      omnirushCard,
-      omnirushLogStatus,
-      omnirushServiceStatus,
-      omnirushServerRestarting,
+      marsCard,
+      marsLogStatus,
+      marsServiceStatus,
+      marsServerRestarting,
       resetStatus,
       startupStatus,
       workspaceDebugEventsStatus,
-      omnirushServerSnapshot.omnirushAuditEntries,
-      omnirushServerSnapshot.omnirushAuditError,
-      omnirushServerSnapshot.omnirushAuditStatus,
-      omnirushServerSnapshot.omnirushServerCapabilities,
-      omnirushServerSnapshot.omnirushServerDiagnostics,
-      omnirushServerSnapshot.omnirushServerStatus,
+      marsServerSnapshot.marsAuditEntries,
+      marsServerSnapshot.marsAuditError,
+      marsServerSnapshot.marsAuditStatus,
+      marsServerSnapshot.marsServerCapabilities,
+      marsServerSnapshot.marsServerDiagnostics,
+      marsServerSnapshot.marsServerStatus,
       resetModalBusy,
       runtimeConfigStatus,
       runtimeConfigStatusError,

@@ -5,7 +5,7 @@ import {
   egressDiagnosticRunSchema,
   type EgressDiagnosticRun,
   type EgressDiagnosticStep,
-} from "@omnirush/types/den/egress-diagnostics";
+} from "@mars/types/den/egress-diagnostics";
 import {
   Activity,
   Check,

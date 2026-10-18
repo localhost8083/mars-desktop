@@ -11,7 +11,7 @@ import { t } from "../../../../i18n";
 import { buildDenAuthUrl, readDenBootstrapConfig } from "../../../../app/lib/den";
 import { markDesktopSignInInitiated } from "../../../../app/lib/den-sign-in-intent";
 import { useDenControlPlaneConfigured } from "../../cloud/use-den-control-plane-configured";
-import { type OmniRushServerClient, type OmniRushServerStatus } from "../../../../app/lib/omnirush-server";
+import { type MarsServerClient, type MarsServerStatus } from "../../../../app/lib/mars-server";
 import { getDisplaySessionTitle } from "../../../../app/lib/session-title";
 import type { BootPhase } from "../../../../app/lib/startup-boot";
 import { openDesktopPath, revealDesktopItemInDir, type WorkspaceInfo } from "../../../../app/lib/desktop";
@@ -88,7 +88,7 @@ import { useCreateTab } from "../panel/use-side-panel-tabs";
 import { TerminalDock } from "../terminal/terminal-dock";
 import { useActivePanelTab, usePanelTabStore, useSessionPanelState } from "../panel/panel-tab-store";
 import { useWorkspaceShellLayout } from "../../../shell/workspace-shell-layout";
-import { useControlAction, type OmniRushControlAction } from "../../../shell/control/control-provider";
+import { useControlAction, type MarsControlAction } from "../../../shell/control/control-provider";
 import { cn } from "@/lib/utils";
 import {
   canNavigateSelectedConversationHistory,
@@ -103,8 +103,6 @@ import { isSameWorkbenchSession } from "./workbench-store";
 import { ReactSessionRuntime } from "../sync/runtime-sync";
 import { useSessionInteractions } from "../sync/use-session-interactions";
 import { createClient } from "@/app/lib/opencode";
-import { createQuitGuard, finishGuardKey, leavingRunningTurn, type FinishGuardKind } from "@/app/lib/good-session";
-import { FinishGuardDialog, TurnGuardDialog, finishGuardFor, requestFinishIt } from "@/react-app/domains/quality/good-session";
 import { createClientV2, isOpencodeV2BaseUrl } from "@/app/lib/opencode-v2-adapter";
 import {
   availableNarrowPane,
@@ -137,7 +135,7 @@ type StatusBarOverrides = {
   showSettingsButton: boolean;
   reloadBusy: boolean;
   reloadError: string | null;
-  omniRushConnectState: SessionCloudMcpMaintenanceState;
+  marsConnectState: SessionCloudMcpMaintenanceState;
 };
 
 export type SessionPageHistoryControls = {
@@ -192,7 +190,7 @@ export type SessionPageSidebarProps = {
 
 export type SessionPageSurfaceProps = Omit<
   SessionSurfaceProps,
-  "client" | "workspaceId" | "sessionId" | "opencodeBaseUrl" | "omnirushToken" | "isControlTarget"
+  "client" | "workspaceId" | "sessionId" | "opencodeBaseUrl" | "marsToken" | "isControlTarget"
 >;
 
 export type SessionPagePaneRuntime = {
@@ -203,9 +201,9 @@ export type SessionPagePaneRuntime = {
   workspaceType?: WorkspaceInfo["workspaceType"];
   runtimeWorkspaceId: string;
   opencodeBaseUrl: string;
-  omnirushToken: string;
-  client: OmniRushServerClient;
-  environmentClient?: OmniRushServerClient | null;
+  marsToken: string;
+  client: MarsServerClient;
+  environmentClient?: MarsServerClient | null;
   surface: SessionPageSurfaceProps;
 } | {
   status: "unavailable";
@@ -235,10 +233,10 @@ export type SessionPageProps = {
   opencodeBaseUrl?: string | null;
   workspaces: WorkspaceInfo[];
   clientConnected: boolean;
-  omnirushServerStatus: OmniRushServerStatus;
-  omnirushServerClient: OmniRushServerClient | null;
-  environmentClient?: OmniRushServerClient | null;
-  omnirushServerToken?: string | null;
+  marsServerStatus: MarsServerStatus;
+  marsServerClient: MarsServerClient | null;
+  environmentClient?: MarsServerClient | null;
+  marsServerToken?: string | null;
   developerMode: boolean;
   headerStatus: string;
   busyHint: string | null;
@@ -270,6 +268,8 @@ export type SessionPageProps = {
   notFoundMessage?: string | null;
   mainContentTakeover?: React.ReactNode;
   mainContentTitle?: string;
+  /** Closes the takeover (e.g. Library) and returns to the conversation. */
+  onCloseMainContent?: () => void;
   extensionsActive?: boolean;
   onOpenProviderAuth?: () => void;
   /** Chat-first: create a default workspace and start a task from the empty-state composer. */
@@ -306,7 +306,7 @@ function workspaceTitleForId(groups: WorkspaceSessionGroup[], workspaceId: strin
     || workspace?.name?.trim()
     || workspace?.path?.trim()
     || workspaceId;
-  return /^(?:OmniRush\.ai Chat|omnirush\.ai)$/i.test(title) ? "omnirush.ai" : title;
+  return /^(?:Mars\.ai Chat|mars\.ai)$/i.test(title) ? "marsai.click" : title;
 }
 
 function WorkbenchPaneHeader(props: {
@@ -345,15 +345,15 @@ function WorkbenchPaneHeader(props: {
 /** Every visible conversation owns its pending interactions, including the side pane. */
 function SplitSessionSurface(props: SessionSurfaceProps) {
   const client = useMemo(() => isOpencodeV2BaseUrl(props.opencodeBaseUrl)
-    ? createClientV2(props.opencodeBaseUrl, props.workspaceRoot, { token: props.omnirushToken })
-    : createClient(props.opencodeBaseUrl, props.workspaceRoot, { token: props.omnirushToken, mode: "omnirush" }),
-  [props.opencodeBaseUrl, props.omnirushToken, props.workspaceRoot]);
+    ? createClientV2(props.opencodeBaseUrl, props.workspaceRoot, { token: props.marsToken })
+    : createClient(props.opencodeBaseUrl, props.workspaceRoot, { token: props.marsToken, mode: "mars" }),
+  [props.opencodeBaseUrl, props.marsToken, props.workspaceRoot]);
   const interactions = useSessionInteractions({
     client, workspaceId: props.workspaceId, sessionId: props.sessionId, workspaceRoot: props.workspaceRoot ?? "",
   });
   return <>
     <ReactSessionRuntime workspaceId={props.workspaceId} sessionId={props.sessionId}
-      opencodeBaseUrl={props.opencodeBaseUrl} omnirushToken={props.omnirushToken} />
+      opencodeBaseUrl={props.opencodeBaseUrl} marsToken={props.marsToken} />
     <SessionSurface {...props} {...interactions} />
   </>;
 }
@@ -407,7 +407,7 @@ function absoluteWorkspacePath(root: string | null | undefined, value: string) {
 
 function hiddenAccessibleTargetsStorageKey(workspaceId: string | null | undefined, sessionId: string | null | undefined) {
   if (!workspaceId || !sessionId) return null;
-  return `omnirush.session.hiddenAccessibleTargets.v1:${workspaceId}:${sessionId}`;
+  return `mars.session.hiddenAccessibleTargets.v1:${workspaceId}:${sessionId}`;
 }
 
 function readHiddenAccessibleTargetIds(workspaceId: string | null | undefined, sessionId: string | null | undefined): Set<string> {
@@ -512,9 +512,6 @@ export function SessionPage(props: SessionPageProps) {
   const [renameTitle, setRenameTitle] = useState("");
   const [renameBusy, setRenameBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  // The don't-leave-mid-turn confirm: what to do on "Quit anyway".
-  const [turnGuardProceed, setTurnGuardProceed] = useState<(() => void) | null>(null);
-  const [finishGuard, setFinishGuard] = useState<{ sessionId: string; kind: FinishGuardKind; proceed: () => void } | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [sessionActionId, setSessionActionId] = useState<string | null>(null);
   const workbenchPrimary = useWorkbenchStore((state) => state.primary);
@@ -527,7 +524,7 @@ export function SessionPage(props: SessionPageProps) {
     ? narrowPane === "split" ? "secondary" : "primary"
     : focusedWorkbenchPane;
   const syncWorkbench = useWorkbenchStore((state) => state.sync);
-  const omniRushbenchTab = useWorkbenchStore((state) => state.openTab);
+  const marsbenchTab = useWorkbenchStore((state) => state.openTab);
   const setWorkbenchSplit = useWorkbenchStore((state) => state.setSplit);
   const focusWorkbenchPane = useWorkbenchStore((state) => state.focusPane);
   const selectedSessionRef = props.selectedSessionId
@@ -604,7 +601,7 @@ export function SessionPage(props: SessionPageProps) {
   // conversation's tabs keep loading silently in the background.
   useEffect(() => {
     if (!isElectronRuntime()) return;
-    void (window as Window).__OMNIRUSH_ELECTRON__?.browser?.setVisibleSession?.(props.selectedSessionId ?? null);
+    void (window as Window).__MARS_ELECTRON__?.browser?.setVisibleSession?.(props.selectedSessionId ?? null);
   }, [props.selectedSessionId]);
 
   // Open the side panel of the conversation that owns a browser event. For the
@@ -626,7 +623,7 @@ export function SessionPage(props: SessionPageProps) {
   // the panel opened and doesn't render the unified panel chrome.
   useEffect(() => {
     if (!isElectronRuntime()) return;
-    const browser = (window as Window).__OMNIRUSH_ELECTRON__?.browser;
+    const browser = (window as Window).__MARS_ELECTRON__?.browser;
     if (!browser) return;
     const unsubOpen = browser.onPanelOpened?.((payload) => {
       const ownerSessionId = payload?.ownerSessionId ?? props.selectedSessionId;
@@ -679,7 +676,7 @@ export function SessionPage(props: SessionPageProps) {
   }, []);
   const createBrowserTab = useCreateTab();
   const openTargetForRuntime = useCallback((runtime: {
-    client: OmniRushServerClient | null;
+    client: MarsServerClient | null;
     runtimeWorkspaceId: string | null;
     workspaceRoot: string;
     workspaceType?: WorkspaceInfo["workspaceType"];
@@ -764,14 +761,14 @@ export function SessionPage(props: SessionPageProps) {
   }, [activePanelTab?.id, browserUrlForTarget, createBrowserTab, openOwnerSidePanel, openTab, props.selectedSessionId, setCurrentSidePanel]);
   const openTarget = useCallback((target: OpenTarget, options?: OpenTargetOptions, sourceSessionId?: string) => {
     openTargetForRuntime({
-      client: props.omnirushServerClient,
+      client: props.marsServerClient,
       runtimeWorkspaceId: props.runtimeWorkspaceId,
       workspaceRoot: props.selectedWorkspaceRoot,
       workspaceType: props.selectedWorkspaceDisplay.workspaceType,
     }, target, options, sourceSessionId);
   }, [
     openTargetForRuntime,
-    props.omnirushServerClient,
+    props.marsServerClient,
     props.runtimeWorkspaceId,
     props.selectedWorkspaceDisplay.workspaceType,
     props.selectedWorkspaceRoot,
@@ -788,7 +785,7 @@ export function SessionPage(props: SessionPageProps) {
     // panel that forces the user to click "+".
     toggleCurrentSidePanel("panel");
   }, [hasBrowserTabs, toggleCurrentSidePanel]);
-  const openBrowserUrlControlAction = useMemo<OmniRushControlAction>(() => ({
+  const openBrowserUrlControlAction = useMemo<MarsControlAction>(() => ({
     id: "browser.open_url",
     label: "Open URL in built-in browser",
     description: "Open a built-in browser tab and return its tab_id and CDP handle. The tab is protected from suspension for its task lifetime until browser.release_tab declares all running and queued browser work complete.",
@@ -812,11 +809,11 @@ export function SessionPage(props: SessionPageProps) {
       // conversation on screen is never interrupted.
       const ownerSessionId = helpers.origin?.sessionId ?? props.selectedSessionId ?? null;
       openOwnerSidePanel(ownerSessionId);
-      return window.__OMNIRUSH_ELECTRON__?.browser?.openUrl?.(url, provider, { sessionId: ownerSessionId });
+      return window.__MARS_ELECTRON__?.browser?.openUrl?.(url, provider, { sessionId: ownerSessionId });
     },
   }), [openOwnerSidePanel, props.selectedSessionId]);
   useControlAction(openBrowserUrlControlAction);
-  const restoreBrowserTabControlAction = useMemo<OmniRushControlAction>(() => ({
+  const restoreBrowserTabControlAction = useMemo<MarsControlAction>(() => ({
     id: "browser.restore_tab",
     label: "Restore browser tab",
     description: "Acquire a fresh protected CDP handle for a tab owned by this conversation. A suspended tab reloads its saved URL, not its previous document, retaining tab_id with a new target_id. A live tab keeps its document. Always use the returned handle. Protection lasts until browser.release_tab.",
@@ -827,14 +824,14 @@ export function SessionPage(props: SessionPageProps) {
     execute: async (args, helpers) => {
       const tabId = controlStringArg(args, "tabId");
       if (!tabId) return { ok: false, error: "Missing tabId." };
-      const restoreTab = window.__OMNIRUSH_ELECTRON__?.browser?.restoreTab;
+      const restoreTab = window.__MARS_ELECTRON__?.browser?.restoreTab;
       if (!restoreTab) return { ok: false, error: "Built-in browser is not available." };
       const ownerSessionId = helpers.origin?.sessionId ?? props.selectedSessionId ?? null;
       return restoreTab(tabId, ownerSessionId);
     },
   }), [props.selectedSessionId]);
   useControlAction(restoreBrowserTabControlAction);
-  const releaseBrowserTabControlAction = useMemo<OmniRushControlAction>(() => ({
+  const releaseBrowserTabControlAction = useMemo<MarsControlAction>(() => ({
     id: "browser.release_tab",
     label: "Release browser tab",
     description: "Declare all running and queued browser work on this conversation's tab complete and remove its suspension protection. Release does not close, suspend, or invalidate the current target. The user may then manually suspend it. Before starting later browser work, call browser.restore_tab and use its returned protected handle.",
@@ -845,26 +842,26 @@ export function SessionPage(props: SessionPageProps) {
     execute: async (args, helpers) => {
       const tabId = controlStringArg(args, "tabId");
       if (!tabId) return { ok: false, error: "Missing tabId." };
-      const releaseTab = window.__OMNIRUSH_ELECTRON__?.browser?.releaseTab;
+      const releaseTab = window.__MARS_ELECTRON__?.browser?.releaseTab;
       if (!releaseTab) return { ok: false, error: "Built-in browser is not available." };
       const ownerSessionId = helpers.origin?.sessionId ?? props.selectedSessionId ?? null;
       return releaseTab(tabId, ownerSessionId);
     },
   }), [props.selectedSessionId]);
   useControlAction(releaseBrowserTabControlAction);
-  const setBrowserProxyControlAction = useMemo<OmniRushControlAction>(() => ({
+  const setBrowserProxyControlAction = useMemo<MarsControlAction>(() => ({
     id: "browser.set_proxy",
     label: "Set built-in browser proxy",
     description: "Route all built-in browser traffic through an HTTP/SOCKS proxy (e.g. to browse from another location). Applies to every built-in browser tab until cleared. Pass an empty proxy to restore system network settings.",
     sideEffect: "mutation",
     args: [
-      { name: "proxy", type: "string", description: "Proxy URL like http://user:pass@host:8080 or socks5://host:1080, env:NAME to use the OMNIRUSH_BROWSER_PROXY_NAME environment variable, or empty to clear." },
+      { name: "proxy", type: "string", description: "Proxy URL like http://user:pass@host:8080 or socks5://host:1080, env:NAME to use the MARS_BROWSER_PROXY_NAME environment variable, or empty to clear." },
     ],
     previewArgs: { proxy: "env:DE" },
     disabled: !isElectronRuntime(),
     execute: async (args) => {
       const proxy = controlStringArg(args, "proxy") || "";
-      const setProxy = window.__OMNIRUSH_ELECTRON__?.browser?.setProxy;
+      const setProxy = window.__MARS_ELECTRON__?.browser?.setProxy;
       if (!setProxy) return { ok: false, error: "Built-in browser is not available." };
       return setProxy(proxy);
     },
@@ -929,17 +926,17 @@ export function SessionPage(props: SessionPageProps) {
       const target = accessibleTargets.find((item) => item.id === requested?.id || item.value === requested?.value);
       if (target) removeAccessibleTarget(target);
     };
-    window.addEventListener("omnirush-open-accessible-target", open);
-    window.addEventListener("omnirush-hide-accessible-target", hide);
+    window.addEventListener("mars-open-accessible-target", open);
+    window.addEventListener("mars-hide-accessible-target", hide);
     return () => {
-      window.removeEventListener("omnirush-open-accessible-target", open);
-      window.removeEventListener("omnirush-hide-accessible-target", hide);
+      window.removeEventListener("mars-open-accessible-target", open);
+      window.removeEventListener("mars-hide-accessible-target", hide);
     };
   }, [accessibleTargets, openTarget, removeAccessibleTarget]);
   useEffect(() => {
     const handler = () => setCurrentSidePanel(null);
-    window.addEventListener("omnirush-close-right-pane", handler);
-    return () => window.removeEventListener("omnirush-close-right-pane", handler);
+    window.addEventListener("mars-close-right-pane", handler);
+    return () => window.removeEventListener("mars-close-right-pane", handler);
   }, [setCurrentSidePanel]);
   const [showDelayedSessionLoadingState, setShowDelayedSessionLoadingState] = useState(false);
 
@@ -951,8 +948,8 @@ export function SessionPage(props: SessionPageProps) {
     props.selectedWorkspaceDisplay.displayName?.trim() ||
     props.selectedWorkspaceDisplay.name?.trim() ||
     t("session.workspace_fallback");
-  const workspaceName = /^(?:OmniRush\.ai Chat|omnirush\.ai)$/i.test(workspaceNameRaw)
-    ? "omnirush.ai"
+  const workspaceName = /^(?:Mars\.ai Chat|mars\.ai)$/i.test(workspaceNameRaw)
+    ? "marsai.click"
     : workspaceNameRaw;
   useEffect(() => {
     if (pendingConversationHistoryNavigation) {
@@ -981,7 +978,7 @@ export function SessionPage(props: SessionPageProps) {
       splitSession?.sessionId ?? null,
     ));
   }, [
-    omniRushbenchTab,
+    marsbenchTab,
     pendingConversationHistoryNavigation,
     props.selectedSessionId,
     props.selectedWorkspaceId,
@@ -1064,17 +1061,17 @@ export function SessionPage(props: SessionPageProps) {
   const selectedWorkspaceErrorTitle =
     props.selectedWorkspaceDisplay.workspaceType === "remote"
       ? "Remote workspace unavailable"
-      : "omnirush.ai unavailable";
+      : "marsai.click unavailable";
 
   const reactSessionBaseUrl = props.opencodeBaseUrl?.trim() ?? "";
   const reactSessionToken =
-    props.omnirushServerToken?.trim() ||
-    props.omnirushServerClient?.token?.trim() ||
+    props.marsServerToken?.trim() ||
+    props.marsServerClient?.token?.trim() ||
     "";
   const canRenderReactSurface = Boolean(
     props.selectedSessionId &&
       props.runtimeWorkspaceId &&
-      props.omnirushServerClient &&
+      props.marsServerClient &&
       reactSessionBaseUrl &&
       reactSessionToken &&
       props.surface,
@@ -1095,7 +1092,7 @@ export function SessionPage(props: SessionPageProps) {
     }
     if (
       props.runtimeWorkspaceId
-      && props.omnirushServerClient
+      && props.marsServerClient
       && reactSessionBaseUrl
       && reactSessionToken
       && props.surface
@@ -1108,8 +1105,8 @@ export function SessionPage(props: SessionPageProps) {
         workspaceType: props.selectedWorkspaceDisplay.workspaceType,
         runtimeWorkspaceId: props.runtimeWorkspaceId,
         opencodeBaseUrl: reactSessionBaseUrl,
-        omnirushToken: reactSessionToken,
-        client: props.omnirushServerClient,
+        marsToken: reactSessionToken,
+        client: props.marsServerClient,
         environmentClient: props.environmentClient,
         surface: props.surface,
       };
@@ -1168,7 +1165,7 @@ export function SessionPage(props: SessionPageProps) {
   );
 
   const openSessionTab = useCallback((workspaceId: string, sessionId: string) => {
-    omniRushbenchTab({
+    marsbenchTab({
       workspaceId,
       sessionId,
       title: sessionTitleForId(props.sidebar.workspaceSessionGroups, sessionId, workspaceId),
@@ -1176,41 +1173,7 @@ export function SessionPage(props: SessionPageProps) {
     });
     focusWorkbenchPane("primary");
     props.sidebar.onOpenSession(workspaceId, sessionId);
-  }, [focusWorkbenchPane, omniRushbenchTab, props.sidebar]);
-
-  const sessionTurnRunning = useCallback((sessionId: string | null | undefined) => {
-    const status = sessionId ? props.sidebar.sessionStatusById[sessionId] : undefined;
-    return status === "thinking" || status === "responding" || status === "compacting" || status === "waiting";
-  }, [props.sidebar.sessionStatusById]);
-
-  // Ending a session whose turn runs asks first; a second request, after
-  // "Wait for it", goes ahead. Switching sessions is navigation, not
-  // termination, so it must not use this guard. The guard re-arms when a turn
-  // ends or a new one starts (the CLI's createQuitGuard).
-  const leaveGuard = useRef(createQuitGuard());
-  const runningTurns = Object.entries(props.sidebar.sessionStatusById)
-    .filter(([, status]) => status === "thinking" || status === "responding" || status === "compacting" || status === "waiting")
-    .map(([sessionId]) => sessionId)
-    .sort()
-    .join(",");
-  useEffect(() => {
-    leaveGuard.current.turnEnded();
-  }, [runningTurns]);
-  // No turn runs but its last one needs finishing (cut off, or waiting on
-  // the user): the finish guard asks once per session and state.
-  const guardLeave = useCallback((running: boolean, proceed: () => void, sessionId?: string) => {
-    const kind = !running && sessionId ? finishGuardFor(sessionId) : null;
-    const verdict = leaveGuard.current.request({ running, finish: kind && sessionId ? finishGuardKey(sessionId, kind) : null });
-    if (verdict === "ask") {
-      setTurnGuardProceed(() => proceed);
-      return;
-    }
-    if (verdict === "finish" && kind && sessionId) {
-      setFinishGuard({ sessionId, kind, proceed });
-      return;
-    }
-    proceed();
-  }, []);
+  }, [focusWorkbenchPane, marsbenchTab, props.sidebar]);
 
   const closeSecondaryWorkbenchPane = useCallback(() => {
     setWorkbenchSplit(null);
@@ -1251,7 +1214,7 @@ export function SessionPage(props: SessionPageProps) {
     return null;
   }, [props.selectedSessionId, props.sidebar.workspaceSessionGroups]);
 
-  const focusWorkbenchSessionControlAction = useMemo<OmniRushControlAction>(() => ({
+  const focusWorkbenchSessionControlAction = useMemo<MarsControlAction>(() => ({
     id: "workbench.session.focus",
     label: "Focus an open session",
     description: "Focus a session already visible in either split-screen pane, or reuse its existing tab without opening a duplicate.",
@@ -1262,7 +1225,7 @@ export function SessionPage(props: SessionPageProps) {
       name: "sessionId",
       type: "string",
       required: true,
-      description: "Session id from the omnirush.ai context resources or conversation tabs.",
+      description: "Session id from the marsai.click context resources or conversation tabs.",
     }],
     execute: (args) => {
       if (!args || typeof args !== "object" || !("sessionId" in args) || typeof args.sessionId !== "string") {
@@ -1404,7 +1367,7 @@ export function SessionPage(props: SessionPageProps) {
   ) : activeSidePanel === "panel" ? (
     <SidePanel
       sessionId={sidePanelSessionKey}
-      client={props.omnirushServerClient}
+      client={props.marsServerClient}
       workspaceId={props.runtimeWorkspaceId}
       workspaceRoot={props.selectedWorkspaceRoot}
       isRemoteWorkspace={props.surface?.isRemoteWorkspace ?? false}
@@ -1444,11 +1407,8 @@ export function SessionPage(props: SessionPageProps) {
           onCreateSplitTaskInWorkspace={props.sidebar.onCreateSplitTaskInWorkspace}
           onOpenRenameSession={props.onRenameSession ? openRenameModal : undefined}
           onOpenDeleteSession={props.onDeleteSession ? (sessionId) => {
-            const openDelete = () => {
-              setSessionActionId(sessionId);
-              setDeleteOpen(true);
-            };
-            guardLeave(leavingRunningTurn({ action: "delete", turnRunning: sessionTurnRunning(sessionId) }), openDelete, sessionId);
+            setSessionActionId(sessionId);
+            setDeleteOpen(true);
           } : undefined}
           onArchiveSession={props.onArchiveSession ? (sessionId, archived) => {
             void props.onArchiveSession?.(sessionId, archived);
@@ -1469,7 +1429,7 @@ export function SessionPage(props: SessionPageProps) {
           onForgetWorkspace={props.sidebar.onForgetWorkspace}
           onOpenCreateWorkspace={props.sidebar.onOpenCreateWorkspace}
           onOpenSessionSearch={props.sidebar.onOpenSessionSearch}
-          auditClient={props.omnirushServerClient}
+          auditClient={props.marsServerClient}
           automationsActive={props.sidebar.automationsActive}
           automationsNeedAttention={props.sidebar.automationsNeedAttention}
           onOpenAutomations={props.sidebar.onOpenAutomations}
@@ -1487,7 +1447,7 @@ export function SessionPage(props: SessionPageProps) {
           extensionsActive={props.extensionsActive}
           status={{
             clientConnected: props.clientConnected,
-            omnirushServerStatus: props.omnirushServerStatus,
+            marsServerStatus: props.marsServerStatus,
             developerMode: props.developerMode,
             showConnectionStatus: Boolean(props.selectedWorkspaceId),
             providerConnectedIds: props.providerConnectedIds,
@@ -1495,7 +1455,7 @@ export function SessionPage(props: SessionPageProps) {
             showSettingsButton: props.statusBar?.showSettingsButton,
             reloadBusy: props.statusBar?.reloadBusy,
             reloadError: props.statusBar?.reloadError,
-            omniRushConnectState: props.statusBar?.omniRushConnectState,
+            marsConnectState: props.statusBar?.marsConnectState,
             onSendFeedback: props.onSendFeedback,
           }}
         />
@@ -1579,6 +1539,24 @@ export function SessionPage(props: SessionPageProps) {
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5 text-gray-10 mac:titlebar-no-drag">
+              {hasMainContentTakeover && props.onCloseMainContent ? (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="rounded-xl text-gray-10 transition-colors hover:bg-muted hover:text-foreground"
+                        aria-label={t("session.close_library")}
+                        onClick={props.onCloseMainContent}
+                      >
+                        <X size={16} />
+                      </Button>
+                    }
+                  />
+                  <TooltipContent>{t("session.close_library")}</TooltipContent>
+                </Tooltip>
+              ) : null}
               <BuildathonChip />
               <DesktopUpdateButton />
               {!props.primarySlot && findButtonSessionId && !hasMainContentTakeover ? (
@@ -1679,8 +1657,8 @@ export function SessionPage(props: SessionPageProps) {
                   className="hidden lg:inline-flex"
                   onClick={() => {
                     try {
-                      window.localStorage.removeItem("omnirush.acknowledgedProviders");
-                      window.localStorage.removeItem("omnirush.orgOnboardingSeen");
+                      window.localStorage.removeItem("mars.acknowledgedProviders");
+                      window.localStorage.removeItem("mars.orgOnboardingSeen");
                     } catch {}
                   }}
                   title="Clears acknowledged providers + org onboarding so they trigger again"
@@ -1825,18 +1803,18 @@ export function SessionPage(props: SessionPageProps) {
                             // Spread `surface` first so the explicit per-workspace
                             // routing props below CAN'T be silently overridden by
                             // anything that leaks into `surface`. SessionSurface's
-                            // server target (client/workspaceId/sessionId/opencodeBaseUrl/omnirushToken)
+                            // server target (client/workspaceId/sessionId/opencodeBaseUrl/marsToken)
                             // must come from the resolved workspace endpoint passed by
                             // SessionRoute, not from anything in `surface`.
                             {...props.surface!}
-                            client={props.omnirushServerClient!}
+                            client={props.marsServerClient!}
                             environmentClient={props.environmentClient}
                             workspaceId={props.runtimeWorkspaceId!}
                             sessionId={props.selectedSessionId!}
                             isControlTarget={activeWorkbenchPane === "primary"}
                             chatPane={canRenderSplitSurface ? "primary" : undefined}
                             opencodeBaseUrl={reactSessionBaseUrl}
-                            omnirushToken={reactSessionToken}
+                            marsToken={reactSessionToken}
                             todos={props.todos}
                             activePermission={props.activePermission}
                             activePermissionSourceTitle={props.activePermissionSourceTitle}
@@ -1888,7 +1866,7 @@ export function SessionPage(props: SessionPageProps) {
                                   isControlTarget={activeWorkbenchPane === "secondary"}
                                   chatPane="secondary"
                                   opencodeBaseUrl={splitPaneRuntime.opencodeBaseUrl}
-                                  omnirushToken={splitPaneRuntime.omnirushToken}
+                                  marsToken={splitPaneRuntime.marsToken}
                                   onOpenTarget={(target, options, sourceSessionId) => openTargetForRuntime({
                                     client: splitPaneRuntime.client,
                                     runtimeWorkspaceId: splitPaneRuntime.runtimeWorkspaceId,
@@ -2091,36 +2069,6 @@ export function SessionPage(props: SessionPageProps) {
           onTitleChange={setRenameTitle}
         />
       ) : null}
-
-      <TurnGuardDialog
-        open={turnGuardProceed !== null}
-        onWait={() => {
-          leaveGuard.current.answer(true);
-          setTurnGuardProceed(null);
-        }}
-        onQuit={() => {
-          const proceed = turnGuardProceed;
-          leaveGuard.current.answer(false);
-          setTurnGuardProceed(null);
-          proceed?.();
-        }}
-      />
-
-      <FinishGuardDialog
-        kind={finishGuard?.kind ?? null}
-        onFinish={() => {
-          const guard = finishGuard;
-          leaveGuard.current.answer(true);
-          setFinishGuard(null);
-          if (guard) requestFinishIt(guard.sessionId, guard.kind);
-        }}
-        onQuit={() => {
-          const guard = finishGuard;
-          leaveGuard.current.answer(false);
-          setFinishGuard(null);
-          guard?.proceed();
-        }}
-      />
 
       {props.onDeleteSession ? (
         <ConfirmModal

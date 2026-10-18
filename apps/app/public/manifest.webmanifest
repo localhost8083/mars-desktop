@@ -1,6 +1,6 @@
 {
-  "name": "OmniRush.ai",
-  "short_name": "OmniRush.ai",
+  "name": "MarsAI",
+  "short_name": "MarsAI",
   "description": "Local-first agent workspace",
   "start_url": "/",
   "display": "standalone",
@@ -13,7 +13,7 @@
       "type": "image/png"
     },
     {
-      "src": "/omnirush-mark.png",
+      "src": "/mars-mark.png",
       "sizes": "any",
       "type": "image/png",
       "purpose": "any"

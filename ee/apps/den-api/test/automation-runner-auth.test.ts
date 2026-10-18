@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, test } from "bun:test"
-import { AUTOMATION_MODEL_ATTENTION_CAPABILITY } from "@omnirush/types/automations"
+import { AUTOMATION_MODEL_ATTENTION_CAPABILITY } from "@mars/types/automations"
 import { createHmac } from "node:crypto"
 
 function seedRequiredEnv() {

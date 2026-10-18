@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { OmniRushSubagentModelState } from "../src/app/lib/omnirush-server";
+import type { MarsSubagentModelState } from "../src/app/lib/mars-server";
 import {
   SAME_AS_MAIN_LABEL,
   nextSubagentSetting,
@@ -9,11 +9,11 @@ import {
   DEFAULT_SUBAGENT_SETTING,
   subagentSummary,
 } from "../src/react-app/domains/settings/subagent-model";
-import { BUILTIN_OMNIRUSH_MODEL_IDS } from "../src/app/constants";
+import { BUILTIN_MARS_MODEL_IDS } from "../src/app/constants";
 import { resolveModelDisplayName } from "../src/app/utils";
 
 const codex = ["low", "high", "xhigh", "max"];
-const state: OmniRushSubagentModelState = {
+const state: MarsSubagentModelState = {
   setting: { model: null, effort: null },
   signedIn: true,
   models: [
@@ -29,7 +29,7 @@ describe("sub-agent model setting (app)", () => {
     expect(DEFAULT_SUBAGENT_SETTING).toEqual({ model: "gpt-5.6-sol", effort: null });
   });
   test("the built-in fallback is the backend's list (GPT 6.1 Sol included), with display names", () => {
-    expect([...BUILTIN_OMNIRUSH_MODEL_IDS]).toEqual(["gpt-6-astra", "gpt-6.1-sol", "gpt-6-sol"]);
+    expect([...BUILTIN_MARS_MODEL_IDS]).toEqual(["gpt-6-astra", "gpt-6.1-sol", "gpt-6-sol"]);
     expect(resolveModelDisplayName("gpt-6.1-sol")).toBe("GPT 6.1 Sol");
     expect(resolveModelDisplayName("gpt-6-sol")).toBe("GPT 6 Sol");
     expect(resolveModelDisplayName("gpt-6-astra")).toBe("GPT 6 Astra");

@@ -1,4 +1,4 @@
-import type { SavedAppDetail, SavedAppSummary } from "@omnirush/types/workflows"
+import type { SavedAppDetail, SavedAppSummary } from "@mars/types/workflows"
 import { getArtifactView, getGeneratedArtifactViewRevision, listArtifactViews, loadArtifactViewRevision } from "./artifact-views.js"
 import { getWorkflowDetail, getWorkflowSnapshot } from "./workflows.js"
 import type { PluginArchActorContext } from "./routes/org/plugin-system/access.js"

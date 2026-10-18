@@ -260,7 +260,7 @@ test("mock OAuth HTML, Basic auth, and errors keep security boundaries", { timeo
     }] }),
   })).status, 200);
   const skillEntry = '<skill><id>release-current</id><name>release-briefing</name><description>Release reports</description></skill>';
-  const initial = { role: "system", content: `You are OmniRush.ai.\n<available_skills>${skillEntry}</available_skills>` };
+  const initial = { role: "system", content: `You are MarsAI.\n<available_skills>${skillEntry}</available_skills>` };
   const update = content => ({ role: "user", content: `<system-update>\n${content.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}\n</system-update>` });
   const removed = update("The following skill IDs are no longer available and must not be used: release-current.");
   for (const [history, available] of [

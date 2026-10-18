@@ -1,24 +1,24 @@
 import { expect } from "vitest";
-import { denFetch } from "@omnirush/behaviors";
-import type { DenSession } from "@omnirush/behaviors";
+import { denFetch } from "@mars/behaviors";
+import type { DenSession } from "@mars/behaviors";
 import {
   needs,
   server,
   SkipError,
   test,
   unmetNeeds,
-} from "@omnirush/testkit";
-import type { TestNeeds } from "@omnirush/testkit";
+} from "@mars/testkit";
+import type { TestNeeds } from "@mars/testkit";
 
 const ORGANIZATION_NAME = "Org API Key Auth";
 const API_KEY_NAME = "Enterprise Provisioner";
 const PROVIDER_NAME = "API-Key Provisioned Gateway";
-const PROVIDER_KEY = "omnirush-api-key-auth";
+const PROVIDER_KEY = "mars-api-key-auth";
 const PROVIDER_ENV = "ORG_API_KEY_AUTH_PROVIDER_KEY";
-const MODEL_ID = "omnirush-api-key-auth-model";
+const MODEL_ID = "mars-api-key-auth-model";
 const MEMBER_LLM_KEY = "sk-litellm-member-key-provisioned-over-api-key";
 const REQUEST_TIMEOUT_MS = 30_000;
-const requirements: TestNeeds = { optIn: ["OMNIRUSH_EVAL_E2E_TESTS"], commands: ["docker"] };
+const requirements: TestNeeds = { optIn: ["MARS_EVAL_E2E_TESTS"], commands: ["docker"] };
 const missingRequirements = unmetNeeds(requirements, process.env);
 const title = missingRequirements.length > 0
   ? `Organization API key auth proof skipped — needs: ${missingRequirements.join(", ")}`
@@ -33,7 +33,7 @@ function auth(session: DenSession): Record<string, string> {
 }
 
 function orgHeaders(session: DenSession, orgId: string): Record<string, string> {
-  return { ...auth(session), "x-omnirush-org-id": orgId };
+  return { ...auth(session), "x-mars-org-id": orgId };
 }
 
 /**
@@ -133,7 +133,7 @@ async function createPerMemberProvider(admin: DenSession, orgId: string): Promis
 
 test.skipIf(missingRequirements.length > 0)(title, { timeout: 30 * 60_000 }, async ({ evidence, place }) => {
   needs(requirements);
-  if (process.env.OMNIRUSH_EVAL_DEN_API_URL?.trim()) {
+  if (process.env.MARS_EVAL_DEN_API_URL?.trim()) {
     throw new SkipError("The organization API key proof requires a cold managed Den.");
   }
 

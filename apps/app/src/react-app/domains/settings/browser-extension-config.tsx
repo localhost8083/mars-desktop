@@ -4,12 +4,12 @@ import { MonitorSmartphone } from "lucide-react";
 import { surfaceCardClass } from "../workspace/modal-styles";
 import { registerExtensionConfig } from "./extension-registry";
 
-const omniRushBrowserConfigFactory = () => <OmniRushBrowserConfig />;
+const marsBrowserConfigFactory = () => <MarsBrowserConfig />;
 
-registerExtensionConfig("omnirush.browser.settings", omniRushBrowserConfigFactory);
-registerExtensionConfig("omnirush-browser", omniRushBrowserConfigFactory);
+registerExtensionConfig("mars.browser.settings", marsBrowserConfigFactory);
+registerExtensionConfig("mars-browser", marsBrowserConfigFactory);
 
-function OmniRushBrowserConfig() {
+function MarsBrowserConfig() {
   return (
     <div className={`${surfaceCardClass} space-y-3 p-4`}>
       <div className="flex items-start gap-3">

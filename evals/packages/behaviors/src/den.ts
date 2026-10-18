@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { notImplemented } from "@omnirush/labs";
+import { notImplemented } from "@mars/labs";
 
 export type DenRef = { apiUrl: string; webUrl: string };
 export type DenSession = DenRef & { token: string; email: string; password: string };
@@ -90,7 +90,7 @@ export async function freshSession(session: DenSession): Promise<DenSession> {
 }
 
 export function doInternalMarkEmailVerified(command: string, email: string): void {
-  if (!command.trim()) throw new Error("OMNIRUSH_EVAL_MARK_VERIFIED_CMD is required to verify a newly-created member.");
+  if (!command.trim()) throw new Error("MARS_EVAL_MARK_VERIFIED_CMD is required to verify a newly-created member.");
   try {
     execSync(command.replaceAll("{email}", email), { cwd: REPO_ROOT, encoding: "utf8", stdio: "pipe" });
   } catch (error) {
@@ -284,9 +284,9 @@ export async function provisionOrg(den: DenRef, input: ProvisionOrgInput): Promi
   }
 
   const unique = `${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 12)}`;
-  const password = process.env.OMNIRUSH_EVAL_DEMO_PASSWORD?.trim() || "OmniRushDemo123!";
-  const email = `omnirush-eval-admin-${unique}@example.test`;
-  const name = `OmniRush.ai Eval ${unique}`;
+  const password = process.env.MARS_EVAL_DEMO_PASSWORD?.trim() || "MarsDemo123!";
+  const email = `mars-eval-admin-${unique}@example.test`;
+  const name = `MarsAI Eval ${unique}`;
   const signUp = await denFetch(den, "/api/auth/sign-up/email", {
     method: "POST",
     body: JSON.stringify({ email, name, password }),
@@ -313,8 +313,8 @@ export async function provisionOrg(den: DenRef, input: ProvisionOrgInput): Promi
     const member = await ensureMemberSession(den, admin, {
       email: memberEmail,
       password,
-      name: "OmniRush.ai Eval Member",
-      markVerifiedCmd: process.env.OMNIRUSH_EVAL_MARK_VERIFIED_CMD?.trim(),
+      name: "MarsAI Eval Member",
+      markVerifiedCmd: process.env.MARS_EVAL_MARK_VERIFIED_CMD?.trim(),
     });
     const orgs = await denFetch(den, "/v1/me/orgs", { headers: auth(member) });
     const memberships = isRecord(orgs.body) && Array.isArray(orgs.body.orgs) ? orgs.body.orgs : [];
@@ -347,8 +347,8 @@ export async function provisionOrg(den: DenRef, input: ProvisionOrgInput): Promi
       method: "POST",
       headers: auth(admin),
       body: JSON.stringify({
-        clientId: `omnirush-eval-google-client-${unique}`,
-        clientSecret: `omnirush-eval-google-secret-${unique}`,
+        clientId: `mars-eval-google-client-${unique}`,
+        clientSecret: `mars-eval-google-secret-${unique}`,
       }),
     });
     if (!configured.response.ok) {
@@ -359,7 +359,7 @@ export async function provisionOrg(den: DenRef, input: ProvisionOrgInput): Promi
   return { admin, orgId };
 }
 
-export async function createDesktopHandoffGrant(member: DenSession, desktopScheme = "omnirush"): Promise<string> {
+export async function createDesktopHandoffGrant(member: DenSession, desktopScheme = "mars"): Promise<string> {
   const result = await denFetch(member, "/v1/auth/desktop-handoff", {
     method: "POST",
     headers: auth(member),

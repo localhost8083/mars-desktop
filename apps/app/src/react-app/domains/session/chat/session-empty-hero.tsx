@@ -116,7 +116,7 @@ export function SessionEmptyHero(props: SessionEmptyHeroProps) {
 
   const fillPrompt = (value: string) => {
     setPrompt(value);
-    window.dispatchEvent(new Event("omnirush:focusPrompt"));
+    window.dispatchEvent(new Event("mars:focusPrompt"));
   };
 
   return (

@@ -1,7 +1,7 @@
 /**
  * Transcript projection.
  *
- * A snapshot carries the thread exactly as OmniRush.ai stores it. A transcript is
+ * A snapshot carries the thread exactly as MarsAI stores it. A transcript is
  * the flattened, comparable view of the same data: what each side said, what
  * it reasoned about, and which tools it called. Deriving it here keeps every
  * consumer from re-implementing part handling the way the desktop UI does.

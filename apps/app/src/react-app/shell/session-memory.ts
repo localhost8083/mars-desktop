@@ -4,11 +4,11 @@
  * their spot when switching between shells during the port.
  */
 
-const ACTIVE_WORKSPACE_KEY = "omnirush.react.activeWorkspace";
-const SESSION_BY_WORKSPACE_KEY = "omnirush.react.sessionByWorkspace";
-const WORKSPACE_ORDER_KEY = "omnirush.react.workspaceOrder";
-const WORKSPACE_PROJECT_DIMENSION_KEY = "omnirush.react.workspaceProjectDimension";
-const WORKSPACE_SESSION_LIST_KEY = "omnirush.react.workspaceSessionList";
+const ACTIVE_WORKSPACE_KEY = "mars.react.activeWorkspace";
+const SESSION_BY_WORKSPACE_KEY = "mars.react.sessionByWorkspace";
+const WORKSPACE_ORDER_KEY = "mars.react.workspaceOrder";
+const WORKSPACE_PROJECT_DIMENSION_KEY = "mars.react.workspaceProjectDimension";
+const WORKSPACE_SESSION_LIST_KEY = "mars.react.workspaceSessionList";
 const WORKSPACE_SESSION_LIST_MAX_WORKSPACES = 20;
 const WORKSPACE_SESSION_LIST_MAX_SESSIONS = 100;
 

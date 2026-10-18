@@ -1,4 +1,4 @@
-// Ported from the CLI (omnirush-cli src/box/backends/shared.js,
+// Ported from the CLI (mars-cli src/box/backends/shared.js,
 // feat/local-box-backends); keep the two in step. Desktop: the shell link is
 // in <home>/shell-desktop (common.ts shellDir).
 //
@@ -17,7 +17,7 @@ export function boxshExec({ key, home, platform = process.platform }: { key: str
   return {
     bin: path.join(shellDir(home), platform === "win32" ? "bash.exe" : "bash"),
     args: ["-c", 'exec "$0" "$@"'],
-    env: { OMNIRUSH_BOX_KEY: key, OMNIRUSH_BOX_HOME: home },
+    env: { MARS_BOX_KEY: key, MARS_BOX_HOME: home },
   };
 }
 

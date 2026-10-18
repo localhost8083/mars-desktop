@@ -1,6 +1,6 @@
 "use client";
 
-import { detectPlatform, type DownloadCardInstallers } from "@omnirush/ui/react";
+import { detectPlatform, type DownloadCardInstallers } from "@mars/ui/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";

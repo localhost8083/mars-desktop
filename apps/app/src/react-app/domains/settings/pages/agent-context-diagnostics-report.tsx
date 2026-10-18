@@ -10,12 +10,12 @@ import type {
   AgentContextDiagnosticsReport,
   AgentContextOrganizationConnectionSummary,
   AgentContextToolPermission,
-} from "@omnirush/types/agent-context-diagnostics";
+} from "@mars/types/agent-context-diagnostics";
 
 import { Button } from "@/components/ui/button";
 import { t } from "@/i18n";
 import { cn } from "@/lib/utils";
-import { resolveOmniRushConnectStateSummary } from "@/react-app/domains/connections/omnirush-connect-status";
+import { resolveMarsConnectStateSummary } from "@/react-app/domains/connections/mars-connect-status";
 import { SettingsInset, SettingsNotice, SettingsSection } from "../settings-section";
 
 const EXPECTED_CLOUD_TOOL_IDS = ["search_capabilities", "execute_capability"];
@@ -36,14 +36,14 @@ const EVIDENCE_LABEL_KEYS: Record<AgentContextDiagnosticEvidenceKind, string> = 
 };
 
 const OWNER_LABEL_KEYS: Record<AgentContextDiagnosticOwner, string> = {
-  "omnirush-client": "connect.diagnostics_owner_omnirush_client",
-  "omnirush-server": "connect.diagnostics_owner_omnirush_server",
+  "mars-client": "connect.diagnostics_owner_mars_client",
+  "mars-server": "connect.diagnostics_owner_mars_server",
   "opencode-engine": "connect.diagnostics_owner_opencode_engine",
   "network-admin": "connect.diagnostics_owner_network_admin",
   "organization-admin": "connect.diagnostics_owner_organization_admin",
   member: "connect.diagnostics_owner_member",
   "member-and-organization-admin": "connect.diagnostics_owner_member_and_organization_admin",
-  "omnirush-support": "connect.diagnostics_owner_omnirush_support",
+  "mars-support": "connect.diagnostics_owner_mars_support",
 };
 
 const PERMISSION_LABEL_KEYS: Record<AgentContextToolPermission, string> = {
@@ -82,7 +82,7 @@ const BRANCH_LABEL_KEYS: Record<AgentContextDiagnosticsReport["connect"]["expect
   "extensions-only": "connect.diagnostics_branch_extensions_only",
 };
 
-const AGENT_STATE_LABEL_KEYS: Record<AgentContextDiagnosticsReport["agent"]["configuredOmniRushAgent"]["state"], string> = {
+const AGENT_STATE_LABEL_KEYS: Record<AgentContextDiagnosticsReport["agent"]["configuredMarsAgent"]["state"], string> = {
   present: "connect.diagnostics_agent_state_present",
   missing: "connect.diagnostics_agent_state_missing",
   "configured-disabled": "connect.diagnostics_agent_state_configured_disabled",
@@ -322,7 +322,7 @@ function AgentEvidence(props: {
   report: AgentContextDiagnosticsReport;
   effectiveEngineObserved: boolean;
 }) {
-  const agent = props.report.agent.configuredOmniRushAgent;
+  const agent = props.report.agent.configuredMarsAgent;
   return (
     <div className="space-y-3">
       <div>
@@ -476,9 +476,9 @@ function CloudCatalog(props: {
 }) {
   const observed = props.report.observedCloudToolIds;
   const cloudMcp = props.report.mcps.find(
-    (mcp) => mcp.source === "config.remote" && mcp.name === "omnirush-cloud" && mcp.path === "/mcp/agent",
+    (mcp) => mcp.source === "config.remote" && mcp.name === "mars-cloud" && mcp.path === "/mcp/agent",
   ) ?? props.report.mcps.find(
-    (mcp) => mcp.name === "omnirush-cloud" && mcp.path === "/mcp/agent",
+    (mcp) => mcp.name === "mars-cloud" && mcp.path === "/mcp/agent",
   );
   const observedTerminalPath = cloudMcp?.path === "/mcp/agent" ? cloudMcp.path : null;
   return (
@@ -591,9 +591,9 @@ export function AgentContextDiagnosticsReportView(props: {
   onCopy: () => void | Promise<void>;
 }) {
   const firstFailure = props.report.firstFailedCheck;
-  const agent = props.report.agent.configuredOmniRushAgent;
+  const agent = props.report.agent.configuredMarsAgent;
   const effectiveEngineObserved = hasObservedEffectiveEngineConfiguration(props.report);
-  const connectStateSummary = resolveOmniRushConnectStateSummary(
+  const connectStateSummary = resolveMarsConnectStateSummary(
     props.report.connect.stateStatus,
     props.report.connect.connectEnabled,
   );

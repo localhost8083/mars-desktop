@@ -74,7 +74,7 @@ jobs:
           sudo apt-get install --yes libarchive-tools rpm xvfb file
 
       - name: Install dependencies
-        run: pnpm --filter @omnirush/desktop... --filter @omnirush/app... --filter omnirush-server... --filter omnirush-ui-mcp... install --frozen-lockfile --prefer-offline
+        run: pnpm --filter @mars/desktop... --filter @mars/app... --filter mars-server... --filter mars-ui-mcp... install --frozen-lockfile --prefer-offline
 
       - name: Stamp version
         run: node scripts/release/stamp-version.mjs --version "$PACKAGE_VERSION"
@@ -82,7 +82,7 @@ jobs:
       - name: Build desktop application
         env:
           TARGET: ${{ matrix.target }}
-        run: pnpm --filter @omnirush/desktop build:electron
+        run: pnpm --filter @mars/desktop build:electron
 
       - name: Package installers
         run: |
@@ -105,38 +105,38 @@ jobs:
         working-directory: apps/desktop/dist-electron
         run: |
           set -euo pipefail
-          for f in omnirush-linux-*-"$PACKAGE_VERSION".{deb,AppImage,tar.gz,pacman}; do
+          for f in mars-linux-*-"$PACKAGE_VERSION".{deb,AppImage,tar.gz,pacman}; do
             [ -f "$f" ] || { echo "missing $f" >&2; exit 1; }
             echo "$f $(du -h "$f" | cut -f1)"
           done
-          [ -f "omnirush-linux-${{ matrix.deb_arch }}-$PACKAGE_VERSION.deb" ]
+          [ -f "mars-linux-${{ matrix.deb_arch }}-$PACKAGE_VERSION.deb" ]
 
       - name: Install the .deb and launch it
         run: |
           set -euo pipefail
-          sudo apt-get install --yes "./apps/desktop/dist-electron/omnirush-linux-${{ matrix.deb_arch }}-$PACKAGE_VERSION.deb"
-          echo "launcher -> $(readlink -f /usr/bin/omnirush)"
-          file -L /usr/bin/omnirush | tee /dev/stderr | grep -q "${{ matrix.file_arch }}"
-          install_dir=$(dirname "$(readlink -f /usr/bin/omnirush)")
+          sudo apt-get install --yes "./apps/desktop/dist-electron/mars-linux-${{ matrix.deb_arch }}-$PACKAGE_VERSION.deb"
+          echo "launcher -> $(readlink -f /usr/bin/mars)"
+          file -L /usr/bin/mars | tee /dev/stderr | grep -q "${{ matrix.file_arch }}"
+          install_dir=$(dirname "$(readlink -f /usr/bin/mars)")
           target_sidecar="$install_dir/resources/sidecars/opencode-${{ matrix.target }}"
           file -L "$target_sidecar" | tee /dev/stderr | grep -q "${{ matrix.file_arch }}"
           test ! -e "$install_dir/resources/sidecars/opencode"
           # Still running when the timer fires (exit 124) = it started.
           set +e
-          xvfb-run -a timeout 25 omnirush --no-sandbox > launch.log 2>&1
+          xvfb-run -a timeout 25 mars --no-sandbox > launch.log 2>&1
           rc=$?
           set -e
           tail -20 launch.log
-          [ "$rc" -eq 124 ] || { echo "omnirush exited with $rc before the timeout" >&2; exit 1; }
+          [ "$rc" -eq 124 ] || { echo "mars exited with $rc before the timeout" >&2; exit 1; }
 
       - uses: actions/upload-artifact@v4
         with:
-          name: omnirush-linux-${{ matrix.name }}
+          name: mars-linux-${{ matrix.name }}
           path: |
-            apps/desktop/dist-electron/omnirush-linux-*.tar.gz
-            apps/desktop/dist-electron/omnirush-linux-*.pacman
-            apps/desktop/dist-electron/omnirush-linux-*.deb
-            apps/desktop/dist-electron/omnirush-linux-*.AppImage
+            apps/desktop/dist-electron/mars-linux-*.tar.gz
+            apps/desktop/dist-electron/mars-linux-*.pacman
+            apps/desktop/dist-electron/mars-linux-*.deb
+            apps/desktop/dist-electron/mars-linux-*.AppImage
             apps/desktop/dist-electron/latest-linux*.yml
           retention-days: 7
 
@@ -149,13 +149,13 @@ jobs:
       matrix:
         include:
           - carch: x86_64
-            artifact: omnirush-linux-x64
+            artifact: mars-linux-x64
             tar_arch: x64
             runner: ubuntu-22.04
             image: docker.io/library/archlinux:base-devel
           # The official image is x86_64 only; Arch Linux ARM, rebuilt daily.
           - carch: aarch64
-            artifact: omnirush-linux-arm64
+            artifact: mars-linux-arm64
             tar_arch: arm64
             runner: ubuntu-22.04-arm
             image: docker.io/menci/archlinuxarm:base-devel
@@ -196,7 +196,7 @@ jobs:
       - name: Install the .pacman and launch it
         run: |
           set -euo pipefail
-          pkg=$(ls dist/omnirush-linux-*-"$PACKAGE_VERSION".pacman)
+          pkg=$(ls dist/mars-linux-*-"$PACKAGE_VERSION".pacman)
           bsdtar -xOf "$pkg" .PKGINFO | grep -E "^(pkgname|pkgver|arch|depend) "
           bsdtar -xOf "$pkg" .PKGINFO | grep -q "^arch = ${{ matrix.carch }}$"
           for attempt in 1 2 3; do
@@ -204,15 +204,15 @@ jobs:
             [ "$attempt" -lt 3 ] || exit 1
             sleep 10
           done
-          echo "launcher -> $(readlink -f /usr/bin/omnirush)"
-          file -L /usr/bin/omnirush
+          echo "launcher -> $(readlink -f /usr/bin/mars)"
+          file -L /usr/bin/mars
           set +e
-          xvfb-run -a timeout 25 omnirush --no-sandbox > launch.log 2>&1
+          xvfb-run -a timeout 25 mars --no-sandbox > launch.log 2>&1
           rc=$?
           set -e
           tail -20 launch.log
-          [ "$rc" -eq 124 ] || { echo "omnirush exited with $rc before the timeout" >&2; exit 1; }
-          pacman -Rns --noconfirm omnirush
+          [ "$rc" -eq 124 ] || { echo "mars exited with $rc before the timeout" >&2; exit 1; }
+          pacman -Rns --noconfirm mars
 
       - name: Build the AUR PKGBUILD from this run's tarball, install and launch it
         run: |
@@ -222,19 +222,19 @@ jobs:
           cp packaging/aur/PKGBUILD /build/
           # makepkg uses a source already in the build directory under its
           # name instead of downloading it.
-          cp "dist/omnirush-linux-${{ matrix.tar_arch }}-$PACKAGE_VERSION.tar.gz" \
-            "/build/omnirush-$PACKAGE_VERSION-${{ matrix.tar_arch }}.tar.gz"
-          cp LICENSE "/build/omnirush-$PACKAGE_VERSION-LICENSE"
+          cp "dist/mars-linux-${{ matrix.tar_arch }}-$PACKAGE_VERSION.tar.gz" \
+            "/build/mars-$PACKAGE_VERSION-${{ matrix.tar_arch }}.tar.gz"
+          cp LICENSE "/build/mars-$PACKAGE_VERSION-LICENSE"
           chown -R builder /build
           cd /build
-          sha=$(sha256sum "omnirush-$PACKAGE_VERSION-${{ matrix.tar_arch }}.tar.gz" | cut -d' ' -f1)
+          sha=$(sha256sum "mars-$PACKAGE_VERSION-${{ matrix.tar_arch }}.tar.gz" | cut -d' ' -f1)
           sed -i -e "s/^pkgver=.*/pkgver=$PACKAGE_VERSION/" \
             -e "s/^sha256sums_${{ matrix.carch }}=.*/sha256sums_${{ matrix.carch }}=('$sha')/" PKGBUILD
           # Binary repack: the runtime depends are installed by pacman -U.
           sudo -u builder makepkg -f -d --noconfirm
           # .zst on Arch, .xz on Arch Linux ARM (makepkg.conf PKGEXT).
           pkg=
-          for f in omnirush-"$PACKAGE_VERSION"-1-${{ matrix.carch }}.pkg.tar.*; do
+          for f in mars-"$PACKAGE_VERSION"-1-${{ matrix.carch }}.pkg.tar.*; do
             case "$f" in *.sig) ;; *) pkg=$f ;; esac
           done
           [ -f "$pkg" ]
@@ -244,14 +244,14 @@ jobs:
             [ "$attempt" -lt 3 ] || exit 1
             sleep 10
           done
-          echo "launcher -> $(readlink -f /usr/bin/omnirush)"
-          file -L /usr/bin/omnirush | grep -q "$( [ "${{ matrix.carch }}" = x86_64 ] && echo x86-64 || echo aarch64 )"
-          ls /usr/share/icons/hicolor/*/apps/omnirush.*
-          desktop-file-validate /usr/share/applications/omnirush.desktop
-          test -s /usr/share/licenses/omnirush/LICENSE
+          echo "launcher -> $(readlink -f /usr/bin/mars)"
+          file -L /usr/bin/mars | grep -q "$( [ "${{ matrix.carch }}" = x86_64 ] && echo x86-64 || echo aarch64 )"
+          ls /usr/share/icons/hicolor/*/apps/mars.*
+          desktop-file-validate /usr/share/applications/mars.desktop
+          test -s /usr/share/licenses/mars/LICENSE
           set +e
-          xvfb-run -a timeout 25 omnirush --no-sandbox > launch.log 2>&1
+          xvfb-run -a timeout 25 mars --no-sandbox > launch.log 2>&1
           rc=$?
           set -e
           tail -20 launch.log
-          [ "$rc" -eq 124 ] || { echo "omnirush exited with $rc before the timeout" >&2; exit 1; }
+          [ "$rc" -eq 124 ] || { echo "mars exited with $rc before the timeout" >&2; exit 1; }

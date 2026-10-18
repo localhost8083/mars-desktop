@@ -1,12 +1,12 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { reliableRecoveryWorld } from "../worlds/first-run.ts";
 
 const test = spec.world(reliableRecoveryWorld, { timeout: 300_000 });
-const verifiedArtifact = "https://releases.omnirush.test/v1.8.2/OmniRush.ai-darwin-arm64.dmg";
+const verifiedArtifact = "https://releases.mars.test/v1.8.2/MarsAI-darwin-arm64.dmg";
 
 test("a fatal desktop bootstrap failure offers one-click verified recovery without losing the profile", async ({ world, user, seed, probe }) => {
-  await user.see({ text: /OmniRush.ai (couldn't|could not) start/i });
+  await user.see({ text: /MarsAI (couldn't|could not) start/i });
   await user.see("Try again");
   await user.see("Restore previous version");
   await user.notSee({ text: /EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE|invalid code signature/ });
@@ -20,7 +20,7 @@ test("a fatal desktop bootstrap failure offers one-click verified recovery witho
     .toEqual(["1.8.2"]);
 
   // TODO(primitive): negatively exercise an unverified recovery candidate.
-  await seed.evalIn(world.app, () => (window.__omnirushRecoveryControl.select("1.8.1")), { awaitPromise: true });
+  await seed.evalIn(world.app, () => (window.__marsRecoveryControl.select("1.8.1")), { awaitPromise: true });
   const afterInvalid = await world.snapshot();
   expect(typeof afterInvalid === "object" && afterInvalid !== null ? Reflect.get(afterInvalid, "installRequests") : null).toEqual([]);
   expect(typeof afterInvalid === "object" && afterInvalid !== null ? Reflect.get(afterInvalid, "quitRequested") : null).toBe(false);
@@ -39,7 +39,7 @@ test("a fatal desktop bootstrap failure offers one-click verified recovery witho
 
   // Try again boots once more instead of replaying the first failure; this world's failure is permanent.
   await user.click("Try again");
-  await user.see({ text: /OmniRush.ai (couldn't|could not) start/i });
+  await user.see({ text: /MarsAI (couldn't|could not) start/i });
   await user.see("Restore previous version");
   expect(await world.workspaceNames()).toContain("reliable-recovery-profile-marker");
 });

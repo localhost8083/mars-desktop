@@ -1,5 +1,5 @@
 /**
- * Product analytics for the omnirush.ai desktop app (PostHog, zero-dependency).
+ * Product analytics for the marsai.click desktop app (PostHog, zero-dependency).
  *
  * Principles (mirrors `den-telemetry.ts`):
  * - Never send message content, file paths, code, or prompts. Only event
@@ -11,26 +11,26 @@
  *   Preferences) turns everything off; an explicitly blank PostHog key means
  *   no network.
  * - Every capture is mirrored into the local app inspector
- *   (`window.__omnirush.record("analytics.<event>")`) so coded evals can
+ *   (`window.__mars.record("analytics.<event>")`) so coded evals can
  *   assert instrumentation without any analytics backend.
  */
 import { denSessionUpdatedEvent, type DenSessionUpdatedDetail } from "./den-session-events";
 import { recordInspectorEvent } from "./app-inspector";
 import { resolvePosthogKey } from "./analytics-key";
 
-const ENV_POSTHOG_HOST = String(import.meta.env.VITE_OMNIRUSH_POSTHOG_HOST ?? "").trim();
-const ENV_APP_VERSION = String(import.meta.env.VITE_OMNIRUSH_APP_VERSION ?? "").trim();
+const ENV_POSTHOG_HOST = String(import.meta.env.VITE_MARS_POSTHOG_HOST ?? "").trim();
+const ENV_APP_VERSION = String(import.meta.env.VITE_MARS_APP_VERSION ?? "").trim();
 
 const DEFAULT_POSTHOG_HOST = "https://us.i.posthog.com";
 
 // Packaged releases use the default publishable key; dev builds stay silent
-// unless VITE_OMNIRUSH_POSTHOG_KEY is set. Set it to "" to disable analytics
+// unless VITE_MARS_POSTHOG_KEY is set. Set it to "" to disable analytics
 // in any build. The inspector mirror still records events locally either way.
-const POSTHOG_KEY = resolvePosthogKey(import.meta.env.VITE_OMNIRUSH_POSTHOG_KEY, import.meta.env.DEV);
+const POSTHOG_KEY = resolvePosthogKey(import.meta.env.VITE_MARS_POSTHOG_KEY, import.meta.env.DEV);
 const POSTHOG_HOST = (ENV_POSTHOG_HOST || DEFAULT_POSTHOG_HOST).replace(/\/+$/, "");
 
-const PREFS_STORAGE_KEY = "omnirush.preferences";
-const DISTINCT_ID_STORAGE_KEY = "omnirush.analytics.distinctId";
+const PREFS_STORAGE_KEY = "mars.preferences";
+const DISTINCT_ID_STORAGE_KEY = "mars.analytics.distinctId";
 const FLUSH_INTERVAL_MS = 10_000;
 const MAX_BATCH = 50;
 

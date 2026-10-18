@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
-import type { OmniRushServerClient, OmniRushVoiceStatus } from "@/app/lib/omnirush-server";
+import type { MarsServerClient, MarsVoiceStatus } from "@/app/lib/mars-server";
 
-type StatusClient = Pick<OmniRushServerClient, "baseUrl" | "getVoiceStatus">;
-type Entry = { data: OmniRushVoiceStatus | null; fetchedAt: number; inflight: Promise<void> | null };
+type StatusClient = Pick<MarsServerClient, "baseUrl" | "getVoiceStatus">;
+type Entry = { data: MarsVoiceStatus | null; fetchedAt: number; inflight: Promise<void> | null };
 
 const FRESH_MS = 60_000;
 const REFRESH_MS = 5 * 60_000;
@@ -39,7 +39,7 @@ function load(client: StatusClient, workspaceId: string | null | undefined, forc
 }
 
 /** The last known voice status for this server and workspace (null until the first answer). */
-export function peekVoiceStatus(client: StatusClient | null, workspaceId: string | null | undefined): OmniRushVoiceStatus | null {
+export function peekVoiceStatus(client: StatusClient | null, workspaceId: string | null | undefined): MarsVoiceStatus | null {
   return client ? entries.get(keyOf(client, workspaceId))?.data ?? null : null;
 }
 
@@ -49,10 +49,10 @@ export function refreshVoiceStatus(client: StatusClient | null, workspaceId: str
 }
 
 /**
- * GET /omnirush/voice/status, cached per server and workspace for a minute
+ * GET /mars/voice/status, cached per server and workspace for a minute
  * and refreshed every five, shared by every composer and Settings → Voice.
  */
-export function useVoiceStatus(client: StatusClient | null, workspaceId: string | null | undefined, enabled = true): OmniRushVoiceStatus | null {
+export function useVoiceStatus(client: StatusClient | null, workspaceId: string | null | undefined, enabled = true): MarsVoiceStatus | null {
   const [, setVersion] = useState(0);
   useEffect(() => {
     if (!client || !enabled) return;

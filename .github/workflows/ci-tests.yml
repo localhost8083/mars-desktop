@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: omnirush-tests-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  group: mars-tests-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 
@@ -53,7 +53,7 @@ jobs:
             core.setOutput("lane", lane)
             core.info(`Selected lane: ${lane}`)
 
-  omnirush-tests-core:
+  mars-tests-core:
     needs: classify-changes
     if: needs.classify-changes.outputs.lane == 'full'
     runs-on: blacksmith-16vcpu-ubuntu-2204
@@ -69,7 +69,7 @@ jobs:
       - name: Check journey selection, reporting, and alerts
         run: node --test evals/scripts/journey-ci.test.mjs evals/scripts/flake-report.test.mjs
 
-  omnirush-tests-build:
+  mars-tests-build:
     needs: classify-changes
     if: needs.classify-changes.outputs.lane == 'full'
     runs-on: blacksmith-16vcpu-ubuntu-2204
@@ -96,9 +96,9 @@ jobs:
       - name: Bundle the server plugins the way packaged builds do
         run: |
           rm -rf packages/types/dist
-          pnpm --filter omnirush-server build
+          pnpm --filter mars-server build
       - name: Typecheck Electron main against the IPC contract
-        run: pnpm --filter @omnirush/desktop typecheck:electron
+        run: pnpm --filter @mars/desktop typecheck:electron
       - name: Prepare virtual display
         run: |
           if ! command -v xvfb-run >/dev/null || ! command -v xdpyinfo >/dev/null; then
@@ -108,7 +108,7 @@ jobs:
       - name: Package and smoke-test the installed desktop
         timeout-minutes: 7
         env:
-          OMNIRUSH_PACKAGED_SMOKE_DIR: ${{ runner.temp }}/omnirush-packaged-smoke
+          MARS_PACKAGED_SMOKE_DIR: ${{ runner.temp }}/mars-packaged-smoke
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: node apps/desktop/scripts/packaged-smoke.mjs --server-built
       - name: Upload packaged smoke evidence and timings
@@ -117,14 +117,14 @@ jobs:
         with:
           name: packaged-desktop-smoke-${{ github.run_attempt }}
           path: |
-            ${{ runner.temp }}/omnirush-packaged-smoke/timing.json
-            ${{ runner.temp }}/omnirush-packaged-smoke/profiles/**/electron.log
+            ${{ runner.temp }}/mars-packaged-smoke/timing.json
+            ${{ runner.temp }}/mars-packaged-smoke/profiles/**/electron.log
             evals/results/test-runs/**
           retention-days: 7
 
   # Broad tests, source-layout guards, and test-framework checks remain visible
   # here without blocking unrelated PRs. No retries or ignored failures.
-  omnirush-tests-extended:
+  mars-tests-extended:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
@@ -140,16 +140,16 @@ jobs:
         uses: ./.github/actions/setup-tests
       - name: Run all app tests
         if: (success() || failure()) && steps.setup.outcome == 'success'
-        run: pnpm --filter @omnirush/app test
+        run: pnpm --filter @mars/app test
       - name: Run all server tests
         if: (success() || failure()) && steps.setup.outcome == 'success'
-        run: pnpm --filter omnirush-server test
+        run: pnpm --filter mars-server test
       - name: Run Den API tests
         if: (success() || failure()) && steps.setup.outcome == 'success'
         run: pnpm --filter @omnirush-ee/den-api test
       - name: Run all desktop tests
         if: (success() || failure()) && steps.setup.outcome == 'success'
-        run: pnpm --filter @omnirush/desktop test
+        run: pnpm --filter @mars/desktop test
       - name: Run release script tests
         if: (success() || failure()) && steps.setup.outcome == 'success'
         run: node --test scripts/release/*.test.mjs
@@ -164,10 +164,10 @@ jobs:
         run: pnpm test:e2e
       - name: Build server plugins
         if: (success() || failure()) && steps.setup.outcome == 'success'
-        run: pnpm --filter omnirush-server build
+        run: pnpm --filter mars-server build
       - name: Typecheck Electron
         if: (success() || failure()) && steps.setup.outcome == 'success'
-        run: pnpm --filter @omnirush/desktop typecheck:electron
+        run: pnpm --filter @mars/desktop typecheck:electron
 
   validate-models-snapshot:
     needs: classify-changes
@@ -256,8 +256,8 @@ jobs:
 
   # Single stable context for branch rulesets to require. Green only when
   # the lane selected by classification succeeds; always reports.
-  omnirush-tests-required:
-    needs: [classify-changes, omnirush-tests-core, omnirush-tests-build, validate-models-snapshot, validate-docs]
+  mars-tests-required:
+    needs: [classify-changes, mars-tests-core, mars-tests-build, validate-models-snapshot, validate-docs]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -265,8 +265,8 @@ jobs:
         env:
           CLASSIFY_RESULT: ${{ needs.classify-changes.result }}
           LANE: ${{ needs.classify-changes.outputs.lane }}
-          CORE_RESULT: ${{ needs.omnirush-tests-core.result }}
-          BUILD_RESULT: ${{ needs.omnirush-tests-build.result }}
+          CORE_RESULT: ${{ needs.mars-tests-core.result }}
+          BUILD_RESULT: ${{ needs.mars-tests-build.result }}
           SNAPSHOT_RESULT: ${{ needs.validate-models-snapshot.result }}
           DOCS_RESULT: ${{ needs.validate-docs.result }}
         run: |

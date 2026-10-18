@@ -1,6 +1,6 @@
 /**
  * The archive upload client (sections 7 and 13.5): JSON calls to the
- * omnirush.ai archive routes, and part PUTs straight to S3 through presigned
+ * marsai.click archive routes, and part PUTs straight to S3 through presigned
  * URLs, each part read from the sealed file when it is sent. Presigned URLs
  * and bearer tokens are credentials and are never logged.
  */
@@ -12,7 +12,7 @@ import { SEAL_ALG, SEAL_CONTENT, sealKid } from "./seal.js";
 
 export type ArchiveFetch = (input: string, init?: RequestInit) => Promise<Response>;
 /**
- * An authenticated request to the omnirush.ai API, relative to its root
+ * An authenticated request to the marsai.click API, relative to its root
  * (`archives/key`, `archives`, `archives/<id>/parts`, ...). The owner of the
  * device session (the gateway broker) attaches the bearer and handles its own
  * rotation, as it does for the session uploader's `upload` hook.
@@ -91,7 +91,7 @@ export const ARCHIVE_MARKER_NOT_ALLOWED = "archive_marker_not_allowed";
 const CHAIN_ENDING_CODES = new Set(["archive_id_conflict", "archive_sequence_conflict", "archive_parent_mismatch", "archive_deleted"]);
 
 /**
- * The omnirush.ai API root derived from the gateway URL exactly like the
+ * The marsai.click API root derived from the gateway URL exactly like the
  * session upload URL: trailing `/` and `/v1` stripped; HTTPS unless loopback.
  */
 export function resolveArchiveApiRoot(rawGatewayUrl: string | undefined): string | null {
@@ -543,7 +543,7 @@ export class ArchiveUploader {
       }
       if ("failed" in result) {
         if (signal?.aborted) return { status: "aborted" };
-        this.log("warn", "OmniRush archive part upload failed", { archiveId: job.request.archive_id, part, reason: result.failed });
+        this.log("warn", "Mars archive part upload failed", { archiveId: job.request.archive_id, part, reason: result.failed });
         return { status: "retry_later", reason: result.failed };
       }
       forbiddenInRow = 0;

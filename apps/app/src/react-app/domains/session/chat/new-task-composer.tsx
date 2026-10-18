@@ -5,7 +5,7 @@ import type { Agent } from "@opencode-ai/sdk/v2/client";
 import type { CloudImportedPlugin } from "@/app/cloud/import-state";
 import { createDenClient, readDenSettings } from "@/app/lib/den";
 import { useUpdateGateBlocked } from "@/app/lib/update-gate";
-import type { OmniRushServerClient } from "@/app/lib/omnirush-server";
+import type { MarsServerClient } from "@/app/lib/mars-server";
 import type { ComposerAttachment, McpServerEntry, McpStatusMap, ModelOption, ModelRef, SkillCard, SlashCommandOption } from "@/app/types";
 import { t } from "@/i18n";
 import type { ComposerSettingsSection } from "@/react-app/domains/settings/library";
@@ -41,7 +41,7 @@ import { ProjectPicker, type ProjectPickerProps } from "@/react-app/domains/sess
  * hero creates.
  */
 export type NewTaskComposerContext = {
-  client: OmniRushServerClient | null;
+  client: MarsServerClient | null;
   workspaceId: string | null;
   /** Stable identity for draft ownership across workspace, endpoint, and account changes. */
   draftOwnerKey?: string;
@@ -54,8 +54,8 @@ export type NewTaskComposerContext = {
   modelPickerOpen: boolean;
   onModelPickerOpenChange: (open: boolean) => void;
   onModelChange: (model: ModelRef, variant?: string | null) => void;
-  omniRushModelsEntitled?: boolean;
-  omniRushModelsSyncing?: boolean;
+  marsModelsEntitled?: boolean;
+  marsModelsSyncing?: boolean;
   modelVariantLabel: string;
   modelVariant: string | null;
   modelBehaviorOptions?: { value: string | null; label: string }[];
@@ -266,7 +266,7 @@ export function NewTaskComposer(props: NewTaskComposerProps) {
           name: entry.name,
           config: entry.config as McpServerEntry["config"],
           source: entry.source,
-          origin: entry.name === "omnirush-cloud" ? "omnirush-connect" : "local",
+          origin: entry.name === "mars-cloud" ? "mars-connect" : "local",
         } satisfies McpServerEntry));
         void connectPromise.then((connect) => {
           if (mcpConnectPushRef.current !== pushId) return;
@@ -457,8 +457,8 @@ export function NewTaskComposer(props: NewTaskComposerProps) {
       modelPickerOpen={context?.modelPickerOpen ?? false}
       selectedModel={context?.selectedModel ?? FALLBACK_MODEL}
       modelOptions={context?.modelOptions}
-      omniRushModelsEntitled={context?.omniRushModelsEntitled}
-      omniRushModelsSyncing={context?.omniRushModelsSyncing}
+      marsModelsEntitled={context?.marsModelsEntitled}
+      marsModelsSyncing={context?.marsModelsSyncing}
       onRefreshOrganizationModels={context?.onRefreshOrganizationModels}
       onModelPickerOpenChange={context?.onModelPickerOpenChange ?? noop}
       onModelChange={context?.onModelChange ?? noop}

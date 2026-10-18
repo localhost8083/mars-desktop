@@ -10,15 +10,15 @@ import {
   MAX_CONFIG_ROOT_LENGTH,
   normalizeWorkspaceRootPath,
   opencodeDbCandidates,
-  omnirushEnvStorePath,
-  omnirushServerConfigPath,
+  marsEnvStorePath,
+  marsServerConfigPath,
   resolveGlobalOpencodeConfigPath,
   resolveWorkspaceOpencodeConfigPath,
   workspaceOpencodeConfigCandidates,
 } from "../index.mjs";
 
 async function withTempDir(callback) {
-  const root = await mkdtemp(path.join(tmpdir(), "omnirush-paths-"));
+  const root = await mkdtemp(path.join(tmpdir(), "mars-paths-"));
   try {
     await callback(root);
   } finally {
@@ -51,10 +51,10 @@ describe("workspace root paths", () => {
   test("rejects Win32 device namespace roots", () => {
     const opts = { platform: "win32" };
     for (const value of [
-      "\\\\.\\pipe\\omnirush",
-      "//./PIPE/omnirush",
+      "\\\\.\\pipe\\mars",
+      "//./PIPE/mars",
       "\\\\.\\PhysicalDrive0",
-      "\\\\?\\UNC\\.\\pipe\\omnirush",
+      "\\\\?\\UNC\\.\\pipe\\mars",
       "\\\\?\\UNC\\?\\PhysicalDrive0",
     ]) {
       expect(() => normalizeWorkspaceRootPath(value, opts)).toThrow("Invalid Windows workspace root");
@@ -103,57 +103,57 @@ describe("OpenCode database paths", () => {
   });
 });
 
-describe("omnirush server config paths", () => {
+describe("mars server config paths", () => {
   test("uses APPDATA on Windows", () => {
-    expect(omnirushServerConfigPath({
+    expect(marsServerConfigPath({
       env: { APPDATA: "C:\\Users\\Ada\\AppData\\Roaming" },
       homeDir: "C:\\Users\\Ada",
       platform: "win32",
-    })).toBe("C:\\Users\\Ada\\AppData\\Roaming\\omnirush\\server.json");
+    })).toBe("C:\\Users\\Ada\\AppData\\Roaming\\mars\\server.json");
   });
 
   test("uses XDG_CONFIG_HOME on Unix", () => {
-    expect(omnirushServerConfigPath({
+    expect(marsServerConfigPath({
       env: { XDG_CONFIG_HOME: "/tmp/xdg" },
       homeDir: "/home/ada",
       platform: "linux",
-    })).toBe("/tmp/xdg/omnirush/server.json");
+    })).toBe("/tmp/xdg/mars/server.json");
   });
 
   test("falls back to ~/.config", () => {
-    expect(omnirushServerConfigPath({ env: {}, homeDir: "/home/ada", platform: "linux" }))
-      .toBe("/home/ada/.config/omnirush/server.json");
+    expect(marsServerConfigPath({ env: {}, homeDir: "/home/ada", platform: "linux" }))
+      .toBe("/home/ada/.config/mars/server.json");
   });
 
-  test("honors OMNIRUSH_SERVER_CONFIG", () => {
-    expect(omnirushServerConfigPath({
-      env: { OMNIRUSH_SERVER_CONFIG: "/tmp/omnirush/server.json" },
+  test("honors MARS_SERVER_CONFIG", () => {
+    expect(marsServerConfigPath({
+      env: { MARS_SERVER_CONFIG: "/tmp/mars/server.json" },
       homeDir: "/home/ada",
       platform: "linux",
-    })).toBe("/tmp/omnirush/server.json");
+    })).toBe("/tmp/mars/server.json");
   });
 });
 
-describe("omnirush env store and desktop bootstrap paths", () => {
-  test("honors OMNIRUSH_ENV_STORE", () => {
-    expect(omnirushEnvStorePath({
-      env: { OMNIRUSH_ENV_STORE: "/tmp/omnirush/env.json" },
+describe("mars env store and desktop bootstrap paths", () => {
+  test("honors MARS_ENV_STORE", () => {
+    expect(marsEnvStorePath({
+      env: { MARS_ENV_STORE: "/tmp/mars/env.json" },
       homeDir: "/home/ada",
       platform: "linux",
-    })).toBe("/tmp/omnirush/env.json");
+    })).toBe("/tmp/mars/env.json");
   });
 
-  test("uses the same omnirush config layout for env.json", () => {
-    expect(omnirushEnvStorePath({
+  test("uses the same mars config layout for env.json", () => {
+    expect(marsEnvStorePath({
       env: { XDG_CONFIG_HOME: "/tmp/xdg" },
       homeDir: "/home/ada",
       platform: "linux",
-    })).toBe("/tmp/xdg/omnirush/env.json");
+    })).toBe("/tmp/xdg/mars/env.json");
   });
 
-  test("honors OMNIRUSH_DESKTOP_BOOTSTRAP_PATH", () => {
+  test("honors MARS_DESKTOP_BOOTSTRAP_PATH", () => {
     expect(desktopBootstrapPath({
-      env: { OMNIRUSH_DESKTOP_BOOTSTRAP_PATH: "/tmp/bootstrap.json" },
+      env: { MARS_DESKTOP_BOOTSTRAP_PATH: "/tmp/bootstrap.json" },
       homeDir: "/home/ada",
       platform: "linux",
     })).toBe("/tmp/bootstrap.json");
@@ -161,16 +161,16 @@ describe("omnirush env store and desktop bootstrap paths", () => {
 
   test("preserves dev-data desktop bootstrap path when userDataDir is injected", () => {
     expect(desktopBootstrapPath({
-      env: { OMNIRUSH_DEV_MODE: "1" },
+      env: { MARS_DEV_MODE: "1" },
       homeDir: "/Users/ada",
       platform: "darwin",
-      userDataDir: "/tmp/omnirush-userdata",
-    })).toBe("/tmp/omnirush-userdata/omnirush-dev-data/home/.config/omnirush/desktop-bootstrap.json");
+      userDataDir: "/tmp/mars-userdata",
+    })).toBe("/tmp/mars-userdata/mars-dev-data/home/.config/mars/desktop-bootstrap.json");
   });
 
   test("resolves the legacy desktop bootstrap path from the chosen home", () => {
     expect(legacyDesktopBootstrapPath({ env: {}, homeDir: "/Users/ada", platform: "darwin" }))
-      .toBe("/Users/ada/.config/omnirush/desktop-bootstrap.json");
+      .toBe("/Users/ada/.config/mars/desktop-bootstrap.json");
   });
 });
 

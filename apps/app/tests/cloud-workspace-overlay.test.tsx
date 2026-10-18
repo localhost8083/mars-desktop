@@ -37,9 +37,9 @@ function instance(input: Partial<DenCloudInstance> = {}): DenCloudInstance {
   return {
     status: input.status ?? "ready",
     url: input.url ?? "https://workspace.example.test",
-    imageVersion: "imageVersion" in input ? input.imageVersion ?? null : "omnirush-0.18.8",
+    imageVersion: "imageVersion" in input ? input.imageVersion ?? null : "mars-0.18.8",
     ...(typeof input.instanceName === "string" ? { instanceName: input.instanceName } : {}),
-    latestVersion: "latestVersion" in input ? input.latestVersion ?? null : "omnirush-0.18.8",
+    latestVersion: "latestVersion" in input ? input.latestVersion ?? null : "mars-0.18.8",
   };
 }
 
@@ -104,11 +104,11 @@ describe("cloud workspace overlay state", () => {
 
   test("maps stale and legacy workers to Update available", () => {
     const stale = mapCloudWorkspaceState({
-      instance: instance({ imageVersion: "omnirush-0.18.2", latestVersion: "omnirush-0.18.8" }),
+      instance: instance({ imageVersion: "mars-0.18.2", latestVersion: "mars-0.18.8" }),
       updating: false,
       accessRequired: false,
     });
-    const legacyInstance = instance({ imageVersion: null, latestVersion: "omnirush-0.18.8" });
+    const legacyInstance = instance({ imageVersion: null, latestVersion: "mars-0.18.8" });
     const legacy = mapCloudWorkspaceState({
       instance: legacyInstance,
       updating: false,
@@ -155,15 +155,15 @@ describe("cloud workspace overlay state", () => {
     });
 
     expect(accessRequired.variant).toBe("access-required");
-    expect(accessRequired.label).toBe("omnirush.ai Web plan required");
+    expect(accessRequired.label).toBe("marsai.click Web plan required");
     expect(accessRequired.showRetry).toBe(true);
     expect(accessRequired.pollMs).toBeNull();
   });
 
   test("uses active-plan guidance for access-required takeover copy", () => {
     expect(cloudWorkspaceTakeoverCopy({ variant: "access-required", slow: false })).toEqual({
-      title: "omnirush.ai Web needs an active plan",
-      body: "Your organization does not have an active omnirush.ai Web subscription or complimentary access. Get omnirush.ai Web in Den to start your cloud workspace.",
+      title: "marsai.click Web needs an active plan",
+      body: "Your organization does not have an active marsai.click Web subscription or complimentary access. Get marsai.click Web in Den to start your cloud workspace.",
     });
   });
 
@@ -180,7 +180,7 @@ describe("cloud workspace overlay state", () => {
 
   test("keeps the workspace status updating after the user clicks update", () => {
     const state = mapCloudWorkspaceState({
-      instance: instance({ imageVersion: "omnirush-0.18.2", latestVersion: "omnirush-0.18.8" }),
+      instance: instance({ imageVersion: "mars-0.18.2", latestVersion: "mars-0.18.8" }),
       updating: true,
       accessRequired: false,
     });
@@ -443,7 +443,7 @@ describe("cloud workspace boot takeover", () => {
 
   test("offers Den purchase, recheck, and sign-out actions when Web access is required", async () => {
     const registeredDom = typeof globalThis.window === "undefined" || typeof globalThis.document === "undefined";
-    if (registeredDom) GlobalRegistrator.register({ url: "https://web.omnirush.example.com/session" });
+    if (registeredDom) GlobalRegistrator.register({ url: "https://web.mars.example.com/session" });
     Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", { configurable: true, value: true });
     const openedUrls: string[] = [];
     const container = document.createElement("div");
@@ -485,8 +485,8 @@ describe("cloud workspace boot takeover", () => {
       });
 
       const buttons = Array.from(container.querySelectorAll("button"));
-      const purchase = buttons.find((button) => button.textContent?.includes("Get omnirush.ai Web"));
-      if (!purchase) throw new Error("Expected Get omnirush.ai Web action");
+      const purchase = buttons.find((button) => button.textContent?.includes("Get marsai.click Web"));
+      if (!purchase) throw new Error("Expected Get marsai.click Web action");
       expect(buttons.some((button) => button.textContent?.includes("Check again"))).toBe(true);
       expect(buttons.some((button) => button.textContent?.includes("Sign out"))).toBe(true);
 

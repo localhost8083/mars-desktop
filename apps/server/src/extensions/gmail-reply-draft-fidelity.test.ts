@@ -63,20 +63,20 @@ async function lookupAll(lookupFunction: LookupFunction, hostname: string): Prom
 }
 
 test("Gmail reply drafts preserve thread fidelity and bind public attachment DNS to the socket", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-gmail-reply-proof-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-gmail-reply-proof-"));
   const config = createTestConfig(root);
   const previousFetch = globalThis.fetch;
   const previousEnv = {
-    devMode: process.env.OMNIRUSH_DEV_MODE,
-    plaintextVault: process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT,
+    devMode: process.env.MARS_DEV_MODE,
+    plaintextVault: process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT,
     clientSecret: process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET,
   };
   const googleRequests: { url: string; body: string }[] = [];
   const attachmentRequests: { url: string; redirect?: string }[] = [];
 
   try {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "proof-secret";
     const vaultPath = join(dirname(config.configPath ?? ""), "extensions", "google-workspace", "oauth.dev-plaintext.json");
     await mkdir(dirname(vaultPath), { recursive: true });
@@ -193,8 +193,8 @@ test("Gmail reply drafts preserve thread fidelity and bind public attachment DNS
   } finally {
     setGmailAttachmentFetchForTests();
     globalThis.fetch = previousFetch;
-    restoreEnv("OMNIRUSH_DEV_MODE", previousEnv.devMode);
-    restoreEnv("OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT", previousEnv.plaintextVault);
+    restoreEnv("MARS_DEV_MODE", previousEnv.devMode);
+    restoreEnv("MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT", previousEnv.plaintextVault);
     restoreEnv("GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET", previousEnv.clientSecret);
     await rm(root, { recursive: true, force: true });
   }

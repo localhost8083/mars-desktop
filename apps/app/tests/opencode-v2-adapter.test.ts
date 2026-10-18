@@ -50,7 +50,7 @@ const capturedV2ToolMessage = {
     completed: 1_788_552_838_186,
   },
   type: "assistant",
-  agent: "omnirush",
+  agent: "mars",
   model: { id: "model", providerID: "witness", variant: "default" },
   content: [
     { type: "text", text: "Running the shell.\n" },
@@ -729,14 +729,14 @@ describe("OpenCode v2 client compatibility", () => {
     const state = createV2EventTranslationState();
     const data = { sessionID: "ses_code", assistantMessageID: "msg_code", id: "execute-code" };
     const toolCalls = [
-      { tool: "omnirush-cloud.search_capabilities", status: "completed", input: { query: "Slack" } },
-      { tool: "omnirush-cloud.execute_capability", status: "running", input: { name: "mcp:connection:list_channels" } },
+      { tool: "mars-cloud.search_capabilities", status: "completed", input: { query: "Slack" } },
+      { tool: "mars-cloud.execute_capability", status: "running", input: { name: "mcp:connection:list_channels" } },
     ];
     translateV2Event({ type: "session.tool.input.started", data: { ...data, name: "execute" } }, state);
     translateV2Event({ type: "session.tool.called", data: { ...data, input: { code: "recorded code" } } }, state);
     const progress = { type: "session.tool.progress", data: { ...data, metadata: { toolCalls } } };
     const expected = [{ type: "message.part.updated", properties: { part: {
-      id: "execute-code", callID: "execute-code", tool: "execute", metadata: { omnirushV2CodeMode: true },
+      id: "execute-code", callID: "execute-code", tool: "execute", metadata: { marsV2CodeMode: true },
       state: { status: "running", metadata: { toolCalls } },
     } } }];
     expect(translateV2Event(progress, state)).toMatchObject(expected);
@@ -763,8 +763,8 @@ describe("OpenCode v2 client compatibility", () => {
       const ui = parseDynamicToolUIPart(saved);
       if (!ui) throw new Error("Missing execute UI part");
       expect(codeModeToolCalls(ui)?.map(call => [call.toolCallId, call.toolName, call.state])).toEqual([
-        ["execute-code:call:0", "omnirush-cloud_search_capabilities", "output-available"],
-        ["execute-code:call:1", "omnirush-cloud_execute_capability", "output-available"],
+        ["execute-code:call:0", "mars-cloud_search_capabilities", "output-available"],
+        ["execute-code:call:1", "mars-cloud_execute_capability", "output-available"],
       ]);
       expect(ui).toMatchObject({ output: "Combined result" });
     } finally { globalThis.fetch = originalFetch; }
@@ -1704,7 +1704,7 @@ describe("v2 question forms", () => {
         system: "Main conversation reference: ses_main", parts: [{ type: "text", text: "What is happening?" }] };
       expect((await client.session.promptAsync(parameters)).response.status).toBe(204);
       expect(requests.map((item) => item.method)).toEqual(["POST", "PUT", "POST"]);
-      expect(requests[1]).toMatchObject({ path: "/opencode2/api/session/ses_side/instructions/entries/omnirush-context", body: { value: parameters.system } });
+      expect(requests[1]).toMatchObject({ path: "/opencode2/api/session/ses_side/instructions/entries/mars-context", body: { value: parameters.system } });
       expect(requests[2]?.body).toEqual({ text: "What is happening?" });
       requests.length = 0; status = 503;
       expect((await client.session.promptAsync(parameters)).response.status).toBe(503);

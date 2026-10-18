@@ -2,7 +2,7 @@ import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import type { Part, Session } from "@opencode-ai/sdk/v2/client";
 import type { UIMessage } from "ai";
 
-import type { OmniRushSessionSnapshot } from "../src/app/lib/omnirush-server";
+import type { MarsSessionSnapshot } from "../src/app/lib/mars-server";
 import { getReactQueryClient } from "../src/react-app/infra/query-client";
 import {
   __applySessionSyncEventForTest,
@@ -15,7 +15,7 @@ import {
   parseDynamicToolUIPart,
   parseStructuredOutputUIPart,
 } from "../src/react-app/domains/session/sync/parse-tool-parts";
-import { parseOmniRushSessionCreateResult } from "../src/components/tools/omnirush-session-create";
+import { parseMarsSessionCreateResult } from "../src/components/tools/mars-session-create";
 import { codeModeToolCalls } from "../src/lib/code-mode-tools";
 import { useSessionActivityStore } from "../src/react-app/domains/session/status/session-activity-store";
 
@@ -91,9 +91,9 @@ function writeToolPart(
 
 describe("tool part mapper", () => {
   test("v1 execute tools keep their existing representation even with code or toolCalls metadata", () => {
-    const part = writeToolPart("completed", { code: 'tools["omnirush-cloud"].search_capabilities({})' }, { tool: "execute" });
+    const part = writeToolPart("completed", { code: 'tools["mars-cloud"].search_capabilities({})' }, { tool: "execute" });
     if (part.state.status !== "completed") throw new Error("Expected completed fixture");
-    part.state.metadata = { toolCalls: [{ tool: "omnirush-cloud.search_capabilities", status: "completed" }] };
+    part.state.metadata = { toolCalls: [{ tool: "mars-cloud.search_capabilities", status: "completed" }] };
     const mapped = parseDynamicToolUIPart(part);
     if (!mapped) throw new Error("Missing v1 tool");
     expect(codeModeToolCalls(mapped)).toBeNull();
@@ -103,21 +103,21 @@ describe("tool part mapper", () => {
   test("Code Mode uses recorded invocation positions for repeated calls and preserves partial failures", () => {
     const part = writeToolPart("completed", { code: "recorded code" }, { tool: "execute" });
     if (part.state.status !== "completed") throw new Error("Expected completed fixture");
-    part.metadata = { omnirushV2CodeMode: true };
+    part.metadata = { marsV2CodeMode: true };
     part.state.metadata = { toolCalls: [
-      { tool: "omnirush-cloud.search_capabilities", status: "completed", input: { query: "Slack" } },
+      { tool: "mars-cloud.search_capabilities", status: "completed", input: { query: "Slack" } },
       null,
-      { tool: "omnirush-cloud.search_capabilities", status: "running", input: { query: "Calendar" } },
-      { tool: "omnirush-cloud.execute_capability", status: "error", input: { name: "mcp:connection:list_channels" } },
+      { tool: "mars-cloud.search_capabilities", status: "running", input: { query: "Calendar" } },
+      { tool: "mars-cloud.execute_capability", status: "error", input: { name: "mcp:connection:list_channels" } },
       { tool: "unexpected", status: "unrecognized" },
     ] };
     const mapped = parseDynamicToolUIPart(part);
     if (!mapped) throw new Error("Missing Code Mode tool");
     const calls = codeModeToolCalls(mapped);
     expect(calls?.map(call => [call.toolCallId, call.toolName, call.state])).toEqual([
-      ["call-write:call:0", "omnirush-cloud_search_capabilities", "output-available"],
-      ["call-write:call:2", "omnirush-cloud_search_capabilities", "input-streaming"],
-      ["call-write:call:3", "omnirush-cloud_execute_capability", "output-error"],
+      ["call-write:call:0", "mars-cloud_search_capabilities", "output-available"],
+      ["call-write:call:2", "mars-cloud_search_capabilities", "input-streaming"],
+      ["call-write:call:3", "mars-cloud_execute_capability", "output-error"],
     ]);
     expect(calls?.[0]?.input).toEqual({ query: "Slack" });
     expect(calls?.[0]).toHaveProperty("output", undefined);
@@ -128,7 +128,7 @@ describe("tool part mapper", () => {
   test("a v2 completed wrapper with an error retains the actual execution error", () => {
     const part = writeToolPart("completed", { code: "throw new Error()" }, { tool: "execute" });
     if (part.state.status !== "completed") throw new Error("Expected completed fixture");
-    part.metadata = { omnirushV2CodeMode: true };
+    part.metadata = { marsV2CodeMode: true };
     part.state.metadata = { error: true, toolCalls: [] };
     part.state.output = "History lookup failed.";
     const mapped = parseDynamicToolUIPart(part);
@@ -167,7 +167,7 @@ describe("tool part mapper", () => {
     const part = writeToolPart("completed", { configObjectId: "script_1" });
     if (part.state.status !== "completed") throw new Error("Expected completed fixture");
     part.state.metadata = {
-      omnirushMcpApp: {
+      marsMcpApp: {
         content: [{ type: "text", text: "Fallback" }],
         structuredContent: { schemaVersion: "1", value: 42 },
         _meta: { receiptId: "receipt_1" },
@@ -176,7 +176,7 @@ describe("tool part mapper", () => {
 
     expect(parseDynamicToolUIPart(part)?.callProviderMetadata).toEqual({
       opencode: { partId: "part-write" },
-      omnirush: {
+      mars: {
         mcpResult: {
           content: [{ type: "text", text: "Fallback" }],
           structuredContent: { schemaVersion: "1", value: 42 },
@@ -197,7 +197,7 @@ describe("tool part mapper", () => {
 
     expect(parseDynamicToolUIPart(running)?.callProviderMetadata).toEqual({
       opencode: { partId: "part-task" },
-      omnirush: { childSessionId: "ses_child_1" },
+      mars: { childSessionId: "ses_child_1" },
     });
 
     const completed = writeToolPart(
@@ -210,7 +210,7 @@ describe("tool part mapper", () => {
 
     expect(parseDynamicToolUIPart(completed)?.callProviderMetadata).toEqual({
       opencode: { partId: "part-task" },
-      omnirush: { childSessionId: "ses_child_1" },
+      mars: { childSessionId: "ses_child_1" },
     });
   });
 
@@ -223,12 +223,12 @@ describe("tool part mapper", () => {
     if (completed.state.status !== "completed") throw new Error("Expected completed fixture");
     completed.state.metadata = {
       sessionId: "ses_child_1",
-      model: { providerID: "omnirush", modelID: "gpt-6-astra" },
-      omnirushModelFallback: { requested: "gpt-6-sol", used: "gpt-6-astra", reason: "refused" },
+      model: { providerID: "mars", modelID: "gpt-6-astra" },
+      marsModelFallback: { requested: "gpt-6-sol", used: "gpt-6-astra", reason: "refused" },
     };
     expect(parseDynamicToolUIPart(completed)?.callProviderMetadata).toEqual({
       opencode: { partId: "part-task" },
-      omnirush: {
+      mars: {
         childSessionId: "ses_child_1",
         subagentModel: "gpt-6-astra",
         subagentModelFallback: { requested: "gpt-6-sol", used: "gpt-6-astra", reason: "refused" },
@@ -259,18 +259,18 @@ describe("tool part mapper", () => {
         action: {
           type: "connect",
           label: "Connect Acme Tracker",
-          surface: "omnirush_your_connections",
-          url: "https://app.omnirush.example.com/dashboard/your-connections?connectionId=emc_acme",
+          surface: "mars_your_connections",
+          url: "https://app.mars.example.com/dashboard/your-connections?connectionId=emc_acme",
         },
       },
     });
 
     const parsed = parseDynamicToolUIPart(writeToolPart("error", {}, {}, error));
-    expect(parsed?.callProviderMetadata?.omnirush?.mcpResult).not.toHaveProperty("_meta");
+    expect(parsed?.callProviderMetadata?.mars?.mcpResult).not.toHaveProperty("_meta");
     expect(parsed).toMatchObject({
       state: "output-error",
       callProviderMetadata: {
-        omnirush: {
+        mars: {
           mcpResult: {
             structuredContent: {
               schemaVersion: "1",
@@ -304,7 +304,7 @@ describe("tool part mapper", () => {
   });
 
   test("parses session creation output for rich chat rendering", () => {
-    expect(parseOmniRushSessionCreateResult(JSON.stringify({
+    expect(parseMarsSessionCreateResult(JSON.stringify({
       ok: true,
       workspaceId: "workspace-a",
       workspace: "Research",
@@ -345,7 +345,7 @@ describe("tool part mapper", () => {
   });
 
   test("session sync defers empty in-progress write tools until input arrives", () => {
-    const syncInput = { workspaceId: "workspace-a", baseUrl: "http://127.0.0.1:1234", omnirushToken: "token" };
+    const syncInput = { workspaceId: "workspace-a", baseUrl: "http://127.0.0.1:1234", marsToken: "token" };
     const cleanup = __createWorkspaceSessionSyncForTest(syncInput);
     const release = trackWorkspaceSessionSync(syncInput, "session-a");
     const clock = spyOn(Date, "now").mockReturnValue(1_000);
@@ -417,7 +417,7 @@ describe("tool part mapper", () => {
     const syncInput = {
       workspaceId: "workspace-a",
       baseUrl: "http://127.0.0.1:1234",
-      omnirushToken: "token",
+      marsToken: "token",
       onSessionCreated: (session: Session) => createdIds.push(session.id),
       onSessionUpdated: (update: { sessionId: string; info: Record<string, unknown> }) => updates.push(update),
       onSessionDeleted: (sessionId: string) => deletedIds.push(sessionId),
@@ -431,7 +431,7 @@ describe("tool part mapper", () => {
       });
 
       const queryClient = getReactQueryClient();
-      const snapshot: OmniRushSessionSnapshot = {
+      const snapshot: MarsSessionSnapshot = {
         session: created,
         messages: [],
         todos: [],
@@ -471,7 +471,7 @@ describe("tool part mapper", () => {
 });
 
 test("live attachment notes render once across repeated updates", () => {
-  const syncInput = { workspaceId: "workspace-video", baseUrl: "http://127.0.0.1:1234", omnirushToken: "token" };
+  const syncInput = { workspaceId: "workspace-video", baseUrl: "http://127.0.0.1:1234", marsToken: "token" };
   const cleanup = __createWorkspaceSessionSyncForTest(syncInput);
   const release = trackWorkspaceSessionSync(syncInput, "session-video");
   try {
@@ -484,7 +484,7 @@ test("live attachment notes render once across repeated updates", () => {
       properties: { part: {
         id: "note-video", type: "text", synthetic: true,
         messageID: "msg-video", sessionID: "session-video", text: "Hidden workspace paths",
-        metadata: { omnirushAttachments: [
+        metadata: { marsAttachments: [
           { filename: "recording.mp4", mime: "video/mp4", url: "file:///workspace/recording.mp4" },
           { filename: "recording.mov", mime: "video/quicktime", url: "file:///workspace/recording.mov" },
         ] },
@@ -505,7 +505,7 @@ test("live attachment notes render once across repeated updates", () => {
 });
 
 test("a user message with a pasted image renders only the typed text and the image", () => {
-  const syncInput = { workspaceId: "workspace-paste", baseUrl: "http://127.0.0.1:1234", omnirushToken: "token" };
+  const syncInput = { workspaceId: "workspace-paste", baseUrl: "http://127.0.0.1:1234", marsToken: "token" };
   const cleanup = __createWorkspaceSessionSyncForTest(syncInput);
   const release = trackWorkspaceSessionSync(syncInput, "session-paste");
   try {
@@ -517,11 +517,11 @@ test("a user message with a pasted image renders only the typed text and the ima
     // the workspace-path note (synthetic), what was typed, and the image.
     const note = [
       "Attached files were copied into this worker workspace for tool access:",
-      "- image.png: .opencode/omnirush/inbox/chat-attachments/session-paste/1-image.png (file:///Users/someone/project/.opencode/omnirush/inbox/chat-attachments/session-paste/1-image.png)",
+      "- image.png: .opencode/mars/inbox/chat-attachments/session-paste/1-image.png (file:///Users/someone/project/.opencode/mars/inbox/chat-attachments/session-paste/1-image.png)",
       "Use these paths with Read/Bash/MCP/Docling when a tool needs the file bytes.",
     ].join("\n");
     const parts = [
-      { id: "prt_paste_u0", type: "text", synthetic: true, text: note, metadata: { omnirushAttachments: [] } },
+      { id: "prt_paste_u0", type: "text", synthetic: true, text: note, metadata: { marsAttachments: [] } },
       { id: "prt_paste_u1", type: "text", text: "hi" },
       { id: "prt_paste_f0", type: "file", mime: "image/png", filename: "image.png", url: "data:image/png;base64,AAAA" },
     ];

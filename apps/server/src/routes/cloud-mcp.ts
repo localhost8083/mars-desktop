@@ -1,10 +1,10 @@
 import type { createOpencodeClient } from "@opencode-ai/sdk/v2/client";
 import {
   isTrustedCloudMcpEndpointForGlobalPersist,
-  OMNIRUSH_CLOUD_MCP_NAME,
-  readOmniRushCloudMcpHealth,
-  reconcileOmniRushCloudMcp,
-  refreshOmniRushCloudMcpEngine,
+  MARS_CLOUD_MCP_NAME,
+  readMarsCloudMcpHealth,
+  reconcileMarsCloudMcp,
+  refreshMarsCloudMcpEngine,
   type CloudMcpServerMetadata,
   type CloudMcpProviderModelContext,
   type CloudMcpRuntimeRegistrar,
@@ -74,8 +74,8 @@ function assertStrictBody(body: Record<string, unknown>, workspace: WorkspaceInf
   if (typeof body.workspaceId === "string" && body.workspaceId.trim() !== workspace.id) {
     throw new ApiError(400, "workspace_id_mismatch", "workspaceId must match the route workspace");
   }
-  if (typeof body.name === "string" && body.name.trim() !== OMNIRUSH_CLOUD_MCP_NAME) {
-    throw new ApiError(400, "invalid_mcp_name", "Only omnirush-cloud can be reconciled by this endpoint");
+  if (typeof body.name === "string" && body.name.trim() !== MARS_CLOUD_MCP_NAME) {
+    throw new ApiError(400, "invalid_mcp_name", "Only mars-cloud can be reconciled by this endpoint");
   }
 }
 
@@ -95,15 +95,15 @@ export function registerCloudMcpRoutes(options: RegisterCloudMcpRoutesOptions): 
     serverMetadata,
   } = options;
 
-  addRoute(routes, "GET", "/workspace/:id/mcp/omnirush-cloud/health", "client", async () => {
+  addRoute(routes, "GET", "/workspace/:id/mcp/mars-cloud/health", "client", async () => {
     assertMcpAllowed(config);
   });
 
-  addRoute(routes, "POST", "/workspace/:id/mcp/omnirush-cloud/engine-refresh", "client", async () => {
+  addRoute(routes, "POST", "/workspace/:id/mcp/mars-cloud/engine-refresh", "client", async () => {
     assertMcpAllowed(config);
   });
 
-  addRoute(routes, "POST", "/workspace/:id/mcp/omnirush-cloud/reconcile", "client", async () => {
+  addRoute(routes, "POST", "/workspace/:id/mcp/mars-cloud/reconcile", "client", async () => {
     assertMcpAllowed(config);
   });
 }

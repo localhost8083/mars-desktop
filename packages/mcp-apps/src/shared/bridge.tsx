@@ -6,7 +6,7 @@ import type { z } from "zod"
 import { StatusCard } from "./ui"
 
 /**
- * Standard bootstrap for every first-party OmniRush.ai MCP App: connect to the
+ * Standard bootstrap for every first-party MarsAI MCP App: connect to the
  * host over the MCP Apps bridge, validate the tool's structuredContent
  * against the app's zod contract, and hand a typed payload to the view.
  */

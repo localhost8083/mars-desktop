@@ -1,6 +1,6 @@
 ---
 name: run-tests
-description: Run the tests, run one spec, run e2e locally or on Daytona, investigate a skipped spec. Use for executing @omnirush/testkit agent-first verification.
+description: Run the tests, run one spec, run e2e locally or on Daytona, investigate a skipped spec. Use for executing @mars/testkit agent-first verification.
 ---
 
 # Skill: Run Tests
@@ -25,16 +25,16 @@ switch lanes to turn a red Daytona run green.
 ## Prepare local fallback
 
 ```bash
-pnpm --filter @omnirush/types build
+pnpm --filter @mars/types build
 pnpm --filter @omnirush-ee/den-db build
-pnpm --filter @omnirush/email build
+pnpm --filter @mars/email build
 pnpm dev:den:mysql
 ```
 
 - Local `server()` requires MySQL at `127.0.0.1:3306`.
 - Build those workspace dependencies before local Den; otherwise den-api imports
   can fail.
-- If the checkout path contains spaces, set `OMNIRUSH_EVAL_SURFACES_DIR` to a
+- If the checkout path contains spaces, set `MARS_EVAL_SURFACES_DIR` to a
   space-free path before E2E tests. node-gyp and electron-rebuild require it.
 
 ## Choose one lane
@@ -62,7 +62,7 @@ pnpm evals:e2e <name>
 
 ## Iterate, then cold-boot
 
-- While iterating, reuse a warm Den with `OMNIRUSH_EVAL_DEN_API_URL`.
+- While iterating, reuse a warm Den with `MARS_EVAL_DEN_API_URL`.
 - Before declaring `Passed`, remove the reuse override and cold-boot through
   `server()` on the same commit.
 - Inject secrets with `infisical run --silent --`; never print or echo values.

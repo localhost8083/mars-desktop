@@ -68,7 +68,7 @@ function legacyRecord(testRun: TestRunRecord): Record<string, unknown> {
 }
 
 test("scanTestRuns reads current and persisted legacy results while tolerating corrupt data", async () => {
-  const resultsDir = await mkdtemp(join(tmpdir(), "omnirush-test-artifacts-scan-"));
+  const resultsDir = await mkdtemp(join(tmpdir(), "mars-test-artifacts-scan-"));
   try {
     const currentDir = join(resultsDir, "test-runs", "2026-07-02T10-00-00-000Z-current");
     const oldDir = join(resultsDir, "rolls", "2026-07-01T10-00-00-000Z-old");
@@ -163,7 +163,7 @@ test("renderPrMarkdown leads with the test outcome and counts trace observations
 });
 
 test("scanTestRuns skips a symlinked test-run.json", async () => {
-  const resultsDir = await mkdtemp(join(tmpdir(), "omnirush-test-artifacts-symlink-"));
+  const resultsDir = await mkdtemp(join(tmpdir(), "mars-test-artifacts-symlink-"));
   try {
     const testRunDir = join(resultsDir, "test-runs", "2026-07-02T10-00-00-000Z-symlinked");
     await mkdir(testRunDir, { recursive: true });

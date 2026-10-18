@@ -38,10 +38,10 @@ responses from replacing newer policy.
 
 Engine policy hooks use an ephemeral credential accepted only by
 `POST /managed-policy/evaluate`. It grants no workspace, configuration, session,
-or host API access. The next engine never inherits the general OmniRush.ai client
+or host API access. The next engine never inherits the general MarsAI client
 credential; the legacy engine retains its existing credential for built-in tools.
 
-The browser restriction applies to OmniRush.ai's built-in browser. Native fetch
+The browser restriction applies to MarsAI's built-in browser. Native fetch
 and search are blocked while approved sites are configured: their redirects do
 not expose a per-request enforcement hook. The agent is directed to the built-in
 browser for approved-site reading. It is not device-wide DLP: allowed sites can receive data in read URLs,
@@ -60,8 +60,8 @@ one team member, and a second member outside that team, each in an isolated real
 desktop. The admin saves in Den. The test checks persisted and effective policy,
 UI restrictions, direct API bypass attempts, browser requests and uploads, and
 real engine command execution with independent file witnesses. Run the journey
-with `OMNIRUSH_EVAL_ENGINE=v1` and `OMNIRUSH_EVAL_ENGINE=v2`, using the full feature
-commit as `OMNIRUSH_EVAL_REF` and `OMNIRUSH_EVAL_DAYTONA_REF` for remote placement.
+with `MARS_EVAL_ENGINE=v1` and `MARS_EVAL_ENGINE=v2`, using the full feature
+commit as `MARS_EVAL_REF` and `MARS_EVAL_DAYTONA_REF` for remote placement.
 
 A passing evaluator response alone is not proof that an action was blocked.
 

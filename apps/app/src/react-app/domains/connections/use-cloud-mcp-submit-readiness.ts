@@ -3,9 +3,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { readDenSettings } from "../../../app/lib/den";
 import { recordInspectorEvent } from "../../../app/lib/app-inspector";
 import type {
-  OmniRushCloudMcpProviderModelContext,
-  OmniRushServerClient,
-} from "../../../app/lib/omnirush-server";
+  MarsCloudMcpProviderModelContext,
+  MarsServerClient,
+} from "../../../app/lib/mars-server";
 import { denSettingsChangedEvent } from "../../../app/lib/den-session-events";
 import type { DenAuthStatus } from "../cloud/den-auth-provider";
 import {
@@ -30,8 +30,8 @@ import {
 } from "./use-session-mcp-maintenance";
 
 type CloudMcpSubmitReadinessClient = Pick<
-  OmniRushServerClient,
-  "baseUrl" | "getOmniRushCloudMcpHealth" | "reconcileOmniRushCloudMcp" | "listMcp"
+  MarsServerClient,
+  "baseUrl" | "getMarsCloudMcpHealth" | "reconcileMarsCloudMcp" | "listMcp"
 >;
 
 type UseCloudMcpSubmitReadinessInput = {
@@ -39,7 +39,7 @@ type UseCloudMcpSubmitReadinessInput = {
   cloudAuthStatus: DenAuthStatus;
   client: CloudMcpSubmitReadinessClient | null;
   workspaceId: string | null;
-  providerModel?: OmniRushCloudMcpProviderModelContext;
+  providerModel?: MarsCloudMcpProviderModelContext;
 };
 
 type CloudMcpSubmitInput = {
@@ -56,14 +56,14 @@ export type CloudMcpSubmitReadiness = {
 function missingContextIssue(input: {
   client: CloudMcpSubmitReadinessClient | null;
   workspaceId: string;
-  providerModel?: OmniRushCloudMcpProviderModelContext;
+  providerModel?: MarsCloudMcpProviderModelContext;
 }): CloudMcpSubmissionIssue {
   if (!input.client || !input.workspaceId) {
     return {
       code: "cloud_mcp_submission_context_missing",
       stage: "engine_delivery",
       retryable: true,
-      message: "omnirush.ai could not resolve the workspace server before checking connected service tools.",
+      message: "marsai.click could not resolve the workspace server before checking connected service tools.",
       recommendedAction: "Retry after the workspace finishes loading.",
     };
   }
@@ -80,7 +80,7 @@ function missingContextIssue(input: {
     code: "cloud_mcp_submission_context_missing",
     stage: "provider_projection",
     retryable: false,
-    message: "omnirush.ai could not verify connected service tools for this submission.",
+    message: "marsai.click could not verify connected service tools for this submission.",
     recommendedAction: "Retry or open Settings → Connect for diagnostics.",
   };
 }
@@ -250,7 +250,7 @@ export function useCloudMcpSubmitReadiness(
         }
         const result = await ensureCloudMcpSubmissionReadiness({
           providerModel,
-          check: () => client.getOmniRushCloudMcpHealth(activeWorkspaceId, providerModel, { probe: true }),
+          check: () => client.getMarsCloudMcpHealth(activeWorkspaceId, providerModel, { probe: true }),
           repair: async () => {
             const repaired = await syncCloudControlMcpInBackground({
               client,

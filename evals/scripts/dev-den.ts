@@ -8,7 +8,7 @@ import { parseArgs } from "node:util";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const STATE_ROOT = join(REPO_ROOT, "evals", "results", ".dev-den");
-const MYSQL_CONTAINER = "omnirush-web-local-mysql";
+const MYSQL_CONTAINER = "mars-web-local-mysql";
 const DB_ENCRYPTION_KEY = "local-dev-db-encryption-key-please-change-1234567890";
 const BETTER_AUTH_SECRET = "local-dev-secret-not-for-production-use!!";
 const USAGE = `Usage:
@@ -17,7 +17,7 @@ const USAGE = `Usage:
 
 The up command creates an isolated database, initializes it with
 db:bootstrap, starts den-api in multi-org dev mode, waits for /health, and prints the
-OMNIRUSH_EVAL_DEN_* exports. The generated trusted origins always include the
+MARS_EVAL_DEN_* exports. The generated trusted origins always include the
 printed web URL; omitting it causes Better Auth 403 INVALID_ORIGIN responses.`;
 
 interface DevDenState {
@@ -127,7 +127,7 @@ function denEnvironment(state: DevDenState): NodeJS.ProcessEnv {
   const trustedOrigins = `${state.apiUrl},${state.webUrl}`;
   return {
     ...process.env,
-    OMNIRUSH_DEV_MODE: "1",
+    MARS_DEV_MODE: "1",
     PORT: String(state.port),
     DEN_API_PORT: String(state.port),
     DEN_API_PUBLIC_URL: state.apiUrl,
@@ -140,9 +140,9 @@ function denEnvironment(state: DevDenState): NodeJS.ProcessEnv {
     DEN_ORG_MODE: "multi_org",
     DEN_SINGLE_ORG_ALLOW_PUBLIC_SIGNUP: "true",
     PROVISIONER_MODE: "stub",
-    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ?? "sk_test_omnirush_eval",
-    STRIPE_INFERENCE_PRICE_ID: process.env.STRIPE_INFERENCE_PRICE_ID ?? "price_omnirush_models_eval",
-    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ?? "whsec_omnirush_eval",
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ?? "sk_test_mars_eval",
+    STRIPE_INFERENCE_PRICE_ID: process.env.STRIPE_INFERENCE_PRICE_ID ?? "price_mars_models_eval",
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ?? "whsec_mars_eval",
     INFERENCE_PROXY_BASE_URL: process.env.INFERENCE_PROXY_BASE_URL ?? "http://127.0.0.1:8791",
   };
 }
@@ -170,10 +170,10 @@ async function waitForHealth(state: DevDenState): Promise<void> {
 function printEnvironment(state: DevDenState): void {
   const trustedOrigins = `${state.apiUrl},${state.webUrl}`;
   console.log(`Health passed: ${state.apiUrl}/health`);
-  console.log(`export OMNIRUSH_EVAL_DEN_API_URL="${state.apiUrl}"`);
-  console.log(`export OMNIRUSH_EVAL_DEN_WEB_URL="${state.webUrl}"`);
+  console.log(`export MARS_EVAL_DEN_API_URL="${state.apiUrl}"`);
+  console.log(`export MARS_EVAL_DEN_WEB_URL="${state.webUrl}"`);
   console.log(`# DEN_BETTER_AUTH_TRUSTED_ORIGINS="${trustedOrigins}"`);
-  console.log("# The trusted origins include OMNIRUSH_EVAL_DEN_WEB_URL; otherwise sign-in fails with 403 INVALID_ORIGIN.");
+  console.log("# The trusted origins include MARS_EVAL_DEN_WEB_URL; otherwise sign-in fails with 403 INVALID_ORIGIN.");
   console.log(`Log: ${relative(REPO_ROOT, state.logPath)}`);
   console.log(`Tear down: pnpm --dir evals dev:den -- down --port ${state.port} --drop-database`);
 }

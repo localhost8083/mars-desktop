@@ -1,5 +1,5 @@
 import { setTimeout as delay } from "node:timers/promises";
-import type { Target } from "@omnirush/cdp";
+import type { Target } from "@mars/cdp";
 
 export interface TypingProfile {
   focusMs: number;

@@ -1,15 +1,15 @@
 # LiteLLM per-member keys
 
-This zero-dependency Node.js example reconciles OmniRush.ai Cloud per-member LLM credential bindings with LiteLLM virtual keys. It is an example provisioner, not a native LiteLLM integration in Den.
+This zero-dependency Node.js example reconciles MarsAI Cloud per-member LLM credential bindings with LiteLLM virtual keys. It is an example provisioner, not a native LiteLLM integration in Den.
 
 ## Configure
 
 Set these environment variables:
 
-- `OMNIRUSH_DEN_API_URL`: Den API base URL
-- `OMNIRUSH_DEN_TOKEN`: organization owner or admin bearer token
-- `OMNIRUSH_ORG_ID`: organization ID sent as `x-omnirush-org-id`
-- `OMNIRUSH_LLM_PROVIDER_ID`: the per-member LLM provider ID
+- `MARS_DEN_API_URL`: Den API base URL
+- `MARS_DEN_TOKEN`: organization owner or admin bearer token
+- `MARS_ORG_ID`: organization ID sent as `x-mars-org-id`
+- `MARS_LLM_PROVIDER_ID`: the per-member LLM provider ID
 - `LITELLM_BASE_URL`: LiteLLM base URL, with or without `/v1`
 - `LITELLM_MASTER_KEY`: LiteLLM master key
 - `LITELLM_MODELS`: comma-separated model IDs assigned to each virtual key

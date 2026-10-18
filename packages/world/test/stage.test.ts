@@ -23,9 +23,9 @@ test("sanitizeStage trims long separator runs in linear time", () => {
 });
 
 test("resolveStage gives an explicit stage precedence over environment configuration", () => {
-  assert.equal(resolveStage({ OMNIRUSH_WORLD_STAGE: "environment" }, "flag stage"), "flag-stage");
-  assert.equal(resolveStage({ OMNIRUSH_WORLD_STAGE: " environment stage " }), "environment-stage");
-  assert.equal(resolveStage({ OMNIRUSH_WORLD_STAGE: "  " }), undefined);
+  assert.equal(resolveStage({ MARS_WORLD_STAGE: "environment" }, "flag stage"), "flag-stage");
+  assert.equal(resolveStage({ MARS_WORLD_STAGE: " environment stage " }), "environment-stage");
+  assert.equal(resolveStage({ MARS_WORLD_STAGE: "  " }), undefined);
   assert.equal(resolveStage({}), undefined);
 });
 

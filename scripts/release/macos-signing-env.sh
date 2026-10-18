@@ -20,9 +20,9 @@ key="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY_ID}.p8"
 printf '%s' "$APPLE_API_KEY_P8_BASE64" | base64 --decode > "$key"
 chmod 600 "$key"
 
-keychain="$RUNNER_TEMP/omnirush-signing.keychain-db"
+keychain="$RUNNER_TEMP/mars-signing.keychain-db"
 keychain_password=$(openssl rand -hex 24)
-cert="$RUNNER_TEMP/omnirush-signing.p12"
+cert="$RUNNER_TEMP/mars-signing.p12"
 printf '%s' "$MAC_CSC_LINK" | base64 --decode > "$cert"
 security create-keychain -p "$keychain_password" "$keychain"
 security set-keychain-settings -lut 21600 "$keychain"

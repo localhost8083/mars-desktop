@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { buildOmniRushRuntimeConfig } from "./omnirush-runtime-config.js";
+import { buildMarsRuntimeConfig } from "./mars-runtime-config.js";
 import { readGlobalRuntimeOpencodeConfig, readRuntimeOpencodeConfig } from "./runtime-opencode-config-store.js";
 import { startServer } from "./server.js";
 import type { ReloadEvent, ServerConfig } from "./types.js";
@@ -34,12 +34,12 @@ function auth(token: string) {
 }
 
 async function createWorkspaceRoot() {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-runtime-patch-reload-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-runtime-patch-reload-"));
   roots.push(root);
   return root;
 }
 
-async function startOmniRushServer(workspaceRoot: string) {
+async function startMarsServer(workspaceRoot: string) {
   const config: ServerConfig = {
     host: "127.0.0.1",
     port: 0,
@@ -88,7 +88,7 @@ async function sleep(ms: number): Promise<void> {
 describe("workspace config patch reload events", () => {
   test("identical runtime provider patches do not emit another config reload event", async () => {
     const root = await createWorkspaceRoot();
-    const { base, token } = await startOmniRushServer(root);
+    const { base, token } = await startMarsServer(root);
     const payload = {
       opencode: {
         provider: {
@@ -118,7 +118,7 @@ describe("workspace config patch reload events", () => {
 
   test("workspace provider patches land in the global row and the injected engine file", async () => {
     const root = await createWorkspaceRoot();
-    const { base, token, config } = await startOmniRushServer(root);
+    const { base, token, config } = await startMarsServer(root);
     await patchConfig(base, token, {
       opencode: {
         provider: {
@@ -137,7 +137,7 @@ describe("workspace config patch reload events", () => {
     expect(globalRuntime.provider?.["user-lmstudio"]).toMatchObject({ npm: "@ai-sdk/openai-compatible" });
     expect((await readRuntimeOpencodeConfig(config, "ws_1")).provider).toBeUndefined();
 
-    const injected = JSON.parse(await buildOmniRushRuntimeConfig(config)) as Record<string, unknown>;
+    const injected = JSON.parse(await buildMarsRuntimeConfig(config)) as Record<string, unknown>;
     const providers = injected.provider as Record<string, unknown>;
     expect(providers["user-lmstudio"]).toMatchObject({ npm: "@ai-sdk/openai-compatible" });
 

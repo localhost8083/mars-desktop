@@ -8,13 +8,13 @@ import {
   resolveUserDataPath,
 } from "./dev-profile.mjs";
 
-const PROD_APP_IDENTIFIER = "ai.omnirush.desktop";
-const DEV_APP_IDENTIFIER = "ai.omnirush.desktop.dev";
+const PROD_APP_IDENTIFIER = "ai.marsai.desktop";
+const DEV_APP_IDENTIFIER = "ai.marsai.desktop.dev";
 const APP_DATA_PATH = path.join("tmp", "appData");
 
 function resolveProfile({
   appIdentifierOverride = "",
-  appRootPath = path.join("tmp", "omnirush"),
+  appRootPath = path.join("tmp", "mars"),
   devProfile = "",
   isDevMode = true,
   isPackaged = false,
@@ -40,7 +40,7 @@ function resolveProfile({
   };
 }
 
-test("unset OMNIRUSH_DEV_PROFILE keeps the legacy dev identifier", () => {
+test("unset MARS_DEV_PROFILE keeps the legacy dev identifier", () => {
   const profile = resolveProfile();
 
   assert.equal(profile.appIdentifier, DEV_APP_IDENTIFIER);
@@ -48,13 +48,13 @@ test("unset OMNIRUSH_DEV_PROFILE keeps the legacy dev identifier", () => {
 });
 
 test("auto dev profile is stable for one worktree and different for another", () => {
-  const firstPath = path.join("tmp", "worktrees", "omnirush");
-  const secondPath = path.join("tmp", "other", "omnirush");
+  const firstPath = path.join("tmp", "worktrees", "mars");
+  const secondPath = path.join("tmp", "other", "mars");
   const firstProfile = deriveAutoDevProfileName(firstPath);
 
   assert.equal(deriveAutoDevProfileName(firstPath), firstProfile);
   assert.notEqual(deriveAutoDevProfileName(secondPath), firstProfile);
-  assert.match(firstProfile, /^omnirush-[a-f0-9]{10}$/);
+  assert.match(firstProfile, /^mars-[a-f0-9]{10}$/);
 });
 
 test("named dev profile is sanitized into the dev app identifier", () => {
@@ -64,14 +64,14 @@ test("named dev profile is sanitized into the dev app identifier", () => {
   assert.equal(profile.userDataPath, path.join(APP_DATA_PATH, `${DEV_APP_IDENTIFIER}.feature-profile-01`));
 });
 
-test("OMNIRUSH_ELECTRON_USERDATA beats OMNIRUSH_DEV_PROFILE for the profile directory", () => {
+test("MARS_ELECTRON_USERDATA beats MARS_DEV_PROFILE for the profile directory", () => {
   const explicitUserData = path.join("tmp", "explicit-user-data");
   const profile = resolveProfile({ devProfile: "auto", userDataOverride: explicitUserData });
 
   assert.equal(profile.userDataPath, explicitUserData);
 });
 
-test("packaged mode ignores OMNIRUSH_DEV_PROFILE", () => {
+test("packaged mode ignores MARS_DEV_PROFILE", () => {
   const profile = resolveProfile({ devProfile: "auto", isPackaged: true });
 
   assert.equal(profile.appIdentifier, DEV_APP_IDENTIFIER);

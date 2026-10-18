@@ -1,13 +1,13 @@
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 
 import type { DenMcpToken, DenSettings } from "../src/app/lib/den";
-import type { OmniRushCloudMcpHealth, OmniRushCloudMcpReconcilePayload } from "../src/app/lib/omnirush-server";
+import type { MarsCloudMcpHealth, MarsCloudMcpReconcilePayload } from "../src/app/lib/mars-server";
 import {
   __setCloudMcpUserStateStorageForTest,
   readCloudMcpSyncMarker,
   writeCloudMcpUserState,
 } from "../src/react-app/domains/connections/cloud-mcp-user-state";
-import { cleanupOmniRushCloudMcpAfterSignOut } from "../src/react-app/domains/connections/cloud-mcp-reconciler";
+import { cleanupMarsCloudMcpAfterSignOut } from "../src/react-app/domains/connections/cloud-mcp-reconciler";
 import {
   getSessionMcpMaintenanceTargetKey,
   runCloudMcpMaintenanceWithRetry,
@@ -18,7 +18,7 @@ import {
 const NOW = Date.parse("2026-07-09T12:00:00.000Z");
 const WORKSPACE_ID = "workspace_1";
 const SETTINGS: DenSettings = {
-  baseUrl: "https://app.omnirush.test",
+  baseUrl: "https://app.mars.test",
   authToken: "session-token",
   activeOrgId: "organization_1",
 };
@@ -29,10 +29,10 @@ const MINTED: DenMcpToken = {
   appHostExpiresAt: new Date(NOW + 7 * 24 * 60 * 60 * 1000).toISOString(),
   organizationId: "organization_1",
   scopes: ["mcp:read", "mcp:write"],
-  resource: "https://api.omnirush.test/mcp",
+  resource: "https://api.mars.test/mcp",
 };
 
-function cloudHealth(usable: boolean): OmniRushCloudMcpHealth {
+function cloudHealth(usable: boolean): MarsCloudMcpHealth {
   return {
     schemaVersion: 1,
     phase: usable ? "ready" : "missing_desired",
@@ -42,7 +42,7 @@ function cloudHealth(usable: boolean): OmniRushCloudMcpHealth {
     workspace: { id: WORKSPACE_ID, type: "local", directory: "/workspace", path: "/workspace" },
     desired: {
       present: usable,
-      name: "omnirush-cloud",
+      name: "mars-cloud",
       revision: usable ? "rev_ready" : null,
       config: null,
       token: { present: usable, metadata: {} },
@@ -57,14 +57,14 @@ function cloudHealth(usable: boolean): OmniRushCloudMcpHealth {
     },
     engine: { status: usable ? "connected" : "not_checked" },
     tools: {
-      expected: ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
-      present: usable ? ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"] : [],
-      missing: usable ? [] : ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
+      expected: ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
+      present: usable ? ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"] : [],
+      missing: usable ? [] : ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
       providerProjection: {
         checked: usable,
-        provider: "omnirush",
+        provider: "mars",
         model: "gpt-5",
-        present: usable ? ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"] : [],
+        present: usable ? ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"] : [],
         missing: [],
       },
     },
@@ -74,14 +74,14 @@ function cloudHealth(usable: boolean): OmniRushCloudMcpHealth {
       code: "cloud_desired_missing",
       stage: "desired",
       retryable: false,
-      recommendedAction: "Connect OmniRush.ai Cloud",
+      recommendedAction: "Connect MarsAI Cloud",
       message: "missing",
     },
     checkedAt: new Date(NOW).toISOString(),
   };
 }
 
-function retryableCloudHealth(): OmniRushCloudMcpHealth {
+function retryableCloudHealth(): MarsCloudMcpHealth {
   const health = cloudHealth(false);
   return {
     ...health,
@@ -91,7 +91,7 @@ function retryableCloudHealth(): OmniRushCloudMcpHealth {
   };
 }
 
-function missingMcpTokenHealth(): OmniRushCloudMcpHealth {
+function missingMcpTokenHealth(): MarsCloudMcpHealth {
   const health = cloudHealth(false);
   return {
     ...health,
@@ -101,9 +101,9 @@ function missingMcpTokenHealth(): OmniRushCloudMcpHealth {
       code: "missing_mcp_token",
       stage: "transport_auth",
       retryable: false,
-      recommendedAction: "Refresh OmniRush.ai Cloud authentication",
-      message: "omnirush-cloud token is missing.",
-      aliases: ["omnirush_cloud_auth_required"],
+      recommendedAction: "Refresh MarsAI Cloud authentication",
+      message: "mars-cloud token is missing.",
+      aliases: ["mars_cloud_auth_required"],
     },
   };
 }
@@ -125,12 +125,12 @@ describe("session MCP maintenance", () => {
   beforeEach(() => installStorageStub());
 
   test("mints and hot-updates the Cloud MCP without opening Settings", async () => {
-    const writes: Array<{ workspaceId: string; payload: OmniRushCloudMcpReconcilePayload }> = [];
+    const writes: Array<{ workspaceId: string; payload: MarsCloudMcpReconcilePayload }> = [];
     const client = {
-      baseUrl: "https://worker.omnirush.test",
+      baseUrl: "https://worker.mars.test",
       listMcp: async () => ({ items: [] }),
-      getOmniRushCloudMcpHealth: async () => cloudHealth(false),
-      reconcileOmniRushCloudMcp: async (workspaceId: string, payload: OmniRushCloudMcpReconcilePayload) => {
+      getMarsCloudMcpHealth: async () => cloudHealth(false),
+      reconcileMarsCloudMcp: async (workspaceId: string, payload: MarsCloudMcpReconcilePayload) => {
         writes.push({ workspaceId, payload });
         return cloudHealth(true);
       },
@@ -148,11 +148,11 @@ describe("session MCP maintenance", () => {
       workspaceId: WORKSPACE_ID,
       payload: {
         workspaceId: WORKSPACE_ID,
-        name: "omnirush-cloud",
+        name: "mars-cloud",
         config: {
           type: "remote",
           enabled: true,
-          url: "https://api.omnirush.test/mcp/agent",
+          url: "https://api.mars.test/mcp/agent",
           headers: { Authorization: "Bearer mcp-token" },
           oauth: false,
         },
@@ -160,7 +160,7 @@ describe("session MCP maintenance", () => {
         tokenMetadata: {
           organizationId: "organization_1",
           expiresAt: MINTED.expiresAt,
-          resource: "https://api.omnirush.test/mcp",
+          resource: "https://api.mars.test/mcp",
           scopes: "mcp:read mcp:write",
         },
         org: { id: "organization_1", slug: null, name: null },
@@ -187,15 +187,15 @@ describe("session MCP maintenance", () => {
     const waits: number[] = [];
     const attempts: Array<{ outcome: string; attempt: number; willRetry: boolean }> = [];
     const client = {
-      baseUrl: "https://worker.omnirush.test",
+      baseUrl: "https://worker.mars.test",
       listMcp: async () => ({
         items: [{
-          name: "omnirush-cloud",
-          config: { type: "remote", enabled: true, url: "https://api.omnirush.test/mcp/agent" },
+          name: "mars-cloud",
+          config: { type: "remote", enabled: true, url: "https://api.mars.test/mcp/agent" },
         }],
       }),
-      getOmniRushCloudMcpHealth: async () => retryableCloudHealth(),
-      reconcileOmniRushCloudMcp: async () => {
+      getMarsCloudMcpHealth: async () => retryableCloudHealth(),
+      reconcileMarsCloudMcp: async () => {
         reconcileCount += 1;
         return reconcileCount === 3 ? cloudHealth(true) : retryableCloudHealth();
       },
@@ -237,15 +237,15 @@ describe("session MCP maintenance", () => {
     let writeCount = 0;
     let healthReady = false;
     const client = {
-      baseUrl: "https://worker.omnirush.test",
+      baseUrl: "https://worker.mars.test",
       listMcp: async () => ({
         items: [{
-          name: "omnirush-cloud",
-          config: { type: "remote", enabled: true, url: "https://api.omnirush.test/mcp/agent" },
+          name: "mars-cloud",
+          config: { type: "remote", enabled: true, url: "https://api.mars.test/mcp/agent" },
         }],
       }),
-      getOmniRushCloudMcpHealth: async () => cloudHealth(healthReady),
-      reconcileOmniRushCloudMcp: async () => {
+      getMarsCloudMcpHealth: async () => cloudHealth(healthReady),
+      reconcileMarsCloudMcp: async () => {
         writeCount += 1;
         healthReady = true;
         return cloudHealth(true);
@@ -280,14 +280,14 @@ describe("session MCP maintenance", () => {
     let writeCount = 0;
     const probeOptionsSeen: Array<{ probe?: boolean } | undefined> = [];
     const client = {
-      baseUrl: "https://worker.omnirush.test",
+      baseUrl: "https://worker.mars.test",
       listMcp: async () => ({
         items: [{
-          name: "omnirush-cloud",
-          config: { type: "remote", enabled: true, url: "https://api.omnirush.test/mcp/agent" },
+          name: "mars-cloud",
+          config: { type: "remote", enabled: true, url: "https://api.mars.test/mcp/agent" },
         }],
       }),
-      getOmniRushCloudMcpHealth: async (
+      getMarsCloudMcpHealth: async (
         _workspaceId: string,
         _providerModel?: unknown,
         options?: { probe?: boolean },
@@ -295,7 +295,7 @@ describe("session MCP maintenance", () => {
         probeOptionsSeen.push(options);
         return options?.probe ? missingMcpTokenHealth() : cloudHealth(true);
       },
-      reconcileOmniRushCloudMcp: async () => {
+      reconcileMarsCloudMcp: async () => {
         writeCount += 1;
         return cloudHealth(true);
       },
@@ -318,19 +318,19 @@ describe("session MCP maintenance", () => {
     const writes: string[] = [];
     const readyWorkspaces = new Set<string>();
     const client = {
-      baseUrl: "https://worker.omnirush.test",
+      baseUrl: "https://worker.mars.test",
       listMcp: async () => ({
         items: [{
-          name: "omnirush-cloud",
-          config: { type: "remote", enabled: true, url: "https://api.omnirush.test/mcp/agent" },
+          name: "mars-cloud",
+          config: { type: "remote", enabled: true, url: "https://api.mars.test/mcp/agent" },
         }],
       }),
       addMcp: async (workspaceId: string) => {
         writes.push(workspaceId);
         return { items: [] };
       },
-      getOmniRushCloudMcpHealth: async (workspaceId: string) => cloudHealth(readyWorkspaces.has(workspaceId)),
-      reconcileOmniRushCloudMcp: async (workspaceId: string) => {
+      getMarsCloudMcpHealth: async (workspaceId: string) => cloudHealth(readyWorkspaces.has(workspaceId)),
+      reconcileMarsCloudMcp: async (workspaceId: string) => {
         writes.push(workspaceId);
         readyWorkspaces.add(workspaceId);
         return cloudHealth(true);
@@ -375,23 +375,23 @@ describe("session MCP maintenance", () => {
       baseUrl,
       listMcp: async () => ({
         items: [{
-          name: "omnirush-cloud",
-          config: { type: "remote", enabled: true, url: "https://api.omnirush.test/mcp/agent" },
+          name: "mars-cloud",
+          config: { type: "remote", enabled: true, url: "https://api.mars.test/mcp/agent" },
         }],
       }),
       addMcp: async () => {
         writes.push(baseUrl);
         return { items: [] };
       },
-      getOmniRushCloudMcpHealth: async () => cloudHealth(readyWorkers.has(baseUrl)),
-      reconcileOmniRushCloudMcp: async () => {
+      getMarsCloudMcpHealth: async () => cloudHealth(readyWorkers.has(baseUrl)),
+      reconcileMarsCloudMcp: async () => {
         writes.push(baseUrl);
         readyWorkers.add(baseUrl);
         return cloudHealth(true);
       },
     });
-    const workerA = makeClient("https://worker-a.omnirush.test");
-    const workerB = makeClient("https://worker-b.omnirush.test");
+    const workerA = makeClient("https://worker-a.mars.test");
+    const workerB = makeClient("https://worker-b.mars.test");
     const mintToken = async () => {
       mintCount += 1;
       return MINTED;
@@ -414,7 +414,7 @@ describe("session MCP maintenance", () => {
   test("explicit removal keeps background maintenance disabled", async () => {
     writeCloudMcpUserState("removed", {
       denBaseUrl: SETTINGS.baseUrl,
-      serverBaseUrl: "https://worker.omnirush.test",
+      serverBaseUrl: "https://worker.mars.test",
       orgId: SETTINGS.activeOrgId ?? "",
       workspaceId: WORKSPACE_ID,
     });
@@ -423,13 +423,13 @@ describe("session MCP maintenance", () => {
 
     await expect(syncCloudControlMcpInBackground({
       client: {
-        baseUrl: "https://worker.omnirush.test",
+        baseUrl: "https://worker.mars.test",
         // The engine list is consulted (an existing enabled entry must stay
         // maintained even under recorded intent), but with no entry present
         // the recorded removal keeps provisioning skipped.
         listMcp: async () => ({ items: [] }),
-        getOmniRushCloudMcpHealth: async () => cloudHealth(false),
-        reconcileOmniRushCloudMcp: async () => {
+        getMarsCloudMcpHealth: async () => cloudHealth(false),
+        reconcileMarsCloudMcp: async () => {
           reconciled = true;
           return cloudHealth(true);
         },
@@ -447,15 +447,15 @@ describe("session MCP maintenance", () => {
 
   test("pre-signout cleanup removes runtime MCP and disconnects the exact active workspace before resolving", async () => {
     const events: string[] = [];
-    await cleanupOmniRushCloudMcpAfterSignOut({
+    await cleanupMarsCloudMcpAfterSignOut({
       context: {
         denBaseUrl: SETTINGS.baseUrl,
-        serverBaseUrl: "https://worker.omnirush.test",
+        serverBaseUrl: "https://worker.mars.test",
         orgId: SETTINGS.activeOrgId ?? "",
         workspaceId: WORKSPACE_ID,
       },
-      omnirushClient: {
-        baseUrl: "https://worker.omnirush.test",
+      marsClient: {
+        baseUrl: "https://worker.mars.test",
         removeMcp: async (workspaceId, name) => {
           events.push(`remove:${workspaceId}:${name}`);
         },
@@ -472,15 +472,15 @@ describe("session MCP maintenance", () => {
     events.push("auth-cleared");
 
     expect(events.slice(0, 2).sort()).toEqual([
-      "disconnect:/workspace/exact:omnirush-cloud",
-      `remove:${WORKSPACE_ID}:omnirush-cloud`,
+      "disconnect:/workspace/exact:mars-cloud",
+      `remove:${WORKSPACE_ID}:mars-cloud`,
     ].sort());
     expect(events[2]).toBe("auth-cleared");
   });
 
   test("deduplicates the same target without blocking another workspace", async () => {
-    const firstClient = { baseUrl: "https://worker.omnirush.test" };
-    const recreatedClient = { baseUrl: "https://worker.omnirush.test/" };
+    const firstClient = { baseUrl: "https://worker.mars.test" };
+    const recreatedClient = { baseUrl: "https://worker.mars.test/" };
     const targetA = getSessionMcpMaintenanceTargetKey({
       client: firstClient,
       cloudSignedIn: true,

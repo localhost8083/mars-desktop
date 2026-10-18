@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/install-config",
+  "name": "@mars/install-config",
   "private": true,
   "type": "module",
   "exports": {

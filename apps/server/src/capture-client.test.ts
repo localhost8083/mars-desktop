@@ -11,11 +11,11 @@ import { startCaptureService, type CaptureService, type CaptureServiceOptions } 
 import { FakeArchiveServer, slowPartTwo } from "./session-archive/fake-archive-server.js";
 import { openArchive } from "./session-archive/test-helpers.js";
 
-/** Schema 1/2 trace uploads carry their events only in files[0] (__omnirush__/trace.json): read them back as `trace`. */
+/** Schema 1/2 trace uploads carry their events only in files[0] (__mars__/trace.json): read them back as `trace`. */
 function withTraceEvents<T>(envelope: T): T {
   const record = envelope as Record<string, unknown>;
   if (record.trace !== undefined || !Array.isArray(record.files)) return envelope;
-  const file = (record.files as Array<{ path?: string; content?: string }>).find((item) => item.path === "__omnirush__/trace.json");
+  const file = (record.files as Array<{ path?: string; content?: string }>).find((item) => item.path === "__mars__/trace.json");
   if (!file?.content) return envelope;
   return { ...record, trace: (JSON.parse(file.content) as { events?: unknown[] }).events ?? [] } as T;
 }
@@ -46,7 +46,7 @@ type Envelope = {
 };
 
 async function tempDir(prefix: string): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), `omnirush-capture-${prefix}-`));
+  const dir = await mkdtemp(join(tmpdir(), `mars-capture-${prefix}-`));
   cleanups.push(() => rm(dir, { recursive: true, force: true }));
   return dir;
 }
@@ -130,12 +130,12 @@ describe("capture worker", () => {
   // These pin the worker's exact envelope sequence; capture context would add a trace of its own.
   let contextSwitch: string | undefined;
   beforeAll(() => {
-    contextSwitch = process.env.OMNIRUSH_CAPTURE_CONTEXT;
-    process.env.OMNIRUSH_CAPTURE_CONTEXT = "0";
+    contextSwitch = process.env.MARS_CAPTURE_CONTEXT;
+    process.env.MARS_CAPTURE_CONTEXT = "0";
   });
   afterAll(() => {
-    if (contextSwitch === undefined) delete process.env.OMNIRUSH_CAPTURE_CONTEXT;
-    else process.env.OMNIRUSH_CAPTURE_CONTEXT = contextSwitch;
+    if (contextSwitch === undefined) delete process.env.MARS_CAPTURE_CONTEXT;
+    else process.env.MARS_CAPTURE_CONTEXT = contextSwitch;
   });
   test("a 6,000-file start snapshot is read, scrubbed, compressed and uploaded without a main-loop stall over 100 ms", async () => {
     const root = await syntheticWorkspace(6_000);
@@ -227,7 +227,7 @@ describe("capture worker", () => {
       archive: {
         enabled: true,
         excludedDirs: [],
-        request: (path, init) => archive.respond(`https://api.omnirush.test/omnirush/${path}`, {
+        request: (path, init) => archive.respond(`https://api.mars.test/mars/${path}`, {
           method: init.method,
           headers: { authorization: `Bearer ${archive.token}` },
           ...(init.body === undefined ? {} : { body: init.body }),
@@ -303,7 +303,7 @@ describe("capture worker", () => {
     expect(performance.now() - stopping).toBeLessThan(5_000);
     expect(signals[0]!.aborted).toBe(true);
     // The start snapshot and the session's end snapshot wait in the spool, the end one never sent.
-    const spoolDir = join(stateDir, "omnirush-upload-spool");
+    const spoolDir = join(stateDir, "mars-upload-spool");
     const spooledTypes = async () => (await Promise.all((await readdir(spoolDir).catch(() => [] as string[]))
       .filter((name) => name.endsWith(".json"))
       .map(async (name) => (JSON.parse(await readFile(join(spoolDir, name), "utf8")) as { snapshot_type: string }).snapshot_type))).sort();
@@ -334,7 +334,7 @@ describe("capture worker", () => {
         archive: {
           enabled: true,
           excludedDirs: [],
-          request: (path, init) => archive.respond(`https://api.omnirush.test/omnirush/${path}`, {
+          request: (path, init) => archive.respond(`https://api.mars.test/mars/${path}`, {
             method: init.method,
             headers: { authorization: `Bearer ${archive.token}` },
             ...(init.body === undefined ? {} : { body: init.body }),
@@ -351,7 +351,7 @@ describe("capture worker", () => {
       // Edited after the chat's last turn, then the app quits (or the user signs out).
       await writeFile(join(root, "notes.md"), "after the last turn\n");
       await capture.stop(archiveFinals === undefined ? {} : { archiveFinals });
-      results.push(await readdir(join(stateDir, "omnirush-archive", "queue")));
+      results.push(await readdir(join(stateDir, "mars-archive", "queue")));
     }
     expect(results[0]).toHaveLength(1);
     expect(results[1]).toEqual([]);
@@ -381,7 +381,7 @@ describe("capture worker", () => {
           folderGate: { homeDir: home },
           request: (path, init) => {
             refreshFlags.push("refresh" in init ? init.refresh : "absent");
-            return archive.respond(`https://api.omnirush.test/omnirush/${path}`, {
+            return archive.respond(`https://api.mars.test/mars/${path}`, {
               method: init.method,
               headers: { authorization: `Bearer ${archive.token}` },
               ...(init.body === undefined ? {} : { body: init.body }),
@@ -433,7 +433,7 @@ describe("capture worker", () => {
         enabled: true,
         excludedDirs: [],
         folderGate: { homeDir: home },
-        request: (path, init) => archive.respond(`https://api.omnirush.test/omnirush/${path}`, {
+        request: (path, init) => archive.respond(`https://api.mars.test/mars/${path}`, {
           method: init.method,
           headers: { authorization: `Bearer ${archive.token}` },
           ...(init.body === undefined ? {} : { body: init.body }),
@@ -454,13 +454,13 @@ describe("capture worker", () => {
     capture.recordTrace(sessionId, "tool.read", { input: { filePath: join(root, "brief.pdf") } });
     await capture.idle();
     await capture.stop();
-    const archiveDir = join(stateDir, "omnirush-archive");
+    const archiveDir = join(stateDir, "mars-archive");
     const queue = await readdir(join(archiveDir, "queue"));
     expect(queue).toHaveLength(1);
     const record = JSON.parse(await readFile(join(archiveDir, "queue", queue[0]!), "utf8"));
     expect(record.request).toMatchObject({ session_id: sessionId, kind: "base", sequence: 0, turn: 0, marker: "touched" });
     const members = await openArchive(await readFile(join(archiveDir, "pending", record.sealed_file)));
-    expect(members.map((member) => member.name)).toEqual(["__omnirush__/manifest.json", "brief.pdf"]);
+    expect(members.map((member) => member.name)).toEqual(["__mars__/manifest.json", "brief.pdf"]);
     expect(members[1]!.content.equals(brief)).toBe(true);
   }, 60_000);
 
@@ -491,13 +491,13 @@ describe("capture worker", () => {
     expect(integrity).toEqual(["session-worker-keys:true"]);
     expect(keys.length).toBeGreaterThan(0);
     expect(keys.every((key) => typeof key === "string" && /^[0-9a-f]{64}$/.test(key))).toBe(true);
-    const spool = join(stateDir, "omnirush-upload-spool");
+    const spool = join(stateDir, "mars-upload-spool");
     const metas = await Promise.all((await readdir(spool)).filter((name) => name.endsWith(".json")).map(async (name) => JSON.parse(await readFile(join(spool, name), "utf8")) as Record<string, unknown>));
     expect(metas.length).toBeGreaterThan(0);
     expect(metas.every((meta) => meta.account_id === "user-worker-1" && typeof meta.idempotency_key === "string")).toBe(true);
   });
 
-  test("OMNIRUSH_CAPTURE_WORKER=0 captures in-process with the same envelopes", async () => {
+  test("MARS_CAPTURE_WORKER=0 captures in-process with the same envelopes", async () => {
     const root = await syntheticWorkspace(20);
     const results: Array<Array<[string, string, number]>> = [];
     for (const worker of [true, false]) {
@@ -521,12 +521,12 @@ describe("capture worker restarts", () => {
   // The worker's test-only crash hook (capture-worker.ts) answers only with this set.
   let crashSwitch: string | undefined;
   beforeAll(() => {
-    crashSwitch = process.env.OMNIRUSH_CAPTURE_TEST_CRASH;
-    process.env.OMNIRUSH_CAPTURE_TEST_CRASH = "1";
+    crashSwitch = process.env.MARS_CAPTURE_TEST_CRASH;
+    process.env.MARS_CAPTURE_TEST_CRASH = "1";
   });
   afterAll(() => {
-    if (crashSwitch === undefined) delete process.env.OMNIRUSH_CAPTURE_TEST_CRASH;
-    else process.env.OMNIRUSH_CAPTURE_TEST_CRASH = crashSwitch;
+    if (crashSwitch === undefined) delete process.env.MARS_CAPTURE_TEST_CRASH;
+    else process.env.MARS_CAPTURE_TEST_CRASH = crashSwitch;
   });
 
   function crashing(options: Partial<CaptureServiceOptions> = {}) {
@@ -543,7 +543,7 @@ describe("capture worker restarts", () => {
     });
     const crash = async () => {
       await until(() => capture.mode() === "worker", 10_000, "a ready worker");
-      capture.recordTrace("session-crash-0001", "omnirush.test.worker_crash");
+      capture.recordTrace("session-crash-0001", "mars.test.worker_crash");
       await until(() => capture.mode() === "restarting", 10_000, "the worker's exit");
     };
     return { capture, restarts, modes, crash };
@@ -592,16 +592,16 @@ describe("turns left open: worker restarts and quits", () => {
   let crashSwitch: string | undefined;
   let contextSwitch: string | undefined;
   beforeAll(() => {
-    crashSwitch = process.env.OMNIRUSH_CAPTURE_TEST_CRASH;
-    contextSwitch = process.env.OMNIRUSH_CAPTURE_CONTEXT;
-    process.env.OMNIRUSH_CAPTURE_TEST_CRASH = "1";
-    process.env.OMNIRUSH_CAPTURE_CONTEXT = "0";
+    crashSwitch = process.env.MARS_CAPTURE_TEST_CRASH;
+    contextSwitch = process.env.MARS_CAPTURE_CONTEXT;
+    process.env.MARS_CAPTURE_TEST_CRASH = "1";
+    process.env.MARS_CAPTURE_CONTEXT = "0";
   });
   afterAll(() => {
-    if (crashSwitch === undefined) delete process.env.OMNIRUSH_CAPTURE_TEST_CRASH;
-    else process.env.OMNIRUSH_CAPTURE_TEST_CRASH = crashSwitch;
-    if (contextSwitch === undefined) delete process.env.OMNIRUSH_CAPTURE_CONTEXT;
-    else process.env.OMNIRUSH_CAPTURE_CONTEXT = contextSwitch;
+    if (crashSwitch === undefined) delete process.env.MARS_CAPTURE_TEST_CRASH;
+    else process.env.MARS_CAPTURE_TEST_CRASH = crashSwitch;
+    if (contextSwitch === undefined) delete process.env.MARS_CAPTURE_CONTEXT;
+    else process.env.MARS_CAPTURE_CONTEXT = contextSwitch;
   });
 
   const SESSION = "ses_recovered_0001";
@@ -648,7 +648,7 @@ describe("turns left open: worker restarts and quits", () => {
     capture.observeSession(SESSION, engine.target);
     // The journal is on disk within its flush interval; then the worker dies.
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 800));
-    capture.recordTrace(SESSION, "omnirush.test.worker_crash");
+    capture.recordTrace(SESSION, "mars.test.worker_crash");
     await until(() => capture.mode() === "restarting", 10_000, "the worker's exit");
     // The turn finishes while the new worker comes up.
     engine.control.messages.push(engine.message("msg_2", "assistant"));
@@ -668,7 +668,7 @@ describe("turns left open: worker restarts and quits", () => {
     const root = await tempDir("resumed-root");
     await writeFile(join(root, "app.txt"), "hello\n");
     const stateDir = await tempDir("resumed-state");
-    const journal = join(stateDir, "omnirush-upload-journal");
+    const journal = join(stateDir, "mars-upload-journal");
     await mkdir(journal, { recursive: true });
     const meta = { v: 1, session_id: SESSION, workspace_id: "workspace-resumed", root, segment: 1, turn_open: true, at: new Date().toISOString() };
     await writeFile(join(journal, "left.jsonl"), `${JSON.stringify({ m: meta })}\n${JSON.stringify({ e: { at: meta.at, type: "tool.call", data: { n: 1 } } })}\n`);

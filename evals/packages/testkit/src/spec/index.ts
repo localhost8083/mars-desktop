@@ -1,4 +1,4 @@
-import { SkipError, unmetNeeds } from "@omnirush/env";
+import { SkipError, unmetNeeds } from "@mars/env";
 import { fixtureTest, wrapTestApi } from "../fixture.ts";
 import {
   BufferedEvidenceSink,
@@ -8,7 +8,7 @@ import {
   registerWorldDisposable,
   replayEvidence,
 } from "./runtime.ts";
-import type { Place, TestNeeds } from "@omnirush/env";
+import type { Place, TestNeeds } from "@mars/env";
 import type {
   Agent,
   Probe,
@@ -53,7 +53,7 @@ interface RuntimeContext<W> {
 }
 
 function combinedNeeds(filepath: string, needs: TestNeeds | undefined): TestNeeds {
-  const e2eOptIn = filepath.endsWith(".e2e.test.ts") ? ["OMNIRUSH_EVAL_E2E_TESTS"] : [];
+  const e2eOptIn = filepath.endsWith(".e2e.test.ts") ? ["MARS_EVAL_E2E_TESTS"] : [];
   return {
     ...needs,
     optIn: [...new Set([...e2eOptIn, ...(needs?.optIn ?? [])])],

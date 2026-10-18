@@ -44,8 +44,8 @@ type DraftStoreOptions = {
   subscribeToStorage?: (listener: (mutation: DraftStorageMutation) => void) => () => void;
 };
 
-export const SESSION_DRAFT_STORAGE_KEY = "omnirush.session-drafts.v2";
-export const LEGACY_SESSION_DRAFT_STORAGE_KEY = "omnirush.session-drafts.v1";
+export const SESSION_DRAFT_STORAGE_KEY = "mars.session-drafts.v2";
+export const LEGACY_SESSION_DRAFT_STORAGE_KEY = "mars.session-drafts.v1";
 export const LOCAL_SESSION_DRAFT_SCOPE = "local";
 export const MAX_SESSION_DRAFT_COUNT = 100;
 

@@ -7,7 +7,7 @@ import { test } from "node:test";
 import { prepareServerConstants } from "./prepare-server-constants.mjs";
 
 test("server and v2 modules load constants after relocation without the source checkout", async (t) => {
-  const root = mkdtempSync(join(tmpdir(), "omnirush-packaged-constants-"));
+  const root = mkdtempSync(join(tmpdir(), "mars-packaged-constants-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const repo = join(root, "repo");
   const dist = join(repo, "apps/server/dist");

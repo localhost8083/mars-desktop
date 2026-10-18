@@ -31,12 +31,12 @@ function auth(token: string) {
 }
 
 async function createWorkspaceRoot() {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-desktop-cloud-sync-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-desktop-cloud-sync-"));
   roots.push(root);
   return root;
 }
 
-async function startOmniRushServer(workspaceRoot: string) {
+async function startMarsServer(workspaceRoot: string) {
   const config = {
     host: "127.0.0.1",
     port: 0,
@@ -62,7 +62,7 @@ async function startOmniRushServer(workspaceRoot: string) {
 describe("desktop cloud sync provider imports", () => {
   test("preserves workspace provider import baseline while recording sync state", async () => {
     const root = await createWorkspaceRoot();
-    const { base, token } = await startOmniRushServer(root);
+    const { base, token } = await startMarsServer(root);
     const providerImport = {
       cloudProviderId: "lpr_test",
       providerId: "ow_lpr_test",
@@ -78,7 +78,7 @@ describe("desktop cloud sync provider imports", () => {
       method: "PATCH",
       headers: auth(token),
       body: JSON.stringify({
-        omnirush: {
+        mars: {
           cloudImports: {
             providers: { lpr_test: providerImport },
           },
@@ -112,8 +112,8 @@ describe("desktop cloud sync provider imports", () => {
     const configResponse = await fetch(`${base}/workspace/ws_1/config`, { headers: auth(token) });
     expect(configResponse.status).toBe(200);
     const configBody = expectRecord(await configResponse.json(), "workspace config response");
-    const omnirush = expectRecord(configBody.omnirush, "workspace omnirush config");
-    const cloudImports = expectRecord(omnirush.cloudImports, "workspace cloud imports");
+    const mars = expectRecord(configBody.mars, "workspace mars config");
+    const cloudImports = expectRecord(mars.cloudImports, "workspace cloud imports");
     const providers = expectRecord(cloudImports.providers, "workspace imported providers");
     const preservedProvider = expectRecord(providers.lpr_test, "preserved provider import baseline");
     expect(preservedProvider).toEqual(providerImport);

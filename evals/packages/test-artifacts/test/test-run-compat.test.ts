@@ -14,7 +14,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 test("scanTestRuns reads screenshots and assertions produced by the real test-evidence writer", async () => {
-  const resultsDir = await mkdtemp(join(tmpdir(), "omnirush-test-artifacts-compat-"));
+  const resultsDir = await mkdtemp(join(tmpdir(), "mars-test-artifacts-compat-"));
   const testRunDir = join(resultsDir, "test-runs", "2026-07-02T10-00-00-000Z-writer-compat");
   try {
     const png = Buffer.from("synthetic screenshot pixels");
@@ -57,7 +57,7 @@ test("scanTestRuns reads screenshots and assertions produced by the real test-ev
 });
 
 test("scan and render retain pending judgments from a deferred test-evidence record", async () => {
-  const resultsDir = await mkdtemp(join(tmpdir(), "omnirush-test-artifacts-pending-"));
+  const resultsDir = await mkdtemp(join(tmpdir(), "mars-test-artifacts-pending-"));
   const testRunDir = join(resultsDir, "test-runs", "2026-07-02T10-00-00-000Z-pending");
   try {
     const png = Buffer.from("pending screenshot pixels");

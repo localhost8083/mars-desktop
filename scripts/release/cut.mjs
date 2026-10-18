@@ -21,7 +21,7 @@ const watch = args.includes("--watch");
 const versionIndex = args.indexOf("--version");
 const explicitVersion = versionIndex >= 0 ? args[versionIndex + 1] : null;
 const bumpType = args.find((arg) => ["patch", "minor", "major"].includes(arg)) ?? "patch";
-const repo = "omnirush-ai/omnirush-gui";
+const repo = "mars-ai/mars-gui";
 const workflow = "Desktop Release";
 
 function run(command, commandArgs, options = {}) {
@@ -76,7 +76,7 @@ try {
 }
 if (tagExists) throw new Error(`Tag ${tag} already exists.`);
 
-run("git", ["tag", "-a", tag, "-m", `OmniRush.ai ${tag}`], { write: true });
+run("git", ["tag", "-a", tag, "-m", `MarsAI ${tag}`], { write: true });
 run("git", ["push", "origin", `refs/tags/${tag}`], { write: true, inherit: true });
 console.log(`${dryRun ? "Would create" : "Created"} ${tag} at ${localHead}.`);
 console.log(`Release: https://github.com/${repo}/releases/tag/${tag}`);

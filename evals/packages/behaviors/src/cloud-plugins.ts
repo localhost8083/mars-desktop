@@ -1,4 +1,4 @@
-import { timed } from "@omnirush/timeline";
+import { timed } from "@mars/timeline";
 import { denFetch } from "./den.ts";
 import type { DenSession } from "./den.ts";
 

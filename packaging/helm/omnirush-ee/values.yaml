@@ -9,12 +9,12 @@ imagePullSecrets: []
 
 config:
   databaseMode: mysql
-  omnirushDevMode: "0"
+  marsDevMode: "0"
   # Passed to the den-api Node.js process as NODE_OPTIONS at container startup.
   denApiNodeOptions: ""
   tenancy:
     mode: single_org
-    singleOrgName: OmniRush.ai
+    singleOrgName: MarsAI
     singleOrgSlug: default
     ownerEmails: ""
     allowPublicSignup: "false"
@@ -28,7 +28,7 @@ config:
     # Single public Den web origin. The chart passes this as DEN_BASE_URL; den-api
     # derives Better Auth, CORS/trusted origins, web-app hosts, API defaults, and
     # MCP resource defaults from it unless the compatibility overrides below are set.
-    webOrigin: https://omnirush.example.com
+    webOrigin: https://mars.example.com
     # Compatibility overrides for split-origin or migration deployments.
     apiOrigin: ""
     mcpResourceUrl: ""
@@ -44,12 +44,12 @@ config:
     webAppHosts: ""
     bootstrapAdminEmails: ""
     installLinksGatingEnabled: "false"
-    # Self-hosted Automations are opt-in. Hosted OmniRush.ai Cloud enables them.
+    # Self-hosted Automations are opt-in. Hosted MarsAI Cloud enables them.
     automationsEnabled: "false"
     # Self-hosted Dashboards are opt-in. Hosted environments use the same Den flag.
     dashboardsEnabled: "false"
-    # OmniRush.ai Web is hosted-only by default. OmniRush.ai Cloud enables it explicitly.
-    omnirushWebEnabled: "false"
+    # MarsAI Web is hosted-only by default. MarsAI Cloud enables it explicitly.
+    marsWebEnabled: "false"
     # Preserve the Den runtime for published legacy Desktops during upgrades.
     # Set false only after every Desktop is v0.18.35+ to hard-disable Automations.
     automationsRuntimeEnabled: "true"
@@ -57,11 +57,11 @@ config:
     generatedArtifactViewsEnabled: "false"
     connectLinkMode: exchange
     connectLinkKeyId: ""
-    omnirushAppConnectUrl: ""
-    omnirushWebUrl: ""
+    marsAppConnectUrl: ""
+    marsWebUrl: ""
     installerReleaseTag: ""
     installerReleaseRepo: ""
-    authCallbackUrl: https://omnirush.example.com
+    authCallbackUrl: https://mars.example.com
   internal:
     apiBaseUrl: ""
     authFallbackBaseUrl: ""
@@ -93,7 +93,7 @@ config:
     runtimeWorkspacePath: ""
     runtimeDataPath: ""
     sidecarDir: ""
-    omnirushPort: ""
+    marsPort: ""
     opencodePort: ""
     createTimeoutSeconds: ""
     deleteTimeoutSeconds: ""
@@ -181,7 +181,7 @@ secret:
     connectLinkPrivateKey: DEN_CONNECT_LINK_PRIVATE_KEY
     initialAdminBootstrapCode: DEN_INITIAL_ADMIN_BOOTSTRAP_CODE
   values:
-    databaseUrl: mysql://omnirush:change-me@mysql:3306/omnirush_den
+    databaseUrl: mysql://mars:change-me@mysql:3306/omnirush_den
     databaseRedisUrl: ""
     betterAuthSecret: CHANGE_ME_32_CHARS_MINIMUM_BETTER_AUTH
     denDbEncryptionKey: CHANGE_ME_32_CHARS_MINIMUM_DB_ENCRYPTION
@@ -206,12 +206,12 @@ installerArtifacts:
   enabled: false
   existingClaim: ""
   hostPath: ""
-  mountPath: /var/lib/omnirush/installer-artifacts
+  mountPath: /var/lib/mars/installer-artifacts
 
 denApi:
   replicaCount: 1
   image:
-    repository: ghcr.io/omnirush-ai/omnirush-den-api
+    repository: ghcr.io/mars-ai/mars-den-api
     tag: ""
   service:
     type: ClusterIP
@@ -239,7 +239,7 @@ denApi:
 denWeb:
   replicaCount: 1
   image:
-    repository: ghcr.io/omnirush-ai/omnirush-den-web
+    repository: ghcr.io/mars-ai/mars-den-web
     tag: ""
   service:
     type: ClusterIP
@@ -268,7 +268,7 @@ inference:
   enabled: false
   replicaCount: 1
   image:
-    repository: ghcr.io/omnirush-ai/omnirush-inference
+    repository: ghcr.io/mars-ai/mars-inference
     tag: ""
   service:
     type: ClusterIP
@@ -311,12 +311,12 @@ ingress:
   className: ""
   annotations: {}
   web:
-    host: omnirush.example.com
+    host: mars.example.com
     path: /
     pathType: Prefix
   api:
     enabled: true
-    host: api.omnirush.example.com
+    host: api.mars.example.com
     path: /
     pathType: Prefix
   tls: []

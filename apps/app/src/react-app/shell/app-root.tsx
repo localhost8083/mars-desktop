@@ -26,7 +26,7 @@ import {
 } from "../domains/connections/cloud-inventory-cache";
 import { ForcedSigninPage } from "../domains/cloud/forced-signin-page";
 import { EnterpriseActivationGate } from "../domains/cloud/enterprise-activation-gate";
-import { OmniRushWebAccessGate } from "../domains/cloud/omnirush-web-access-gate";
+import { MarsWebAccessGate } from "../domains/cloud/mars-web-access-gate";
 import { OrgOnboardingPage } from "../domains/cloud/org-onboarding-page";
 import { NewProvidersListener } from "./new-providers-listener";
 import { BudgetWrapConsent } from "./budget-wrap-consent";
@@ -39,12 +39,12 @@ import { ReactRenderWatchdogOverlay } from "./react-render-watchdog-overlay";
 import { CloudWorkspaceOverlay, CloudWorkspaceStatusProvider } from "./cloud-workspace-overlay";
 import { AppMenuProvider } from "./app-menu";
 import {
-  OmniRushControlProvider,
-  OmniRushRouteControlActions,
+  MarsControlProvider,
+  MarsRouteControlActions,
   useControlAction,
-  type OmniRushControlAction,
+  type MarsControlAction,
 } from "./control/control-provider";
-import { OmniRushContextPublisher } from "./omnirush-context-publisher";
+import { MarsContextPublisher } from "./mars-context-publisher";
 import { SessionRoute } from "./session-route";
 import { DesktopUpdaterProvider } from "../domains/settings/state/desktop-updater-provider";
 import { SyncRestartGate } from "./sync-restart-banner";
@@ -52,7 +52,6 @@ import { UpdateGate } from "./update-gate";
 import { QualityRewards } from "../domains/quality/quality-notice";
 import { BuildathonLayer } from "../domains/buildathon/buildathon";
 import { BuildathonPromoGate } from "../domains/buildathon/buildathon-promo";
-import { TurnRunningSync } from "../domains/quality/good-session";
 import { SettingsRoute } from "./settings-route";
 import { ShellConfigProvider } from "./shell-config";
 import { WelcomeRoute } from "./welcome-route";
@@ -228,13 +227,13 @@ function DenSigninGate({ children }: DenSigninGateProps) {
 }
 
 /**
- * Control actions for cloud auth. Placed inside OmniRushControlProvider so
+ * Control actions for cloud auth. Placed inside MarsControlProvider so
  * the actions are available on every route (including /welcome and /signin).
  */
 function DenAuthControlActions() {
   const denAuth = useDenAuth();
 
-  const exchangeGrantAction = useMemo<OmniRushControlAction>(() => ({
+  const exchangeGrantAction = useMemo<MarsControlAction>(() => ({
     id: "auth.exchange-grant",
     label: "Sign in with a handoff grant",
     description: "Exchange a desktop handoff grant string to sign in without the browser flow.",
@@ -262,7 +261,7 @@ function DenAuthControlActions() {
   }), []);
   useControlAction(exchangeGrantAction);
 
-  const authStatusAction = useMemo<OmniRushControlAction>(() => ({
+  const authStatusAction = useMemo<MarsControlAction>(() => ({
     id: "auth.status",
     label: "Get auth status",
     description: "Return the current cloud sign-in status and user.",
@@ -276,7 +275,7 @@ function DenAuthControlActions() {
   }), [denAuth.status, denAuth.user]);
   useControlAction(authStatusAction);
 
-  const setEvalBaseUrlAction = useMemo<OmniRushControlAction | null>(() => {
+  const setEvalBaseUrlAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
     return {
       id: "eval.auth.set-base-url",
@@ -315,10 +314,10 @@ function DenAuthControlActions() {
 
 /**
  * Control action for eval automation: inject brand theme (logo, icon, accent color)
- * via the dev-only desktop config bridge. Placed inside OmniRushControlProvider.
+ * via the dev-only desktop config bridge. Placed inside MarsControlProvider.
  */
 function BrandThemeControlActions() {
-  const applyAction = useMemo<OmniRushControlAction | null>(() => {
+  const applyAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
     return {
       id: "eval.brand_theme.apply",
@@ -331,7 +330,7 @@ function BrandThemeControlActions() {
         { name: "brandAccentColor", type: "string", description: "Radix color family" },
       ],
       execute: (args) => {
-        const bridge = (window as unknown as Record<string, unknown>).__omnirushApplyDesktopConfig;
+        const bridge = (window as unknown as Record<string, unknown>).__marsApplyDesktopConfig;
         if (typeof bridge !== "function") {
           return { ok: false, error: "Desktop config bridge not available (dev mode only)." };
         }
@@ -342,7 +341,7 @@ function BrandThemeControlActions() {
   }, []);
   useControlAction(applyAction);
 
-  const relaunchAction = useMemo<OmniRushControlAction | null>(() => {
+  const relaunchAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
     return {
       id: "eval.app.relaunch",
@@ -393,16 +392,16 @@ export function AppRoot() {
         <BuildathonPromoGate>
         <ShellConfigProvider>
         <AppMenuProvider>
-        <OmniRushControlProvider>
-          <OmniRushRouteControlActions />
-          <OmniRushContextPublisher />
+        <MarsControlProvider>
+          <MarsRouteControlActions />
+          <MarsContextPublisher />
           <BudgetWrapConsent />
           <AutoCompactNotice />
           <DenAuthControlActions />
           <BrandThemeControlActions />
           <EnterpriseActivationGate>
             <DenSigninGate>
-              <OmniRushWebAccessGate>
+              <MarsWebAccessGate>
                 <CloudWorkspaceStatusProvider>
                   <ComputerUseControls />
                   <Routes>
@@ -523,12 +522,11 @@ export function AppRoot() {
                   <CloudWorkspaceOverlay />
                   {isDesktopRuntime() ? <QualityRewards /> : null}
                   {isDesktopRuntime() ? <BuildathonLayer /> : null}
-                  {isDesktopRuntime() ? <TurnRunningSync /> : null}
                 </CloudWorkspaceStatusProvider>
-              </OmniRushWebAccessGate>
+              </MarsWebAccessGate>
             </DenSigninGate>
           </EnterpriseActivationGate>
-        </OmniRushControlProvider>
+        </MarsControlProvider>
         </AppMenuProvider>
         </ShellConfigProvider>
         </BuildathonPromoGate>

@@ -7,7 +7,7 @@ import { BrowserRouter, HashRouter } from "react-router";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { initializeDenBootstrapConfig } from "./app/lib/den";
 import { startWebErrorMonitoring } from "./app/lib/error-monitoring";
-import { getOmniRushDeployment } from "./app/lib/omnirush-deployment";
+import { getMarsDeployment } from "./app/lib/mars-deployment";
 import { bootstrapTheme } from "./app/theme";
 import { isDesktopRuntime } from "./app/utils";
 import { initLocale } from "./i18n";
@@ -34,7 +34,7 @@ if (!root) {
   throw new Error("Root element not found");
 }
 
-root.dataset.omnirushDeployment = getOmniRushDeployment();
+root.dataset.marsDeployment = getMarsDeployment();
 
 const platform = createDefaultPlatform();
 setWebNotificationHandler(platform.notify);

@@ -1,5 +1,5 @@
-import { typeField } from "@omnirush/behaviors";
-import type { SpecBodyContext } from "@omnirush/testkit";
+import { typeField } from "@mars/behaviors";
+import type { SpecBodyContext } from "@mars/testkit";
 import type { onboardingWorld } from "./world.ts";
 
 export type OnboardingContext = SpecBodyContext<
@@ -24,7 +24,7 @@ export async function onboarding(ctx: OnboardingContext) {
     const result = await probe.api(
       world.den.admin,
       path,
-      orgId ? { headers: { "x-omnirush-org-id": orgId } } : {},
+      orgId ? { headers: { "x-mars-org-id": orgId } } : {},
     );
     if (!result.response.ok)
       throw new Error(
@@ -122,7 +122,7 @@ export async function onboarding(ctx: OnboardingContext) {
     );
   });
 
-  await user.notSee({ testId: "download-omnirush-card" });
+  await user.notSee({ testId: "download-mars-card" });
   await step("Complete setup", async () => {
     await user.click({ role: "button", label: "Complete setup" });
     await user.see({ testId: "den-org-sidebar" }, { timeoutMs: 90_000 });

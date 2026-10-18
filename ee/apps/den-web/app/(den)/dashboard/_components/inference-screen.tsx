@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { INFERENCE_MODEL_ALIASES } from "@omnirush/types/den/inference";
+import { INFERENCE_MODEL_ALIASES } from "@mars/types/den/inference";
 import { DenButton } from "../../_components/ui/button";
 import { DenPageHeader } from "../../_components/ui/page-header";
 import { DenCard } from "../../_components/ui/card";

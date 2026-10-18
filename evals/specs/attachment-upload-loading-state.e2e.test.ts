@@ -1,6 +1,6 @@
-import { browserScript } from "@omnirush/testkit";
+import { browserScript } from "@mars/testkit";
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { attachmentUpload } from "../worlds/chat.ts";
 
 const attachmentName = "big-photo.png";
@@ -94,7 +94,7 @@ test(`attaching an image in ${entryPoint} retains the draft until the upload is 
   await user.click("Run task");
 
   // TODO(primitive): await a transient attachment-status witness.
-  expect(await probe.eventually(() => probe.eval(() => (globalThis.__attachmentUploadingSeen === true && window.__omnirushSubmissionFault?.attempts === 1)), {
+  expect(await probe.eventually(() => probe.eval(() => (globalThis.__attachmentUploadingSeen === true && window.__marsSubmissionFault?.attempts === 1)), {
     within: 30_000,
     intervalMs: 50,
     label: "attachment uploading state observed",

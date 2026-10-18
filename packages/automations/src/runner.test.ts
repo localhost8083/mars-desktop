@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { AUTOMATION_DESKTOP_RUNNER_PRESENCE_WINDOW_MS } from "@omnirush/types/automations"
+import { AUTOMATION_DESKTOP_RUNNER_PRESENCE_WINDOW_MS } from "@mars/types/automations"
 import { desktopClaimDeadline, desktopRunnerConnected, missedDesktopRunMessage } from "./runner.js"
 
 const MINUTE = 60_000

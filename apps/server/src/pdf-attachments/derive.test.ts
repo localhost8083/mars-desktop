@@ -27,7 +27,7 @@ import { buildTestPdf, corruptTestPdf } from "./pdf-fixture.test-helper.js";
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 async function withWorkspace(fn: (root: string) => Promise<void>) {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-pdf-derive-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-pdf-derive-"));
   try {
     await fn(root);
   } finally {
@@ -194,7 +194,7 @@ describe("derivePdf", () => {
 
   test("ignores anything planted in the bundle: the model only ever gets bytes produced here", async () => {
     await withWorkspace(async (root) => {
-      const outside = await mkdtemp(join(tmpdir(), "omnirush-pdf-secret-"));
+      const outside = await mkdtemp(join(tmpdir(), "mars-pdf-secret-"));
       try {
         const secret = join(outside, "secret.txt");
         await writeFile(secret, "TOP SECRET CONTENT");
@@ -229,9 +229,9 @@ describe("derivePdf", () => {
 
   test("refuses to write through a symlinked attachments directory planted in the workspace", async () => {
     await withWorkspace(async (root) => {
-      const outside = await mkdtemp(join(tmpdir(), "omnirush-pdf-redirect-"));
+      const outside = await mkdtemp(join(tmpdir(), "mars-pdf-redirect-"));
       try {
-        await mkdir(join(root, ".opencode", "omnirush", "inbox"), { recursive: true });
+        await mkdir(join(root, ".opencode", "mars", "inbox"), { recursive: true });
         await symlink(outside, join(root, MATERIALIZED_DIR));
         await expect(derivePdf(root, "victim.pdf", buildTestPdf(["Confidential"]), { renderPages: false })).rejects.toThrow("resolves through a symlink");
         expect(await readdir(outside)).toEqual([]);
@@ -243,11 +243,11 @@ describe("derivePdf", () => {
 
   test("never creates directories through a symlinked parent", async () => {
     await withWorkspace(async (root) => {
-      const outside = await mkdtemp(join(tmpdir(), "omnirush-pdf-parent-"));
+      const outside = await mkdtemp(join(tmpdir(), "mars-pdf-parent-"));
       try {
-        // `.opencode/omnirush` itself points elsewhere: nothing below it may be created.
+        // `.opencode/mars` itself points elsewhere: nothing below it may be created.
         await mkdir(join(root, ".opencode"), { recursive: true });
-        await symlink(outside, join(root, ".opencode", "omnirush"));
+        await symlink(outside, join(root, ".opencode", "mars"));
         await expect(derivePdf(root, "victim.pdf", buildTestPdf(["Confidential"]), { renderPages: true })).rejects.toThrow("resolves through a symlink");
         expect(await readdir(outside)).toEqual([]);
       } finally {
@@ -258,7 +258,7 @@ describe("derivePdf", () => {
 
   test("refuses a bundle directory that is a symlink", async () => {
     await withWorkspace(async (root) => {
-      const outside = await mkdtemp(join(tmpdir(), "omnirush-pdf-bundle-"));
+      const outside = await mkdtemp(join(tmpdir(), "mars-pdf-bundle-"));
       try {
         const pdf = buildTestPdf(["Bundle"]);
         const digest = createHash("sha256").update(pdf).digest("hex");
@@ -274,7 +274,7 @@ describe("derivePdf", () => {
 
   test("verified reads refuse symlinks, hardlinks, directories, and files outside the parent", async () => {
     await withWorkspace(async (root) => {
-      const outside = await mkdtemp(join(tmpdir(), "omnirush-pdf-verified-"));
+      const outside = await mkdtemp(join(tmpdir(), "mars-pdf-verified-"));
       try {
         const realRoot = await realpath(root);
         const regular = join(realRoot, "ok.pdf");
@@ -306,7 +306,7 @@ describe("derivePdf", () => {
 
   test("writes land only through a handle verified at the final name: a parent swapped for a symlink before the open leaves nothing outside", async () => {
     await withWorkspace(async (root) => {
-      const outside = await mkdtemp(join(tmpdir(), "omnirush-pdf-swap-"));
+      const outside = await mkdtemp(join(tmpdir(), "mars-pdf-swap-"));
       try {
         const realRoot = await realpath(root);
         const bundle = join(realRoot, "bundle");
@@ -343,7 +343,7 @@ describe("derivePdf", () => {
 
   test("writes replace an earlier copy in place and refuse a symlink or hardlink planted at the name", async () => {
     await withWorkspace(async (root) => {
-      const outside = await mkdtemp(join(tmpdir(), "omnirush-pdf-planted-"));
+      const outside = await mkdtemp(join(tmpdir(), "mars-pdf-planted-"));
       try {
         const realRoot = await realpath(root);
         const directory = join(realRoot, "bundle");

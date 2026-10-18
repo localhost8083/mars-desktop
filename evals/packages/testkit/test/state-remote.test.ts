@@ -3,11 +3,11 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
-import { electronProfilePaths } from "@omnirush/hosts";
+import { electronProfilePaths } from "@mars/hosts";
 import { readConnectStateFile } from "../src/state.ts";
-import type { CdpClient, Surface } from "@omnirush/cdp";
+import type { CdpClient, Surface } from "@mars/cdp";
 
-const MISSING = "__OMNIRUSH_TESTKIT_MISSING__";
+const MISSING = "__MARS_TESTKIT_MISSING__";
 
 function surface(hostKind: string, profileDir?: string, sandboxId?: string): Surface {
   const client: CdpClient = {
@@ -34,8 +34,8 @@ test("readConnectStateFile reads Daytona candidates in order", async () => {
 
   assert.deepEqual(result, { status: "available", connectEnabled: true });
   assert.deepEqual(calls.map(({ sandbox }) => sandbox), ["sandbox-1", "sandbox-1"]);
-  assert(calls[0]?.script.includes("/workspace/profiles/desktop/electron-userdata/omnirush-dev-data/xdg/config/omnirush/connect-state.json"));
-  assert(calls[1]?.script.includes("/workspace/profiles/desktop/xdg-config/omnirush/connect-state.json"));
+  assert(calls[0]?.script.includes("/workspace/profiles/desktop/electron-userdata/mars-dev-data/xdg/config/mars/connect-state.json"));
+  assert(calls[1]?.script.includes("/workspace/profiles/desktop/xdg-config/mars/connect-state.json"));
   assert(calls.every(({ script }) => !script.includes("'")));
 });
 
@@ -84,10 +84,10 @@ test("readConnectStateFile rejects unsafe Daytona profile paths without executin
 });
 
 test("readConnectStateFile preserves local profile reads", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-state-test-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-state-test-"));
   try {
     const paths = electronProfilePaths(root);
-    const statePath = join(paths.configHome, "omnirush", "connect-state.json");
+    const statePath = join(paths.configHome, "mars", "connect-state.json");
     await mkdir(dirname(statePath), { recursive: true });
     await writeFile(statePath, '{"connectEnabled":false}', "utf8");
     assert.deepEqual(await readConnectStateFile(surface("local", root)), { status: "available", connectEnabled: false });

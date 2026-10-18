@@ -75,9 +75,9 @@ describe("active organization drop tripwire", () => {
     writeDenSettings({ baseUrl: "https://den.test", activeOrgId: null }, { persistBootstrap: false });
 
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(window.__omnirushOrgDropWarnings).toHaveLength(1);
-    expect(window.__omnirushOrgDropWarnings?.[0]).toContain("activeOrgId dropped unexpectedly from org_stored");
-    expect(window.__omnirushOrgDropWarnings?.[0]).toContain("\n");
+    expect(window.__marsOrgDropWarnings).toHaveLength(1);
+    expect(window.__marsOrgDropWarnings?.[0]).toContain("activeOrgId dropped unexpectedly from org_stored");
+    expect(window.__marsOrgDropWarnings?.[0]).toContain("\n");
     warn.mockRestore();
   });
 
@@ -95,7 +95,7 @@ describe("active organization drop tripwire", () => {
     clearDenSession();
 
     expect(warn).not.toHaveBeenCalled();
-    expect(window.__omnirushOrgDropWarnings).toBeUndefined();
+    expect(window.__marsOrgDropWarnings).toBeUndefined();
     warn.mockRestore();
   });
 
@@ -107,7 +107,7 @@ describe("active organization drop tripwire", () => {
     writeDenSettings({ baseUrl: "https://den.test", activeOrgId: null }, { persistBootstrap: false });
 
     expect(warn).not.toHaveBeenCalled();
-    expect(window.__omnirushOrgDropWarnings).toBeUndefined();
+    expect(window.__marsOrgDropWarnings).toBeUndefined();
     warn.mockRestore();
   });
 
@@ -120,7 +120,7 @@ describe("active organization drop tripwire", () => {
     writeDenSettings({ baseUrl: "https://den.test", activeOrgId: null }, { persistBootstrap: false });
 
     expect(warn).not.toHaveBeenCalled();
-    expect(window.__omnirushOrgDropWarnings).toBeUndefined();
+    expect(window.__marsOrgDropWarnings).toBeUndefined();
     warn.mockRestore();
   });
 });
@@ -211,10 +211,10 @@ describe("mergePassiveDenSettings", () => {
       },
     });
 
-    window.localStorage.setItem("omnirush.den.authToken", "tok_stored");
-    window.localStorage.setItem("omnirush.den.activeOrgId", "org_stored");
-    window.localStorage.setItem("omnirush.den.activeOrgSlug", "stored-org");
-    window.localStorage.setItem("omnirush.den.activeOrgName", "Stored Org");
+    window.localStorage.setItem("mars.den.authToken", "tok_stored");
+    window.localStorage.setItem("mars.den.activeOrgId", "org_stored");
+    window.localStorage.setItem("mars.den.activeOrgSlug", "stored-org");
+    window.localStorage.setItem("mars.den.activeOrgName", "Stored Org");
 
     writeDenSettings(
       mergePassiveDenSettings(readDenSettings(), {
@@ -226,10 +226,10 @@ describe("mergePassiveDenSettings", () => {
       }),
     );
 
-    expect(window.localStorage.getItem("omnirush.den.authToken")).toBe("tok_stored");
-    expect(window.localStorage.getItem("omnirush.den.activeOrgId")).toBe("org_stored");
-    expect(window.localStorage.getItem("omnirush.den.activeOrgSlug")).toBe("stored-org");
-    expect(window.localStorage.getItem("omnirush.den.activeOrgName")).toBe("Stored Org");
+    expect(window.localStorage.getItem("mars.den.authToken")).toBe("tok_stored");
+    expect(window.localStorage.getItem("mars.den.activeOrgId")).toBe("org_stored");
+    expect(window.localStorage.getItem("mars.den.activeOrgSlug")).toBe("stored-org");
+    expect(window.localStorage.getItem("mars.den.activeOrgName")).toBe("Stored Org");
   });
 });
 
@@ -367,16 +367,16 @@ describe("explicit sign-out", () => {
 
     clearDenSession();
 
-    expect(window.localStorage.getItem("omnirush.den.authToken")).toBeNull();
-    expect(window.localStorage.getItem("omnirush.den.activeOrgId")).toBeNull();
-    expect(window.localStorage.getItem("omnirush.den.activeOrgSlug")).toBeNull();
-    expect(window.localStorage.getItem("omnirush.den.activeOrgName")).toBeNull();
+    expect(window.localStorage.getItem("mars.den.authToken")).toBeNull();
+    expect(window.localStorage.getItem("mars.den.activeOrgId")).toBeNull();
+    expect(window.localStorage.getItem("mars.den.activeOrgSlug")).toBeNull();
+    expect(window.localStorage.getItem("mars.den.activeOrgName")).toBeNull();
 
     // The provider store listens for this signed_out notification to remove
     // organization and imported Cloud providers; explicit logout must keep
     // emitting it.
     const sessionUpdated = dispatched.find(
-      (event) => event.type === "omnirush-den-session-updated",
+      (event) => event.type === "mars-den-session-updated",
     ) as CustomEvent<{ status?: string }> | undefined;
     expect(sessionUpdated?.detail.status).toBe("signed_out");
   });
@@ -388,7 +388,7 @@ describe("explicit sign-out", () => {
       value: {
         localStorage: memoryStorage(),
         dispatchEvent: (event: Event) => {
-          if (event.type === "omnirush-den-session-updated") {
+          if (event.type === "mars-den-session-updated") {
             dispatched.push(event as CustomEvent<{ status?: string; userInitiated?: boolean }>);
           }
           return true;

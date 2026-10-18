@@ -74,7 +74,7 @@ export const MCP_APP_SANDBOX_PROXY_SCRIPT = String.raw`
   if (!hostOrigin) throw new Error("MCP App sandbox host origin is unavailable.");
   const hostTargetOrigin = hostOrigin === "null" ? "*" : hostOrigin;
   const ownOrigin = window.location.origin;
-  // OmniRush.ai delivery diagnostics are deliberately outside JSON-RPC so the
+  // MarsAI delivery diagnostics are deliberately outside JSON-RPC so the
   // stable MCP Apps transport never mistakes them for protocol messages.
   const notifyHost = (method, params = {}) => window.parent.postMessage({ method, params }, hostTargetOrigin);
   const inner = document.createElement("iframe");

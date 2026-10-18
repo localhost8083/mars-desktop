@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { Place } from "@omnirush/env";
+import type { Place } from "@mars/env";
 import { selfHostServer } from "../src/self-host.ts";
 
 test("selfHostServer skips Daytona placement", async () => {
@@ -22,6 +22,6 @@ test("selfHostServer skips Daytona placement", async () => {
 
   await assert.rejects(
     selfHostServer({ place, name: "Test", slug: "test", ownerEmails: ["owner@example.test"] }),
-    (error: unknown) => error instanceof Error && error.name === "SkipError" && error.message.includes("OMNIRUSH_EVAL_DAYTONA"),
+    (error: unknown) => error instanceof Error && error.name === "SkipError" && error.message.includes("MARS_EVAL_DAYTONA"),
   );
 });

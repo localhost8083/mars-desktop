@@ -1,13 +1,13 @@
 import type { UIMessage } from "ai";
 
-import type { OmniRushSessionSnapshot } from "../../../../app/lib/omnirush-server";
+import type { MarsSessionSnapshot } from "../../../../app/lib/mars-server";
 import { mergeSnapshotAndLiveMessages } from "../sync/message-merge";
 import { applyRevertCursor } from "../sync/transcript-reconcile";
 import { snapshotToUIMessages } from "../sync/usechat-adapter";
 
-const snapshotMessageCache = new WeakMap<OmniRushSessionSnapshot, UIMessage[]>();
+const snapshotMessageCache = new WeakMap<MarsSessionSnapshot, UIMessage[]>();
 
-function getSnapshotMessages(snapshot: OmniRushSessionSnapshot) {
+function getSnapshotMessages(snapshot: MarsSessionSnapshot) {
   const cached = snapshotMessageCache.get(snapshot);
   if (cached) return cached;
   const messages = snapshotToUIMessages(snapshot);
@@ -17,8 +17,8 @@ function getSnapshotMessages(snapshot: OmniRushSessionSnapshot) {
 
 export function resolveRenderedSessionSnapshot(input: {
   sessionId: string;
-  currentSnapshot: OmniRushSessionSnapshot | null | undefined;
-  cachedRendered: { sessionId: string; snapshot: OmniRushSessionSnapshot } | null | undefined;
+  currentSnapshot: MarsSessionSnapshot | null | undefined;
+  cachedRendered: { sessionId: string; snapshot: MarsSessionSnapshot } | null | undefined;
 }) {
   if (input.currentSnapshot?.session.id === input.sessionId) {
     return input.currentSnapshot;
@@ -34,7 +34,7 @@ export function resolveRenderedSessionSnapshot(input: {
 
 export function deriveRenderedSessionMessages(input: {
   transcriptState: UIMessage[] | null | undefined;
-  snapshot: OmniRushSessionSnapshot | null | undefined;
+  snapshot: MarsSessionSnapshot | null | undefined;
 }) {
   const revertMessageId = (input.snapshot?.session as any)?.revert?.messageID ?? null;
   const liveMessages = input.transcriptState ?? [];

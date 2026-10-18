@@ -6,19 +6,19 @@
 # Then open the printed Web UI URL — already wired to headless, no config needed.
 #
 # Env overrides (optional, via .env or export):
-#   OMNIRUSH_TOKEN        — shared client token (auto-generated if unset)
-#   OMNIRUSH_HOST_TOKEN   — host/admin token (auto-generated if unset)
-#   OMNIRUSH_WORKSPACE    — host path to mount as workspace (default: ./workspace)
-#   OMNIRUSH_PORT         — host port to map to container :8787 (default: 8787)
+#   MARS_TOKEN        — shared client token (auto-generated if unset)
+#   MARS_HOST_TOKEN   — host/admin token (auto-generated if unset)
+#   MARS_WORKSPACE    — host path to mount as workspace (default: ./workspace)
+#   MARS_PORT         — host port to map to container :8787 (default: 8787)
 #   WEB_PORT              — host port to map to container :5173 (default: 5173)
-#   OMNIRUSH_DEV_ID       — unique ID for this stack (default: default)
-#   OMNIRUSH_DEV_MODE     — enables isolated OpenCode dev state
-#   OMNIRUSH_PUBLIC_HOST  — browser-facing host/IP for LAN-accessible URLs
-#   OMNIRUSH_DOCKER_DEV_MOUNT_HOST_OPENCODE=1 — import host OpenCode config/auth into the isolated dev state
-#   OMNIRUSH_OPENCODE_CONFIG_DIR      — host OpenCode config dir detection override
-#   OMNIRUSH_OPENCODE_DATA_DIR        — host OpenCode data dir detection override
-#   OMNIRUSH_HOST_OPENCODE_CONFIG_DIR — import source for OpenCode config
-#   OMNIRUSH_HOST_OPENCODE_DATA_DIR   — import source for OpenCode auth/data
+#   MARS_DEV_ID       — unique ID for this stack (default: default)
+#   MARS_DEV_MODE     — enables isolated OpenCode dev state
+#   MARS_PUBLIC_HOST  — browser-facing host/IP for LAN-accessible URLs
+#   MARS_DOCKER_DEV_MOUNT_HOST_OPENCODE=1 — import host OpenCode config/auth into the isolated dev state
+#   MARS_OPENCODE_CONFIG_DIR      — host OpenCode config dir detection override
+#   MARS_OPENCODE_DATA_DIR        — host OpenCode data dir detection override
+#   MARS_HOST_OPENCODE_CONFIG_DIR — import source for OpenCode config
+#   MARS_HOST_OPENCODE_DATA_DIR   — import source for OpenCode auth/data
 
 x-shared: &shared
   image: node:22-bookworm-slim
@@ -28,12 +28,12 @@ x-shared: &shared
     - ../../:/app
     - pnpm-store:/root/.local/share/pnpm/store
     - bun-install:/root/.bun
-    - ${OMNIRUSH_WORKSPACE:-./workspace}:/workspace
-    - ${OMNIRUSH_HOST_OPENCODE_CONFIG_DIR:-./workspace/.omnirush-host-opencode-config}:/persist/.config/opencode:ro
-    - ${OMNIRUSH_HOST_OPENCODE_DATA_DIR:-./workspace/.omnirush-host-opencode-data}:/persist/.omnirush-host-opencode-data:ro
+    - ${MARS_WORKSPACE:-./workspace}:/workspace
+    - ${MARS_HOST_OPENCODE_CONFIG_DIR:-./workspace/.mars-host-opencode-config}:/persist/.config/opencode:ro
+    - ${MARS_HOST_OPENCODE_DATA_DIR:-./workspace/.mars-host-opencode-data}:/persist/.mars-host-opencode-data:ro
 
 services:
-  omnirush-server:
+  mars-server:
     <<: *shared
     entrypoint: ["/bin/sh", "-c"]
     command:
@@ -51,7 +51,7 @@ services:
         export BUN_INSTALL="/root/.bun"
         export PATH="$$BUN_INSTALL/bin:$$PATH"
         if ! command -v bun >/dev/null 2>&1; then
-          echo "[omnirush-server] Installing bun..."
+          echo "[mars-server] Installing bun..."
           curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.14"
         fi
 
@@ -59,11 +59,11 @@ services:
         corepack enable && corepack prepare pnpm@10.27.0 --activate
 
         # --- Install deps ---
-        echo "[omnirush-server] Installing dependencies..."
+        echo "[mars-server] Installing dependencies..."
         pnpm install --no-frozen-lockfile --network-concurrency 1 --child-concurrency 1
 
         # --- Build the server plugins and install the pinned OpenCode binary ---
-        pnpm --filter omnirush-server build
+        pnpm --filter mars-server build
         OPENCODE_VERSION=$$(node -e 'const fs=require("fs"); const parsed=JSON.parse(fs.readFileSync("/app/constants.json", "utf8")); process.stdout.write(String(parsed.opencodeVersion || "").trim().replace(/^v/, ""));')
         export OPENCODE_INSTALL_DIR="/root/.opencode/bin"
         mkdir -p "$$OPENCODE_INSTALL_DIR"
@@ -71,46 +71,46 @@ services:
           curl -fsSL https://opencode.ai/install | bash -s -- --version "$$OPENCODE_VERSION" --no-modify-path
         fi
         export PATH="$$OPENCODE_INSTALL_DIR:$$PATH"
-        export OMNIRUSH_MANAGE_OPENCODE=1
-        export OMNIRUSH_OPENCODE_BIN="$$(command -v opencode)"
-        export OMNIRUSH_EXTENSIONS_PLUGIN_DIR="/app/apps/server/dist/opencode-plugins"
+        export MARS_MANAGE_OPENCODE=1
+        export MARS_OPENCODE_BIN="$$(command -v opencode)"
+        export MARS_EXTENSIONS_PLUGIN_DIR="/app/apps/server/dist/opencode-plugins"
 
         # --- Resolve tokens ---
-        if [ -z "$$OMNIRUSH_TOKEN" ]; then
-          OMNIRUSH_TOKEN=$$(cat /proc/sys/kernel/random/uuid)
-          export OMNIRUSH_TOKEN
+        if [ -z "$$MARS_TOKEN" ]; then
+          MARS_TOKEN=$$(cat /proc/sys/kernel/random/uuid)
+          export MARS_TOKEN
         fi
-        if [ -z "$$OMNIRUSH_HOST_TOKEN" ]; then
-          OMNIRUSH_HOST_TOKEN=$$(cat /proc/sys/kernel/random/uuid)
-          export OMNIRUSH_HOST_TOKEN
+        if [ -z "$$MARS_HOST_TOKEN" ]; then
+          MARS_HOST_TOKEN=$$(cat /proc/sys/kernel/random/uuid)
+          export MARS_HOST_TOKEN
         fi
 
         # Write tokens so the web service can source them
         mkdir -p /app/tmp
-        printf 'OMNIRUSH_TOKEN=%s\nOMNIRUSH_HOST_TOKEN=%s\n' \
-          "$$OMNIRUSH_TOKEN" "$$OMNIRUSH_HOST_TOKEN" > "/app/tmp/.dev-env-${OMNIRUSH_DEV_ID:-default}"
+        printf 'MARS_TOKEN=%s\nMARS_HOST_TOKEN=%s\n' \
+          "$$MARS_TOKEN" "$$MARS_HOST_TOKEN" > "/app/tmp/.dev-env-${MARS_DEV_ID:-default}"
 
         echo ""
         echo "============================================"
-        echo "  OmniRush.ai server"
-        echo "  Server:     http://localhost:${OMNIRUSH_PORT:-8787}"
-        echo "  Health:     http://localhost:${OMNIRUSH_PORT:-8787}/health"
-        echo "  Token:      $$OMNIRUSH_TOKEN"
-        echo "  Host token: $$OMNIRUSH_HOST_TOKEN"
+        echo "  MarsAI server"
+        echo "  Server:     http://localhost:${MARS_PORT:-8787}"
+        echo "  Health:     http://localhost:${MARS_PORT:-8787}/health"
+        echo "  Token:      $$MARS_TOKEN"
+        echo "  Host token: $$MARS_HOST_TOKEN"
         echo "============================================"
         echo ""
 
-        exec pnpm --filter omnirush-server exec bun dist/cli.js \
+        exec pnpm --filter mars-server exec bun dist/cli.js \
           --workspace /workspace \
           --host 0.0.0.0 \
           --port 8787 \
-          --token "$$OMNIRUSH_TOKEN" \
-          --host-token "$$OMNIRUSH_HOST_TOKEN" \
+          --token "$$MARS_TOKEN" \
+          --host-token "$$MARS_HOST_TOKEN" \
           --approval auto \
           --cors "*" \
           --verbose
     ports:
-      - "${OMNIRUSH_PORT:-8787}:8787"
+      - "${MARS_PORT:-8787}:8787"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8787/health || exit 1"]
       interval: 5s
@@ -119,17 +119,17 @@ services:
       start_period: 90s
     environment:
       CI: "true"
-      OMNIRUSH_TOKEN: ${OMNIRUSH_TOKEN:-}
-      OMNIRUSH_HOST_TOKEN: ${OMNIRUSH_HOST_TOKEN:-}
-      OMNIRUSH_DEV_ID: ${OMNIRUSH_DEV_ID:-default}
-      OMNIRUSH_DEV_MODE: ${OMNIRUSH_DEV_MODE:-1}
-      OMNIRUSH_DEV_OPENCODE_IMPORT_CONFIG_DIR: /persist/.config/opencode
-      OMNIRUSH_DEV_OPENCODE_IMPORT_DATA_DIR: /persist/.omnirush-host-opencode-data
+      MARS_TOKEN: ${MARS_TOKEN:-}
+      MARS_HOST_TOKEN: ${MARS_HOST_TOKEN:-}
+      MARS_DEV_ID: ${MARS_DEV_ID:-default}
+      MARS_DEV_MODE: ${MARS_DEV_MODE:-1}
+      MARS_DEV_OPENCODE_IMPORT_CONFIG_DIR: /persist/.config/opencode
+      MARS_DEV_OPENCODE_IMPORT_DATA_DIR: /persist/.mars-host-opencode-data
 
   web:
     <<: *shared
     depends_on:
-      omnirush-server:
+      mars-server:
         condition: service_healthy
     entrypoint: ["/bin/sh", "-c"]
     command:
@@ -148,37 +148,37 @@ services:
         fi
         corepack enable && corepack prepare pnpm@10.27.0 --activate
 
-        # --- Read token written by omnirush-server ---
-        if [ -f "/app/tmp/.dev-env-${OMNIRUSH_DEV_ID:-default}" ]; then
-          . "/app/tmp/.dev-env-${OMNIRUSH_DEV_ID:-default}"
-          export VITE_OMNIRUSH_TOKEN="$$OMNIRUSH_TOKEN"
+        # --- Read token written by mars-server ---
+        if [ -f "/app/tmp/.dev-env-${MARS_DEV_ID:-default}" ]; then
+          . "/app/tmp/.dev-env-${MARS_DEV_ID:-default}"
+          export VITE_MARS_TOKEN="$$MARS_TOKEN"
         fi
 
         echo ""
         echo "============================================"
-        echo "  OmniRush.ai web UI"
+        echo "  MarsAI web UI"
         echo "  URL:   http://localhost:${WEB_PORT:-5173}"
-          echo "  Token: $${VITE_OMNIRUSH_TOKEN:-<see omnirush-server logs>}"
+          echo "  Token: $${VITE_MARS_TOKEN:-<see mars-server logs>}"
         echo "============================================"
         echo ""
 
-        export VITE_OMNIRUSH_URL="http://${OMNIRUSH_PUBLIC_HOST:-localhost}:${OMNIRUSH_PORT:-8787}"
-        export VITE_OMNIRUSH_PORT="${OMNIRUSH_PORT:-8787}"
+        export VITE_MARS_URL="http://${MARS_PUBLIC_HOST:-localhost}:${MARS_PORT:-8787}"
+        export VITE_MARS_PORT="${MARS_PORT:-8787}"
         export VITE_ALLOWED_HOSTS="all"
         export HOST="0.0.0.0"
         export PORT="5173"
 
-        exec pnpm --filter @omnirush/app exec vite \
+        exec pnpm --filter @mars/app exec vite \
           --host 0.0.0.0 \
           --port 5173 \
           --strictPort
     ports:
       - "${WEB_PORT:-5173}:5173"
     environment:
-      OMNIRUSH_DEV_ID: ${OMNIRUSH_DEV_ID:-default}
+      MARS_DEV_ID: ${MARS_DEV_ID:-default}
 
 volumes:
   pnpm-store:
-    name: omnirush-dev-pnpm-store
+    name: mars-dev-pnpm-store
   bun-install:
-    name: omnirush-dev-bun-install
+    name: mars-dev-bun-install

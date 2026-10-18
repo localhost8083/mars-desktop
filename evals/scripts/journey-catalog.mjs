@@ -19,7 +19,7 @@ export async function catalog(root = new URL('../specs/', import.meta.url)) {
   }
   return Promise.all(files.map(async spec => {
     const source = await readFile(new URL(spec, root), 'utf8');
-    const rawDesktop = /import\s*\{[^}]*\bdesktop\b[^}]*\}\s*from\s*["']@omnirush\/hosts["']/s.test(source);
+    const rawDesktop = /import\s*\{[^}]*\bdesktop\b[^}]*\}\s*from\s*["']@mars\/hosts["']/s.test(source);
     return {
       spec,
       name: spec.replace('.e2e.test.ts', '').replaceAll('-', ' '),

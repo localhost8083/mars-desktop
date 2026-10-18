@@ -1384,7 +1384,7 @@ export const LexicalPromptEditor = forwardRef<LexicalPromptEditorHandle, EditorP
 
   const initialConfig = useMemo(
     () => ({
-      namespace: "omnirush-react-session-composer",
+      namespace: "mars-react-session-composer",
       onError(error: Error) {
         throw error;
       },

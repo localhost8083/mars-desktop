@@ -1,5 +1,5 @@
 import { configureProvider } from "./chat.ts";
-import type { Seed } from "@omnirush/env";
+import type { Seed } from "@mars/env";
 
 /**
  * A hermetic local-first workflow workspace. The provider is the deterministic

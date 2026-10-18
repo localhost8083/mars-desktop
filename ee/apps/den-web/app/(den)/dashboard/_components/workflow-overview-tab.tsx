@@ -5,7 +5,7 @@ import type {
   GeneratedArtifactView,
   WorkflowArtifactSnapshot,
   WorkflowDetail,
-} from "@omnirush/types/workflows";
+} from "@mars/types/workflows";
 import { DenButton } from "../../_components/ui/button";
 import { DenCard } from "../../_components/ui/card";
 import { DenChip } from "../../_components/ui/chip";

@@ -11,82 +11,82 @@ import {
 } from "react";
 import { useLocation, useNavigate } from "react-router";
 import type {
-  OmniRushAffordanceDescriptor,
-  OmniRushAffordanceEffects,
-  OmniRushAffordanceOrigin,
-  OmniRushAffordanceRequest,
-  OmniRushAffordanceResult,
-} from "@omnirush/types/omnirush-affordance";
-import type { OmniRushContextSnapshot } from "@omnirush/types/omnirush-context";
+  MarsAffordanceDescriptor,
+  MarsAffordanceEffects,
+  MarsAffordanceOrigin,
+  MarsAffordanceRequest,
+  MarsAffordanceResult,
+} from "@mars/types/mars-affordance";
+import type { MarsContextSnapshot } from "@mars/types/mars-context";
 import { useUiControlMailbox } from "./use-ui-control-mailbox";
 
-export type OmniRushControlSideEffect = "none" | "navigation" | "mutation" | "external";
+export type MarsControlSideEffect = "none" | "navigation" | "mutation" | "external";
 
-export type OmniRushControlActionArg = {
+export type MarsControlActionArg = {
   name: string;
   type?: "string" | "number" | "boolean" | "object" | "array" | "unknown";
   required?: boolean;
   description?: string;
 };
 
-export type OmniRushControlActionMetadata = {
+export type MarsControlActionMetadata = {
   id: string;
   label: string;
   description?: string;
   kind: "query" | "command";
-  effects: OmniRushAffordanceEffects;
-  sideEffect: OmniRushControlSideEffect;
+  effects: MarsAffordanceEffects;
+  sideEffect: MarsControlSideEffect;
   requiresConfirmation: boolean;
   requiresArgs: boolean;
   hasPreviewArgs: boolean;
   previewArgs?: unknown;
-  args?: OmniRushControlActionArg[];
+  args?: MarsControlActionArg[];
   disabled: boolean;
   busy: boolean;
 };
 
-export type OmniRushControlSnapshot = {
+export type MarsControlSnapshot = {
   version: number;
   enabled: boolean;
   route: string;
   status: "off" | "ready" | "acting";
   busyActionId: string | null;
   narration: string;
-  actions: OmniRushControlActionMetadata[];
+  actions: MarsControlActionMetadata[];
 };
 
-export type OmniRushControlResult =
+export type MarsControlResult =
   | { ok: true; actionId: string; result?: unknown }
   | { ok: false; actionId: string; error: string };
 
-export type OmniRushControlHelpers = {
+export type MarsControlHelpers = {
   setNarration: (text: string) => void;
   /** The conversation whose agent issued the request, when it came through the agent bridge. */
-  origin?: OmniRushAffordanceOrigin;
+  origin?: MarsAffordanceOrigin;
 };
 
-export type OmniRushControlTargetRef = {
+export type MarsControlTargetRef = {
   readonly current: HTMLElement | null;
 };
 
-export type OmniRushControlAction = {
+export type MarsControlAction = {
   id: string;
   label: string;
   description?: string;
   kind?: "query" | "command";
-  effects?: OmniRushAffordanceEffects;
-  sideEffect?: OmniRushControlSideEffect;
+  effects?: MarsAffordanceEffects;
+  sideEffect?: MarsControlSideEffect;
   requiresConfirmation?: boolean;
   requiresArgs?: boolean;
-  args?: OmniRushControlActionArg[];
+  args?: MarsControlActionArg[];
   previewArgs?: unknown;
   disabled?: boolean;
-  targetRef?: OmniRushControlTargetRef;
-  execute: (args: unknown, helpers: OmniRushControlHelpers) => unknown | Promise<unknown>;
+  targetRef?: MarsControlTargetRef;
+  execute: (args: unknown, helpers: MarsControlHelpers) => unknown | Promise<unknown>;
 };
 
 type ControlActionRef = {
-  readonly current: OmniRushControlAction | null;
+  readonly current: MarsControlAction | null;
 };
 
 type RegisteredAction = {
@@ -102,39 +102,39 @@ type SpotlightState = {
   rect: { x: number; y: number; width: number; height: number } | null;
 };
 
-type OmniRushControlContextValue = {
+type MarsControlContextValue = {
   enabled: boolean;
   setEnabled: (enabled: boolean) => void;
   route: string;
   narration: string;
   busyActionId: string | null;
-  actions: OmniRushControlActionMetadata[];
+  actions: MarsControlActionMetadata[];
   registerAction: (actionId: string, actionRef: ControlActionRef) => () => void;
-  executeAction: (actionId: string, args?: unknown, origin?: OmniRushAffordanceOrigin) => Promise<OmniRushControlResult>;
-  publishContext: (context: OmniRushContextSnapshot) => void;
-  snapshot: () => OmniRushControlSnapshot;
+  executeAction: (actionId: string, args?: unknown, origin?: MarsAffordanceOrigin) => Promise<MarsControlResult>;
+  publishContext: (context: MarsContextSnapshot) => void;
+  snapshot: () => MarsControlSnapshot;
 };
 
-export type OmniRushControlAPI = {
+export type MarsControlAPI = {
   version: number;
-  snapshot: () => OmniRushControlSnapshot;
-  listActions: () => OmniRushControlActionMetadata[];
-  execute: (actionId: string, args?: unknown) => Promise<OmniRushControlResult>;
-  context: () => OmniRushContextSnapshot;
-  query: (request: OmniRushAffordanceRequest) => Promise<OmniRushAffordanceResult>;
-  command: (request: OmniRushAffordanceRequest) => Promise<OmniRushAffordanceResult>;
+  snapshot: () => MarsControlSnapshot;
+  listActions: () => MarsControlActionMetadata[];
+  execute: (actionId: string, args?: unknown) => Promise<MarsControlResult>;
+  context: () => MarsContextSnapshot;
+  query: (request: MarsAffordanceRequest) => Promise<MarsAffordanceResult>;
+  command: (request: MarsAffordanceRequest) => Promise<MarsAffordanceResult>;
   setEnabled: (enabled: boolean) => void;
-  subscribe: (listener: (snapshot: OmniRushControlSnapshot) => void) => () => void;
+  subscribe: (listener: (snapshot: MarsControlSnapshot) => void) => () => void;
 };
 
 declare global {
   interface Window {
-    __omnirushControl?: OmniRushControlAPI;
+    __marsControl?: MarsControlAPI;
   }
 }
 
 const CONTROL_API_VERSION = 2;
-const OmniRushControlContext = createContext<OmniRushControlContextValue | null>(null);
+const MarsControlContext = createContext<MarsControlContextValue | null>(null);
 const SPOTLIGHT_TIMING_MS = Object.freeze({
   missingTarget: 80,
   scrollIntoView: 180,
@@ -163,7 +163,7 @@ function isBrowser() {
   return typeof window !== "undefined" && typeof document !== "undefined";
 }
 
-function effectsForSideEffect(sideEffect: OmniRushControlSideEffect): OmniRushAffordanceEffects {
+function effectsForSideEffect(sideEffect: MarsControlSideEffect): MarsAffordanceEffects {
   if (sideEffect === "navigation") {
     return { data: "none", ui: "navigate", external: false };
   }
@@ -176,7 +176,7 @@ function effectsForSideEffect(sideEffect: OmniRushControlSideEffect): OmniRushAf
   return { data: "none", ui: "none", external: false };
 }
 
-function metadataForAction(registered: RegisteredAction, busyActionId: string | null): OmniRushControlActionMetadata {
+function metadataForAction(registered: RegisteredAction, busyActionId: string | null): MarsControlActionMetadata {
   const action = registered.ref.current;
   const sideEffect = action?.sideEffect ?? "none";
   return {
@@ -196,13 +196,13 @@ function metadataForAction(registered: RegisteredAction, busyActionId: string | 
   };
 }
 
-function affordanceForAction(action: OmniRushControlActionMetadata): OmniRushAffordanceDescriptor {
+function affordanceForAction(action: MarsControlActionMetadata): MarsAffordanceDescriptor {
   return {
     id: action.id,
     kind: action.kind,
     title: action.label,
     description: action.description ?? action.label,
-    provider: { id: "omnirush-ui", kind: "builtin" },
+    provider: { id: "mars-ui", kind: "builtin" },
     arguments: (action.args ?? []).map((argument) => ({
       name: argument.name,
       type: argument.type ?? "unknown",
@@ -215,7 +215,7 @@ function affordanceForAction(action: OmniRushControlActionMetadata): OmniRushAff
       enabled: !action.disabled && !action.busy,
       ...(action.disabled ? { reason: "This action is not available in the current app state." } : {}),
     },
-    executor: { kind: "omnirush" },
+    executor: { kind: "mars" },
   };
 }
 
@@ -238,11 +238,11 @@ function ControlModeSpotlight({ spotlight }: { spotlight: SpotlightState }) {
   );
 }
 
-export function OmniRushControlProvider({ children }: { children: ReactNode }) {
+export function MarsControlProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
   const actionsRef = useRef(new Map<string, RegisteredAction>());
-  const listenersRef = useRef(new Set<(snapshot: OmniRushControlSnapshot) => void>());
-  const contextRef = useRef<OmniRushContextSnapshot | null>(null);
+  const listenersRef = useRef(new Set<(snapshot: MarsControlSnapshot) => void>());
+  const contextRef = useRef<MarsContextSnapshot | null>(null);
   const contextRevisionRef = useRef(0);
   const nextOrderRef = useRef(1);
   const [version, setVersion] = useState(0);
@@ -253,11 +253,11 @@ export function OmniRushControlProvider({ children }: { children: ReactNode }) {
   const busyActionIdRef = useRef<string | null>(null);
   const busyActorRef = useRef<string | null>(null);
   const spotlightRunRef = useRef(0);
-  const apiRef = useRef<OmniRushControlAPI | null>(null);
+  const apiRef = useRef<MarsControlAPI | null>(null);
 
   const route = `${location.pathname}${location.search}${location.hash}`;
   const enabled = enabledState;
-  const status: OmniRushControlSnapshot["status"] = !enabled ? "off" : busyActionId ? "acting" : "ready";
+  const status: MarsControlSnapshot["status"] = !enabled ? "off" : busyActionId ? "acting" : "ready";
 
   const setEnabled = useCallback((nextEnabled: boolean) => {
     setEnabledState(nextEnabled);
@@ -273,7 +273,7 @@ export function OmniRushControlProvider({ children }: { children: ReactNode }) {
     return listActionMetadata();
   }, [listActionMetadata]);
 
-  const snapshot = useCallback((): OmniRushControlSnapshot => ({
+  const snapshot = useCallback((): MarsControlSnapshot => ({
     version: CONTROL_API_VERSION,
     enabled,
     route,
@@ -283,13 +283,13 @@ export function OmniRushControlProvider({ children }: { children: ReactNode }) {
     actions: listActionMetadata(),
   }), [busyActionId, enabled, listActionMetadata, narration, route, status]);
 
-  const publishContext = useCallback((context: OmniRushContextSnapshot) => {
+  const publishContext = useCallback((context: MarsContextSnapshot) => {
     if (contextRef.current === context) return;
     contextRef.current = context;
     contextRevisionRef.current += 1;
   }, []);
 
-  const contextSnapshot = useCallback((): OmniRushContextSnapshot => {
+  const contextSnapshot = useCallback((): MarsContextSnapshot => {
     const availableAffordances = listActionMetadata().map(affordanceForAction);
     const published = contextRef.current;
     const revision = contextRevisionRef.current;
@@ -333,8 +333,8 @@ export function OmniRushControlProvider({ children }: { children: ReactNode }) {
       resources: [{
         ref: `screen:${route}`,
         kind: "screen",
-        title: "omnirush.ai",
-        provider: { id: "omnirush-ui", kind: "builtin" },
+        title: "marsai.click",
+        provider: { id: "mars-ui", kind: "builtin" },
         state: { kind: "other", route },
       }],
       availableAffordances,
@@ -364,7 +364,7 @@ export function OmniRushControlProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const playTargetChoreography = useCallback(async (action: OmniRushControlAction, runId: number) => {
+  const playTargetChoreography = useCallback(async (action: MarsControlAction, runId: number) => {
     if (!isBrowser()) return;
     const stillCurrent = () => spotlightRunRef.current === runId;
     const target = action.targetRef?.current;
@@ -399,8 +399,8 @@ export function OmniRushControlProvider({ children }: { children: ReactNode }) {
   const executeAction = useCallback(async (
     actionId: string,
     args?: unknown,
-    origin?: OmniRushAffordanceOrigin,
-  ): Promise<OmniRushControlResult> => {
+    origin?: MarsAffordanceOrigin,
+  ): Promise<MarsControlResult> => {
     const registered = actionsRef.current.get(actionId);
     const action = registered?.ref.current;
     if (!registered || !action) return { ok: false, actionId, error: `Unknown action: ${actionId}` };
@@ -457,8 +457,8 @@ export function OmniRushControlProvider({ children }: { children: ReactNode }) {
   }, [playTargetChoreography, setEnabled]);
 
   const queryAffordance = useCallback(async (
-    request: OmniRushAffordanceRequest,
-  ): Promise<OmniRushAffordanceResult> => {
+    request: MarsAffordanceRequest,
+  ): Promise<MarsAffordanceResult> => {
     const action = actionsRef.current.get(request.id)?.ref.current;
     const revision = contextRevisionRef.current;
     if (!action || action.kind !== "query") {
@@ -511,8 +511,8 @@ export function OmniRushControlProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const executeCommand = useCallback(async (
-    request: OmniRushAffordanceRequest,
-  ): Promise<OmniRushAffordanceResult> => {
+    request: MarsAffordanceRequest,
+  ): Promise<MarsAffordanceResult> => {
     const action = actionsRef.current.get(request.id)?.ref.current;
     const revision = contextRevisionRef.current;
     if (!action || action.kind === "query") {
@@ -538,7 +538,7 @@ export function OmniRushControlProvider({ children }: { children: ReactNode }) {
       return {
         ok: false,
         id: request.id,
-        error: `omnirush.ai context changed from revision ${request.expectedRevision} to ${revision}.`,
+        error: `marsai.click context changed from revision ${request.expectedRevision} to ${revision}.`,
         code: "conflict",
         revision,
       };
@@ -565,7 +565,7 @@ export function OmniRushControlProvider({ children }: { children: ReactNode }) {
     };
   }, [executeAction]);
 
-  const value = useMemo<OmniRushControlContextValue>(() => ({
+  const value = useMemo<MarsControlContextValue>(() => ({
     enabled,
     setEnabled,
     route,
@@ -600,7 +600,7 @@ export function OmniRushControlProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isBrowser()) return;
 
-    const api: OmniRushControlAPI = {
+    const api: MarsControlAPI = {
       version: CONTROL_API_VERSION,
       snapshot,
       listActions: () => snapshot().actions,
@@ -618,11 +618,11 @@ export function OmniRushControlProvider({ children }: { children: ReactNode }) {
       },
     };
 
-    window.__omnirushControl = api;
+    window.__marsControl = api;
     apiRef.current = api;
     return () => {
-      if (window.__omnirushControl === api) {
-        delete window.__omnirushControl;
+      if (window.__marsControl === api) {
+        delete window.__marsControl;
       }
       if (apiRef.current === api) {
         apiRef.current = null;
@@ -642,19 +642,19 @@ export function OmniRushControlProvider({ children }: { children: ReactNode }) {
   }, [snapshot, version]);
 
   return (
-    <OmniRushControlContext.Provider value={value}>
+    <MarsControlContext.Provider value={value}>
       {children}
       <ControlModeSpotlight spotlight={spotlight} />
-    </OmniRushControlContext.Provider>
+    </MarsControlContext.Provider>
   );
 }
 
-export function useOmniRushControl() {
-  return use(OmniRushControlContext);
+export function useMarsControl() {
+  return use(MarsControlContext);
 }
 
-export function usePublishOmniRushContext(context: OmniRushContextSnapshot) {
-  const control = useOmniRushControl();
+export function usePublishMarsContext(context: MarsContextSnapshot) {
+  const control = useMarsControl();
   const publishContext = control?.publishContext;
 
   useEffect(() => {
@@ -662,10 +662,10 @@ export function usePublishOmniRushContext(context: OmniRushContextSnapshot) {
   }, [context, publishContext]);
 }
 
-export function useControlAction(action: OmniRushControlAction | null | false | undefined) {
-  const control = useOmniRushControl();
+export function useControlAction(action: MarsControlAction | null | false | undefined) {
+  const control = useMarsControl();
   const registerAction = control?.registerAction;
-  const latestActionRef = useRef<OmniRushControlAction | null>(action || null);
+  const latestActionRef = useRef<MarsControlAction | null>(action || null);
   latestActionRef.current = action || null;
   const actionId = action ? action.id : null;
 
@@ -681,12 +681,12 @@ export function useControlAction(action: OmniRushControlAction | null | false | 
  * violating the rules of hooks. Each action is tracked by its stable id; the
  * latest closure for that id is always used, and removed ids are unregistered.
  */
-export function useControlActions(actions: readonly OmniRushControlAction[]) {
-  const control = useOmniRushControl();
+export function useControlActions(actions: readonly MarsControlAction[]) {
+  const control = useMarsControl();
   const registerAction = control?.registerAction;
 
   // One ref per action id, so executeAction always sees the freshest closure.
-  const refsById = useRef<Map<string, { current: OmniRushControlAction | null }>>(new Map());
+  const refsById = useRef<Map<string, { current: MarsControlAction | null }>>(new Map());
   for (const action of actions) {
     const existing = refsById.current.get(action.id);
     if (existing) {
@@ -723,7 +723,7 @@ const SETTINGS_TABS: ReadonlySet<string> = new Set<string>(
   SETTINGS_TAB_VALUES.filter((tab) => tab !== "extensions"),
 );
 
-export function OmniRushRouteControlActions() {
+export function MarsRouteControlActions() {
   const navigate = useNavigate();
   const location = useLocation();
   // Read through a ref so the action list stays stable across route changes.
@@ -734,7 +734,7 @@ export function OmniRushRouteControlActions() {
     navigate(target.to, { state: target.state });
   }, [navigate]);
 
-  const actions = useMemo<OmniRushControlAction[]>(() => [
+  const actions = useMemo<MarsControlAction[]>(() => [
     {
       id: "route.session",
       label: "Open sessions",
@@ -822,8 +822,8 @@ export function OmniRushRouteControlActions() {
     },
     {
       id: "help.capabilities",
-      label: "What can omnirush.ai do?",
-      description: "List the main capabilities of omnirush.ai.",
+      label: "What can marsai.click do?",
+      description: "List the main capabilities of marsai.click.",
       kind: "query",
       effects: { data: "read", ui: "none", external: false },
       sideEffect: "none",
@@ -836,7 +836,7 @@ export function OmniRushRouteControlActions() {
           { id: "code", label: "Write and run code", description: "Generate, edit, and execute code with full tool access." },
           { id: "skills", label: "Skills", description: "Install specialized skill packs for specific workflows." },
           { id: "automations", label: "Automations", description: "Schedule recurring tasks and background agents." },
-          { id: "sharing", label: "Share sessions", description: "Share workspace sessions with collaborators via omnirush.ai Cloud." },
+          { id: "sharing", label: "Share sessions", description: "Share workspace sessions with collaborators via marsai.click Cloud." },
         ],
         hint: "Use settings.panel.open for settings such as AI providers, and route.extensions.skills to browse Library.",
       }),

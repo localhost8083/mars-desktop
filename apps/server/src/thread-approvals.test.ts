@@ -99,18 +99,18 @@ function settle(predicate: () => boolean, timeoutMs = 5_000): Promise<boolean> {
 }
 
 const cleanups: Array<() => void | Promise<void>> = [];
-const previousDb = process.env.OMNIRUSH_RUNTIME_DB;
+const previousDb = process.env.MARS_RUNTIME_DB;
 
 afterEach(async () => {
   while (cleanups.length) await cleanups.pop()?.();
-  if (previousDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-  else process.env.OMNIRUSH_RUNTIME_DB = previousDb;
+  if (previousDb === undefined) delete process.env.MARS_RUNTIME_DB;
+  else process.env.MARS_RUNTIME_DB = previousDb;
 });
 
 async function serverConfig(): Promise<ServerConfig> {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-thread-approvals-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-thread-approvals-"));
   cleanups.push(() => rm(root, { recursive: true, force: true }));
-  process.env.OMNIRUSH_RUNTIME_DB = join(root, "runtime.sqlite");
+  process.env.MARS_RUNTIME_DB = join(root, "runtime.sqlite");
   return {
     host: "127.0.0.1",
     port: 0,
@@ -198,7 +198,7 @@ describe("thread approval replayer", () => {
     expect(await listThreadApprovals(config, WORKSPACE_ID, "ses_b")).toEqual([]);
   });
 
-  test("ignores directories OmniRush.ai does not own and reconnects after the stream drops", async () => {
+  test("ignores directories MarsAI does not own and reconnects after the stream drops", async () => {
     const config = await serverConfig();
     const engine = fakeEngine();
     cleanups.push(engine.stop);

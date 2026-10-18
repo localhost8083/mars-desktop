@@ -1,4 +1,4 @@
-# OmniRush.ai Review
+# MarsAI Review
 
 An immutable, private review page composed from existing test records and
 DocShot receipts. Publication reads completed files; it never runs tests,
@@ -8,10 +8,10 @@ result. Pending judgments and coverage gaps remain visible.
 ## Develop and verify
 
 ```sh
-pnpm --filter @omnirush/review-app... install --frozen-lockfile
+pnpm --filter @mars/review-app... install --frozen-lockfile
 pnpm --dir evals install --frozen-lockfile --ignore-scripts
-pnpm --filter @omnirush/review-app build
-OMNIRUSH_EVAL_REVIEW=1 pnpm evals:pr specs/evidence-review.test.ts
+pnpm --filter @mars/review-app build
+MARS_EVAL_REVIEW=1 pnpm evals:pr specs/evidence-review.test.ts
 ```
 
 The journey boots the production app with isolated local storage and checks
@@ -20,9 +20,9 @@ rejection of production deployments through HTTP. Its inputs are explicitly
 synthetic fixtures; they do not claim to have tested the example behaviors shown
 in the report.
 
-For development, create a directory and set `OMNIRUSH_REVIEW_LOCAL_DIR` to its
+For development, create a directory and set `MARS_REVIEW_LOCAL_DIR` to its
 absolute path in both the app and publisher environments. Run
-`pnpm --filter @omnirush/review-app dev` (port 3011). `uploadReview()` also accepts
+`pnpm --filter @mars/review-app dev` (port 3011). `uploadReview()` also accepts
 local storage through this environment variable, using the same manifest-last
 write behavior. Local development has no login; keep it bound to loopback.
 
@@ -33,7 +33,7 @@ that directory, and connect a **private** Vercel Blob store. Configure
 `BLOB_READ_WRITE_TOKEN` for the Preview environment. Enable **Vercel Authentication**
 under Deployment Protection with **Standard Protection** (or All Deployments).
 Deploy with `vercel deploy --target preview` and use that protected preview URL
-for `OMNIRUSH_REVIEW_URL`.
+for `MARS_REVIEW_URL`.
 
 Teammates open the PR's report link using their existing Vercel account with
 access to this project. There is no app password. Vercel authenticates requests
@@ -51,7 +51,7 @@ authorization header. See [Vercel Authentication](https://vercel.com/docs/deploy
 The app only rebuilds when it or its dependencies change. Report publication
 uploads data to the existing app; it never creates a deployment.
 
-Set `OMNIRUSH_REVIEW_URL` and `BLOB_READ_WRITE_TOKEN` in the publishing
+Set `MARS_REVIEW_URL` and `BLOB_READ_WRITE_TOKEN` in the publishing
 environment. The existing command publishes a compact link when configured:
 
 ```sh
@@ -71,8 +71,8 @@ the comment's identity. Include all claimed runs in that selection.
 publication remains available when the review app is not configured.
 Visual judging is explicit: `pnpm --dir evals evidence:judge -- --test-run <run>`.
 
-For automatic publication, configure repository variable `OMNIRUSH_REVIEW_URL`
-and secret `OMNIRUSH_REVIEW_BLOB_TOKEN`. The separate **Evidence review** workflow
+For automatic publication, configure repository variable `MARS_REVIEW_URL`
+and secret `MARS_REVIEW_BLOB_TOKEN`. The separate **Evidence review** workflow
 consumes existing uploaded artifacts after checks finish. It runs trusted
 default-branch code, ignores stale runs, and only publishes when GitHub supplies
 an associated PR and matching source commit. It never runs downloaded code.

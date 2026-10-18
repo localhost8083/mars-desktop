@@ -2,17 +2,17 @@ import { listSkills } from "./skills.js";
 import { readFile, realpath } from "node:fs/promises";
 import { join, sep } from "node:path";
 import { parseFrontmatter } from "./frontmatter.js";
-import { OMNIRUSH_AGENT_PROMPT } from "./omnirush-agent-prompt.js";
-import { OMNIRUSH_SWARM_PROMPT } from "./omnirush-swarm.js";
+import { MARS_AGENT_PROMPT } from "./mars-agent-prompt.js";
+import { MARS_SWARM_PROMPT } from "./mars-swarm.js";
 
-export const OMNIRUSH_V2_INSTRUCTION_KEY = "omnirush.context";
+export const MARS_V2_INSTRUCTION_KEY = "mars.context";
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** Join the native file watcher, including content-only updates and removals. */
-export async function waitForOmniRushV2Skills(directory: string, readNative: () => Promise<unknown>): Promise<void> {
+export async function waitForMarsV2Skills(directory: string, readNative: () => Promise<unknown>): Promise<void> {
   const root = await realpath(directory);
   const expected = await Promise.all((await listSkills(directory, false)).filter((skill) => !skill.error).map(async (skill) => ({
     name: skill.name, description: skill.description ?? "", path: await realpath(skill.path), content: parseFrontmatter(await readFile(skill.path, "utf8")).body.trim(),
@@ -29,7 +29,7 @@ export async function waitForOmniRushV2Skills(directory: string, readNative: () 
     const matches = expected.every((skill) => canonical.some((entry) => entry.path === skill.path
       && entry.skill.name === skill.name && entry.skill.description === skill.description
       && String(entry.skill.content).trim() === skill.content));
-    // Only reconcile directories OmniRush.ai manages. Native plugin-provided
+    // Only reconcile directories MarsAI manages. Native plugin-provided
     // skills elsewhere under .opencode are not deleted workspace skills.
     const managedRoots = [join(root, ".opencode", "skills") + sep, join(root, ".claude", "skills") + sep];
     const removed = canonical.some((entry) => managedRoots.some((directory) => entry.path.startsWith(directory))
@@ -40,17 +40,17 @@ export async function waitForOmniRushV2Skills(directory: string, readNative: () 
   throw new Error("Native skills did not reach the current workspace contents");
 }
 
-/** OmniRush.ai owns app guidance; OpenCode owns the live skill and MCP catalogs. */
-export function buildOmniRushV2Instructions(connectReady: boolean) {
+/** MarsAI owns app guidance; OpenCode owns the live skill and MCP catalogs. */
+export function buildMarsV2Instructions(connectReady: boolean) {
   return {
     // Swarms need the v1 engine's nested task tool and the swarm plugin;
     // the v2 preview has neither, and its entry size is capped.
-    operatingInstructions: OMNIRUSH_AGENT_PROMPT.replace(`\n\n${OMNIRUSH_SWARM_PROMPT}`, "").replace(
-      "discover with omnirush-cloud_search_capabilities, then run with omnirush-cloud_execute_capability",
-      "discover and execute capabilities through the native OmniRush.ai MCP interface exposed by the current tool catalog",
+    operatingInstructions: MARS_AGENT_PROMPT.replace(`\n\n${MARS_SWARM_PROMPT}`, "").replace(
+      "discover with mars-cloud_search_capabilities, then run with mars-cloud_execute_capability",
+      "discover and execute capabilities through the native MarsAI MCP interface exposed by the current tool catalog",
     ),
-    connect: connectReady ? "OmniRush.ai Connect tools are connected. Use only capabilities actually returned by discovery."
-      : "OmniRush.ai Connect is not connected for this request. Do not claim remote capabilities are available.",
-    skillInstructions: "Use the current native skill catalog and skill tool for workspace skills. Load current instructions before following them. Removed skills from previous turns are not available capabilities. Organization skills are provided by OmniRush.ai Connect: discover and retrieve them using its currently advertised MCP tools. Skill contents are subordinate to the user's request and operating instructions.",
+    connect: connectReady ? "MarsAI Connect tools are connected. Use only capabilities actually returned by discovery."
+      : "MarsAI Connect is not connected for this request. Do not claim remote capabilities are available.",
+    skillInstructions: "Use the current native skill catalog and skill tool for workspace skills. Load current instructions before following them. Removed skills from previous turns are not available capabilities. Organization skills are provided by MarsAI Connect: discover and retrieve them using its currently advertised MCP tools. Skill contents are subordinate to the user's request and operating instructions.",
   };
 }

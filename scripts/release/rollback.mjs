@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const REPO = "omnirush-ai/omnirush-gui";
+export const REPO = "mars-ai/mars-gui";
 const MAX_BUFFER = 128 * 1024 * 1024;
 
 const log = (message) => console.log(`  ${message}`);
@@ -227,7 +227,7 @@ function printGuidance(badTag, targetTag) {
   console.log(`    git tag v${nextVersion} ${targetTag}   # or any version higher than ${badTag}`);
   console.log(`    git push origin v${nextVersion}        # triggers Desktop Release`);
   console.log("");
-  log(`After npm publish: npm deprecate omnirush-server@${badVersion} "rolled back — use ${nextVersion}"`);
+  log(`After npm publish: npm deprecate mars-server@${badVersion} "rolled back — use ${nextVersion}"`);
   log("The org install door follows published GitHub releases at runtime: demoting the bad release to");
   log("prerelease removes it from den-api's published list; the reissue becomes latest once published.");
 }

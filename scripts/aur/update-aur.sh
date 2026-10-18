@@ -29,10 +29,10 @@ if [[ "$TAG" != v* ]]; then
 fi
 
 VERSION="${TAG#v}"
-ASSET_NAME_AMD64="${AUR_ASSET_NAME:-omnirush-linux-x64-${VERSION}.tar.gz}"
-ASSET_NAME_ARM64="omnirush-linux-arm64-${VERSION}.tar.gz"
-ASSET_URL_AMD64="https://github.com/omnirush-ai/omnirush-gui/releases/download/${TAG}/${ASSET_NAME_AMD64}"
-ASSET_URL_ARM64="https://github.com/omnirush-ai/omnirush-gui/releases/download/${TAG}/${ASSET_NAME_ARM64}"
+ASSET_NAME_AMD64="${AUR_ASSET_NAME:-mars-linux-x64-${VERSION}.tar.gz}"
+ASSET_NAME_ARM64="mars-linux-arm64-${VERSION}.tar.gz"
+ASSET_URL_AMD64="https://github.com/mars-ai/mars-gui/releases/download/${TAG}/${ASSET_NAME_AMD64}"
+ASSET_URL_ARM64="https://github.com/mars-ai/mars-gui/releases/download/${TAG}/${ASSET_NAME_ARM64}"
 
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT

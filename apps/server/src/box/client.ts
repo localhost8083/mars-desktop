@@ -1,4 +1,4 @@
-// Ported from the CLI (omnirush-cli src/box/client.js, feat/local-box);
+// Ported from the CLI (mars-cli src/box/client.js, feat/local-box);
 // keep the two in step. Only types were added here.
 //
 // The host side of boxd's wire format (box/go/proto): one TCP connection per

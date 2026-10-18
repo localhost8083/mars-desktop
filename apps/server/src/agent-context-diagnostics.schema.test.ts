@@ -7,7 +7,7 @@ import {
   agentContextOrganizationConnectionSummarySchema,
   isAgentContextDiagnosticTextSafe as isSharedTextSafe,
   sanitizeAgentContextDiagnosticText as sanitizeSharedText,
-} from "@omnirush/types/agent-context-diagnostics";
+} from "@mars/types/agent-context-diagnostics";
 import {
   agentContextDiagnosticCheckRuntimeSchema,
   isAgentContextDiagnosticTextSafe as isLocalTextSafe,
@@ -77,7 +77,7 @@ describe("agent context diagnostics safe output schema", () => {
       evidenceKind: "derived" as const,
       code: "safe_code",
       message: "Safe message",
-      owner: "omnirush-server" as const,
+      owner: "mars-server" as const,
       action: "No action is required.",
       details: { safeKey: "safe value" },
       durationMs: 0,
@@ -101,8 +101,8 @@ describe("agent context diagnostics safe output schema", () => {
   test("rejects unsafe dynamic agent, MCP, and organization labels", () => {
     const agent = {
       evidenceSource: "configured-intent" as const,
-      defaultAgent: "omnirush",
-      configuredOmniRushAgent: {
+      defaultAgent: "mars",
+      configuredMarsAgent: {
         state: "present" as const,
         mode: "primary" as const,
         prompt: {
@@ -116,10 +116,10 @@ describe("agent context diagnostics safe output schema", () => {
           deniedRelevantToolCount: null,
         },
       },
-      pluginLabels: ["omnirush-extensions-preview"],
+      pluginLabels: ["mars-extensions-preview"],
     };
     const mcp = {
-      name: "omnirush-cloud",
+      name: "mars-cloud",
       source: "config.remote" as const,
       type: "remote" as const,
       enabled: true,
@@ -232,7 +232,7 @@ function baseCheck() {
     evidenceKind: "derived" as const,
     code: "safe_code",
     message: "Safe message",
-    owner: "omnirush-server" as const,
+    owner: "mars-server" as const,
     action: "No action is required.",
     details: { safeKey: "safe value" },
     durationMs: 0,

@@ -88,16 +88,16 @@ describe("isCloudProviderOutOfSync", () => {
 });
 
 describe("buildCloudProviderConfig", () => {
-  test("omits empty models for omnirush so catalog models can remain", () => {
+  test("omits empty models for mars so catalog models can remain", () => {
     const provider: DenOrgLlmProviderConnection = {
-      id: "lpr_omnirush",
-      source: "omnirush",
-      providerId: "omnirush",
-      name: "omnirush.ai Models",
+      id: "lpr_mars",
+      source: "mars",
+      providerId: "mars",
+      name: "marsai.click Models",
       providerConfig: {
         npm: "@openrouter/ai-sdk-provider",
-        api: "https://inference.omnirush.example.com/api/v1",
-        env: ["OMNIRUSH_API_KEY"],
+        api: "https://inference.mars.example.com/api/v1",
+        env: ["MARS_API_KEY"],
       },
       hasApiKey: true,
       models: [],
@@ -109,10 +109,10 @@ describe("buildCloudProviderConfig", () => {
 
     const config = buildCloudProviderConfig(provider);
     expect(config.models).toBe(undefined);
-    expect(config.name).toBe("omnirush.ai Models");
+    expect(config.name).toBe("marsai.click Models");
   });
 
-  test("keeps an empty models map for non-omnirush cloud providers", () => {
+  test("keeps an empty models map for non-mars cloud providers", () => {
     const provider: DenOrgLlmProviderConnection = {
       id: "lpr_custom",
       source: "custom",

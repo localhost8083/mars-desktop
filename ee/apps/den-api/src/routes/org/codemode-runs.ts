@@ -1,7 +1,7 @@
 import type { Hono } from "hono"
 import { describeRoute } from "hono-openapi"
 import { z } from "zod"
-import { workflowRunPreviewSchema } from "@omnirush/types/workflows"
+import { workflowRunPreviewSchema } from "@mars/types/workflows"
 import { listWorkflowRuns } from "../../workflow-runs.js"
 import { workflowRunPreviews } from "../../workflows.js"
 import { listTeamsForMember } from "../../orgs.js"

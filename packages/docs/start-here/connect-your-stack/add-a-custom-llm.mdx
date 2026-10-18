@@ -1,13 +1,13 @@
 ---
 title: "Add a custom LLM"
-description: "How to connect a custom provider with OmniRush.ai"
+description: "How to connect a custom provider with MarsAI"
 ---
 
 <Note>
-**Local provider setup.** A custom provider can stay entirely in your workspace. OmniRush.ai remains free, and you do not need to sign in to OmniRush.ai Cloud. For centrally managed team access, see [Adding a managed LLM provider](/cloud/share-with-your-team/managed-llm-provider).
+**Local provider setup.** A custom provider can stay entirely in your workspace. MarsAI remains free, and you do not need to sign in to MarsAI Cloud. For centrally managed team access, see [Adding a managed LLM provider](/cloud/share-with-your-team/managed-llm-provider).
 </Note>
 
-Because `OmniRush.ai` is built on `OpenCode` primitives, we support everything that you could modify in `.opencode.json`, like adding a [model](https://opencode.ai/docs/models/). However, our recommendation is to add it to `/path-to-your-workspace/.config/opencode/opencode.json` instead of modifying `~/.config/opencode/opencode.json`.
+Because `MarsAI` is built on `OpenCode` primitives, we support everything that you could modify in `.opencode.json`, like adding a [model](https://opencode.ai/docs/models/). However, our recommendation is to add it to `/path-to-your-workspace/.config/opencode/opencode.json` instead of modifying `~/.config/opencode/opencode.json`.
 
 Inside `/path-to-your-workspace/.config/opencode/opencode.json`:
 ```
@@ -56,4 +56,4 @@ Pull the model first with `ollama pull qwen3:8b`, then make sure the Ollama serv
 
 Open your desktop, change the provider name and voila! You have an fully local LLM running in your machine.
 
-For teams, manage the provider in OmniRush.ai Cloud under [Models > Bring your Own Keys](/cloud/share-with-your-team/managed-llm-provider), then make it available from `Settings > Cloud Providers` in the desktop app.
+For teams, manage the provider in MarsAI Cloud under [Models > Bring your Own Keys](/cloud/share-with-your-team/managed-llm-provider), then make it available from `Settings > Cloud Providers` in the desktop app.

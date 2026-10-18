@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { localFirstRunWorld } from "../worlds/first-run.ts";
 
 const test = spec.world(localFirstRunWorld);
@@ -10,14 +10,14 @@ test("first launch opens an empty signed-out workspace and runs the first prompt
     await user.see("composer", { editable: true, text: "" });
     await user.see("Run task");
     await user.see({ testId: "account-status-menu" }, { text: /Sign in/ });
-    await user.notSee({ text: "Welcome to OmniRush.ai" });
+    await user.notSee({ text: "Welcome to MarsAI" });
     await user.notSee("Use Without Cloud");
     await user.notSee({ text: /Choose (a )?folder|Choose (a )?model/ });
     await user.notSee({ text: "Power your first task" });
-    await user.notSee({ text: "How did you hear about OmniRush.ai?" });
+    await user.notSee({ text: "How did you hear about MarsAI?" });
     await user.notSee({ text: /Something went wrong/ });
-    expect(await probe.storage("omnirush.den.authToken")).toBeNull();
-    expect(await probe.storage("omnirush.den.activeOrgId")).toBeNull();
+    expect(await probe.storage("mars.den.authToken")).toBeNull();
+    expect(await probe.storage("mars.den.activeOrgId")).toBeNull();
   });
 
   const composer = await probe.composer();
@@ -32,13 +32,13 @@ test("first launch opens an empty signed-out workspace and runs the first prompt
     expect(workspaces.status).toBe(200);
     expect(workspaces.body).toMatchObject({
       activeId: workspaceId,
-      items: [{ id: workspaceId, workspaceType: "local", path: expect.stringMatching(/[/\\]OmniRush.ai Chat$/) }],
+      items: [{ id: workspaceId, workspaceType: "local", path: expect.stringMatching(/[/\\]MarsAI Chat$/) }],
     });
     const sessions = await probe.desktopApi(`/workspace/${workspaceId}/opencode/session`);
     expect(sessions.status).toBe(200);
     expect(sessions.body).toEqual([]);
     await user.see({ text: /Using the free starter model/ });
-    expect(await probe.storage("omnirush.defaultModel")).toBe("opencode/big-pickle");
+    expect(await probe.storage("mars.defaultModel")).toBe("opencode/big-pickle");
   });
 
   await step("The first prompt runs on the default provider without setup", async () => {
@@ -61,6 +61,6 @@ test("first launch opens an empty signed-out workspace and runs the first prompt
     await user.notSee({ text: /Error from provider/ });
     await user.notSee({ text: /Something went wrong/ });
     await user.notSee({ text: "Power your first task" });
-    await user.notSee({ text: "How did you hear about OmniRush.ai?" });
+    await user.notSee({ text: "How did you hear about MarsAI?" });
   });
 });

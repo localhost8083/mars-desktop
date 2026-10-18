@@ -18,15 +18,15 @@ import {
   OPENAI_IMAGE_GENERATION_EXTENSION_ID,
 } from "./openai-image-generation.js";
 import {
-  callOmniRushCloudUploadAction,
-  OMNIRUSH_CLOUD_UPLOAD_ACTIONS,
-  OMNIRUSH_CLOUD_UPLOADS_EXTENSION_ID,
+  callMarsCloudUploadAction,
+  MARS_CLOUD_UPLOAD_ACTIONS,
+  MARS_CLOUD_UPLOADS_EXTENSION_ID,
 } from "./cloud-uploads.js";
 
-const OMNIRUSH_EXPERIMENTAL_EXTENSION_ACTIONS = [
+const MARS_EXPERIMENTAL_EXTENSION_ACTIONS = [
   ...GOOGLE_WORKSPACE_EXTENSION_ACTIONS,
   ...OPENAI_IMAGE_GENERATION_EXTENSION_ACTIONS,
-  ...OMNIRUSH_CLOUD_UPLOAD_ACTIONS,
+  ...MARS_CLOUD_UPLOAD_ACTIONS,
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -42,8 +42,8 @@ function readStringField(value: unknown, key: string): string {
 export function listExperimentalExtensionActions(extensionId: string, connectSnapshot?: ConnectSnapshot) {
   const filter = extensionId.trim();
   const actions = filter
-    ? OMNIRUSH_EXPERIMENTAL_EXTENSION_ACTIONS.filter((action) => action.extensionId === filter)
-    : OMNIRUSH_EXPERIMENTAL_EXTENSION_ACTIONS;
+    ? MARS_EXPERIMENTAL_EXTENSION_ACTIONS.filter((action) => action.extensionId === filter)
+    : MARS_EXPERIMENTAL_EXTENSION_ACTIONS;
   if (!connectSnapshot || !shouldGateLegacyGoogleWorkspace(connectSnapshot)) return actions;
   return actions.filter((action) => action.extensionId !== GOOGLE_WORKSPACE_EXTENSION_ID || action.action === "status");
 }
@@ -59,9 +59,9 @@ export async function callExperimentalExtensionAction(config: ServerConfig, env:
   if (!extensionId || !action) {
     throw new ApiError(400, "invalid_payload", "extensionId and action are required");
   }
-  const registered = OMNIRUSH_EXPERIMENTAL_EXTENSION_ACTIONS.find((item) => item.extensionId === extensionId && item.action === action);
+  const registered = MARS_EXPERIMENTAL_EXTENSION_ACTIONS.find((item) => item.extensionId === extensionId && item.action === action);
   if (!registered) {
-    throw new ApiError(404, "extension_action_not_found", "OmniRush.ai extension action not found");
+    throw new ApiError(404, "extension_action_not_found", "MarsAI extension action not found");
   }
 
   if (
@@ -72,7 +72,7 @@ export async function callExperimentalExtensionAction(config: ServerConfig, env:
   ) {
     return {
       ok: false,
-      error: "use_omnirush_cloud",
+      error: "use_mars_cloud",
       message: googleWorkspaceConnectGuidance(connectSnapshot.cloudHealth),
     };
   }
@@ -87,10 +87,10 @@ export async function callExperimentalExtensionAction(config: ServerConfig, env:
     if (result) return result;
   }
 
-  if (extensionId === OMNIRUSH_CLOUD_UPLOADS_EXTENSION_ID) {
-    const result = await callOmniRushCloudUploadAction(config, action, args, context);
+  if (extensionId === MARS_CLOUD_UPLOADS_EXTENSION_ID) {
+    const result = await callMarsCloudUploadAction(config, action, args, context);
     if (result) return result;
   }
 
-  throw new ApiError(501, "extension_action_not_implemented", `${registered.title} is registered but not implemented on omnirush-server yet.`, { extensionId, action, args });
+  throw new ApiError(501, "extension_action_not_implemented", `${registered.title} is registered but not implemented on mars-server yet.`, { extensionId, action, args });
 }

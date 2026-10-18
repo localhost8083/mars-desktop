@@ -6,7 +6,7 @@ import {
   type AgentContextDiagnosticsRequest,
   type AgentContextOrganizationConnectionSummary,
   type AgentContextOrganizationConnectionsProbe,
-} from "@omnirush/types/agent-context-diagnostics";
+} from "@mars/types/agent-context-diagnostics";
 
 import type { DenExternalMcpConnection } from "./den";
 
@@ -15,10 +15,10 @@ const MAX_ORGANIZATION_CONNECTION_OBSERVATIONS = 200;
 
 export function isAgentContextDiagnosticsWorkspaceAllowed(workspace: {
   workspaceType: "local" | "remote";
-  remoteType?: "omnirush" | "opencode" | null;
+  remoteType?: "mars" | "opencode" | null;
 } | null): boolean {
   if (!workspace) return false;
-  return workspace.workspaceType === "local" || workspace.remoteType === "omnirush";
+  return workspace.workspaceType === "local" || workspace.remoteType === "mars";
 }
 
 function summarizeOrganizationConnection(

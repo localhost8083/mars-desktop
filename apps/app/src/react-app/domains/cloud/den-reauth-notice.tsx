@@ -40,7 +40,7 @@ export function DenReauthNotice({ onVerified, onCancel }: {
     let returned: URL;
     try { returned = new URL(value.trim()); }
     catch { setError("Paste the verification link from your browser."); return; }
-    if (returned.protocol !== "omnirush:" || returned.hostname !== "den-reauth" || returned.searchParams.get("nonce") !== nonce) {
+    if (returned.protocol !== "mars:" || returned.hostname !== "den-reauth" || returned.searchParams.get("nonce") !== nonce) {
       setError("This link belongs to another security check. Open verification again for a new link.");
       return;
     }
@@ -92,7 +92,7 @@ export function DenReauthNotice({ onVerified, onCancel }: {
       for (const value of urls) {
         try {
           const returned = new URL(value);
-          if (returned.protocol === "omnirush:" && returned.hostname === "den-reauth" && returned.searchParams.get("nonce") === nonce) {
+          if (returned.protocol === "mars:" && returned.hostname === "den-reauth" && returned.searchParams.get("nonce") === nonce) {
             void finishRef.current(value);
           }
         } catch { /* Other deep links belong to their existing handlers. */ }

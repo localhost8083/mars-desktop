@@ -7,7 +7,7 @@ import test from "node:test";
 import { readSkillFolder, SKILL_FOLDER_LIMITS } from "./skill-folder.mjs";
 
 async function fixture() {
-  const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-skill-folder-"));
+  const root = await mkdtemp(path.join(os.tmpdir(), "mars-skill-folder-"));
   const skill = path.join(root, "greeter");
   await mkdir(path.join(skill, "scripts"), { recursive: true });
   await mkdir(path.join(skill, "node_modules", "dep"), { recursive: true });

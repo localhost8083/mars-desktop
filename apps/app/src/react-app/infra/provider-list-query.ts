@@ -241,7 +241,10 @@ export function useProviderListQuery(input: {
   return useQuery({
     queryKey: providerListQueryKey(input),
     enabled: Boolean(input.client) && (input.enabled ?? true),
-    staleTime: PROVIDER_LIST_CACHE_MS,
+    // Always stale: the catalog can roll over right after sign-in, and a
+    // cached pre-rollover list left the model picker empty of account models
+    // for up to five minutes. The endpoint is a local proxy hop.
+    staleTime: 0,
     gcTime: PROVIDER_LIST_CACHE_MS,
     queryFn: () => {
       if (!input.client) {

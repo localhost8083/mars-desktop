@@ -30,9 +30,9 @@ function serverConfig(root: string): ServerConfig {
 
 describe("Connect state inspection", () => {
   test("does not treat the legacy host cache as desired runtime config", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-connect-state-server-mcp-"));
-    const previousDb = process.env.OMNIRUSH_RUNTIME_DB;
-    process.env.OMNIRUSH_RUNTIME_DB = join(root, "runtime.sqlite");
+    const root = await mkdtemp(join(tmpdir(), "mars-connect-state-server-mcp-"));
+    const previousDb = process.env.MARS_RUNTIME_DB;
+    process.env.MARS_RUNTIME_DB = join(root, "runtime.sqlite");
     try {
       const config = serverConfig(root);
       await writeFile(join(root, "connect-state.json"), JSON.stringify({
@@ -53,23 +53,23 @@ describe("Connect state inspection", () => {
         },
       });
 
-      const sqlite = new Database(process.env.OMNIRUSH_RUNTIME_DB, { create: true });
+      const sqlite = new Database(process.env.MARS_RUNTIME_DB, { create: true });
       sqlite.run("CREATE TABLE runtime_opencode_configs (workspace_id TEXT PRIMARY KEY NOT NULL, config_json TEXT NOT NULL, updated_at INTEGER NOT NULL)");
       sqlite.query("INSERT INTO runtime_opencode_configs (workspace_id, config_json, updated_at) VALUES (?, ?, ?)")
-        .run(ENGINE_GLOBAL_RUNTIME_CONFIG_ID, JSON.stringify({ mcp: { "omnirush-cloud": { type: "remote" } } }), 124);
+        .run(ENGINE_GLOBAL_RUNTIME_CONFIG_ID, JSON.stringify({ mcp: { "mars-cloud": { type: "remote" } } }), 124);
       sqlite.close();
       expect(await inspectConnectSnapshot(config)).toMatchObject({
         snapshot: { cloudMcpPresent: true },
       });
     } finally {
-      if (previousDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-      else process.env.OMNIRUSH_RUNTIME_DB = previousDb;
+      if (previousDb === undefined) delete process.env.MARS_RUNTIME_DB;
+      else process.env.MARS_RUNTIME_DB = previousDb;
       await rm(root, { recursive: true, force: true });
     }
   });
 
   test("distinguishes a missing state file from bounded read failures", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-connect-state-inspect-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-connect-state-inspect-"));
     const config = serverConfig(root);
     const path = join(root, "connect-state.json");
     try {
@@ -105,7 +105,7 @@ describe("Connect state inspection", () => {
   });
 
   test("propagates an aborted diagnostics deadline", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-connect-state-inspect-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-connect-state-inspect-"));
     try {
       const controller = new AbortController();
       controller.abort(new Error("diagnostics deadline exceeded"));
@@ -119,10 +119,10 @@ describe("Connect state inspection", () => {
   });
 
   test("fails a snapshot closed when a runtime row exceeds the diagnostics byte limit", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-connect-snapshot-inspect-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-connect-snapshot-inspect-"));
     const dbPath = join(root, "runtime.sqlite");
-    const previousDb = process.env.OMNIRUSH_RUNTIME_DB;
-    process.env.OMNIRUSH_RUNTIME_DB = dbPath;
+    const previousDb = process.env.MARS_RUNTIME_DB;
+    process.env.MARS_RUNTIME_DB = dbPath;
     try {
       const config = serverConfig(root);
       config.workspaces = [{
@@ -150,17 +150,17 @@ describe("Connect state inspection", () => {
         },
       });
     } finally {
-      if (previousDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-      else process.env.OMNIRUSH_RUNTIME_DB = previousDb;
+      if (previousDb === undefined) delete process.env.MARS_RUNTIME_DB;
+      else process.env.MARS_RUNTIME_DB = previousDb;
       await rm(root, { recursive: true, force: true });
     }
   });
 
   test("bounds the number of local runtime rows inspected", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-connect-snapshot-inspect-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-connect-snapshot-inspect-"));
     const dbPath = join(root, "runtime.sqlite");
-    const previousDb = process.env.OMNIRUSH_RUNTIME_DB;
-    process.env.OMNIRUSH_RUNTIME_DB = dbPath;
+    const previousDb = process.env.MARS_RUNTIME_DB;
+    process.env.MARS_RUNTIME_DB = dbPath;
     try {
       const config = serverConfig(root);
       config.workspaces = [
@@ -176,7 +176,7 @@ describe("Connect state inspection", () => {
       sqlite.query("INSERT INTO runtime_opencode_configs (workspace_id, config_json, updated_at) VALUES (?, ?, ?)")
         .run("first", JSON.stringify({ mcp: {} }), 1234);
       sqlite.query("INSERT INTO runtime_opencode_configs (workspace_id, config_json, updated_at) VALUES (?, ?, ?)")
-        .run("second", JSON.stringify({ mcp: { "omnirush-cloud": { type: "remote" } } }), 1234);
+        .run("second", JSON.stringify({ mcp: { "mars-cloud": { type: "remote" } } }), 1234);
       sqlite.close();
 
       expect(await inspectConnectSnapshot(config, { maxRuntimeRows: 1 })).toMatchObject({
@@ -188,8 +188,8 @@ describe("Connect state inspection", () => {
         snapshot: { cloudMcpPresent: true },
       });
     } finally {
-      if (previousDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-      else process.env.OMNIRUSH_RUNTIME_DB = previousDb;
+      if (previousDb === undefined) delete process.env.MARS_RUNTIME_DB;
+      else process.env.MARS_RUNTIME_DB = previousDb;
       await rm(root, { recursive: true, force: true });
     }
   });

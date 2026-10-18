@@ -1,13 +1,13 @@
-import { browserScript } from "@omnirush/testkit";
+import { browserScript } from "@mars/testkit";
 import { expect } from "vitest";
-import { denFetch, evalIn, go, waitFor } from "@omnirush/behaviors";
-import type { DenSession } from "@omnirush/behaviors";
-import { screenshot, validate } from "@omnirush/test-evidence";
-import { app, needs, server, test, unmetNeeds } from "@omnirush/testkit";
-import type { TestNeeds } from "@omnirush/testkit";
+import { denFetch, evalIn, go, waitFor } from "@mars/behaviors";
+import type { DenSession } from "@mars/behaviors";
+import { screenshot, validate } from "@mars/test-evidence";
+import { app, needs, server, test, unmetNeeds } from "@mars/testkit";
+import type { TestNeeds } from "@mars/testkit";
 
 const requirements: TestNeeds = {
-  optIn: ["OMNIRUSH_EVAL_E2E_TESTS"],
+  optIn: ["MARS_EVAL_E2E_TESTS"],
 };
 const missingRequirements = unmetNeeds(requirements, process.env);
 const title = missingRequirements.length > 0
@@ -89,10 +89,10 @@ test(title, async ({ evidence, place }) => {
 
   const bootstrap = await evalIn(
     desktop,
-    () => (window.__OMNIRUSH_ELECTRON__.invokeDesktop("getDesktopBootstrapConfig")
+    () => (window.__MARS_ELECTRON__.invokeDesktop("getDesktopBootstrapConfig")
       .then((config) => ({
         baseUrl: config.baseUrl,
-        activeOrgId: localStorage.getItem("omnirush.den.activeOrgId"),
+        activeOrgId: localStorage.getItem("mars.den.activeOrgId"),
       }))),
     { awaitPromise: true },
   );
@@ -144,7 +144,7 @@ test(title, async ({ evidence, place }) => {
       radioGroups: dialog?.querySelectorAll<HTMLElement>('[role="radiogroup"]').length ?? 0,
       oldMakeSection: dialog?.textContent?.includes('WHAT ARE YOU MAKING') ?? false,
       oldConnectSection: dialog?.textContent?.includes('OR CONNECT SOMETHING') ?? false,
-      opensDenCopy: dialog?.textContent?.includes('manage setup for this organization in OmniRush.ai Den') ?? false,
+      opensDenCopy: dialog?.textContent?.includes('manage setup for this organization in MarsAI Den') ?? false,
       cues: cueTiles.map((item) => item.getAttribute('title')),
       logoLabels: dialog
         ? [...dialog.querySelectorAll<HTMLElement>('[data-connector-cue] img, [data-connector-cue] [aria-label]')]
@@ -259,7 +259,7 @@ test(title, async ({ evidence, place }) => {
     const shot = await screenshot(desktop);
     const seen = await validate(shot, [
       "The Add to your Library dialog is visibly rendered in a dark theme",
-      "Connection is the selected choice and remains in the same continuous list as the OmniRush.ai creation and MCP choices",
+      "Connection is the selected choice and remains in the same continuous list as the MarsAI creation and MCP choices",
       "The Connection choice visibly includes recognizable marks for Notion, Slack, Google Workspace, Microsoft 365, and Linear",
       "The dark-theme dialog, all five choices, descriptions, connector marks, Cancel button, and Continue button fit within the desktop viewport without clipping",
     ]);

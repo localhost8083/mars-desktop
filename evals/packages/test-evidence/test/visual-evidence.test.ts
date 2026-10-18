@@ -31,7 +31,7 @@ function seen(caption: string, passed: boolean): VisualEvidenceResult {
 }
 
 test("visual evidence writes distinct screenshots, verdicts, and idempotent indexes", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "omnirush-visual-evidence-"));
+  const dir = await mkdtemp(join(tmpdir(), "mars-visual-evidence-"));
   try {
     const visualEvidence = createVisualEvidence("unit test run", { outDir: dir });
     const firstPath = await visualEvidence.recordScreenshot(screenshotArtifact("first"), seen("First caption", true));
@@ -58,7 +58,7 @@ test("visual evidence writes distinct screenshots, verdicts, and idempotent inde
 });
 
 test("visual evidence rejects duplicate pixels assigned to different validations", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "omnirush-visual-evidence-duplicate-"));
+  const dir = await mkdtemp(join(tmpdir(), "mars-visual-evidence-duplicate-"));
   try {
     const visualEvidence = createVisualEvidence("duplicate test run", { outDir: dir });
     const duplicate = screenshotArtifact("same pixels");

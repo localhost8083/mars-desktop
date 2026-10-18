@@ -7,8 +7,8 @@ import { inheritWorkspaceOpencodeConnection, resolveWorkspaceOpencodeConnection 
 import { externalFetch } from "../server-fetch.js";
 import type { ServerConfig, WorkspaceInfo } from "../types.js";
 import { ensureDir, exists, shortId } from "../utils.js";
-import { defaultWorkspaceOmniRushConfig, ensureWorkspaceFiles } from "../workspace-init.js";
-import { seedOmniRushWorkspaceConfigIfEmpty } from "../omnirush-workspace-config-store.js";
+import { defaultWorkspaceMarsConfig, ensureWorkspaceFiles } from "../workspace-init.js";
+import { seedMarsWorkspaceConfigIfEmpty } from "../mars-workspace-config-store.js";
 import { workspaceIdForPath, workspaceIdForRemote } from "../workspaces.js";
 import { addRoute, type Route } from "./registry.js";
 
@@ -56,7 +56,7 @@ function normalizeRemoteDirectory(value: unknown): string {
   return value.trim().replace(/\\/g, "/").replace(/\/+$/, "");
 }
 
-function parseOmniRushWorkspaceIdFromUrl(input: string | null | undefined): string | null {
+function parseMarsWorkspaceIdFromUrl(input: string | null | undefined): string | null {
   const raw = input?.trim() ?? "";
   if (!raw) return null;
   try {
@@ -79,7 +79,7 @@ function parseOmniRushWorkspaceIdFromUrl(input: string | null | undefined): stri
   }
 }
 
-function stripOmniRushWorkspaceMount(input: string | null | undefined): string | null {
+function stripMarsWorkspaceMount(input: string | null | undefined): string | null {
   const raw = input?.trim() ?? "";
   if (!raw) return null;
   try {
@@ -98,8 +98,8 @@ function stripOmniRushWorkspaceMount(input: string | null | undefined): string |
   }
 }
 
-function omnirushRemoteWorkspaceId(hostUrl: string, workspaceId: string | null | undefined): string {
-  const remoteWorkspaceId = workspaceId?.trim() || parseOmniRushWorkspaceIdFromUrl(hostUrl);
+function marsRemoteWorkspaceId(hostUrl: string, workspaceId: string | null | undefined): string {
+  const remoteWorkspaceId = workspaceId?.trim() || parseMarsWorkspaceIdFromUrl(hostUrl);
   return remoteWorkspaceId ? `rem_${remoteWorkspaceId}` : workspaceIdForRemote(hostUrl, null);
 }
 
@@ -110,7 +110,7 @@ function workspaceDirectoryCandidates(workspace: Record<string, unknown>): strin
     .filter(Boolean);
 }
 
-function selectOmniRushWorkspaceForConnection(list: unknown, directory: string | null): Record<string, unknown> | null {
+function selectMarsWorkspaceForConnection(list: unknown, directory: string | null): Record<string, unknown> | null {
   if (!isRecord(list)) return null;
   const rawItems = Array.isArray(list.items)
     ? list.items
@@ -129,35 +129,35 @@ function selectOmniRushWorkspaceForConnection(list: unknown, directory: string |
   return (activeId ? items.find((item) => readStringField(item, "id") === activeId) : null) ?? items[0] ?? null;
 }
 
-function omnirushWorkspaceDisplayName(workspace: Record<string, unknown>): string | null {
+function marsWorkspaceDisplayName(workspace: Record<string, unknown>): string | null {
   return readStringField(workspace, "displayName")
-    || readStringField(workspace, "omnirushWorkspaceName")
+    || readStringField(workspace, "marsWorkspaceName")
     || readStringField(workspace, "name")
     || readStringField(workspace, "id")
     || null;
 }
 
-async function fetchOmniRushWorkspaceList(hostUrl: string, token: string, hostToken: string): Promise<unknown> {
+async function fetchMarsWorkspaceList(hostUrl: string, token: string, hostToken: string): Promise<unknown> {
   const url = `${hostUrl.replace(/\/+$/, "")}/workspaces`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8_000);
   const headers = new Headers();
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  if (hostToken) headers.set("X-OmniRush-Host-Token", hostToken);
+  if (hostToken) headers.set("X-Mars-Host-Token", hostToken);
 
   try {
     const response = await externalFetch(url, { headers, signal: controller.signal });
     if (!response.ok) {
       throw new ApiError(
         502,
-        "omnirush_workspace_discovery_failed",
-        `OmniRush.ai workspace discovery failed (${response.status} ${response.statusText || "HTTP error"})`,
+        "mars_workspace_discovery_failed",
+        `MarsAI workspace discovery failed (${response.status} ${response.statusText || "HTTP error"})`,
       );
     }
     return await response.json();
   } catch (error) {
     if (error instanceof ApiError) throw error;
-    throw new ApiError(502, "omnirush_workspace_discovery_failed", "OmniRush.ai workspace discovery failed", {
+    throw new ApiError(502, "mars_workspace_discovery_failed", "MarsAI workspace discovery failed", {
       error: String(error),
     });
   } finally {
@@ -165,14 +165,14 @@ async function fetchOmniRushWorkspaceList(hostUrl: string, token: string, hostTo
   }
 }
 
-async function discoverOmniRushWorkspace(input: {
+async function discoverMarsWorkspace(input: {
   hostUrl: string;
   token: string;
   hostToken: string;
   directory: string | null;
 }): Promise<Record<string, unknown> | null> {
-  const list = await fetchOmniRushWorkspaceList(input.hostUrl, input.token, input.hostToken);
-  return selectOmniRushWorkspaceForConnection(list, input.directory);
+  const list = await fetchMarsWorkspaceList(input.hostUrl, input.token, input.hostToken);
+  return selectMarsWorkspaceForConnection(list, input.directory);
 }
 
 function ensurePlainObject(value: unknown): Record<string, unknown> {
@@ -208,10 +208,10 @@ function serializeWorkspaceConfigEntry(workspace: WorkspaceInfo): Record<string,
     ...(!isLocalWorkspace && workspace.baseUrl ? { baseUrl: workspace.baseUrl } : {}),
     ...(!isLocalWorkspace && workspace.directory ? { directory: workspace.directory } : {}),
     ...(workspace.displayName ? { displayName: workspace.displayName } : {}),
-    ...(workspace.omnirushHostUrl ? { omnirushHostUrl: workspace.omnirushHostUrl } : {}),
-    ...(workspace.omnirushToken ? { omnirushToken: workspace.omnirushToken } : {}),
-    ...(workspace.omnirushWorkspaceId ? { omnirushWorkspaceId: workspace.omnirushWorkspaceId } : {}),
-    ...(workspace.omnirushWorkspaceName ? { omnirushWorkspaceName: workspace.omnirushWorkspaceName } : {}),
+    ...(workspace.marsHostUrl ? { marsHostUrl: workspace.marsHostUrl } : {}),
+    ...(workspace.marsToken ? { marsToken: workspace.marsToken } : {}),
+    ...(workspace.marsWorkspaceId ? { marsWorkspaceId: workspace.marsWorkspaceId } : {}),
+    ...(workspace.marsWorkspaceName ? { marsWorkspaceName: workspace.marsWorkspaceName } : {}),
     ...(workspace.sandboxBackend ? { sandboxBackend: workspace.sandboxBackend } : {}),
     ...(workspace.sandboxRunId ? { sandboxRunId: workspace.sandboxRunId } : {}),
     ...(workspace.sandboxContainerName ? { sandboxContainerName: workspace.sandboxContainerName } : {}),
@@ -284,12 +284,12 @@ export function registerWorkspaceRoutes(options: RegisterWorkspaceRoutesOptions)
     await ensureWorkspaceFiles(workspacePath, preset);
 
     const workspaceId = workspaceIdForPath(workspacePath);
-    // Seed the per-workspace omnirush config in the runtime DB (replaces the
-    // legacy `.opencode/omnirush.json` file). No-op if a row already exists.
-    await seedOmniRushWorkspaceConfigIfEmpty(
+    // Seed the per-workspace mars config in the runtime DB (replaces the
+    // legacy `.opencode/mars.json` file). No-op if a row already exists.
+    await seedMarsWorkspaceConfigIfEmpty(
       config,
       workspaceId,
-      defaultWorkspaceOmniRushConfig(workspacePath, preset),
+      defaultWorkspaceMarsConfig(workspacePath, preset),
     );
 
     const workspace: WorkspaceInfo = {
@@ -336,61 +336,61 @@ export function registerWorkspaceRoutes(options: RegisterWorkspaceRoutesOptions)
       throw new ApiError(400, "invalid_payload", "baseUrl must start with http:// or https://");
     }
 
-    const remoteType = readStringField(body, "remoteType") === "opencode" ? "opencode" : "omnirush";
+    const remoteType = readStringField(body, "remoteType") === "opencode" ? "opencode" : "mars";
     const directory = readStringField(body, "directory") || null;
     const displayName = readStringField(body, "displayName") || null;
-    const rawOmniRushHostUrl = readStringField(body, "omnirushHostUrl") || null;
-    const omnirushHostUrl = remoteType === "omnirush"
-      ? stripOmniRushWorkspaceMount(rawOmniRushHostUrl ?? baseUrl)
-      : rawOmniRushHostUrl;
-    const omnirushToken = readStringField(body, "omnirushToken");
-    const omnirushHostToken = readStringField(body, "omnirushHostToken");
+    const rawMarsHostUrl = readStringField(body, "marsHostUrl") || null;
+    const marsHostUrl = remoteType === "mars"
+      ? stripMarsWorkspaceMount(rawMarsHostUrl ?? baseUrl)
+      : rawMarsHostUrl;
+    const marsToken = readStringField(body, "marsToken");
+    const marsHostToken = readStringField(body, "marsHostToken");
     const sandboxBackend = readStringField(body, "sandboxBackend");
     const sandboxRunId = readStringField(body, "sandboxRunId");
     const sandboxContainerName = readStringField(body, "sandboxContainerName");
-    let omnirushWorkspaceId = remoteType === "omnirush"
-      ? readStringField(body, "omnirushWorkspaceId")
-        || parseOmniRushWorkspaceIdFromUrl(rawOmniRushHostUrl)
-        || parseOmniRushWorkspaceIdFromUrl(baseUrl)
+    let marsWorkspaceId = remoteType === "mars"
+      ? readStringField(body, "marsWorkspaceId")
+        || parseMarsWorkspaceIdFromUrl(rawMarsHostUrl)
+        || parseMarsWorkspaceIdFromUrl(baseUrl)
       : "";
-    let omnirushWorkspaceName = readStringField(body, "omnirushWorkspaceName") || null;
+    let marsWorkspaceName = readStringField(body, "marsWorkspaceName") || null;
 
-    if (remoteType === "omnirush" && !omnirushWorkspaceId) {
-      const discovered = await discoverOmniRushWorkspace({
-        hostUrl: omnirushHostUrl ?? baseUrl,
-        token: omnirushToken,
-        hostToken: omnirushHostToken,
+    if (remoteType === "mars" && !marsWorkspaceId) {
+      const discovered = await discoverMarsWorkspace({
+        hostUrl: marsHostUrl ?? baseUrl,
+        token: marsToken,
+        hostToken: marsHostToken,
         directory,
       });
-      omnirushWorkspaceId = discovered ? readStringField(discovered, "id") : "";
-      omnirushWorkspaceName = discovered ? omnirushWorkspaceDisplayName(discovered) : omnirushWorkspaceName;
-      if (!omnirushWorkspaceId) {
+      marsWorkspaceId = discovered ? readStringField(discovered, "id") : "";
+      marsWorkspaceName = discovered ? marsWorkspaceDisplayName(discovered) : marsWorkspaceName;
+      if (!marsWorkspaceId) {
         throw new ApiError(
           400,
-          "omnirush_workspace_not_found",
+          "mars_workspace_not_found",
           directory
-            ? `OmniRush.ai server has no workspace matching ${directory}.`
-            : "OmniRush.ai server returned no workspaces.",
+            ? `MarsAI server has no workspace matching ${directory}.`
+            : "MarsAI server returned no workspaces.",
         );
       }
     }
 
     const workspace: WorkspaceInfo = {
-      id: remoteType === "omnirush"
-        ? omnirushRemoteWorkspaceId(omnirushHostUrl ?? baseUrl, omnirushWorkspaceId)
+      id: remoteType === "mars"
+        ? marsRemoteWorkspaceId(marsHostUrl ?? baseUrl, marsWorkspaceId)
         : workspaceIdForRemote(baseUrl, directory),
-      name: displayName ?? omnirushWorkspaceName ?? "Remote workspace",
+      name: displayName ?? marsWorkspaceName ?? "Remote workspace",
       path: directory ?? "",
       preset: "remote",
       workspaceType: "remote",
       remoteType,
-      baseUrl: remoteType === "omnirush" ? (omnirushHostUrl ?? baseUrl) : baseUrl,
+      baseUrl: remoteType === "mars" ? (marsHostUrl ?? baseUrl) : baseUrl,
       ...(directory ? { directory } : {}),
       ...(displayName ? { displayName } : {}),
-      ...(remoteType === "omnirush" && omnirushHostUrl ? { omnirushHostUrl } : {}),
-      ...(omnirushToken ? { omnirushToken } : {}),
-      ...(remoteType === "omnirush" && omnirushWorkspaceId ? { omnirushWorkspaceId } : {}),
-      ...(remoteType === "omnirush" && omnirushWorkspaceName ? { omnirushWorkspaceName } : {}),
+      ...(remoteType === "mars" && marsHostUrl ? { marsHostUrl } : {}),
+      ...(marsToken ? { marsToken } : {}),
+      ...(remoteType === "mars" && marsWorkspaceId ? { marsWorkspaceId } : {}),
+      ...(remoteType === "mars" && marsWorkspaceName ? { marsWorkspaceName } : {}),
       ...(sandboxBackend ? { sandboxBackend } : {}),
       ...(sandboxRunId ? { sandboxRunId } : {}),
       ...(sandboxContainerName ? { sandboxContainerName } : {}),
@@ -530,7 +530,7 @@ export function registerWorkspaceRoutes(options: RegisterWorkspaceRoutesOptions)
       actor: ctx.actor ?? { type: "host" },
       action: "workspace.delete",
       target: "workspace",
-      summary: "Deleted workspace from OmniRush.ai server",
+      summary: "Deleted workspace from MarsAI server",
       timestamp: Date.now(),
     }).catch(() => undefined); // The removal is saved; a failed audit line must not report it as failed.
 

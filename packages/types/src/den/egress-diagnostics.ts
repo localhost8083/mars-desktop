@@ -1,9 +1,9 @@
 import { z } from "zod"
 
-export const EGRESS_DIAGNOSTIC_RUN_HEADER = "x-omnirush-diagnostic-run-id"
-export const EGRESS_DIAGNOSTIC_STEP_HEADER = "x-omnirush-diagnostic-step"
-export const EGRESS_DIAGNOSTIC_SIGNATURE_HEADER = "x-omnirush-diagnostic-signature"
-export const EGRESS_DIAGNOSTIC_ID_HEADER = "x-omnirush-diagnostic-id"
+export const EGRESS_DIAGNOSTIC_RUN_HEADER = "x-mars-diagnostic-run-id"
+export const EGRESS_DIAGNOSTIC_STEP_HEADER = "x-mars-diagnostic-step"
+export const EGRESS_DIAGNOSTIC_SIGNATURE_HEADER = "x-mars-diagnostic-signature"
+export const EGRESS_DIAGNOSTIC_ID_HEADER = "x-mars-diagnostic-id"
 
 export const EGRESS_DIAGNOSTIC_STEP_IDS = [
   "reachability",
@@ -31,7 +31,7 @@ export type EgressDiagnosticCategory = z.infer<typeof egressDiagnosticCategorySc
 export const egressDiagnosticOwnerSchema = z.enum([
   "den-operator",
   "network-administrator",
-  "omnirush-support",
+  "mars-support",
 ])
 export type EgressDiagnosticOwner = z.infer<typeof egressDiagnosticOwnerSchema>
 

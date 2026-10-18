@@ -1,25 +1,25 @@
 extends: ./electron-builder.base.yml
-appId: ai.omnirush.desktop
-productName: omnirush
+appId: ai.marsai.desktop
+productName: mars
 protocols:
-  - name: OmniRush.ai
+  - name: MarsAI
     schemes:
-      - omnirush
+      - mars
 linux:
-  executableName: omnirush
+  executableName: mars
 win:
   # The executable keeps its published name so taskbar pins and the install
   # folder of existing installs stay valid; shortcuts take the product name.
-  executableName: OmniRush.ai
+  executableName: MarsAI
 # Package names stay as published before the lowercase product name, so
 # package managers upgrade the installed package instead of adding a second one.
 deb:
-  packageName: omnirush.ai
+  packageName: marsai.click
 rpm:
-  packageName: OmniRush.ai
+  packageName: MarsAI
 pacman:
   # The AUR package's name, so the two replace each other cleanly.
-  packageName: omnirush
+  packageName: mars
 # Installer window: background from scripts/dmg-background.swift (the @2x file
 # is picked up next to it), laid out to match that script.
 dmg:
@@ -37,4 +37,4 @@ dmg:
       y: 190
       type: link
       path: /Applications
-artifactName: omnirush-${os}-${arch}-${version}.${ext}
+artifactName: mars-${os}-${arch}-${version}.${ext}

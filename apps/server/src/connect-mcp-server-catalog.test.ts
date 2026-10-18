@@ -9,41 +9,41 @@ import {
   CONNECT_MCP_SERVER_INDEX_URI,
   connectDirectMcpRuntimeName,
   connectMcpAppHostName,
-  type OmniRushConnectMcpServerIndex,
-  readOmniRushConnectMcpAppHostCatalog,
-  readOmniRushConnectMcpServerIndex,
-  reconcileOmniRushConnectMcpServers,
-  refreshOmniRushConnectMcpAppHostCatalog,
-  writeOmniRushConnectMcpAppHostAuthorization,
-  writeOmniRushConnectMcpAppHostCatalog,
+  type MarsConnectMcpServerIndex,
+  readMarsConnectMcpAppHostCatalog,
+  readMarsConnectMcpServerIndex,
+  reconcileMarsConnectMcpServers,
+  refreshMarsConnectMcpAppHostCatalog,
+  writeMarsConnectMcpAppHostAuthorization,
+  writeMarsConnectMcpAppHostCatalog,
 } from "./connect-mcp-server-catalog.js";
 import { readRuntimeOpencodeConfig, writeRuntimeOpencodeConfig } from "./runtime-opencode-config-store.js";
 import type { ServerConfig } from "./types.js";
 
 const roots: string[] = [];
-const previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
-const previousBootstrapPath = process.env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH;
+const previousRuntimeDb = process.env.MARS_RUNTIME_DB;
+const previousBootstrapPath = process.env.MARS_DESKTOP_BOOTSTRAP_PATH;
 
 /** The administrator-activated enterprise Den origin every trusted fixture uses. */
 const DEN = "https://den.example.com";
 
 /** Hosted Den origins that are retired and must never be trusted by default. */
 const RETIRED_HOSTED_ORIGINS = [
-  "https://api.omnirushlabs.com",
-  "https://app.omnirushlabs.com",
-  "https://api.app.omnirushlabs.com",
-  "https://api.omnirush.software",
-  "https://app.omnirush.software",
+  "https://api.marslabs.com",
+  "https://app.marslabs.com",
+  "https://api.app.marslabs.com",
+  "https://api.mars.software",
+  "https://app.mars.software",
 ];
 
 async function activateEnterpriseDen(origin: string | null): Promise<void> {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-connect-mcp-bootstrap-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-connect-mcp-bootstrap-"));
   roots.push(root);
   const path = join(root, "desktop-bootstrap.json");
   await writeFile(path, JSON.stringify(origin
     ? { baseUrl: origin, enterpriseActivation: { activatedAt: "2026-09-22T00:00:00.000Z", denBaseUrl: origin } }
     : {}), "utf8");
-  process.env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH = path;
+  process.env.MARS_DESKTOP_BOOTSTRAP_PATH = path;
 }
 
 beforeEach(async () => {
@@ -53,22 +53,22 @@ beforeEach(async () => {
 
 afterEach(async () => {
   while (roots.length) await rm(roots.pop() ?? "", { recursive: true, force: true });
-  if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-  else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
-  if (previousBootstrapPath === undefined) delete process.env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH;
-  else process.env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH = previousBootstrapPath;
+  if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+  else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
+  if (previousBootstrapPath === undefined) delete process.env.MARS_DESKTOP_BOOTSTRAP_PATH;
+  else process.env.MARS_DESKTOP_BOOTSTRAP_PATH = previousBootstrapPath;
 });
 
 async function fixtureConfig(): Promise<ServerConfig> {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-connect-mcp-servers-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-connect-mcp-servers-"));
   roots.push(root);
-  process.env.OMNIRUSH_RUNTIME_DB = join(root, "runtime.sqlite");
+  process.env.MARS_RUNTIME_DB = join(root, "runtime.sqlite");
   return {
     host: "127.0.0.1",
     port: 0,
     token: "test",
     hostToken: "host",
-    configPath: join(root, "omnirush.json"),
+    configPath: join(root, "mars.json"),
     approval: { mode: "auto", timeoutMs: 1_000 },
     corsOrigins: ["*"],
     workspaces: [{ id: "ws_1", name: "One", path: root, preset: "starter", workspaceType: "local" }],
@@ -84,7 +84,7 @@ async function fixtureConfig(): Promise<ServerConfig> {
 
 function indexFetcher(
   requests: Array<{ url: string; headers: Headers; body: Record<string, unknown> }>,
-  servers: Array<Partial<OmniRushConnectMcpServerIndex["servers"][number]>> = [{
+  servers: Array<Partial<MarsConnectMcpServerIndex["servers"][number]>> = [{
     connectionId: "emc_01k28e8q8pf8r9sff9mhyqxved",
     name: "Project Atlas",
     description: null,
@@ -106,7 +106,7 @@ function indexFetcher(
           uri: CONNECT_MCP_SERVER_INDEX_URI,
           mimeType: "application/json",
           text: JSON.stringify({
-            schemaVersion: "omnirush.connect/mcp-servers/1",
+            schemaVersion: "mars.connect/mcp-servers/1",
             servers,
           }),
         }],
@@ -115,10 +115,10 @@ function indexFetcher(
   };
 }
 
-describe("OmniRush.ai Connect MCP server catalog", () => {
+describe("MarsAI Connect MCP server catalog", () => {
   test("reads the member catalog through an authenticated MCP resource", async () => {
     const requests: Array<{ url: string; headers: Headers; body: Record<string, unknown> }> = [];
-    const index = await readOmniRushConnectMcpServerIndex({
+    const index = await readMarsConnectMcpServerIndex({
       type: "remote",
       url: "https://den.example.com/mcp/agent",
       headers: { Authorization: "Bearer member-token" },
@@ -136,7 +136,7 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
   });
 
   test("keeps same-origin provider proxies below a Den gateway prefix", async () => {
-    const index = await readOmniRushConnectMcpServerIndex({
+    const index = await readMarsConnectMcpServerIndex({
       type: "remote",
       url: `${DEN}/api/den/mcp/agent`,
     }, "Bearer private-app-host-token", indexFetcher([], [{
@@ -157,7 +157,7 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
     for (const origin of RETIRED_HOSTED_ORIGINS) {
       for (const path of ["/mcp/agent", "/api/den/mcp/agent"]) {
         const requests: Array<{ url: string; headers: Headers; body: Record<string, unknown> }> = [];
-        const index = await readOmniRushConnectMcpServerIndex({
+        const index = await readMarsConnectMcpServerIndex({
           type: "remote",
           url: `${origin}${path}`,
           headers: { Authorization: "Bearer member-token" },
@@ -175,7 +175,7 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
     const config = await fixtureConfig();
     for (const origin of RETIRED_HOSTED_ORIGINS) {
       let requests = 0;
-      const result = await reconcileOmniRushConnectMcpServers({
+      const result = await reconcileMarsConnectMcpServers({
         config,
         workspace: config.workspaces[0]!,
         cloudMcp: { type: "remote", url: `${origin}/mcp/agent`, headers: { Authorization: "Bearer member-token" } },
@@ -187,13 +187,13 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
       });
       expect(requests).toBe(0);
       expect(result.status).toBe("unavailable");
-      expect((await readOmniRushConnectMcpAppHostCatalog(config, "ws_1")).servers).toEqual([]);
+      expect((await readMarsConnectMcpAppHostCatalog(config, "ws_1")).servers).toEqual([]);
     }
   });
 
   test("the activated Den origin is trusted and a retired hosted origin next to it is not", async () => {
     const trusted: Array<{ url: string; headers: Headers; body: Record<string, unknown> }> = [];
-    expect(await readOmniRushConnectMcpServerIndex(
+    expect(await readMarsConnectMcpServerIndex(
       { type: "remote", url: `${DEN}/mcp/agent` },
       "Bearer private-app-host-token",
       indexFetcher(trusted),
@@ -201,7 +201,7 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
     expect(trusted.length).toBeGreaterThan(0);
 
     const retired: Array<{ url: string; headers: Headers; body: Record<string, unknown> }> = [];
-    expect(await readOmniRushConnectMcpServerIndex(
+    expect(await readMarsConnectMcpServerIndex(
       { type: "remote", url: `${RETIRED_HOSTED_ORIGINS[0]}/mcp/agent` },
       "Bearer private-app-host-token",
       indexFetcher(retired),
@@ -209,17 +209,17 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
     expect(retired).toEqual([]);
   });
 
-  test("reconciles only OmniRush.ai-owned proxy entries and preserves user MCPs", async () => {
+  test("reconciles only MarsAI-owned proxy entries and preserves user MCPs", async () => {
     const config = await fixtureConfig();
     await writeRuntimeOpencodeConfig(config, "ws_1", () => ({
       mcp: {
-        "omnirush-cloud": { type: "remote", url: "https://den.example.com/mcp/agent" },
+        "mars-cloud": { type: "remote", url: "https://den.example.com/mcp/agent" },
         "user-server": { type: "remote", url: "https://user.example/mcp" },
-        "omnirush-connect-stale": { type: "remote", url: "https://cloud.example/stale" },
+        "mars-connect-stale": { type: "remote", url: "https://cloud.example/stale" },
       },
     }));
     const connectionId = "emc_01k28e8q8pf8r9sff9mhyqxved";
-    const result = await reconcileOmniRushConnectMcpServers({
+    const result = await reconcileMarsConnectMcpServers({
       config,
       workspace: config.workspaces[0]!,
       cloudMcp: {
@@ -236,15 +236,15 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
       status: "synced",
       appHostNames: [connectMcpAppHostName(connectionId)],
       directNames: [],
-      removedNames: ["omnirush-connect-stale"],
+      removedNames: ["mars-connect-stale"],
     });
-    expect(runtime.mcp?.["omnirush-cloud"]).toEqual({ type: "remote", url: "https://den.example.com/mcp/agent" });
+    expect(runtime.mcp?.["mars-cloud"]).toEqual({ type: "remote", url: "https://den.example.com/mcp/agent" });
     expect(runtime.mcp?.["user-server"]).toEqual({ type: "remote", url: "https://user.example/mcp" });
-    expect(runtime.mcp?.["omnirush-connect-stale"]).toBeUndefined();
-    expect(Object.keys(runtime.mcp ?? {}).some((name) => name.startsWith("omnirush-connect-"))).toBe(false);
-    expect(Object.keys(runtime.mcp ?? {}).some((name) => name.startsWith("omnirush-direct-"))).toBe(false);
-    expect(await readOmniRushConnectMcpAppHostCatalog(config, "ws_1")).toEqual({
-      schemaVersion: "omnirush.connect/mcp-servers/1",
+    expect(runtime.mcp?.["mars-connect-stale"]).toBeUndefined();
+    expect(Object.keys(runtime.mcp ?? {}).some((name) => name.startsWith("mars-connect-"))).toBe(false);
+    expect(Object.keys(runtime.mcp ?? {}).some((name) => name.startsWith("mars-direct-"))).toBe(false);
+    expect(await readMarsConnectMcpAppHostCatalog(config, "ws_1")).toEqual({
+      schemaVersion: "mars.connect/mcp-servers/1",
       servers: [{
         connectionId,
         name: "Project Atlas",
@@ -261,11 +261,11 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
     const boundedId = "emc_01bounded";
     const direct = { connectionId: directId, name: "Linear (Engineering)" };
     const directName = connectDirectMcpRuntimeName(direct);
-    expect(directName).toMatch(/^omnirush-direct-linear-engineering-[0-9a-f]{6}$/);
+    expect(directName).toMatch(/^mars-direct-linear-engineering-[0-9a-f]{6}$/);
     await writeRuntimeOpencodeConfig(config, "ws_1", () => ({
       mcp: {
         "user-server": { type: "remote", url: "https://user.example/mcp" },
-        "omnirush-direct-revoked-abc123": { type: "remote", url: "https://den.example.com/mcp/agent/connections/emc_01revoked" },
+        "mars-direct-revoked-abc123": { type: "remote", url: "https://den.example.com/mcp/agent/connections/emc_01revoked" },
       },
     }));
     const cloudMcp = {
@@ -274,7 +274,7 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
       enabled: true,
       headers: { Authorization: "Bearer member-token" },
     };
-    const result = await reconcileOmniRushConnectMcpServers({
+    const result = await reconcileMarsConnectMcpServers({
       config,
       workspace: config.workspaces[0]!,
       cloudMcp,
@@ -289,7 +289,7 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
       status: "synced",
       appHostNames: [connectMcpAppHostName(boundedId), connectMcpAppHostName(directId)].sort(),
       directNames: [directName],
-      removedNames: ["omnirush-direct-revoked-abc123"],
+      removedNames: ["mars-direct-revoked-abc123"],
     });
     const runtime = await readRuntimeOpencodeConfig(config, "ws_1");
     expect(runtime.mcp?.[directName]).toEqual({
@@ -299,13 +299,13 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
       headers: { Authorization: "Bearer member-token" },
       oauth: false,
     });
-    expect(runtime.mcp?.["omnirush-direct-revoked-abc123"]).toBeUndefined();
+    expect(runtime.mcp?.["mars-direct-revoked-abc123"]).toBeUndefined();
     expect(runtime.mcp?.["user-server"]).toEqual({ type: "remote", url: "https://user.example/mcp" });
-    expect(Object.keys(runtime.mcp ?? {}).filter((name) => name.startsWith("omnirush-direct-"))).toEqual([directName]);
+    expect(Object.keys(runtime.mcp ?? {}).filter((name) => name.startsWith("mars-direct-"))).toEqual([directName]);
     expect(JSON.stringify(runtime.mcp)).not.toContain("private-app-host-token");
 
     // Turning the flag off removes the entry on the next reconcile.
-    const revoked = await reconcileOmniRushConnectMcpServers({
+    const revoked = await reconcileMarsConnectMcpServers({
       config,
       workspace: config.workspaces[0]!,
       cloudMcp,
@@ -322,7 +322,7 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
   test("a flagged connection is not projected when the Cloud entry carries no member credential", async () => {
     const config = await fixtureConfig();
     const directId = "emc_01direct";
-    const result = await reconcileOmniRushConnectMcpServers({
+    const result = await reconcileMarsConnectMcpServers({
       config,
       workspace: config.workspaces[0]!,
       cloudMcp: { type: "remote", url: "https://den.example.com/mcp/agent" },
@@ -339,9 +339,9 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
   test("an unavailable index purges directly exposed entries instead of trusting a stale catalog", async () => {
     const config = await fixtureConfig();
     await writeRuntimeOpencodeConfig(config, "ws_1", () => ({
-      mcp: { "omnirush-direct-linear-abc123": { type: "remote", url: "https://den.example.com/mcp/agent/connections/emc_01x" } },
+      mcp: { "mars-direct-linear-abc123": { type: "remote", url: "https://den.example.com/mcp/agent/connections/emc_01x" } },
     }));
-    const result = await reconcileOmniRushConnectMcpServers({
+    const result = await reconcileMarsConnectMcpServers({
       config,
       workspace: config.workspaces[0]!,
       cloudMcp: { type: "remote", url: "https://den.example.com/mcp/agent" },
@@ -351,9 +351,9 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
       status: "unavailable",
       appHostNames: [],
       directNames: [],
-      removedNames: ["omnirush-direct-linear-abc123"],
+      removedNames: ["mars-direct-linear-abc123"],
     });
-    expect((await readRuntimeOpencodeConfig(config, "ws_1")).mcp?.["omnirush-direct-linear-abc123"]).toBeUndefined();
+    expect((await readRuntimeOpencodeConfig(config, "ws_1")).mcp?.["mars-direct-linear-abc123"]).toBeUndefined();
   });
 
   test("opportunistically refreshes a stale private catalog from the runtime Cloud endpoint", async () => {
@@ -362,20 +362,20 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
     const requests: Array<{ url: string; headers: Headers; body: Record<string, unknown> }> = [];
     await writeRuntimeOpencodeConfig(config, "ws_1", () => ({
       mcp: {
-        "omnirush-cloud": { type: "remote", url: "https://den.example.com/mcp/agent" },
+        "mars-cloud": { type: "remote", url: "https://den.example.com/mcp/agent" },
       },
     }));
-    await writeOmniRushConnectMcpAppHostAuthorization(
+    await writeMarsConnectMcpAppHostAuthorization(
       config,
       "ws_1",
       "Bearer private-app-host-token",
       "https://den.example.com/mcp/agent",
     );
 
-    const result = await refreshOmniRushConnectMcpAppHostCatalog(config, "ws_1", indexFetcher(requests));
+    const result = await refreshMarsConnectMcpAppHostCatalog(config, "ws_1", indexFetcher(requests));
 
     expect(result).toEqual({ status: "synced", appHostNames: [connectMcpAppHostName(connectionId)] });
-    expect((await readOmniRushConnectMcpAppHostCatalog(config, "ws_1")).servers[0]?.connectionId).toBe(connectionId);
+    expect((await readMarsConnectMcpAppHostCatalog(config, "ws_1")).servers[0]?.connectionId).toBe(connectionId);
     expect(requests.every((request) => request.headers.get("authorization") === "Bearer private-app-host-token")).toBe(true);
   });
 
@@ -384,17 +384,17 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
     const connectionId = "emc_01lastknowngood";
     await writeRuntimeOpencodeConfig(config, "ws_1", () => ({
       mcp: {
-        "omnirush-cloud": { type: "remote", url: "https://den.example.com/mcp/agent" },
+        "mars-cloud": { type: "remote", url: "https://den.example.com/mcp/agent" },
       },
     }));
-    await writeOmniRushConnectMcpAppHostAuthorization(
+    await writeMarsConnectMcpAppHostAuthorization(
       config,
       "ws_1",
       "Bearer private-app-host-token",
       "https://den.example.com/mcp/agent",
     );
-    await writeOmniRushConnectMcpAppHostCatalog(config, "ws_1", {
-      schemaVersion: "omnirush.connect/mcp-servers/1",
+    await writeMarsConnectMcpAppHostCatalog(config, "ws_1", {
+      schemaVersion: "mars.connect/mcp-servers/1",
       servers: [{
         connectionId,
         name: "Last known good",
@@ -404,22 +404,22 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
       }],
     });
 
-    const result = await refreshOmniRushConnectMcpAppHostCatalog(
+    const result = await refreshMarsConnectMcpAppHostCatalog(
       config,
       "ws_1",
       async () => new Response(null, { status: 503 }),
     );
 
     expect(result).toEqual({ status: "unavailable", appHostNames: [] });
-    expect((await readOmniRushConnectMcpAppHostCatalog(config, "ws_1")).servers[0]?.connectionId).toBe(connectionId);
+    expect((await readMarsConnectMcpAppHostCatalog(config, "ws_1")).servers[0]?.connectionId).toBe(connectionId);
   });
 
   test("fails closed and purges prior runtime entries when Cloud has no index", async () => {
     const config = await fixtureConfig();
     await writeRuntimeOpencodeConfig(config, "ws_1", () => ({
-      mcp: { "omnirush-connect-existing": { type: "remote", url: "https://cloud.example/existing" } },
+      mcp: { "mars-connect-existing": { type: "remote", url: "https://cloud.example/existing" } },
     }));
-    const result = await reconcileOmniRushConnectMcpServers({
+    const result = await reconcileMarsConnectMcpServers({
       config,
       workspace: config.workspaces[0]!,
       cloudMcp: { type: "remote", url: "https://den.example.com/mcp/agent" },
@@ -429,21 +429,21 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
       status: "unavailable",
       appHostNames: [],
       directNames: [],
-      removedNames: ["omnirush-connect-existing"],
+      removedNames: ["mars-connect-existing"],
     });
-    expect((await readRuntimeOpencodeConfig(config, "ws_1")).mcp?.["omnirush-connect-existing"]).toBeUndefined();
-    expect((await readOmniRushConnectMcpAppHostCatalog(config, "ws_1")).servers).toEqual([]);
+    expect((await readRuntimeOpencodeConfig(config, "ws_1")).mcp?.["mars-connect-existing"]).toBeUndefined();
+    expect((await readMarsConnectMcpAppHostCatalog(config, "ws_1")).servers).toEqual([]);
   });
 
-  test("an empty index removes prior OmniRush.ai-owned provider servers", async () => {
+  test("an empty index removes prior MarsAI-owned provider servers", async () => {
     const config = await fixtureConfig();
     await writeRuntimeOpencodeConfig(config, "ws_1", () => ({
       mcp: {
         "user-server": { type: "remote", url: "https://user.example/mcp" },
-        "omnirush-connect-existing": { type: "remote", url: "https://cloud.example/existing" },
+        "mars-connect-existing": { type: "remote", url: "https://cloud.example/existing" },
       },
     }));
-    const result = await reconcileOmniRushConnectMcpServers({
+    const result = await reconcileMarsConnectMcpServers({
       config,
       workspace: config.workspaces[0]!,
       cloudMcp: { type: "remote", url: "https://den.example.com/mcp/agent" },
@@ -455,17 +455,17 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
       status: "synced",
       appHostNames: [],
       directNames: [],
-      removedNames: ["omnirush-connect-existing"],
+      removedNames: ["mars-connect-existing"],
     });
     const runtime = await readRuntimeOpencodeConfig(config, "ws_1");
-    expect(runtime.mcp?.["omnirush-connect-existing"]).toBeUndefined();
+    expect(runtime.mcp?.["mars-connect-existing"]).toBeUndefined();
     expect(runtime.mcp?.["user-server"]).toEqual({ type: "remote", url: "https://user.example/mcp" });
   });
 
   test("never sends the persisted App-host credential to an untrusted reconcile endpoint", async () => {
     const config = await fixtureConfig();
     const trustedRequests: Array<{ url: string; headers: Headers; body: Record<string, unknown> }> = [];
-    await reconcileOmniRushConnectMcpServers({
+    await reconcileMarsConnectMcpServers({
       config,
       workspace: config.workspaces[0]!,
       cloudMcp: { type: "remote", url: "https://den.example.com/mcp/agent" },
@@ -475,7 +475,7 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
     expect(trustedRequests.length).toBeGreaterThan(0);
 
     let untrustedRequests = 0;
-    const result = await reconcileOmniRushConnectMcpServers({
+    const result = await reconcileMarsConnectMcpServers({
       config,
       workspace: config.workspaces[0]!,
       cloudMcp: { type: "remote", url: "https://attacker.example/mcp/agent" },
@@ -487,12 +487,12 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
 
     expect(untrustedRequests).toBe(0);
     expect(result.status).toBe("unavailable");
-    expect((await readOmniRushConnectMcpAppHostCatalog(config, "ws_1")).servers).toEqual([]);
+    expect((await readMarsConnectMcpAppHostCatalog(config, "ws_1")).servers).toEqual([]);
   });
 
   test("rejects a catalog that points the private App-host credential at another origin", async () => {
     const config = await fixtureConfig();
-    const result = await reconcileOmniRushConnectMcpServers({
+    const result = await reconcileMarsConnectMcpServers({
       config,
       workspace: config.workspaces[0]!,
       cloudMcp: { type: "remote", url: "https://den.example.com/mcp/agent" },
@@ -506,12 +506,12 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
     });
 
     expect(result).toEqual({ status: "unavailable", appHostNames: [], directNames: [], removedNames: [] });
-    expect((await readOmniRushConnectMcpAppHostCatalog(config, "ws_1")).servers).toEqual([]);
+    expect((await readMarsConnectMcpAppHostCatalog(config, "ws_1")).servers).toEqual([]);
   });
 
   test("rejects a connection proxy on a sibling api origin instead of translating it", async () => {
     const config = await fixtureConfig();
-    const result = await reconcileOmniRushConnectMcpServers({
+    const result = await reconcileMarsConnectMcpServers({
       config,
       workspace: config.workspaces[0]!,
       cloudMcp: { type: "remote", url: `${DEN}/api/den/mcp/agent` },
@@ -525,6 +525,6 @@ describe("OmniRush.ai Connect MCP server catalog", () => {
     });
 
     expect(result).toEqual({ status: "unavailable", appHostNames: [], directNames: [], removedNames: [] });
-    expect((await readOmniRushConnectMcpAppHostCatalog(config, "ws_1")).servers).toEqual([]);
+    expect((await readMarsConnectMcpAppHostCatalog(config, "ws_1")).servers).toEqual([]);
   });
 });

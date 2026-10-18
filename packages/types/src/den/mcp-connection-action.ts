@@ -1,13 +1,13 @@
 import { z } from "zod"
 
-export const OMNIRUSH_CLOUD_MCP_CONNECTION_ACTION_VERSION = 1 as const
-export const OMNIRUSH_CLOUD_MCP_CONNECTION_ACTION_KIND = "connection_action" as const
-export const OMNIRUSH_CLOUD_MCP_CONNECTION_ACTION_SOURCE = "omnirush-cloud" as const
+export const MARS_CLOUD_MCP_CONNECTION_ACTION_VERSION = 1 as const
+export const MARS_CLOUD_MCP_CONNECTION_ACTION_KIND = "connection_action" as const
+export const MARS_CLOUD_MCP_CONNECTION_ACTION_SOURCE = "mars-cloud" as const
 
-export const omnirushCloudMcpConnectionActionSchema = z.object({
-  version: z.literal(OMNIRUSH_CLOUD_MCP_CONNECTION_ACTION_VERSION),
-  kind: z.literal(OMNIRUSH_CLOUD_MCP_CONNECTION_ACTION_KIND),
-  source: z.literal(OMNIRUSH_CLOUD_MCP_CONNECTION_ACTION_SOURCE),
+export const marsCloudMcpConnectionActionSchema = z.object({
+  version: z.literal(MARS_CLOUD_MCP_CONNECTION_ACTION_VERSION),
+  kind: z.literal(MARS_CLOUD_MCP_CONNECTION_ACTION_KIND),
+  source: z.literal(MARS_CLOUD_MCP_CONNECTION_ACTION_SOURCE),
   connectionId: z.string().min(1),
   connectionName: z.string().min(1),
   authType: z.enum(["oauth", "apikey", "none"]),
@@ -18,7 +18,7 @@ export const omnirushCloudMcpConnectionActionSchema = z.object({
     "organization_admin",
     "provider_admin",
     "network_admin",
-    "omnirush",
+    "mars",
   ]),
   action: z.object({
     type: z.enum([
@@ -28,14 +28,14 @@ export const omnirushCloudMcpConnectionActionSchema = z.object({
       "inspect_connection",
       "fix_provider",
       "fix_network",
-      "contact_omnirush",
+      "contact_mars",
     ]),
     surface: z.enum([
-      "omnirush_your_connections",
-      "omnirush_organization_connections",
+      "mars_your_connections",
+      "mars_organization_connections",
       "provider_admin_console",
       "network_infrastructure",
-      "omnirush_support",
+      "mars_support",
     ]),
     retry: z.literal("search_capabilities"),
   }),
@@ -46,17 +46,17 @@ export const omnirushCloudMcpConnectionActionSchema = z.object({
  * API-key, provider-admin, and support actions remain descriptive because the
  * current member may not own the credential or have permission to repair it.
  */
-export const omnirushCloudMcpInlineReconnectSchema = omnirushCloudMcpConnectionActionSchema.extend({
+export const marsCloudMcpInlineReconnectSchema = marsCloudMcpConnectionActionSchema.extend({
   authType: z.literal("oauth"),
   credentialMode: z.literal("per_member"),
   state: z.literal("reauth_required"),
   actor: z.literal("member"),
   action: z.object({
     type: z.literal("reconnect"),
-    surface: z.literal("omnirush_your_connections"),
+    surface: z.literal("mars_your_connections"),
     retry: z.literal("search_capabilities"),
   }),
 })
 
-export type OmniRushCloudMcpConnectionAction = z.infer<typeof omnirushCloudMcpConnectionActionSchema>
-export type OmniRushCloudMcpInlineReconnect = z.infer<typeof omnirushCloudMcpInlineReconnectSchema>
+export type MarsCloudMcpConnectionAction = z.infer<typeof marsCloudMcpConnectionActionSchema>
+export type MarsCloudMcpInlineReconnect = z.infer<typeof marsCloudMcpInlineReconnectSchema>

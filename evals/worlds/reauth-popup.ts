@@ -1,7 +1,7 @@
-import { evaluate, browserScript } from "@omnirush/cdp";
-import type { Seed } from "@omnirush/env";
-import { connect, debuggerUrlFor, listTargets, setViewport, type Surface } from "@omnirush/cdp";
-import { chrome, daytonaSandbox, defaultDaytonaExec, execInSandbox } from "@omnirush/hosts";
+import { evaluate, browserScript } from "@mars/cdp";
+import type { Seed } from "@mars/env";
+import { connect, debuggerUrlFor, listTargets, setViewport, type Surface } from "@mars/cdp";
+import { chrome, daytonaSandbox, defaultDaytonaExec, execInSandbox } from "@mars/hosts";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -55,10 +55,10 @@ PY`);
   if (!signIn.response.ok) throw new Error(`Fixture login: ${signIn.response.status}`);
   const sessionCookie = text(signIn.response.headers.getSetCookie().find((value) => value.includes("session_token=")));
   const cookie = text(sessionCookie.split(";")[0]);
-  const headers = { cookie, "x-omnirush-org-id": organizationId };
+  const headers = { cookie, "x-mars-org-id": organizationId };
   const registration = await seed.api(den.admin, "/v1/sso/oidc", {
     method: "POST", headers,
-    body: JSON.stringify({ issuer, domain, clientId: "omnirush-eval-oidc-client", clientSecret: "omnirush-eval-oidc-secret", scopes: ["openid", "email", "profile"], skipDiscovery: true, authorizationEndpoint: `${issuer}/authorize`, tokenEndpoint: `${issuer}/token`, jwksEndpoint: `${issuer}/jwks`, userInfoEndpoint: `${issuer}/userinfo`, tokenEndpointAuthentication: "client_secret_post" }),
+    body: JSON.stringify({ issuer, domain, clientId: "mars-eval-oidc-client", clientSecret: "mars-eval-oidc-secret", scopes: ["openid", "email", "profile"], skipDiscovery: true, authorizationEndpoint: `${issuer}/authorize`, tokenEndpoint: `${issuer}/token`, jwksEndpoint: `${issuer}/jwks`, userInfoEndpoint: `${issuer}/userinfo`, tokenEndpointAuthentication: "client_secret_post" }),
   });
   if (!registration.response.ok) throw new Error(`SSO registration: ${registration.response.status} ${registration.text}`);
   // Synthetic .test domains cannot publish DNS; only domain ownership is arranged.
@@ -134,7 +134,7 @@ PY`);
         window.dispatchEvent(new MessageEvent("message", {
           origin: kind === "foreign-origin" ? "https://foreign.example.test" : location.origin,
           data: {
-            type: "omnirush:reauth-complete",
+            type: "mars:reauth-complete",
             nonce: nonce ?? (kind === "wrong-nonce" ? "unrelated" : document.querySelector<HTMLElement>("[data-reauth-nonce]")?.dataset.reauthNonce),
             error: null,
           },

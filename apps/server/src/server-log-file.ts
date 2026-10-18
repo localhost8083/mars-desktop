@@ -4,14 +4,14 @@ import { dirname } from "node:path";
 /**
  * Optional append-only file sink for the server logger.
  *
- * The desktop app runs omnirush-server in-process, so its stdout is invisible
+ * The desktop app runs mars-server in-process, so its stdout is invisible
  * once packaged; without a file sink every engine rollover reason, reload
  * trigger, and MCP re-sync error is emitted and lost. The sink is enabled by
- * OMNIRUSH_SERVER_LOG_FILE, always receives structured JSON lines regardless
+ * MARS_SERVER_LOG_FILE, always receives structured JSON lines regardless
  * of the stdout format, and rotates once so it cannot grow without bound.
  */
 
-export const SERVER_LOG_FILE_ENV = "OMNIRUSH_SERVER_LOG_FILE";
+export const SERVER_LOG_FILE_ENV = "MARS_SERVER_LOG_FILE";
 
 /** Default rotation threshold. Rollover/reload lines are a few hundred bytes each. */
 export const DEFAULT_SERVER_LOG_FILE_MAX_BYTES = 20 * 1024 * 1024;
@@ -147,7 +147,7 @@ export function createServerLogFileSink(options: ServerLogFileSinkOptions): Serv
 
 let processSink: ServerLogFileSink | null | undefined;
 
-/** The process-wide sink selected by OMNIRUSH_SERVER_LOG_FILE, or null when unset. */
+/** The process-wide sink selected by MARS_SERVER_LOG_FILE, or null when unset. */
 export function resolveServerLogFileSink(env: NodeJS.ProcessEnv = process.env): ServerLogFileSink | null {
   if (processSink !== undefined) return processSink;
   const configured = env[SERVER_LOG_FILE_ENV]?.trim();

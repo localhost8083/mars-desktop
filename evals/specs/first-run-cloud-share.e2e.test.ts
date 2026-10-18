@@ -1,7 +1,7 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
-import { addInitScript, browserScript } from "@omnirush/cdp";
-import { clickText } from "@omnirush/behaviors";
+import { spec } from "@mars/testkit";
+import { addInitScript, browserScript } from "@mars/cdp";
+import { clickText } from "@mars/behaviors";
 import { firstRunCloudShareWorld } from "../worlds/first-run.ts";
 
 const test = spec.world(firstRunCloudShareWorld);
@@ -13,22 +13,22 @@ test("first run signs in through the browser, then shares a skill with a colleag
   const webProbe = probe.on(world.web);
 
   await step("The fresh app offers cloud sign-in", async () => {
-    await appUser.see("Sign in to OmniRush.ai Cloud");
+    await appUser.see("Sign in to MarsAI Cloud");
     await appUser.notSee({ text: /something went wrong/i });
     await appUser.looks([
-      "A fresh OmniRush.ai app is visible offering to sign in to OmniRush.ai Cloud",
+      "A fresh MarsAI app is visible offering to sign in to MarsAI Cloud",
       "No error or 'Something went wrong' message is visible",
     ]);
   });
 
   await step("Cloud sign-in hands off to the browser", async () => {
-    await appUser.click("Sign in to OmniRush.ai Cloud");
+    await appUser.click("Sign in to MarsAI Cloud");
     await appUser.notSee({ testId: "welcome-team-signin" }, { timeoutMs: 30_000 });
     expect(await appProbe.hash()).not.toBe("#/welcome");
     const handoffUrl = new URL(world.den.ref.webUrl);
     handoffUrl.searchParams.set("mode", "sign-in");
     handoffUrl.searchParams.set("desktopAuth", "1");
-    handoffUrl.searchParams.set("desktopScheme", "omnirush");
+    handoffUrl.searchParams.set("desktopScheme", "mars");
     await webUser.navigate(handoffUrl.toString());
     await webUser.see({ role: "textbox", label: /email/i }, { timeoutMs: 90_000 });
   });
@@ -39,10 +39,10 @@ test("first run signs in through the browser, then shares a skill with a colleag
     await webUser.see({ role: "textbox", label: /password/i }, { timeoutMs: 60_000 });
     await webUser.type({ role: "textbox", label: /password/i }, world.den.admin.password, { replace: true });
     await webUser.click({ role: "button", text: /^sign in$/i });
-    await webUser.see({ text: /you(?:'|’)re signed in|open omnirush/i }, { timeoutMs: 120_000 });
+    await webUser.see({ text: /you(?:'|’)re signed in|open mars/i }, { timeoutMs: 120_000 });
     await webUser.notSee({ text: /invalid credentials|something went wrong/i });
     await webUser.looks([
-      "A browser page shows an OmniRush.ai Cloud sign-in result, not a sign-in form error",
+      "A browser page shows an MarsAI Cloud sign-in result, not a sign-in form error",
       "No 'invalid credentials' or error banner is visible",
     ]);
   });
@@ -59,7 +59,7 @@ test("first run signs in through the browser, then shares a skill with a colleag
           return originalFetch(input, init);
         }
         return Response.json({
-          appName: "OmniRush.ai", clientName: "Install Journey", requireSignin: true,
+          appName: "MarsAI", clientName: "Install Journey", requireSignin: true,
           logoUrl: null, iconUrl: null, desktopVersion: "0.18.0", distribution: "cloud",
           // A session-backed local/preview install must not jump to a configured hosted default.
           webUrl: url.searchParams.has("token") ? `${webUrl}/ignored-config-path` : "https://configured-default.example.com",
@@ -68,7 +68,7 @@ test("first run signs in through the browser, then shares a skill with a colleag
       };
     }, [world.den.ref.webUrl, world.den.ref.apiUrl]));
     const origin = new URL(world.den.ref.webUrl).origin;
-    const authUrl = `${origin}/?mode=sign-in&desktopAuth=1&desktopScheme=omnirush`;
+    const authUrl = `${origin}/?mode=sign-in&desktopAuth=1&desktopScheme=mars`;
     const installSource = new URL(origin);
     // Local Den trusts both aliases. A token-backed install on the other alias
     // must return to the configured instance, not the install page's origin.
@@ -76,27 +76,27 @@ test("first run signs in through the browser, then shares a skill with a colleag
     const grants = new Set<string>();
     for (const installUrl of [`${origin}/install`, `${installSource.origin}/install?token=synthetic-install-token&step=3`]) {
       await webUser.navigate(installUrl);
-      await webUser.see({ role: "link", text: "I already installed OmniRush.ai" }, { timeoutMs: 90_000 });
-      expect(await webProbe.eval(() => document.querySelector('a[href="omnirush://open"]') === null)).toBe(true);
+      await webUser.see({ role: "link", text: "I already installed MarsAI" }, { timeoutMs: 90_000 });
+      expect(await webProbe.eval(() => document.querySelector('a[href="mars://open"]') === null)).toBe(true);
       const href = await webProbe.eval(() => [...document.querySelectorAll<HTMLAnchorElement>("a")]
-        .find((link) => link.textContent?.trim() === "I already installed OmniRush.ai")?.href);
+        .find((link) => link.textContent?.trim() === "I already installed MarsAI")?.href);
       expect(href).toBe(authUrl);
       await webProbe.eval(() => { document.documentElement.dataset.installDocument = "before-handoff"; });
       // Activate the real anchor default action without depending on OS focus
       // after the preceding custom-protocol handoff.
-      await clickText(world.web, "I already installed OmniRush.ai");
+      await clickText(world.web, "I already installed MarsAI");
       await webUser.see({ testId: "desktop-signed-in-handoff" }, { timeoutMs: 90_000 });
       expect(await webProbe.eval(() => location.href)).toBe(authUrl);
       expect(await webProbe.eval(() => document.documentElement.dataset.installDocument ?? null)).toBeNull();
       await webUser.see({ text: world.den.admin.email });
       await webUser.notSee({ role: "textbox", label: /password/i });
       const deepLink = await probe.eventually(() => webProbe.eval(() =>
-        [...document.querySelectorAll("input")].find((input) => input.value.startsWith("omnirush://den-auth?"))?.value ?? ""
+        [...document.querySelectorAll("input")].find((input) => input.value.startsWith("mars://den-auth?"))?.value ?? ""
       ), { within: 60_000, label: "install-issued desktop grant", until: (value) => typeof value === "string" && value.includes("grant=") });
       if (typeof deepLink !== "string") throw new Error("Missing install handoff URL");
       const handoff = new URL(deepLink);
       const grant = handoff.searchParams.get("grant");
-      expect(handoff.protocol).toBe("omnirush:");
+      expect(handoff.protocol).toBe("mars:");
       expect(handoff.hostname).toBe("den-auth");
       expect(handoff.searchParams.get("denBaseUrl")).toBe(`${origin}/api/den`);
       expect(handoff.searchParams.has("token")).toBe(false);
@@ -112,11 +112,11 @@ test("first run signs in through the browser, then shares a skill with a colleag
     // TODO(primitive): read the browser-issued desktop handoff URL.
     const deepLink = await probe.eventually(
       () => webProbe.eval(() => {
-        const input = [...document.querySelectorAll("input")].find((candidate) => candidate.value.startsWith("omnirush://") && candidate.value.includes("grant="));
+        const input = [...document.querySelectorAll("input")].find((candidate) => candidate.value.startsWith("mars://") && candidate.value.includes("grant="));
         if (input) return input.value;
-        return document.querySelector<HTMLElement>('a[href^="omnirush://"]')?.getAttribute("href") ?? "";
+        return document.querySelector<HTMLElement>('a[href^="mars://"]')?.getAttribute("href") ?? "";
       }),
-      { within: 120_000, label: "browser-issued desktop handoff URL", until: (value) => typeof value === "string" && value.startsWith("omnirush://") },
+      { within: 120_000, label: "browser-issued desktop handoff URL", until: (value) => typeof value === "string" && value.startsWith("mars://") },
     );
     if (typeof deepLink !== "string") throw new Error("The browser-issued handoff URL was not a string.");
     const handoff = new URL(deepLink);
@@ -128,7 +128,7 @@ test("first run signs in through the browser, then shares a skill with a colleag
     await appUser.see({ text: world.den.admin.email }, { timeoutMs: 180_000 });
     await appUser.notSee({ text: /sign-in failure|something went wrong/i });
     await appUser.looks([
-      "The app is back in focus and no longer offers a bare Sign in to OmniRush.ai Cloud as the only action",
+      "The app is back in focus and no longer offers a bare Sign in to MarsAI Cloud as the only action",
       "No sign-in failure message is visible",
     ]);
   });
@@ -144,7 +144,7 @@ test("first run signs in through the browser, then shares a skill with a colleag
     await appUser.see({ text: /library|extensions|skills|connections/i }, { timeoutMs: 60_000 });
     await appUser.notSee({ text: /something went wrong/i });
     await appUser.looks([
-      "An OmniRush.ai surface listing extensions, skills or connections is visible",
+      "An MarsAI surface listing extensions, skills or connections is visible",
       "No 'Something went wrong' crash message is visible",
     ]);
   });

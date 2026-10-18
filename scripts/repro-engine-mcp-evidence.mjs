@@ -156,7 +156,7 @@ async function ensureOrganization(denApiUrl, sessionToken) {
 }
 async function bootstrapDen(denApiUrl) {
   const email = `engine-mcp-evidence-${runTag}@acme.test`;
-  const password = `OmniRush.ai-${runTag}-Evidence!`;
+  const password = `MarsAI-${runTag}-Evidence!`;
   log(`Signing up Den admin ${email}`);
   const signUp = await denAuthFetch(denApiUrl, "/api/auth/sign-up/email", {
     method: "POST",
@@ -260,7 +260,7 @@ function startDelayProxy(targetBase, port) {
 async function waitForServerListening(child, logStream) {
   let stdout = "";
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error("Timed out waiting for OmniRush.ai server listening log")), 90_000);
+    const timeout = setTimeout(() => reject(new Error("Timed out waiting for MarsAI server listening log")), 90_000);
     const finish = (value) => {
       clearTimeout(timeout);
       resolve(value);
@@ -273,31 +273,31 @@ async function waitForServerListening(child, logStream) {
       const text = chunk.toString();
       stdout += text;
       writeLog(logStream, text);
-      if (stdout.includes("OmniRush.ai server listening")) finish();
+      if (stdout.includes("MarsAI server listening")) finish();
     });
     child.stderr.on("data", (chunk) => writeLog(logStream, chunk));
     child.once("error", fail);
-    child.once("exit", (code, signal) => fail(new Error(`OmniRush.ai server exited before listening (code ${code}, signal ${signal})`)));
+    child.once("exit", (code, signal) => fail(new Error(`MarsAI server exited before listening (code ${code}, signal ${signal})`)));
   });
 }
 
-async function startOmniRushServer(paths, serverPort, opencodeBin) {
+async function startMarsServer(paths, serverPort, opencodeBin) {
   await mkdir(paths.workspaceRoot, { recursive: true });
-  await mkdir(paths.xdgOmniRush, { recursive: true });
+  await mkdir(paths.xdgMars, { recursive: true });
   await mkdir(paths.home, { recursive: true });
   await mkdir(paths.logs, { recursive: true });
   const serverLog = join(paths.logs, "server.log");
   const logStream = createWriteStream(serverLog, { flags: "a" });
   logStreams.add(logStream);
   const args = ["apps/server/src/cli.ts", "--host", "127.0.0.1", "--port", String(serverPort), "--token", SERVER_TOKEN, "--workspace", paths.workspaceRoot];
-  log(`Starting OmniRush.ai server on 127.0.0.1:${serverPort}`);
+  log(`Starting MarsAI server on 127.0.0.1:${serverPort}`);
   const child = spawn("bun", args, {
     cwd: REPO_ROOT,
     env: {
       ...process.env,
-      OMNIRUSH_MANAGE_OPENCODE: "1",
-      OMNIRUSH_OPENCODE_BIN: opencodeBin,
-      OMNIRUSH_SERVER_CONFIG: join(paths.xdgOmniRush, "server.json"),
+      MARS_MANAGE_OPENCODE: "1",
+      MARS_OPENCODE_BIN: opencodeBin,
+      MARS_SERVER_CONFIG: join(paths.xdgMars, "server.json"),
       XDG_CONFIG_HOME: paths.xdg,
       HOME: paths.home,
     },
@@ -311,7 +311,7 @@ async function startOmniRushServer(paths, serverPort, opencodeBin) {
     logStream.end();
     throw error;
   }
-  log(`OmniRush.ai server log: ${serverLog}`);
+  log(`MarsAI server log: ${serverLog}`);
   return { baseUrl: `http://127.0.0.1:${serverPort}` };
 }
 
@@ -356,7 +356,7 @@ async function pollHealedHealth(baseUrl, workspaceId) {
   const started = Date.now();
   let last = null;
   while (Date.now() - started < 30_000) {
-    last = await serverJson(baseUrl, `/workspace/${encodeURIComponent(workspaceId)}/mcp/omnirush-cloud/health`);
+    last = await serverJson(baseUrl, `/workspace/${encodeURIComponent(workspaceId)}/mcp/mars-cloud/health`);
     if (isHealthConnected(last)) return last;
     await sleep(1000);
   }
@@ -420,26 +420,26 @@ async function writeFinalJson(value) {
 }
 
 async function main() {
-  for (const name of ["DEN_API_LOCAL", "OMNIRUSH_OPENCODE_BIN", "REPRO_DIR"]) envString(name);
+  for (const name of ["DEN_API_LOCAL", "MARS_OPENCODE_BIN", "REPRO_DIR"]) envString(name);
   const denApiUrl = stripTrailingSlashes(envString("DEN_API_LOCAL"));
-  const opencodeBin = envString("OMNIRUSH_OPENCODE_BIN");
+  const opencodeBin = envString("MARS_OPENCODE_BIN");
   const reproDir = envString("REPRO_DIR");
   const delayMs = envDelayMs();
   const activeWindowMs = windowMs();
   const serverPort = envPort("SERVER_PORT", 8790);
   const proxyPort = envPort("PROXY_PORT", 8791);
-  const paths = { workspaceRoot: join(reproDir, "ws"), xdg: join(reproDir, "xdg"), xdgOmniRush: join(reproDir, "xdg", "omnirush"), home: join(reproDir, "home"), logs: join(reproDir, "logs") };
+  const paths = { workspaceRoot: join(reproDir, "ws"), xdg: join(reproDir, "xdg"), xdgMars: join(reproDir, "xdg", "mars"), home: join(reproDir, "home"), logs: join(reproDir, "logs") };
 
   const den = await bootstrapDen(denApiUrl);
   const proxy = await startDelayProxy(denApiUrl, proxyPort);
-  const omnirush = await startOmniRushServer(paths, serverPort, opencodeBin);
-  const workspaces = await serverJson(omnirush.baseUrl, "/workspaces");
+  const mars = await startMarsServer(paths, serverPort, opencodeBin);
+  const workspaces = await serverJson(mars.baseUrl, "/workspaces");
   const workspaceId = firstWorkspaceId(workspaces);
   log(`Using workspace ${workspaceId}`);
 
   const reconcilePayload = {
     workspaceId,
-    name: "omnirush-cloud",
+    name: "mars-cloud",
     config: {
       type: "remote",
       url: `http://127.0.0.1:${proxyPort}/mcp/agent`,
@@ -457,35 +457,35 @@ async function main() {
     trigger: "repro-engine-mcp-evidence",
   };
 
-  log("PHASE 1: seeding delayed omnirush-cloud reconcile");
+  log("PHASE 1: seeding delayed mars-cloud reconcile");
   const armed = await armProxy(proxyPort, delayMs, activeWindowMs);
   const armedUntilMs = Number(own(armed, "armedUntilMs"));
   if (!Number.isFinite(armedUntilMs)) throw new Error(`Proxy arm response did not include armedUntilMs: ${JSON.stringify(armed)}`);
-  const seedReconcile = await serverJson(omnirush.baseUrl, `/workspace/${encodeURIComponent(workspaceId)}/mcp/omnirush-cloud/reconcile`, {
+  const seedReconcile = await serverJson(mars.baseUrl, `/workspace/${encodeURIComponent(workspaceId)}/mcp/mars-cloud/reconcile`, {
     method: "POST",
     body: JSON.stringify(reconcilePayload),
   });
-  const seedMcp = await serverJson(omnirush.baseUrl, `/workspace/${encodeURIComponent(workspaceId)}/mcp`);
-  const seedHealth = await serverJson(omnirush.baseUrl, `/workspace/${encodeURIComponent(workspaceId)}/mcp/omnirush-cloud/health`);
+  const seedMcp = await serverJson(mars.baseUrl, `/workspace/${encodeURIComponent(workspaceId)}/mcp`);
+  const seedHealth = await serverJson(mars.baseUrl, `/workspace/${encodeURIComponent(workspaceId)}/mcp/mars-cloud/health`);
 
   log("PHASE 2: waiting for delayed Den MCP handshake to heal live engine state");
   await sleep(armedUntilMs + 8000 - Date.now());
-  const healedHealth = await pollHealedHealth(omnirush.baseUrl, workspaceId);
-  const healedMcp = await serverJson(omnirush.baseUrl, `/workspace/${encodeURIComponent(workspaceId)}/mcp`);
+  const healedHealth = await pollHealedHealth(mars.baseUrl, workspaceId);
+  const healedMcp = await serverJson(mars.baseUrl, `/workspace/${encodeURIComponent(workspaceId)}/mcp`);
 
   log("PHASE 3: collecting agent-context diagnostics");
   const diagnosticsRequest = {
     organizationConnectionsProbe: { status: "observed", code: null, totalCount: 0, truncated: false },
     organizationConnections: [],
   };
-  const diagnosticsReport = await serverJson(omnirush.baseUrl, `/workspace/${encodeURIComponent(workspaceId)}/diagnostics/agent-context`, {
+  const diagnosticsReport = await serverJson(mars.baseUrl, `/workspace/${encodeURIComponent(workspaceId)}/diagnostics/agent-context`, {
     method: "POST",
     body: JSON.stringify(diagnosticsRequest),
   });
   const checks = Array.isArray(own(diagnosticsReport, "checks")) ? own(diagnosticsReport, "checks") : [];
   const engineMcpSyncCheck = checks.find((check) => own(check, "id") === "engine-mcp-sync") ?? null;
   const mcps = Array.isArray(own(diagnosticsReport, "mcps")) ? own(diagnosticsReport, "mcps") : [];
-  const omnirushCloudSyncStatuses = mcps.filter((mcp) => own(mcp, "name") === "omnirush-cloud").map((mcp) => ({
+  const marsCloudSyncStatuses = mcps.filter((mcp) => own(mcp, "name") === "mars-cloud").map((mcp) => ({
     name: own(mcp, "name"), source: own(mcp, "source"), type: own(mcp, "type"), enabled: own(mcp, "enabled"),
     syncStatus: own(mcp, "syncStatus"), liveEngineStatus: own(mcp, "liveEngineStatus"),
   }));
@@ -498,7 +498,7 @@ async function main() {
     phases: {
       seed: { reconcile: seedReconcile, mcp: seedMcp, health: seedHealth },
       healed: { mcp: healedMcp, health: healedHealth },
-      diagnostics: { engineMcpSyncCheck, omnirushCloudSyncStatuses, firstFailedCheck: own(diagnosticsReport, "firstFailedCheck") ?? null, overall: own(diagnosticsReport, "overall") ?? null },
+      diagnostics: { engineMcpSyncCheck, marsCloudSyncStatuses, firstFailedCheck: own(diagnosticsReport, "firstFailedCheck") ?? null, overall: own(diagnosticsReport, "overall") ?? null },
     },
     proxyHolds: proxy.holds,
     contradictionReproduced,

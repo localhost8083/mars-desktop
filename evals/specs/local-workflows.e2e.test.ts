@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { localWorkflows } from "../worlds/local-workflows.ts";
 
 function isRecord(value: unknown): value is Record<string, unknown> {

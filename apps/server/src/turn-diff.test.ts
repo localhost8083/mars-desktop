@@ -8,11 +8,11 @@ import { zstdDecompressSync } from "node:zlib";
 import { MAX_TURN_DIFF_EVENT_BYTES, MAX_TURN_DIFF_FILE_BYTES, MAX_TURN_DIFF_MS, TurnBaseStore, TurnDiffBuilder, unifiedDiff, type TurnDiffEvent, type TurnDiffInput } from "./turn-diff.js";
 import { SessionUploader } from "./session-uploader.js";
 
-/** Schema 1/2 trace uploads carry their events only in files[0] (__omnirush__/trace.json): read them back as `trace`. */
+/** Schema 1/2 trace uploads carry their events only in files[0] (__mars__/trace.json): read them back as `trace`. */
 function withTraceEvents<T>(envelope: T): T {
   const record = envelope as Record<string, unknown>;
   if (record.trace !== undefined || !Array.isArray(record.files)) return envelope;
-  const file = (record.files as Array<{ path?: string; content?: string }>).find((item) => item.path === "__omnirush__/trace.json");
+  const file = (record.files as Array<{ path?: string; content?: string }>).find((item) => item.path === "__mars__/trace.json");
   if (!file?.content) return envelope;
   return { ...record, trace: (JSON.parse(file.content) as { events?: unknown[] }).events ?? [] } as T;
 }
@@ -240,12 +240,12 @@ describe("unified diff", () => {
 
 describe("turn.diff events", () => {
   test("pairs a turn with its added, modified and deleted files", async () => {
-    const root = await tempDir("omnirush-turn-diff-");
+    const root = await tempDir("mars-turn-diff-");
     await writeFile(join(root, "keep.txt"), "unchanged\n");
-    await writeFile(join(root, "app.ts"), "export const answer = 41;\nexport const name = \"omnirush\";\n");
+    await writeFile(join(root, "app.ts"), "export const answer = 41;\nexport const name = \"mars\";\n");
     await writeFile(join(root, "old.md"), "retired\n");
     const event = await turnDiff(root, async () => {
-      await writeFile(join(root, "app.ts"), "export const answer = 42;\nexport const name = \"omnirush\";\n");
+      await writeFile(join(root, "app.ts"), "export const answer = 42;\nexport const name = \"mars\";\n");
       await writeFile(join(root, "new.md"), "fresh\nnotes\n");
       await unlink(join(root, "old.md"));
     });
@@ -254,11 +254,11 @@ describe("turn.diff events", () => {
       {
         path: "app.ts",
         status: "modified",
-        before_sha256: sha256("export const answer = 41;\nexport const name = \"omnirush\";\n"),
-        after_sha256: sha256("export const answer = 42;\nexport const name = \"omnirush\";\n"),
+        before_sha256: sha256("export const answer = 41;\nexport const name = \"mars\";\n"),
+        after_sha256: sha256("export const answer = 42;\nexport const name = \"mars\";\n"),
         additions: 1,
         deletions: 1,
-        diff: "--- a/app.ts\n+++ b/app.ts\n@@ -1,2 +1,2 @@\n-export const answer = 41;\n+export const answer = 42;\n export const name = \"omnirush\";\n",
+        diff: "--- a/app.ts\n+++ b/app.ts\n@@ -1,2 +1,2 @@\n-export const answer = 41;\n+export const answer = 42;\n export const name = \"mars\";\n",
         truncated: false,
         reason: null,
       },
@@ -288,7 +288,7 @@ describe("turn.diff events", () => {
   });
 
   test("leaves out binary and oversized files the turn only read", async () => {
-    const root = await tempDir("omnirush-turn-diff-read-");
+    const root = await tempDir("mars-turn-diff-read-");
     await writeFile(join(root, "logo.png"), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 13, 0xff]));
     await writeFile(join(root, "dump.log"), "x".repeat(5 * 1024 * 1024));
     const event = await turnDiff(root, async (sessionUploader, sessionId) => {
@@ -301,7 +301,7 @@ describe("turn.diff events", () => {
   });
 
   test("marks a binary file the turn wrote as skipped, without content", async () => {
-    const root = await tempDir("omnirush-turn-diff-binary-");
+    const root = await tempDir("mars-turn-diff-binary-");
     await writeFile(join(root, "readme.txt"), "hello\n");
     const event = await turnDiff(root, async () => {
       await writeFile(join(root, "chart.png"), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 13, 0xff]));
@@ -312,7 +312,7 @@ describe("turn.diff events", () => {
   });
 
   test("marks a PDF (invalid UTF-8, few control bytes) and an oversized file the turn wrote as skipped, with their reason", async () => {
-    const root = await tempDir("omnirush-turn-diff-kinds-");
+    const root = await tempDir("mars-turn-diff-kinds-");
     await writeFile(join(root, "readme.txt"), "hello\n");
     const pdf = Buffer.concat([Buffer.from("%PDF-1.4\n%"), Buffer.from([0xe2, 0xe3, 0xcf, 0xd3]), Buffer.from("\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF\n")]);
     const { sessionUploader, uploads } = recordingUploader();
@@ -340,14 +340,14 @@ describe("turn.diff events", () => {
     expect(envelopes.flatMap((envelope) => envelope.files).some((file) => file.path === "sample.pdf")).toBe(false);
     const journal = envelopes
       .filter((envelope) => envelope.snapshot_type === "change" || envelope.snapshot_type === "end")
-      .flatMap((envelope) => envelope.files.filter((file) => file.path === "__omnirush__/changes.json"))
+      .flatMap((envelope) => envelope.files.filter((file) => file.path === "__mars__/changes.json"))
       .flatMap((file) => (JSON.parse(file.content) as { entries: Array<{ path: string; status: string }> }).entries);
     expect([...new Set(journal.filter((entry) => entry.status === "skipped").map((entry) => entry.path))].sort()).toEqual(["dump.log", "sample.pdf"]);
     expect(journal.some((entry) => entry.path === "made" || entry.path === "link.txt")).toBe(false);
   });
 
   test("keeps a redacted secret redacted on both sides of the diff", async () => {
-    const root = await tempDir("omnirush-turn-diff-secret-");
+    const root = await tempDir("mars-turn-diff-secret-");
     await writeFile(join(root, "config.txt"), "OPENAI_API_KEY=sk-1234567890abcdefghijklmnop\nmode=dev\n");
     const event = await turnDiff(root, async () => {
       await writeFile(join(root, "config.txt"), "OPENAI_API_KEY=sk-abcdefghijklmnop1234567890\nmode=prod\n");
@@ -362,7 +362,7 @@ describe("turn.diff events", () => {
   });
 
   test("marks a changed or deleted file whose base is not held as no_base, and a new one as added", async () => {
-    const root = await tempDir("omnirush-turn-diff-no-base-");
+    const root = await tempDir("mars-turn-diff-no-base-");
     await writeFile(join(root, "big.txt"), "before\n");
     await writeFile(join(root, "gone.txt"), "gone\n");
     // A snapshot with no room for content sends no text, so nothing is stored as a base.
@@ -379,7 +379,7 @@ describe("turn.diff events", () => {
   });
 
   test("marks a file the turn wrote before the session uploader first read it as no_base", async () => {
-    const root = await tempDir("omnirush-turn-diff-unseen-");
+    const root = await tempDir("mars-turn-diff-unseen-");
     await writeFile(join(root, "early.txt"), "written by the turn\n");
     await writeFile(join(root, "steady.txt"), "untouched\n");
     // As if the agent wrote it right after the prompt, before the start snapshot's scan reached it.
@@ -392,7 +392,7 @@ describe("turn.diff events", () => {
   });
 
   test("keeps an edit made while the start snapshot was still uploading in the turn", async () => {
-    const root = await tempDir("omnirush-turn-diff-queued-");
+    const root = await tempDir("mars-turn-diff-queued-");
     await writeFile(join(root, "app.txt"), "before\n");
     let startUploading!: () => void;
     const uploading = new Promise<void>((resolve) => { startUploading = resolve; });
@@ -438,7 +438,7 @@ describe("turn.diff events", () => {
   });
 
   test("leaves what the next turn wrote to it when a turn's snapshot ran late", async () => {
-    const root = await tempDir("omnirush-turn-diff-late-");
+    const root = await tempDir("mars-turn-diff-late-");
     await writeFile(join(root, "first.txt"), "one\n");
     await writeFile(join(root, "second.txt"), "two\n");
     let traceUploading!: () => void;
@@ -485,11 +485,11 @@ describe("turn.diff events", () => {
   });
 
   test("keeps bases in the state dir across a restart", async () => {
-    const root = await tempDir("omnirush-turn-diff-restart-");
-    const stateDir = await tempDir("omnirush-turn-diff-state-");
+    const root = await tempDir("mars-turn-diff-restart-");
+    const stateDir = await tempDir("mars-turn-diff-state-");
     await writeFile(join(root, "app.txt"), "first\n");
     await turnDiff(root, async () => undefined, { stateDir });
-    expect((await readdir(join(stateDir, "omnirush-upload-bases"))).sort()).toEqual([sha256("first\n"), "index.json"].sort());
+    expect((await readdir(join(stateDir, "mars-upload-bases"))).sort()).toEqual([sha256("first\n"), "index.json"].sort());
     // The next process sends no content at all: the base can only come from disk.
     const event = await turnDiff(root, async () => {
       await writeFile(join(root, "app.txt"), "second\n");
@@ -500,11 +500,11 @@ describe("turn.diff events", () => {
     const signedOut = new SessionUploader({ upload: async () => Response.json({ ok: true }, { status: 201 }), stateDir });
     await signedOut.clearSpool();
     await signedOut.stop();
-    expect(await readdir(stateDir)).not.toContain("omnirush-upload-bases");
+    expect(await readdir(stateDir)).not.toContain("mars-upload-bases");
   });
 
   test("cuts a file diff at 256 KiB and the event at its cap, marked truncated", async () => {
-    const root = await tempDir("omnirush-turn-diff-cap-");
+    const root = await tempDir("mars-turn-diff-cap-");
     await writeFile(join(root, "huge.txt"), "");
     const event = await turnDiff(root, async () => {
       await writeFile(join(root, "huge.txt"), Array.from({ length: 40_000 }, (_, index) => `generated line ${index}`).join("\n"));
@@ -582,7 +582,7 @@ describe("turn.diff events", () => {
 
 describe("turn base store", () => {
   test("keeps a text evicted and stored again readable", async () => {
-    const dir = join(await tempDir("omnirush-turn-bases-"), "bases");
+    const dir = join(await tempDir("mars-turn-bases-"), "bases");
     const store = new TurnBaseStore(dir, 10);
     for (let round = 0; round < 20; round += 1) {
       store.put(sha256("alpha\n"), "alpha\n", 6);
@@ -598,7 +598,7 @@ describe("turn base store", () => {
   });
 
   test("a sign-out racing a text being written leaves no directory behind", async () => {
-    const parent = await tempDir("omnirush-turn-bases-clear-");
+    const parent = await tempDir("mars-turn-bases-clear-");
     for (let turns = 0; turns < 12; turns += 1) {
       const dir = join(parent, `bases-${turns}`);
       const store = new TurnBaseStore(dir);

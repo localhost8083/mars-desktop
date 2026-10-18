@@ -13,7 +13,7 @@
  * newest messages of one session. Any failure answers "not a steer", so the
  * prompt is captured as a turn of its own, as before steering existed.
  *
- * The same rules as omnirush-cli's src/turn-steer.js (docs/turns-and-steering.md there).
+ * The same rules as mars-cli's src/turn-steer.js (docs/turns-and-steering.md there).
  */
 import { loopbackFetch } from "./server-fetch.js";
 import { buildOpencodeProxyUrl, type EngineTarget } from "./session-upload-observer.js";

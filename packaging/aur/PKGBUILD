@@ -2,12 +2,12 @@
 # workflow renders pkgver + sha256sums via scripts/aur/update-aur.sh in the
 # CI workspace and pushes the result to aur.archlinux.org only. Edit this
 # file for packaging logic changes; never commit a real version here.
-pkgname=omnirush
+pkgname=mars
 pkgver=0.0.0
 pkgrel=1 # pkgrel should change when PKGBUILD does. Standard is to change back to 1 next time. Any interger is valid.
-pkgdesc="omnirush desktop app: AI agents for every profession"
+pkgdesc="mars desktop app: AI agents for every profession"
 arch=('x86_64' 'aarch64')
-url="https://github.com/omnirush-ai/omnirush-gui"
+url="https://github.com/mars-ai/mars-gui"
 license=('MIT')
 depends=('gtk3' 'nss' 'alsa-lib' 'libxss' 'libxtst' 'xdg-utils' 'at-spi2-core' 'libdrm' 'libxkbcommon' 'mesa' 'dbus' 'hicolor-icon-theme')
 optdepends=('libsecret: encrypt the sign-in with a Secret Service keyring'
@@ -19,10 +19,10 @@ source=("${pkgname}-${pkgver}-LICENSE::${url}/raw/v${pkgver}/LICENSE")
 sha256sums=('SKIP')
 
 # Architecture-specific sources and checksums
-source_x86_64=("${pkgname}-${pkgver}-x64.tar.gz::${url}/releases/download/v${pkgver}/omnirush-linux-x64-${pkgver}.tar.gz")
+source_x86_64=("${pkgname}-${pkgver}-x64.tar.gz::${url}/releases/download/v${pkgver}/mars-linux-x64-${pkgver}.tar.gz")
 sha256sums_x86_64=('0000000000000000000000000000000000000000000000000000000000000000')
 
-source_aarch64=("${pkgname}-${pkgver}-arm64.tar.gz::${url}/releases/download/v${pkgver}/omnirush-linux-arm64-${pkgver}.tar.gz")
+source_aarch64=("${pkgname}-${pkgver}-arm64.tar.gz::${url}/releases/download/v${pkgver}/mars-linux-arm64-${pkgver}.tar.gz")
 sha256sums_aarch64=('0000000000000000000000000000000000000000000000000000000000000000')
 
 package() {
@@ -31,10 +31,10 @@ package() {
   local bundle_dir
   case "${CARCH}" in
     x86_64)
-      bundle_dir="omnirush-linux-x64-${pkgver}"
+      bundle_dir="mars-linux-x64-${pkgver}"
       ;;
     aarch64)
-      bundle_dir="omnirush-linux-arm64-${pkgver}"
+      bundle_dir="mars-linux-arm64-${pkgver}"
       ;;
     *)
       echo "Unsupported architecture: ${CARCH}" >&2
@@ -42,38 +42,38 @@ package() {
       ;;
   esac
 
-  install -d "${pkgdir}/opt/omnirush"
-  cp -a "${bundle_dir}/." "${pkgdir}/opt/omnirush/"
+  install -d "${pkgdir}/opt/mars"
+  cp -a "${bundle_dir}/." "${pkgdir}/opt/mars/"
 
   # The Electron executable is named by linux.executableName in
   # apps/desktop/electron-builder.yml.
   install -d "${pkgdir}/usr/bin"
-  ln -s /opt/omnirush/omnirush "${pkgdir}/usr/bin/omnirush"
+  ln -s /opt/mars/mars "${pkgdir}/usr/bin/mars"
 
   local size
   for size in 16 24 32 48 64 128 256 512; do
-    install -Dm644 "${pkgdir}/opt/omnirush/resources/icons/linux/${size}x${size}.png" \
-      "${pkgdir}/usr/share/icons/hicolor/${size}x${size}/apps/omnirush.png"
+    install -Dm644 "${pkgdir}/opt/mars/resources/icons/linux/${size}x${size}.png" \
+      "${pkgdir}/usr/share/icons/hicolor/${size}x${size}/apps/mars.png"
   done
-  install -Dm644 "${pkgdir}/opt/omnirush/resources/app-dist/omnirush-logo-square.svg" \
-    "${pkgdir}/usr/share/icons/hicolor/scalable/apps/omnirush.svg"
+  install -Dm644 "${pkgdir}/opt/mars/resources/app-dist/mars-logo-square.svg" \
+    "${pkgdir}/usr/share/icons/hicolor/scalable/apps/mars.svg"
 
   install -d "${pkgdir}/usr/share/applications"
-  cat > "${pkgdir}/usr/share/applications/omnirush.desktop" <<'EOF'
+  cat > "${pkgdir}/usr/share/applications/mars.desktop" <<'EOF'
 [Desktop Entry]
-Name=omnirush
-Comment=omnirush desktop app
-Exec=omnirush %U
+Name=mars
+Comment=mars desktop app
+Exec=mars %U
 Terminal=false
 Type=Application
-Icon=omnirush
-StartupWMClass=ai.omnirush
+Icon=mars
+StartupWMClass=ai.mars
 Categories=Development;
-MimeType=x-scheme-handler/omnirush;
+MimeType=x-scheme-handler/mars;
 EOF
 
   install -Dm644 "${srcdir}/${pkgname}-${pkgver}-LICENSE" \
     "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 
-  chmod 4755 "${pkgdir}/opt/omnirush/chrome-sandbox"
+  chmod 4755 "${pkgdir}/opt/mars/chrome-sandbox"
 }

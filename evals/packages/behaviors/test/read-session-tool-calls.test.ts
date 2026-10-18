@@ -13,10 +13,10 @@ test("parses namespaced and catalog tool calls from a session transcript", () =>
       index: 0,
       role: "assistant",
       text: [
-        "OmniRush.ai",
+        "MarsAI",
         "[tool:mcp:emc_labs:send_email] sent",
         "[tool:native:emc_robotics:postCapabilitiesGoogleWorkspaceGmailDrafts] drafted",
-        "[tool:omnirush-cloud_execute_capability] searched",
+        "[tool:mars-cloud_execute_capability] searched",
       ].join("\n\n"),
     }],
   });
@@ -28,7 +28,7 @@ test("parses namespaced and catalog tool calls from a session transcript", () =>
       connectionId: "emc_robotics",
       at: "",
     },
-    { capability: "omnirush-cloud_execute_capability", connectionId: null, at: "" },
+    { capability: "mars-cloud_execute_capability", connectionId: null, at: "" },
   ]);
 });
 

@@ -7,9 +7,9 @@ import { SERVER_LOG_FILE_ENV } from "./server-log-file.js";
  * Persisted record of every built-in server and managed engine restart.
  *
  * The desktop runtime (apps/desktop/electron/runtime-restart-log.mjs) writes
- * server restarts to the same JSON-lines file next to omnirush-server.log;
+ * server restarts to the same JSON-lines file next to mars-server.log;
  * the server adds the engine recoveries it performs on its own. The desktop
- * reads the tail back into omnirushServerInfo for the diagnostics bundle.
+ * reads the tail back into marsServerInfo for the diagnostics bundle.
  */
 export const RUNTIME_RESTART_LOG_FILE_NAME = "runtime-restarts.jsonl";
 

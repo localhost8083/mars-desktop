@@ -38,11 +38,11 @@ app.on("before-quit", () => { hostPromise?.then((host) => host.close()).catch(()
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const COMPUTER_USE_HELPER_APP_NAME = "OmniRush.ai Computer Use.app";
+const COMPUTER_USE_HELPER_APP_NAME = "MarsAI Computer Use.app";
 const COMPUTER_USE_HELPER_EXECUTABLE = "ComputerUse";
 
 function computerUseHelperAppPath() {
-  const explicitApp = process.env.OMNIRUSH_COMPUTER_USE_APP?.trim();
+  const explicitApp = process.env.MARS_COMPUTER_USE_APP?.trim();
   const candidates = [
     explicitApp,
     process.resourcesPath ? path.join(process.resourcesPath, "helpers", COMPUTER_USE_HELPER_APP_NAME) : null,
@@ -58,17 +58,17 @@ async function getComputerUseMcpCommand() {
     const host = await computerUseHost();
     if (!host.availability.supported) throw new Error(host.availability.error);
     const relay = app.isPackaged ? path.join(process.resourcesPath, "computer-use", "relay.mjs") : path.join(__dirname, "computer-use-relay.mjs");
-    if (!existsSync(relay)) throw new Error("Computer Use is missing from this build. Reinstall OmniRush.ai.");
+    if (!existsSync(relay)) throw new Error("Computer Use is missing from this build. Reinstall MarsAI.");
     return [process.execPath, relay, host.discoveryPath];
   }
   const helperExecutable = resolveComputerUseExecutable();
   if (helperExecutable) return [helperExecutable, "relay", (await computerUseHost()).socketPath];
 
   if (app.isPackaged) {
-    throw new Error("OmniRush.ai Computer Use is missing from this OmniRush.ai build.");
+    throw new Error("MarsAI Computer Use is missing from this MarsAI build.");
   }
 
-  throw new Error("The Computer Use helper is unavailable. Rebuild or reinstall OmniRush.ai.");
+  throw new Error("The Computer Use helper is unavailable. Rebuild or reinstall MarsAI.");
 }
 
 // ---------------------------------------------------------------------------
@@ -79,7 +79,7 @@ async function getComputerUseMcpCommand() {
 
 function resolveComputerUseExecutable() {
   // 1. Explicit env override.
-  const explicit = process.env.OMNIRUSH_COMPUTER_USE_BINARY?.trim();
+  const explicit = process.env.MARS_COMPUTER_USE_BINARY?.trim();
   if (explicit && existsSync(explicit)) return explicit;
 
   // 2. .app bundle (packaged builds + pnpm dev).
@@ -110,7 +110,7 @@ async function checkComputerUsePermissions() {
   if (process.platform !== "darwin") {
     const host = await computerUseHost();
     const available = host.availability;
-    return { ok: available.supported, accessibility: available.supported, screenRecording: available.supported, supported: available.supported, protocolVersion: "omnirush.computer-use/1", platform: process.platform, modes: ["observe", "control"], backgroundControl: false, ...(available.error ? { error: available.error } : {}) };
+    return { ok: available.supported, accessibility: available.supported, screenRecording: available.supported, supported: available.supported, protocolVersion: "mars.computer-use/1", platform: process.platform, modes: ["observe", "control"], backgroundControl: false, ...(available.error ? { error: available.error } : {}) };
   }
   // Spawn binary --check → read JSON from stdout → exit. Always fresh.
   const bin = resolveComputerUseExecutable();
@@ -131,12 +131,12 @@ function spawnCheckPermissions(bin) {
       try {
         const parsed = JSON.parse(stdout.trim());
         resolve({
-          ok: parsed?.ok === true && parsed?.protocolVersion === "omnirush.computer-use/1",
-          accessibility: parsed?.accessibility === true && parsed?.protocolVersion === "omnirush.computer-use/1",
-          screenRecording: parsed?.screenRecording === true && parsed?.protocolVersion === "omnirush.computer-use/1",
+          ok: parsed?.ok === true && parsed?.protocolVersion === "mars.computer-use/1",
+          accessibility: parsed?.accessibility === true && parsed?.protocolVersion === "mars.computer-use/1",
+          screenRecording: parsed?.screenRecording === true && parsed?.protocolVersion === "mars.computer-use/1",
           supported: parsed?.supported === true,
           protocolVersion: parsed?.protocolVersion,
-          ...(parsed?.protocolVersion !== "omnirush.computer-use/1" ? { error: "This helper uses the previous Computer Use implementation. Rebuild or reinstall OmniRush.ai, then reconnect Computer Use." } : {}),
+          ...(parsed?.protocolVersion !== "mars.computer-use/1" ? { error: "This helper uses the previous Computer Use implementation. Rebuild or reinstall MarsAI, then reconnect Computer Use." } : {}),
         });
       } catch {
         resolve({ ok: false, accessibility: false, screenRecording: false, error: "Permission check returned invalid output." });
@@ -174,7 +174,7 @@ let setupProcess = null;
 async function openComputerUseSetupApp() {
   if (process.platform !== "darwin") { await computerUseHost(); return; }
   const bin = resolveComputerUseExecutable();
-  if (!bin) throw new Error("The Computer Use helper is unavailable. Rebuild or reinstall OmniRush.ai.");
+  if (!bin) throw new Error("The Computer Use helper is unavailable. Rebuild or reinstall MarsAI.");
   // Keep the responsible application consistent with --check and the MCP
   // child. LaunchServices gives the GUI its own TCC identity instead.
   if (setupProcess && setupProcess.exitCode === null && !setupProcess.killed) {

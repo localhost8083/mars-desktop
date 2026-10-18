@@ -51,18 +51,18 @@ describe("Automations availability", () => {
   test("credential rejection crosses only the Automation runner Electron bridge", () => {
     const main = read("../desktop/electron/main.mjs")
     const preload = read("../desktop/electron/preload.mjs")
-    expect(main).toContain('"omnirush:automation-runner:credential-rejected"')
+    expect(main).toContain('"mars:automation-runner:credential-rejected"')
     expect(main).toContain("onCredentialRejected: () =>")
     expect(preload).toContain("onCredentialRejected(callback)")
     expect(preload).toContain("ipcRenderer.on(AUTOMATION_RUNNER_CREDENTIAL_REJECTED_EVENT, handler)")
   })
 
   test("the in-chat proposal tool blocks creation when the deployment disables Automations", () => {
-    const proposal = read("src/components/tools/omnirush-automation-proposal.tsx")
+    const proposal = read("src/components/tools/mars-automation-proposal.tsx")
     expect(proposal).toContain("useAutomationDeploymentEnabled()")
     expect(proposal).toContain("Automations are disabled for this deployment.")
     expect(proposal).toContain("if (!automationsEnabled) return")
-    expect(proposal).toContain("Sign in to omnirush.ai Cloud")
+    expect(proposal).toContain("Sign in to marsai.click Cloud")
     expect(proposal).toContain("resolveProposalModel")
     expect(proposal).toContain("data-automation-model-resolution")
   })
@@ -78,14 +78,14 @@ describe("Automations availability", () => {
     // Desktop can use the internal proxy starter; Cloud uses organization models.
     expect(page).toContain('includeInternalStarter: placement === "desktop" && internalStarterInRuntime')
 
-    const proposal = read("src/components/tools/omnirush-automation-proposal.tsx")
+    const proposal = read("src/components/tools/mars-automation-proposal.tsx")
     expect(proposal).toContain("const placement = automationCreationPlacement()")
     expect(proposal).toContain('placement === "cloud"\n        ? await client.createCloudAutomation(organizationId, {')
   })
 
   test("the desktop runner never registers from a browser runtime", () => {
     const bridge = read("src/react-app/domains/automations/automation-runner-bridge.tsx")
-    expect(bridge).toContain("if (!isDesktopRuntime() || !window.__OMNIRUSH_ELECTRON__?.invokeDesktop) return")
+    expect(bridge).toContain("if (!isDesktopRuntime() || !window.__MARS_ELECTRON__?.invokeDesktop) return")
   })
 
   test("the automations capability is listed for every runtime", () => {

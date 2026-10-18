@@ -13,7 +13,7 @@ import {
   OrganizationTable,
 } from "@omnirush-ee/den-db/schema"
 import { createDenTypeId } from "@omnirush-ee/utils/typeid"
-import { AUTOMATION_MIN_CLAIM_WINDOW_MS } from "@omnirush/automations"
+import { AUTOMATION_MIN_CLAIM_WINDOW_MS } from "@mars/automations"
 import {
   AUTOMATION_MODEL_ATTENTION_CAPABILITY,
   automationDesktopRunnerAssignmentSchema,
@@ -22,7 +22,7 @@ import {
   automationRunnerHeartbeatResponseSchema,
   automationRunnerNotificationSchema,
   automationRunnerUnavailableOutcomeSchema,
-} from "@omnirush/types/automations"
+} from "@mars/types/automations"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import {
@@ -147,7 +147,7 @@ test("desktop occurrences stay claimable through the recovery window with named 
     repositorySource.indexOf("async expireUnclaimedDesktop"),
     repositorySource.indexOf("async getRunReceipt"),
   )
-  // The recovery window is one policy in @omnirush/automations: the claim path
+  // The recovery window is one policy in @mars/automations: the claim path
   // clamps it against the occurrence's own next due time, and the expiry path
   // records the cause an operator can act on instead of one generic wording.
   assert.match(claim, /desktopClaimDeadline\(\{[\s\S]*nextDueAt,[\s\S]*\}\)/)

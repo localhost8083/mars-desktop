@@ -5,7 +5,7 @@ import { createServer, type Server } from "node:http";
 import { chmod, mkdir, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { isIP, type LookupFunction } from "node:net";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
-import { omnirushServerConfigPath } from "@omnirush/paths";
+import { marsServerConfigPath } from "@mars/paths";
 import { z } from "zod";
 import {
   Agent,
@@ -30,11 +30,11 @@ const GMAIL_HEADER_FOLD_LIMIT = 78;
 const UTC_WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const UTC_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const GOOGLE_WORKSPACE_DESKTOP_CLIENT_ID = "929071212606-pmkqimjhm2tnp68kbklnout0irllj99h.apps.googleusercontent.com";
-const GOOGLE_WORKSPACE_CLIENT_ID_ENV = "OMNIRUSH_GOOGLE_WORKSPACE_OAUTH_CLIENT_ID";
+const GOOGLE_WORKSPACE_CLIENT_ID_ENV = "MARS_GOOGLE_WORKSPACE_OAUTH_CLIENT_ID";
 const GOOGLE_WORKSPACE_CLIENT_SECRET_ENV = "GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET";
-const LEGACY_GOOGLE_WORKSPACE_CLIENT_SECRET_ENV = "OMNIRUSH_GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET";
-const GOOGLE_WORKSPACE_TOKEN_BROKER_URL_ENV = "OMNIRUSH_GOOGLE_WORKSPACE_TOKEN_BROKER_URL";
-const GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT_ENV = "OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT";
+const LEGACY_GOOGLE_WORKSPACE_CLIENT_SECRET_ENV = "MARS_GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET";
+const GOOGLE_WORKSPACE_TOKEN_BROKER_URL_ENV = "MARS_GOOGLE_WORKSPACE_TOKEN_BROKER_URL";
+const GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT_ENV = "MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT";
 const GOOGLE_WORKSPACE_AUTH_TIMEOUT_MS = 5 * 60 * 1000;
 const GOOGLE_WORKSPACE_API_TIMEOUT_MS = 30_000;
 const GOOGLE_WORKSPACE_SCOPES = [
@@ -85,7 +85,7 @@ export const GOOGLE_WORKSPACE_EXTENSION_ACTIONS = [
     extensionId: GOOGLE_WORKSPACE_EXTENSION_ID,
     action: "status",
     title: "Google Workspace status",
-    description: "Check whether Google Workspace is connected and ready for OmniRush.ai extension actions.",
+    description: "Check whether Google Workspace is connected and ready for MarsAI extension actions.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
@@ -127,12 +127,12 @@ export const GOOGLE_WORKSPACE_EXTENSION_ACTIONS = [
     extensionId: GOOGLE_WORKSPACE_EXTENSION_ID,
     action: "gmail_create_reply_draft",
     title: "Create Gmail reply draft",
-    description: "Create a Gmail draft reply in an existing thread. This does not send email. Requires Gmail read access (gmail.readonly scope). body must contain only the new reply text — OmniRush.ai automatically appends the quoted conversation below it in plain text and in Gmail's collapsible quote format; never include quoted history yourself. Returns draftUrl and threadUrl plus the resolved reply target; always share draftUrl with the user so they can review and send in Gmail.",
+    description: "Create a Gmail draft reply in an existing thread. This does not send email. Requires Gmail read access (gmail.readonly scope). body must contain only the new reply text — MarsAI automatically appends the quoted conversation below it in plain text and in Gmail's collapsible quote format; never include quoted history yourself. Returns draftUrl and threadUrl plus the resolved reply target; always share draftUrl with the user so they can review and send in Gmail.",
     inputSchema: {
       type: "object",
       properties: {
         messageId: { type: "string", description: "Gmail message id to reply to." },
-        body: { type: "string", description: "Plain text reply body. Write plain prose with no markdown syntax; do not include quoted history because OmniRush.ai appends it automatically." },
+        body: { type: "string", description: "Plain text reply body. Write plain prose with no markdown syntax; do not include quoted history because MarsAI appends it automatically." },
         replyAll: { type: "boolean", description: "Reply to everyone on the original message. Defaults to true." },
         attachments: GMAIL_DRAFT_ATTACHMENTS_SCHEMA,
       },
@@ -187,7 +187,7 @@ export const GOOGLE_WORKSPACE_EXTENSION_ACTIONS = [
     extensionId: GOOGLE_WORKSPACE_EXTENSION_ID,
     action: "drive_search_files",
     title: "Search Drive files",
-    description: "Search files available to OmniRush.ai through the connected Google Drive scope. With full Drive access enabled, this searches the entire Drive.",
+    description: "Search files available to MarsAI through the connected Google Drive scope. With full Drive access enabled, this searches the entire Drive.",
     inputSchema: {
       type: "object",
       properties: {
@@ -202,7 +202,7 @@ export const GOOGLE_WORKSPACE_EXTENSION_ACTIONS = [
     extensionId: GOOGLE_WORKSPACE_EXTENSION_ID,
     action: "drive_read_file",
     title: "Read Drive file",
-    description: "Read a Drive file available to OmniRush.ai by file id.",
+    description: "Read a Drive file available to MarsAI by file id.",
     inputSchema: {
       type: "object",
       properties: {
@@ -216,7 +216,7 @@ export const GOOGLE_WORKSPACE_EXTENSION_ACTIONS = [
     extensionId: GOOGLE_WORKSPACE_EXTENSION_ID,
     action: "drive_update_file",
     title: "Update Drive file",
-    description: "Replace the plain text content of a Drive file available to OmniRush.ai by file id.",
+    description: "Replace the plain text content of a Drive file available to MarsAI by file id.",
     inputSchema: {
       type: "object",
       properties: {
@@ -316,7 +316,7 @@ function readStringField(value: unknown, key: string): string {
 }
 
 function configDir(config: ServerConfig): string {
-  return dirname(config.configPath?.trim() || omnirushServerConfigPath());
+  return dirname(config.configPath?.trim() || marsServerConfigPath());
 }
 
 function googleWorkspaceCredentials() {
@@ -351,7 +351,7 @@ function googleWorkspaceVaultKeyPath(config: ServerConfig): string {
 }
 
 function googleWorkspacePlainTextVaultEnabled() {
-  return process.env.OMNIRUSH_DEV_MODE === "1" && process.env[GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT_ENV] === "1";
+  return process.env.MARS_DEV_MODE === "1" && process.env[GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT_ENV] === "1";
 }
 
 function googleWorkspaceVaultMode() {
@@ -373,7 +373,7 @@ function createGoogleWorkspacePkce() {
 }
 
 async function googleWorkspaceVaultKey(config: ServerConfig): Promise<Buffer> {
-  const envKey = process.env.OMNIRUSH_ENCRYPTION_KEY?.trim();
+  const envKey = process.env.MARS_ENCRYPTION_KEY?.trim();
   if (envKey) return createHash("sha256").update(envKey).digest();
 
   const keyPath = googleWorkspaceVaultKeyPath(config);
@@ -625,7 +625,7 @@ async function refreshGoogleWorkspaceVault(record: Record<string, unknown>) {
 async function googleWorkspaceAccessToken(config: ServerConfig): Promise<{ record: Record<string, unknown>; accessToken: string }> {
   const vault = await readGoogleWorkspaceVault(config);
   const record = googleWorkspacePrimaryRecord(vault);
-  if (!record) throw new ApiError(400, "google_workspace_not_connected", "Connect Google Workspace in OmniRush.ai Settings to use this tool.");
+  if (!record) throw new ApiError(400, "google_workspace_not_connected", "Connect Google Workspace in MarsAI Settings to use this tool.");
   const refreshed = await refreshGoogleWorkspaceVault(record);
   const refreshedAccountId = googleWorkspaceAccountId(refreshed);
   if (refreshedAccountId) {
@@ -802,7 +802,7 @@ async function resolveGmailAttachmentPath(config: ServerConfig, context: Record<
 }
 
 // Attachment url validation is unconditional: unlike the managed MCP url
-// guard, it must hold even under OMNIRUSH_DEV_MODE.
+// guard, it must hold even under MARS_DEV_MODE.
 function assertGmailAttachmentUrl(rawUrl: string): URL {
   let parsed: URL;
   try {
@@ -1106,7 +1106,7 @@ function gmailRawMessage(input: { to: string[]; cc?: string[]; bcc?: string[]; s
     body,
   ];
   const alternativePartLines = () => {
-    const boundary = `omnirush-alt-${randomBytes(16).toString("hex")}`;
+    const boundary = `mars-alt-${randomBytes(16).toString("hex")}`;
     return [
       foldHeaderLine(`Content-Type: multipart/alternative; boundary="${boundary}"`),
       "",
@@ -1124,7 +1124,7 @@ function gmailRawMessage(input: { to: string[]; cc?: string[]; bcc?: string[]; s
   if (!attachments.length) {
     raw = [...headers, ...(html === null ? textPartLines : alternativePartLines())].join("\r\n");
   } else {
-    const boundary = `omnirush-${randomBytes(16).toString("hex")}`;
+    const boundary = `mars-${randomBytes(16).toString("hex")}`;
     raw = [
       ...headers,
       foldHeaderLine(`Content-Type: multipart/mixed; boundary="${boundary}"`),
@@ -1696,11 +1696,11 @@ export async function googleWorkspaceRunScopeSmokeTest(config: ServerConfig) {
   if (!email) throw new Error("Google account email is unavailable.");
   await fetchGoogleJson("https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=1", { headers: { Authorization: `Bearer ${accessToken}` } });
   const createdAt = new Date().toISOString();
-  const driveBoundary = `omnirush_${randomBytes(8).toString("hex")}`;
+  const driveBoundary = `mars_${randomBytes(8).toString("hex")}`;
   const driveFile = await fetchGoogleJson("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink", {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": `multipart/related; boundary=${driveBoundary}` },
-    body: multipartRelatedBody({ name: "OmniRush.ai Google Workspace smoke test.txt", mimeType: "text/plain" }, `OmniRush.ai Google Workspace smoke test created at ${createdAt}.`, driveBoundary),
+    body: multipartRelatedBody({ name: "MarsAI Google Workspace smoke test.txt", mimeType: "text/plain" }, `MarsAI Google Workspace smoke test created at ${createdAt}.`, driveBoundary),
   });
   if (isRecord(driveFile) && typeof driveFile.id === "string") {
     const response = await externalFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(driveFile.id)}?alt=media`, { headers: { Authorization: `Bearer ${accessToken}` } });
@@ -1709,7 +1709,7 @@ export async function googleWorkspaceRunScopeSmokeTest(config: ServerConfig) {
   const draft = await fetchGoogleJson("https://gmail.googleapis.com/gmail/v1/users/me/drafts", {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ message: { raw: base64UrlString(gmailRawMessage({ to: [email], subject: "OmniRush.ai Google Workspace smoke test draft", body: `This draft was created by OmniRush.ai to verify Gmail draft access at ${createdAt}.\nOmniRush does not send this email automatically.` })) } }),
+    body: JSON.stringify({ message: { raw: base64UrlString(gmailRawMessage({ to: [email], subject: "MarsAI Google Workspace smoke test draft", body: `This draft was created by MarsAI to verify Gmail draft access at ${createdAt}.\nMars does not send this email automatically.` })) } }),
   });
   return googleWorkspaceStatusPayload(record, {
     testStatus: "Calendar read, Drive file create/read, and Gmail draft creation verified.",
@@ -1809,7 +1809,7 @@ export function createGoogleWorkspaceConnectFlowManager(config: ServerConfig) {
         try {
           const flow = flows.get(flowId);
           if (!flow) {
-            await finish(googleWorkspaceCallbackPage(410, "Google Workspace connection expired", "Return to OmniRush.ai and start connection again."));
+            await finish(googleWorkspaceCallbackPage(410, "Google Workspace connection expired", "Return to MarsAI and start connection again."));
             return;
           }
           const url = new URL(request.url ?? "/", "http://127.0.0.1");
@@ -1833,7 +1833,7 @@ export function createGoogleWorkspaceConnectFlowManager(config: ServerConfig) {
             await finish(googleWorkspaceCallbackPage(400, "Google Workspace connection failed", "Invalid OAuth callback."));
             return;
           }
-          await finish(googleWorkspaceCallbackPage(200, "Google Workspace authorization received", "You can return to OmniRush.ai while it finishes connecting."));
+          await finish(googleWorkspaceCallbackPage(200, "Google Workspace authorization received", "You can return to MarsAI while it finishes connecting."));
           try {
             const token = await exchangeGoogleWorkspaceCode({ code, redirectUri: flow.redirectUri, verifier: flow.verifier });
             if (!isRecord(token) || typeof token.access_token !== "string") throw new Error("Google OAuth response did not include an access token.");
@@ -1855,7 +1855,7 @@ export function createGoogleWorkspaceConnectFlowManager(config: ServerConfig) {
             flow.account = account;
           } catch (exchangeError) {
             flow.status = "failed";
-            flow.error = `Google authorized OmniRush.ai, but token exchange failed: ${exchangeError instanceof Error ? exchangeError.message : String(exchangeError)}`;
+            flow.error = `Google authorized MarsAI, but token exchange failed: ${exchangeError instanceof Error ? exchangeError.message : String(exchangeError)}`;
           }
         } catch (callbackError) {
           const flow = flows.get(flowId);

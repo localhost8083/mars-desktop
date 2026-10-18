@@ -1,6 +1,6 @@
 import { expect } from "vitest";
-import { denFetch } from "@omnirush/behaviors";
-import type { DenSession } from "@omnirush/behaviors";
+import { denFetch } from "@mars/behaviors";
+import type { DenSession } from "@mars/behaviors";
 import {
   createAdmin,
   createOrg,
@@ -12,7 +12,7 @@ import {
   server,
   SkipError,
   test,
-} from "@omnirush/testkit";
+} from "@mars/testkit";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -46,7 +46,7 @@ test("a script world attaches to an existing Den without owning it", { timeout: 
   const nonce = `${Date.now().toString(36)}-${process.pid.toString(36)}`;
   const preexistingOrgName = `Attach Outer ${nonce}`;
   const attachedOrgName = `Attach World ${nonce}`;
-  const resolvedEmail = `attach-member+${nonce}@omnirush.test`;
+  const resolvedEmail = `attach-member+${nonce}@mars.test`;
   const resolvedPassword = `AttachSecret-${nonce}!`;
 
   await using stack = new AsyncDisposableStack();

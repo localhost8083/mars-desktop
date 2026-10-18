@@ -7,7 +7,7 @@ export default defineConfig({
     index: "src/index.ts",
     testing: "src/testing.ts",
   },
-  external: ["@omnirush/types", "zod"],
+  external: ["@mars/types", "zod"],
   format: ["esm"],
   target: "es2022",
 })

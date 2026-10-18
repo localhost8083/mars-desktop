@@ -1,10 +1,10 @@
-import { browserScript } from "@omnirush/testkit";
+import { browserScript } from "@mars/testkit";
 import { expect } from "vitest";
-import { evalIn, go, waitFor } from "@omnirush/behaviors";
-import type { Surface } from "@omnirush/cdp";
-import { screenshot } from "@omnirush/test-evidence";
-import { spec } from "@omnirush/testkit";
-import type { User } from "@omnirush/testkit";
+import { evalIn, go, waitFor } from "@mars/behaviors";
+import type { Surface } from "@mars/cdp";
+import { screenshot } from "@mars/test-evidence";
+import { spec } from "@mars/testkit";
+import type { User } from "@mars/testkit";
 import { bootCrossWorkspaceSplitView } from "../../worlds/cross-workspace-split-view.ts";
 
 const test = spec.world(async (seed, { place }) => {
@@ -12,11 +12,11 @@ const test = spec.world(async (seed, { place }) => {
   const runId = `${Date.now().toString(36)}-${process.pid}`;
   try {
     const world = await bootCrossWorkspaceSplitView(stack, place, {
-      adminEmail: `split-view-admin-${runId}@omnirush.test`,
-      workspacePath: `/tmp/omnirush-cross-workspace-split-${runId}-a`,
+      adminEmail: `split-view-admin-${runId}@mars.test`,
+      workspacePath: `/tmp/mars-cross-workspace-split-${runId}-a`,
       sessionTitles: [`Primary workspace anchor ${runId}`, `Primary workspace peer ${runId}`],
     });
-    const { workspaceId: workspaceB } = await seed.workspace(world.desktop, `/tmp/omnirush-cross-workspace-split-${runId}-b`, { create: true });
+    const { workspaceId: workspaceB } = await seed.workspace(world.desktop, `/tmp/mars-cross-workspace-split-${runId}-b`, { create: true });
     const crossWorkspacePeer = { workspaceId: workspaceB,
       ...await seed.session(world.desktop, { title: `Secondary workspace peer ${runId}` }) };
     return { ...world, app: world.desktop, workspaceB, crossWorkspacePeer, [Symbol.asyncDispose]: () => stack.disposeAsync() };
@@ -91,7 +91,7 @@ async function openSessionRoute(app: Surface, candidate: SplitCandidate): Promis
   await go(app, `/workspace/${candidate.workspaceId}/session/${candidate.sessionId}`, { timeoutMs: 60_000 });
   await waitFor(app, browserScript((workspaceId, sessionId) => {
     const surface = document.querySelector<HTMLElement>("[data-session-surface-id]");
-    return (localStorage.getItem("omnirush.react.activeWorkspace") ?? "") === workspaceId
+    return (localStorage.getItem("mars.react.activeWorkspace") ?? "") === workspaceId
       && surface?.getAttribute("data-session-surface-id") === sessionId;
   }, [candidate.workspaceId, candidate.sessionId]), { timeoutMs: 60_000, label: `visible session ${candidate.title}` });
 }
@@ -130,7 +130,7 @@ async function openCrossWorkspaceSplitFromPalette(app: Surface, user: User, cand
 
 async function readSplitFacts(app: Surface, primary: SplitCandidate, secondary: SplitCandidate): Promise<SplitFacts> {
   return parseSplitFacts(await evalIn(app, browserScript((inputSessionId, inputSessionId2, inputSessionId3, inputSessionId4) => {
-    const context = window.__omnirushControl?.context?.();
+    const context = window.__marsControl?.context?.();
     const layout = context?.conversations?.layout;
     const primaryPane = document.querySelector<HTMLElement>('[data-workbench-pane="primary"]');
     const secondaryPane = document.querySelector<HTMLElement>('[data-workbench-pane="secondary"]');

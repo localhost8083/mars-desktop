@@ -1,14 +1,14 @@
 import { expect } from "vitest";
-import { denFetch } from "@omnirush/behaviors";
-import type { DenSession } from "@omnirush/behaviors";
-import { localMysqlIsRunning, localRedisIsRunning, server, test } from "@omnirush/testkit";
+import { denFetch } from "@mars/behaviors";
+import type { DenSession } from "@mars/behaviors";
+import { localMysqlIsRunning, localRedisIsRunning, server, test } from "@mars/testkit";
 import {
   denLibraryPluginCreateRequest,
   emptyLibraryMcpConnectionForm,
 } from "../../apps/app/src/react-app/domains/settings/library";
 
-const daytona = process.env.OMNIRUSH_EVAL_DAYTONA?.trim() === "1";
-const attached = Boolean(process.env.OMNIRUSH_EVAL_DEN_API_URL?.trim());
+const daytona = process.env.MARS_EVAL_DAYTONA?.trim() === "1";
+const attached = Boolean(process.env.MARS_EVAL_DEN_API_URL?.trim());
 const mysqlOpen = daytona || attached || await localMysqlIsRunning();
 const redisOpen = daytona || attached || await localRedisIsRunning();
 const title = !mysqlOpen
@@ -22,7 +22,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function orgHeaders(session: DenSession, orgId: string): Record<string, string> {
-  return { authorization: `Bearer ${session.token}`, "x-omnirush-org-id": orgId };
+  return { authorization: `Bearer ${session.token}`, "x-mars-org-id": orgId };
 }
 
 async function organizationId(admin: DenSession, organizationName: string): Promise<string> {

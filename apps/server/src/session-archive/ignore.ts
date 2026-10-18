@@ -160,7 +160,7 @@ function gitNulSetNow(cwd: string, args: readonly string[], env: NodeJS.ProcessE
 async function withScratchRepository<T>(use: (gitDir: string | null) => Promise<T>): Promise<T> {
   let dir: string | null = null;
   try {
-    dir = await mkdtemp(join(tmpdir(), "omnirush-archive-ignore-"));
+    dir = await mkdtemp(join(tmpdir(), "mars-archive-ignore-"));
   } catch {
     return use(null);
   }

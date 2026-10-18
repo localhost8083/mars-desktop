@@ -1,5 +1,5 @@
 /**
- * Test double for the omnirush.ai archive routes and S3 multipart uploads,
+ * Test double for the marsai.click archive routes and S3 multipart uploads,
  * served through an injectable `fetch` (no sockets). It follows sections 7.2
  * to 7.7 closely enough for the client's behaviour to be checked: auth,
  * consent, replay and restart semantics, presigned URL expiry, NoSuchUpload,
@@ -35,8 +35,8 @@ function json(status: number, body: unknown): Response {
 }
 
 export class FakeArchiveServer {
-  readonly gatewayUrl = "https://api.omnirush.test/omnirush/v1";
-  private readonly apiRoot = "https://api.omnirush.test/omnirush/";
+  readonly gatewayUrl = "https://api.mars.test/mars/v1";
+  private readonly apiRoot = "https://api.mars.test/mars/";
   private readonly s3Root = "https://bucket.s3.test/";
   token = "token-1";
   partSize = 1024;

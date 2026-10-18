@@ -12,7 +12,7 @@ function subscribeToDenSettings(onStoreChange: () => void) {
 /**
  * True while some source (build env, desktop-bootstrap.json, a connect link,
  * the local gateway, or the user's settings) provides a Den control plane.
- * omnirush.ai ships without a hosted Den, so browser sign-in entry points
+ * marsai.click ships without a hosted Den, so browser sign-in entry points
  * hide themselves until a server URL exists; `buildDenAuthUrl` throws
  * otherwise.
  */

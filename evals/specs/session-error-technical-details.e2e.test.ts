@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { sessionErrorCard, sessionSubmitErrorIsolation } from "../worlds/chat.ts";
 
 const test = spec.world(sessionErrorCard);
@@ -26,7 +26,7 @@ test("session error cards expose provider diagnostics only in Developer mode", a
     const label = next === "on" ? /enable developer mode/i : /disable developer mode/i;
     await user.press(place.kind !== "daytona" && process.platform === "darwin" ? "Meta+K" : "Control+K");
     await user.click({ role: "option", label });
-    await probe.eventually(() => probe.storage("omnirush.developerMode"), {
+    await probe.eventually(() => probe.storage("mars.developerMode"), {
       until: (value) => String(value) === (next === "on" ? "1" : "0"),
       within: 10_000,
       label: `Developer mode persisted ${next}`,
@@ -35,7 +35,7 @@ test("session error cards expose provider diagnostics only in Developer mode", a
 
   await step("with Developer mode off, a failed turn shows only the plain error card", async () => {
     await user.see({ text: new RegExp(CARD_TEXT) });
-    expect(String(await probe.storage("omnirush.developerMode"))).not.toBe("1");
+    expect(String(await probe.storage("mars.developerMode"))).not.toBe("1");
     await user.notSee(detailsToggle);
     await user.notSee(statusLine);
     await user.notSee(requestId);
@@ -75,7 +75,7 @@ test("session error cards expose provider diagnostics only in Developer mode", a
   for (const kind of storageErrors) {
     await step(`${kind} shows recovery guidance and keeps the stack trace in Developer mode`, async () => {
       await world.seedStorageError(kind);
-      const title = kind === "disk-full" ? STORAGE_TITLE : "OmniRush.ai couldn’t access its saved data";
+      const title = kind === "disk-full" ? STORAGE_TITLE : "MarsAI couldn’t access its saved data";
       await user.see({ text: title });
       await user.see({ text: kind === "disk-full" ? STORAGE_DESCRIPTION : /check the available disk space/ });
       await user.notSee({ text: /effect\/sql\/SqlError/ });
@@ -95,7 +95,7 @@ test("session error cards expose provider diagnostics only in Developer mode", a
     });
     await step(`${kind} banner hides the stack trace outside Developer mode`, async () => {
       await world.seedStorageError(kind, "banner");
-      const title = kind === "disk-full" ? STORAGE_TITLE : "OmniRush.ai couldn’t access its saved data";
+      const title = kind === "disk-full" ? STORAGE_TITLE : "MarsAI couldn’t access its saved data";
       await user.see({ testId: "session-error-card" });
       await user.see({ text: title });
       await user.notSee({ text: /at runLoop/ });

@@ -1,5 +1,5 @@
 /**
- * Release-channel concept for omnirush.ai desktop builds.
+ * Release-channel concept for marsai.click desktop builds.
  *
  * There are two channels users can opt into:
  *
@@ -20,11 +20,11 @@ import type { ReleaseChannel } from "../types";
 
 /** Stable channel's Tauri updater manifest URL. */
 export const STABLE_UPDATER_ENDPOINT =
-  "https://github.com/omnirush-ai/omnirush-gui/releases/latest/download/latest.json";
+  "https://github.com/mars-ai/mars-gui/releases/latest/download/latest.json";
 
 /** Alpha channel's Tauri updater manifest URL (macOS-only, rolling). */
 export const ALPHA_UPDATER_ENDPOINT =
-  "https://github.com/omnirush-ai/omnirush-gui/releases/download/alpha-macos-latest/latest.json";
+  "https://github.com/mars-ai/mars-gui/releases/download/alpha-macos-latest/latest.json";
 
 /** Rolling GitHub release tag that alpha macOS artifacts are published to. */
 export const ALPHA_MACOS_RELEASE_TAG = "alpha-macos-latest";

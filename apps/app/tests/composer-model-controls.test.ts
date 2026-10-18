@@ -36,7 +36,7 @@ describe("composer model controls", () => {
     expect(modelSelectSource).not.toContain("setThinkingOpen(true)");
     expect(modelSelectSource).toContain('data-slot="model-thinking-submenu"');
     expect(modelSelectSource).not.toContain("onMouseEnter");
-    expect(modelSelectSource).toContain('value.providerID.trim().toLowerCase() !== "omnirush"');
+    expect(modelSelectSource).toContain('value.providerID.trim().toLowerCase() !== "mars"');
     expect(modelSelectSource).toContain("selectedModelTitle");
     expect(modelSelectSource).toContain("selectedProviderTitle");
   });

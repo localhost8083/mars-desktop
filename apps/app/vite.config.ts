@@ -19,7 +19,7 @@ const addHost = (value?: string | null) => {
 };
 
 envAllowedHosts.split(",").forEach(addHost);
-addHost(process.env.OMNIRUSH_PUBLIC_HOST ?? null);
+addHost(process.env.MARS_PUBLIC_HOST ?? null);
 const hostname = os.hostname();
 addHost(hostname);
 const shortHostname = hostname.split(".")[0];
@@ -60,13 +60,13 @@ function readPackageVersion(packagePath: string): string | null {
 }
 
 const buildAppVersion =
-  process.env.VITE_OMNIRUSH_APP_VERSION?.trim() ||
+  process.env.VITE_MARS_APP_VERSION?.trim() ||
   readPackageVersion(desktopPackagePath) ||
   readPackageVersion(appPackagePath) ||
   "0.0.0";
 const buildSha = firstNonEmpty([
-  process.env.VITE_OMNIRUSH_BUILD_SHA,
-  process.env.OMNIRUSH_GIT_SHA,
+  process.env.VITE_MARS_BUILD_SHA,
+  process.env.MARS_GIT_SHA,
   process.env.GITHUB_SHA,
 ]) ?? readLocalGitSha();
 const shortBuildSha = buildSha ? buildSha.slice(0, 7) : "";
@@ -74,7 +74,7 @@ const shortBuildSha = buildSha ? buildSha.slice(0, 7) : "";
 // Electron packaged builds load index.html via `file://`, so asset URLs
 // must be relative. Tauri serves via its own protocol so absolute paths
 // work there. Gate on an env var the electron build script sets.
-const isElectronPackagedBuild = process.env.OMNIRUSH_ELECTRON_BUILD === "1";
+const isElectronPackagedBuild = process.env.MARS_ELECTRON_BUILD === "1";
 
 // Headless-web dev (scripts/dev-headless-web.ts): serve /api/den same-origin
 // from the dev server, proxied to the Den control plane, so the browser never
@@ -82,19 +82,19 @@ const isElectronPackagedBuild = process.env.OMNIRUSH_ELECTRON_BUILD === "1";
 // pointed here via VITE_DEN_API_BASE_URL; sign-in still opens the real Den
 // web app. Inert unless the launcher sets the target env. No gateway marker:
 // that runtime implies a provisioned cloud instance, which local dev lacks.
-const headlessDenTarget = (process.env.OMNIRUSH_DEV_HEADLESS_DEN_TARGET ?? "").trim();
+const headlessDenTarget = (process.env.MARS_DEV_HEADLESS_DEN_TARGET ?? "").trim();
 
 export default defineConfig({
   base: isElectronPackagedBuild ? "./" : "/",
   define: {
-    "import.meta.env.VITE_OMNIRUSH_APP_VERSION": JSON.stringify(buildAppVersion),
-    "import.meta.env.VITE_OMNIRUSH_BUILD_SHA": JSON.stringify(shortBuildSha),
+    "import.meta.env.VITE_MARS_APP_VERSION": JSON.stringify(buildAppVersion),
+    "import.meta.env.VITE_MARS_BUILD_SHA": JSON.stringify(shortBuildSha),
   },
   plugins: [
     {
-      name: "omnirush-dev-server-id",
+      name: "mars-dev-server-id",
       configureServer(server) {
-        server.middlewares.use("/__omnirush_dev_server_id", (_req, res) => {
+        server.middlewares.use("/__mars_dev_server_id", (_req, res) => {
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify({ appRoot }));
         });

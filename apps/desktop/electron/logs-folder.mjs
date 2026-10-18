@@ -2,7 +2,7 @@ import path from "node:path";
 
 /**
  * The folder that holds the desktop app's on-disk logs, among them the
- * built-in server's omnirush-server.log (see resolveOmniRushServerLogFile).
+ * built-in server's mars-server.log (see resolveMarsServerLogFile).
  * It is always <userData>/logs; nothing the renderer sends can change it.
  */
 export function resolveDesktopLogsDir(userDataPath) {

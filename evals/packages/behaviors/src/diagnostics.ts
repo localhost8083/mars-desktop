@@ -4,11 +4,11 @@ import tls from "node:tls";
 import { fileURLToPath } from "node:url";
 import type { DetailedPeerCertificate } from "node:tls";
 
-import { parseClientHelloVersions } from "@omnirush/labs";
-import type { ClientHelloParseResult, EgressLabHandle, EgressLabProfile } from "@omnirush/labs";
-import type { TlsFacts, TlsVersionFacts } from "@omnirush/matchers";
+import { parseClientHelloVersions } from "@mars/labs";
+import type { ClientHelloParseResult, EgressLabHandle, EgressLabProfile } from "@mars/labs";
+import type { TlsFacts, TlsVersionFacts } from "@mars/matchers";
 
-export type { TlsFacts, TlsVersionFacts } from "@omnirush/matchers";
+export type { TlsFacts, TlsVersionFacts } from "@mars/matchers";
 
 export type DiagnosticVerdict = {
   profile: EgressLabProfile;
@@ -101,7 +101,7 @@ async function main() {
   const transportModule = await import("./apps/server/src/agent-context-transport-probe.ts");
   const cloudModule = await import("./apps/server/src/agent-context-cloud-probe.ts");
   const diagnosticsModule = await import("./apps/server/src/agent-context-diagnostics.ts");
-  const cloudProbe = await cloudModule.probeOmniRushCloudCatalog({
+  const cloudProbe = await cloudModule.probeMarsCloudCatalog({
     workspaceId: "ws_egress_lab_product_diagnostics",
     workspaceType: "local",
     runtimeConfigAvailable: true,
@@ -327,7 +327,7 @@ export function productDiagnosticsPrecondition(env: NodeJS.ProcessEnv = process.
   const bun = spawnSync("bun", ["--version"], { env, encoding: "utf8", timeout: 5_000 });
   if (bun.status !== 0) {
     const reason = bun.error?.message ?? bun.stderr?.trim() ?? "bun --version failed";
-    return `Bun is required to import OmniRush.ai's shipped TypeScript diagnostics modules for product-verdict egress proofs (${reason}).`;
+    return `Bun is required to import MarsAI's shipped TypeScript diagnostics modules for product-verdict egress proofs (${reason}).`;
   }
   const openssl = spawnSync("openssl", ["version"], { env, encoding: "utf8", timeout: 5_000 });
   if (openssl.status !== 0) {
@@ -749,7 +749,7 @@ async function diagnoseTlsLab(lab: EgressLabHandle): Promise<DiagnosticVerdict> 
   if (lab.profile === "intercept" && /corporate|interception|proxy|mitm/u.test(issuerLower)) {
     return {
       profile: lab.profile,
-      text: `LIKELY TLS INTERCEPTION: endpoint leaf is re-signed by ${servedIssuer}, not the expected public issuer. Install or pass the corporate root, or bypass TLS inspection for OmniRush.ai hosts.`,
+      text: `LIKELY TLS INTERCEPTION: endpoint leaf is re-signed by ${servedIssuer}, not the expected public issuer. Install or pass the corporate root, or bypass TLS inspection for MarsAI hosts.`,
       evidence: lines.join("\n"),
       source: "lab-corroboration",
       available: true,
@@ -788,7 +788,7 @@ export interface DeniedHostFacts {
 
 export async function readDeniedHostFacts(
   lab: EgressLabHandle,
-  targetUrl = "https://github.com/omnirush-ai/omnirush-gui/releases/latest",
+  targetUrl = "https://github.com/mars-ai/mars-gui/releases/latest",
 ): Promise<DeniedHostFacts> {
   const url = new URL("/fetch", lab.url);
   url.searchParams.set("url", targetUrl);
@@ -811,7 +811,7 @@ export async function readDeniedHostFacts(
 async function diagnoseDenyLab(lab: EgressLabHandle): Promise<DiagnosticVerdict> {
   // Exact-match lookup (not a substring test) so the denied host is unambiguous.
   const host = lab.deniedHosts.find((entry) => entry === "github.com") ?? lab.deniedHosts[0] ?? "github.com";
-  const facts = await readDeniedHostFacts(lab, `https://${host}/omnirush-ai/omnirush-gui/releases/latest`);
+  const facts = await readDeniedHostFacts(lab, `https://${host}/mars-ai/mars-gui/releases/latest`);
   const text = facts.status === 451
     ? `BLOCKED HOST / PROXY DENY: ${host} is blocked by the selective-deny profile; docs/enterprise/outbound-access.json names the required host and its blocked effect.`
     : `DENY VERDICT INCONCLUSIVE: expected ${host} to be blocked, got HTTP ${facts.status}.`;
@@ -905,7 +905,7 @@ const { X509Certificate } = require("node:crypto");
 const fs = require("node:fs");
 let tls;
 try { tls = require("node:tls"); } catch { tls = {}; }
-const needle = (process.env.OMNIRUSH_TLS_REPRO_CA_MATCH || "OmniRush.ai Egress Lab").toLowerCase();
+const needle = (process.env.MARS_TLS_REPRO_CA_MATCH || "MarsAI Egress Lab").toLowerCase();
 function countMatching(certs) {
   let count = 0;
   for (const pem of certs || []) {

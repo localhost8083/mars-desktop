@@ -3,7 +3,7 @@ import {
   storedConnectDiagnosticIncidentSchema,
   type ConnectDiagnosticIncident,
   type StoredConnectDiagnosticIncident,
-} from "@omnirush/types/den/connect-diagnostics"
+} from "@mars/types/den/connect-diagnostics"
 import { diagnosticsRedisConfig } from "./config"
 
 const incidentHistoryKey = "omnirush:diagnostics:connect-incidents:v1"

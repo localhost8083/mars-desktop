@@ -205,7 +205,7 @@ export function terminalTabRunning(tabId: string) {
 /** The desktop's terminal bridge, or null outside the desktop app (or an older preload). */
 export function desktopTerminalBridge(): TerminalBridge | null {
   if (typeof window === "undefined") return null;
-  const bridge = window.__OMNIRUSH_ELECTRON__?.terminal;
+  const bridge = window.__MARS_ELECTRON__?.terminal;
   if (!bridge?.create || !bridge.write || !bridge.resize || !bridge.kill || !bridge.onData || !bridge.onExit) return null;
   return {
     create: bridge.create,

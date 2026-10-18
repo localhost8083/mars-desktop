@@ -50,7 +50,7 @@ type UploadedChatAttachment = {
   file: AttachmentFile;
 };
 
-const WORKSPACE_INBOX_ROOT = ".opencode/omnirush/inbox";
+const WORKSPACE_INBOX_ROOT = ".opencode/mars/inbox";
 const MAX_PATH_COMPONENT_BYTES = 255;
 const UTF8_ENCODER = new TextEncoder();
 
@@ -175,7 +175,7 @@ function isTextLikeAttachmentMime(mime: string) {
  * - text-like mimes are re-mimed to `text/plain` so opencode inlines their
  *   content via the Read tool (the proven `@file` mention mechanism);
  * - images, PDFs, and Office mimes pass through (Office parts are rewritten
- *   to text by the OmniRushOfficeAttachments plugin before the provider);
+ *   to text by the MarsOfficeAttachments plugin before the provider);
  * - everything else returns `null`: workspace (`file://`) attachments fall
  *   back to a `text/plain` part that opencode mediates through the Read tool,
  *   while data-URL attachments are dropped (inlining binary bytes as text is
@@ -305,7 +305,7 @@ function attachmentPathNotePart(uploaded: UploadedChatAttachment[]): TextPartInp
     type: "text",
     synthetic: true,
     metadata: {
-      omnirushAttachments: uploaded
+      marsAttachments: uploaded
         .filter((item) => modelFacingAttachmentMime(item.mime) === null)
         .map((item) => ({ filename: item.filename, mime: item.mime, url: item.url })),
     },

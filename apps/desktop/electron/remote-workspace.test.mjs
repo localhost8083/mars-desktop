@@ -2,13 +2,13 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  omnirushWorkspaceDisplayName,
-  selectOmniRushWorkspaceForConnection,
+  marsWorkspaceDisplayName,
+  selectMarsWorkspaceForConnection,
 } from "./remote-workspace.mjs";
 
-describe("selectOmniRushWorkspaceForConnection", () => {
+describe("selectMarsWorkspaceForConnection", () => {
   it("selects the active worker workspace when no directory is provided", () => {
-    const selected = selectOmniRushWorkspaceForConnection(
+    const selected = selectMarsWorkspaceForConnection(
       {
         activeId: "ws_active",
         items: [
@@ -23,7 +23,7 @@ describe("selectOmniRushWorkspaceForConnection", () => {
   });
 
   it("falls back to the first workspace when activeId is missing", () => {
-    const selected = selectOmniRushWorkspaceForConnection(
+    const selected = selectMarsWorkspaceForConnection(
       {
         items: [
           { id: "ws_first", path: "/workspace/first" },
@@ -37,7 +37,7 @@ describe("selectOmniRushWorkspaceForConnection", () => {
   });
 
   it("selects a workspace whose path matches the requested remote directory", () => {
-    const selected = selectOmniRushWorkspaceForConnection(
+    const selected = selectMarsWorkspaceForConnection(
       {
         activeId: "ws_other",
         items: [
@@ -52,7 +52,7 @@ describe("selectOmniRushWorkspaceForConnection", () => {
   });
 
   it("selects by opencode directory when workers expose it there", () => {
-    const selected = selectOmniRushWorkspaceForConnection(
+    const selected = selectMarsWorkspaceForConnection(
       {
         items: [
           {
@@ -69,7 +69,7 @@ describe("selectOmniRushWorkspaceForConnection", () => {
   });
 
   it("returns null when a requested directory is not present", () => {
-    const selected = selectOmniRushWorkspaceForConnection(
+    const selected = selectMarsWorkspaceForConnection(
       { items: [{ id: "ws_demo", path: "/workspace/demo" }] },
       "/workspace/missing",
     );
@@ -78,7 +78,7 @@ describe("selectOmniRushWorkspaceForConnection", () => {
   });
 
   it("reads legacy workspaces arrays", () => {
-    const selected = selectOmniRushWorkspaceForConnection(
+    const selected = selectMarsWorkspaceForConnection(
       { activeId: "ws_legacy", workspaces: [{ id: "ws_legacy", path: "/workspace" }] },
       null,
     );
@@ -87,10 +87,10 @@ describe("selectOmniRushWorkspaceForConnection", () => {
   });
 });
 
-describe("omnirushWorkspaceDisplayName", () => {
+describe("marsWorkspaceDisplayName", () => {
   it("prefers display fields before id", () => {
     assert.equal(
-      omnirushWorkspaceDisplayName({
+      marsWorkspaceDisplayName({
         id: "ws_demo",
         name: "Worker project",
         displayName: "Demo",

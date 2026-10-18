@@ -1,8 +1,8 @@
 import { expect } from "vitest";
 import { createDenClient } from "@omnirush/sdk";
 import { createHmac } from "node:crypto";
-import { spec } from "@omnirush/testkit";
-import { denFetch } from "@omnirush/behaviors";
+import { spec } from "@mars/testkit";
+import { denFetch } from "@mars/behaviors";
 import { modelsInferenceWorld } from "../worlds/models-analytics.ts";
 
 const test = spec.world(modelsInferenceWorld, { timeout: 900_000, needs: {} });
@@ -24,7 +24,7 @@ test("DPA policy blocks warm managed keys without revoking customer-owned models
   const teammate = world.den.members.teammate;
   if (!teammate) throw new Error("Missing non-platform-admin member");
   const api = (path: string, method = "GET", body?: unknown, session = admin, orgId = world.orgId) => denFetch(session, path, {
-    method, headers: { authorization: `Bearer ${session.token}`, "x-omnirush-org-id": orgId },
+    method, headers: { authorization: `Bearer ${session.token}`, "x-mars-org-id": orgId },
     body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(30_000),
   });
   const fixture = async (action = "state", body?: unknown) => {
@@ -41,7 +41,7 @@ test("DPA policy blocks warm managed keys without revoking customer-owned models
   };
   const complete = async (key = world.fixtureKey(world.memberId), extra: Record<string, unknown> = {}, headers: Record<string, string> = {}) => {
     const response = await fetch(`${world.inferenceUrl}/api/v1/chat/completions`, {
-      method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${key}`, "x-omnirush-session-id": "warm-dpa-session", ...headers },
+      method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${key}`, "x-mars-session-id": "warm-dpa-session", ...headers },
       body: JSON.stringify({ model: "z-ai/glm-5.2", messages: [{ role: "user", content: "Synthetic boundary request" }], stream: false, ...extra }),
       signal: AbortSignal.timeout(30_000),
     });
@@ -67,7 +67,7 @@ test("DPA policy blocks warm managed keys without revoking customer-owned models
   const actorUserId = text(record(context.currentMember).userId);
   const teammateId = text(record(record((await api("/v1/org", "GET", undefined, teammate)).body).currentMember).id);
   const initialProviders = list(record((await api("/v1/llm-providers")).body).llmProviders);
-  const managed = initialProviders.find((provider) => provider.source === "omnirush");
+  const managed = initialProviders.find((provider) => provider.source === "mars");
   if (!managed) throw new Error("Missing provisioned managed provider");
   const managedId = text(managed.id);
   expect((await complete()).status).toBe(200);
@@ -116,7 +116,7 @@ test("DPA policy blocks warm managed keys without revoking customer-owned models
     { organizationId: otherOrgId, orgId: otherOrgId, dpaSigned: false },
     { models: ["z-ai/glm-5.2", "minimax/minimax-m3"], route: "fallback" },
     { provider: { allow_fallbacks: true }, model: "openrouter/auto" },
-  ]) await blocked(extra, { "x-omnirush-org-id": otherOrgId, "x-organization-id": otherOrgId, "x-omnirush-member-id": text(record(otherContext.currentMember).id) });
+  ]) await blocked(extra, { "x-mars-org-id": otherOrgId, "x-organization-id": otherOrgId, "x-mars-member-id": text(record(otherContext.currentMember).id) });
   await blocked();
   const beforeOther = (await calls()).length;
   expect((await complete(otherKey)).status).toBe(200);
@@ -131,13 +131,13 @@ test("DPA policy blocks warm managed keys without revoking customer-owned models
   expect((await api(`/v1/llm-providers/${managedId}`, "PATCH", { name: "Customer-looking renamed provider" })).response.status).toBe(400);
   await fixture("rename-managed");
   const renamed = list((await fixture()).providers).find((provider) => provider.id === managedId);
-  expect(renamed).toMatchObject({ source: "omnirush", name: "Customer-looking renamed provider" });
+  expect(renamed).toMatchObject({ source: "mars", name: "Customer-looking renamed provider" });
 
   for (const session of [admin, teammate]) {
     for (const scope of ["usable", "manageable"]) {
       const providers = await api(`/v1/llm-providers?scope=${scope}`, "GET", undefined, session);
       expect(providers.response.status).toBe(200);
-      expect(list(record(providers.body).llmProviders).some((provider) => provider.source === "omnirush")).toBe(false);
+      expect(list(record(providers.body).llmProviders).some((provider) => provider.source === "mars")).toBe(false);
     }
   }
   const connect = await api(`/v1/llm-providers/${managedId}/connect`);
@@ -146,7 +146,7 @@ test("DPA policy blocks warm managed keys without revoking customer-owned models
   expect(connect.text).not.toContain(world.fixtureKey(world.memberId));
   expect(record(record(connect.body).llmProvider).name).toBe("Customer-looking renamed provider");
   await blocked();
-  evidence.recordAssertionEvidence("Managed denial follows source, not display name", "Name-only public PATCH is rejected with 400. A datastore-arranged rename preserves source=omnirush; lists still hide it, direct connect stays redacted, and the warm inference key returns 403 with no upstream call. This does not claim public rename support.", true);
+  evidence.recordAssertionEvidence("Managed denial follows source, not display name", "Name-only public PATCH is rejected with 400. A datastore-arranged rename preserves source=mars; lists still hide it, direct connect stays redacted, and the warm inference key returns 403 with no upstream call. This does not claim public rename support.", true);
   const resources = await api("/v1/resources");
   expect(resources.response.status).toBe(200);
   expect(record(record(record(resources.body).resources).llmProviders)[managedId]).toBeUndefined();
@@ -167,7 +167,7 @@ test("DPA policy blocks warm managed keys without revoking customer-owned models
 
   await fixture("remove-member-access", { memberId: teammateId });
   const missing = await fixture();
-  expect(list(missing.providers).some((provider) => provider.memberId === teammateId && provider.source === "omnirush")).toBe(false);
+  expect(list(missing.providers).some((provider) => provider.memberId === teammateId && provider.source === "mars")).toBe(false);
   for (const session of [admin, teammate]) {
     expect((await api("/v1/inference", "GET", undefined, session)).response.status).toBe(200);
     expect((await api("/v1/llm-providers", "GET", undefined, session)).response.status).toBe(200);
@@ -193,8 +193,8 @@ test("DPA policy blocks warm managed keys without revoking customer-owned models
   evidence.recordAssertionEvidence("New member acceptance does not provision managed access under DPA", "An existing foreign account accepted a real invitation as an ordinary member; its scoped list is empty and independent storage contains no managed key or provider for that new membership.", true);
 
   const byok = await api("/v1/llm-providers", "POST", {
-    name: "OmniRush.ai OpenRouter Customer", source: "custom", apiKey: "fixture-customer-owned-key", allMembers: true,
-    customConfig: { id: "openrouter", name: "OmniRush.ai Customer Models", npm: "@ai-sdk/openai-compatible", env: ["CUSTOMER_MODEL_KEY"], api: `${world.witnessUrl}/byok`, models: [{ id: "z-ai/glm-5.2", name: "Customer GLM" }] },
+    name: "MarsAI OpenRouter Customer", source: "custom", apiKey: "fixture-customer-owned-key", allMembers: true,
+    customConfig: { id: "openrouter", name: "MarsAI Customer Models", npm: "@ai-sdk/openai-compatible", env: ["CUSTOMER_MODEL_KEY"], api: `${world.witnessUrl}/byok`, models: [{ id: "z-ai/glm-5.2", name: "Customer GLM" }] },
   });
   expect(byok.response.status, byok.text).toBe(201);
   const byokId = text(record(record(byok.body).llmProvider).id);
@@ -219,7 +219,7 @@ test("DPA policy blocks warm managed keys without revoking customer-owned models
     expect.objectContaining({ authenticated: true, model: "z-ai/glm-5.2" }), expect.objectContaining({ authenticated: true, model: "z-ai/glm-5.2" }), expect.objectContaining({ authenticated: true, model: "z-ai/glm-5.2" }),
   ]);
   await blocked();
-  evidence.recordAssertionEvidence("Customer-owned providers survive branding overlap and route with delivered credentials", "Owner and member list/connect the custom OpenRouter/OmniRush.ai-branded provider, then use its delivered endpoint, model and credential for real HTTP completions witnessed as authenticated BYOK. Managed key stays blocked. This is a delivered-config client, not an OpenCode runtime claim.", true);
+  evidence.recordAssertionEvidence("Customer-owned providers survive branding overlap and route with delivered credentials", "Owner and member list/connect the custom OpenRouter/MarsAI-branded provider, then use its delivered endpoint, model and credential for real HTTP completions witnessed as authenticated BYOK. Managed key stays blocked. This is a delivered-config client, not an OpenCode runtime claim.", true);
 
   for (const metadata of [{ dpaSigned: true }, { dpaSigned: false }, {}, JSON.stringify({ dpaSigned: false })]) {
     expect((await api("/v1/org", "PATCH", { metadata })).response.status).toBe(400);
@@ -330,7 +330,7 @@ test("DPA policy blocks warm managed keys without revoking customer-owned models
   expect(record(record(disabled.body).inference).enabled).toBe(false);
   const beforeDelayed = await fixture();
   expect(list(beforeDelayed.keys).every((key) => key.status === "revoked")).toBe(true);
-  expect(list(beforeDelayed.providers).some((provider) => provider.source === "omnirush")).toBe(false);
+  expect(list(beforeDelayed.providers).some((provider) => provider.source === "mars")).toBe(false);
   const beforeDelayedCalls = await calls();
   await fixture("stripe-hold");
   const delayedSync = api("/v1/billing/stripe/checkout/sync", "POST", { sessionId: "cs_fixture_dpa" });
@@ -383,7 +383,7 @@ test("DPA policy blocks warm managed keys without revoking customer-owned models
   const afterWebhooks = await api("/v1/inference");
   expect(afterWebhooks.response.status).toBe(200);
   expect(record(record(afterWebhooks.body).inference).enabled).toBe(false);
-  expect(list(record((await api("/v1/llm-providers")).body).llmProviders).some((provider) => provider.source === "omnirush")).toBe(false);
+  expect(list(record((await api("/v1/llm-providers")).body).llmProviders).some((provider) => provider.source === "mars")).toBe(false);
   evidence.recordAssertionEvidence("Signed delayed Stripe webhooks retain history without managed reactivation", "Invalid HMAC was rejected with 400 before any SDK read or history change. Real signature verification accepted completed and async-payment-success events, including repeated deliveries, with event IDs persisted. Keys/providers and disabled inference remained unchanged; no inference upstream calls.", true);
   const final = await fixture();
   expect(final.egress).toEqual([]);

@@ -1,6 +1,6 @@
 /**
  * Git and pull-request execution policy shared by the server-side permission
- * rules (omnirush-runtime-config → legacyExecutionPermissions) and the
+ * rules (mars-runtime-config → legacyExecutionPermissions) and the
  * engine-side managed-policy plugin.
  *
  * Three tiers, evaluated per shell segment (the part of a command line
@@ -38,7 +38,7 @@
  * an engine SDK.
  */
 
-export const DESTRUCTIVE_MARKER = "OMNIRUSH_DESTRUCTIVE=1";
+export const DESTRUCTIVE_MARKER = "MARS_DESTRUCTIVE=1";
 
 export type ShellCommandKind = "read" | "write" | "destructive" | "other";
 

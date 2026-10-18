@@ -4,24 +4,24 @@ import { useEffect } from "react";
 import {
   engineInfo,
   engineStart,
-  omnirushServerInfo,
-  omnirushServerRestart,
+  marsServerInfo,
+  marsServerRestart,
   resolveWorkspaceListSelectedId,
   runtimeBootstrap,
   workspaceBootstrap,
   workspaceSetRuntimeActive,
   workspaceSetSelected,
   type EngineInfo,
-  type OmniRushServerInfo,
+  type MarsServerInfo,
   type WorkspaceInfo,
   type WorkspaceList,
 } from "../../app/lib/desktop";
 import { ingestMigrationSnapshotOnElectronBoot } from "../../app/lib/migration";
 import {
-  hydrateOmniRushServerSettingsFromEnv,
-  readOmniRushServerSettings,
-  writeOmniRushServerSettings,
-} from "../../app/lib/omnirush-server";
+  hydrateMarsServerSettingsFromEnv,
+  readMarsServerSettings,
+  writeMarsServerSettings,
+} from "../../app/lib/mars-server";
 import { isDesktopRuntime, isElectronRuntime, safeStringify } from "../../app/utils";
 import { useServer } from "../kernel/server-provider";
 import { useBootState } from "./boot-state";
@@ -31,7 +31,7 @@ import { useBootState } from "./boot-state";
 // keeps running across the transient unmount.
 let BOOT_STARTED = false;
 
-type BootOmniRushServerInfo = {
+type BootMarsServerInfo = {
   running?: boolean | null;
   baseUrl?: string | null;
   ownerToken?: string | null;
@@ -41,11 +41,11 @@ type BootOmniRushServerInfo = {
   remoteAccessEnabled?: boolean;
 };
 
-function isOmniRushServerInfoLike(info: unknown): info is BootOmniRushServerInfo {
+function isMarsServerInfoLike(info: unknown): info is BootMarsServerInfo {
   return typeof info === "object" && info !== null;
 }
 
-function isOmniRushServerReady(info?: BootOmniRushServerInfo) {
+function isMarsServerReady(info?: BootMarsServerInfo) {
   return Boolean(
     info?.running === true &&
       info.baseUrl?.trim() &&
@@ -56,12 +56,12 @@ function isOmniRushServerReady(info?: BootOmniRushServerInfo) {
 /**
  * On desktop (Tauri) startup:
  *   1) bootstrap the workspace list
- *   2) if a local workspace is selected, restart the embedded omnirush.ai server
+ *   2) if a local workspace is selected, restart the embedded marsai.click server
  *   3) start the OpenCode engine pointed at the workspace
- *   4) activate the workspace on the running omnirush.ai server
+ *   4) activate the workspace on the running marsai.click server
  *   5) notify React routes that fresh desktop runtime info is available. Electron
  *      routes read live runtime info directly instead of persisting ephemeral
- *      localhost ports/tokens into omnirush.ai settings.
+ *      localhost ports/tokens into marsai.click settings.
  *
  * Safe to call multiple times — gated by a `didBoot` ref so it runs once per mount.
  */
@@ -80,7 +80,7 @@ export function useDesktopRuntimeBoot() {
 
     void (async () => {
       try {
-        const evalFatalFailure = window.__OMNIRUSH_ELECTRON__?.meta?.evalFatalBootstrapFailure;
+        const evalFatalFailure = window.__MARS_ELECTRON__?.meta?.evalFatalBootstrapFailure;
         if (evalFatalFailure) throw new Error(evalFatalFailure);
         // On Electron specifically: if the previous Tauri install dropped
         // a migration snapshot, fold it into localStorage before any of
@@ -94,12 +94,12 @@ export function useDesktopRuntimeBoot() {
             console.info(`[migration] hydrated ${hydrated} localStorage keys from Tauri snapshot`);
           }
         }
-        hydrateOmniRushServerSettingsFromEnv();
-        const preferredRemoteAccess = readOmniRushServerSettings().remoteAccessEnabled === true;
+        hydrateMarsServerSettingsFromEnv();
+        const preferredRemoteAccess = readMarsServerSettings().remoteAccessEnabled === true;
 
-        const publishOmniRushServerInfo = (serverInfo: BootOmniRushServerInfo | null | undefined) => {
+        const publishMarsServerInfo = (serverInfo: BootMarsServerInfo | null | undefined) => {
           if (!serverInfo?.baseUrl) return;
-          writeOmniRushServerSettings({
+          writeMarsServerSettings({
             urlOverride: serverInfo.baseUrl,
             token:
               serverInfo.ownerToken?.trim() ||
@@ -110,33 +110,33 @@ export function useDesktopRuntimeBoot() {
             remoteAccessEnabled: serverInfo.remoteAccessEnabled === true,
           });
           try {
-            window.dispatchEvent(new CustomEvent("omnirush-server-settings-changed"));
+            window.dispatchEvent(new CustomEvent("mars-server-settings-changed"));
           } catch {
             /* ignore */
           }
         };
 
         const startServerWithoutDesktopWorkspace = async () => {
-          setPhase("starting-engine", "Starting omnirush.ai server");
+          setPhase("starting-engine", "Starting marsai.click server");
           let restartError = "";
-          const serverInfo = await omnirushServerRestart({
+          const serverInfo = await marsServerRestart({
             reason: "renderer_boot_without_local_workspace",
             source: "desktop-runtime-boot",
             remoteAccessEnabled: preferredRemoteAccess,
           }).catch((error) => {
-            console.warn("[desktop-boot] omnirushServerRestart failed:", error);
+            console.warn("[desktop-boot] marsServerRestart failed:", error);
             restartError = error instanceof Error ? error.message : safeStringify(error);
             return null;
           });
-          if (!isOmniRushServerInfoLike(serverInfo) || !isOmniRushServerReady(serverInfo)) {
+          if (!isMarsServerInfoLike(serverInfo) || !isMarsServerReady(serverInfo)) {
             // Technical details shows the cause, not only that it failed.
             setError(restartError
-              ? `omnirush.ai server did not finish starting: ${restartError}`
-              : "omnirush.ai server did not finish starting. Please restart omnirush.ai.");
+              ? `marsai.click server did not finish starting: ${restartError}`
+              : "marsai.click server did not finish starting. Please restart marsai.click.");
             return;
           }
-          publishOmniRushServerInfo(serverInfo);
-          await window.__OMNIRUSH_ELECTRON__?.recovery?.recordHealthy?.().catch(() => undefined);
+          publishMarsServerInfo(serverInfo);
+          await window.__MARS_ELECTRON__?.recovery?.recordHealthy?.().catch(() => undefined);
           markReady();
         };
 
@@ -172,52 +172,52 @@ export function useDesktopRuntimeBoot() {
             skipped?: boolean;
             error?: string;
             engine?: { baseUrl?: string | null };
-            omnirushServer?: BootOmniRushServerInfo;
+            marsServer?: BootMarsServerInfo;
           };
 
           if (boot.ok === false) {
-            setError(boot.error || "Failed to start omnirush.ai runtime");
+            setError(boot.error || "Failed to start marsai.click runtime");
             return;
           }
 
-          if (!boot.skipped && !isOmniRushServerReady(boot.omnirushServer)) {
-            setError("omnirush.ai server did not finish starting. Please restart omnirush.ai.");
+          if (!boot.skipped && !isMarsServerReady(boot.marsServer)) {
+            setError("marsai.click server did not finish starting. Please restart marsai.click.");
             return;
           }
 
           if (boot.engine?.baseUrl) {
             setActive(boot.engine.baseUrl);
           }
-          let serverInfo = boot.omnirushServer;
+          let serverInfo = boot.marsServer;
           if (preferredRemoteAccess && serverInfo?.remoteAccessEnabled !== true) {
-            const restarted = await omnirushServerRestart({
+            const restarted = await marsServerRestart({
               reason: "renderer_boot_remote_access",
               source: "desktop-runtime-boot",
               remoteAccessEnabled: true,
             }).catch((error) => {
-              console.warn("[desktop-boot] omnirushServerRestart failed:", error);
+              console.warn("[desktop-boot] marsServerRestart failed:", error);
               return null;
             });
-            if (isOmniRushServerInfoLike(restarted)) serverInfo = restarted;
+            if (isMarsServerInfoLike(restarted)) serverInfo = restarted;
           }
-          publishOmniRushServerInfo(serverInfo);
-          await window.__OMNIRUSH_ELECTRON__?.recovery?.recordHealthy?.().catch(() => undefined);
+          publishMarsServerInfo(serverInfo);
+          await window.__MARS_ELECTRON__?.recovery?.recordHealthy?.().catch(() => undefined);
           markReady();
           return;
         }
 
         // FAST PATH ─────────────────────────────────────────────────────
         // Cheap status probe: if engine is already running just publish the
-        // current omnirush-server base URL + token and finish in <1s.
+        // current mars-server base URL + token and finish in <1s.
         // This mirrors Solid's bootstrap at context/workspace.ts:3883-3907
         // ("localAttachExisting"), which never restarts a running stack.
         try {
           const engine = await engineInfo() as EngineInfo | null;
           if (engine?.running && engine.baseUrl) {
             setActive(engine.baseUrl);
-            const fresh = await omnirushServerInfo().catch(() => null) as OmniRushServerInfo | null;
+            const fresh = await marsServerInfo().catch(() => null) as MarsServerInfo | null;
             if (fresh?.baseUrl) {
-              writeOmniRushServerSettings({
+              writeMarsServerSettings({
                 urlOverride: fresh.baseUrl,
                 token:
                   fresh.ownerToken?.trim() ||
@@ -229,7 +229,7 @@ export function useDesktopRuntimeBoot() {
               });
               try {
                 window.dispatchEvent(
-                  new CustomEvent("omnirush-server-settings-changed"),
+                  new CustomEvent("mars-server-settings-changed"),
                 );
               } catch {
                 /* ignore */
@@ -244,7 +244,7 @@ export function useDesktopRuntimeBoot() {
 
         // SLOW PATH ─────────────────────────────────────────────────────
         // No running engine. Tauri now mirrors Electron: engine_start boots
-        // omnirush-server and lets that server manage OpenCode.
+        // mars-server and lets that server manage OpenCode.
         const localPaths = list.workspaces.flatMap((entry: WorkspaceInfo) => {
           const path = entry.workspaceType !== "remote" ? entry.path?.trim() ?? "" : "";
           return path ? [path] : [];
@@ -264,7 +264,7 @@ export function useDesktopRuntimeBoot() {
         let engineStartResult = await engineStart(workspaceRoot, {
           runtime: "direct",
           workspacePaths: workspacePathsFor(workspaceRoot),
-          omnirushRemoteAccess: readOmniRushServerSettings().remoteAccessEnabled === true,
+          marsRemoteAccess: readMarsServerSettings().remoteAccessEnabled === true,
         }).catch((error) => {
           console.warn("[desktop-boot] engineStart failed:", error);
           return null;
@@ -285,7 +285,7 @@ export function useDesktopRuntimeBoot() {
             engineStartResult = await engineStart(fallbackRoot, {
               runtime: "direct",
               workspacePaths: workspacePathsFor(fallbackRoot).filter((path) => path !== workspaceRoot),
-              omnirushRemoteAccess: readOmniRushServerSettings().remoteAccessEnabled === true,
+              marsRemoteAccess: readMarsServerSettings().remoteAccessEnabled === true,
             }).catch((error) => {
               console.warn("[desktop-boot] fallback engineStart failed:", error);
               setError(error instanceof Error ? error.message : safeStringify(error));
@@ -305,9 +305,9 @@ export function useDesktopRuntimeBoot() {
             setActive(engineStartResult.baseUrl);
           }
           try {
-            const freshInfo = await omnirushServerInfo() as OmniRushServerInfo | null;
+            const freshInfo = await marsServerInfo() as MarsServerInfo | null;
             if (freshInfo?.baseUrl) {
-              writeOmniRushServerSettings({
+              writeMarsServerSettings({
                 urlOverride: freshInfo.baseUrl,
                 token:
                   freshInfo.ownerToken?.trim() ||
@@ -318,13 +318,13 @@ export function useDesktopRuntimeBoot() {
                 remoteAccessEnabled: freshInfo.remoteAccessEnabled === true,
               });
               try {
-                window.dispatchEvent(new CustomEvent("omnirush-server-settings-changed"));
+                window.dispatchEvent(new CustomEvent("mars-server-settings-changed"));
               } catch {
                 /* ignore */
               }
             }
           } catch (error) {
-            console.warn("[desktop-boot] post-engineStart omnirushServerInfo failed:", error);
+            console.warn("[desktop-boot] post-engineStart marsServerInfo failed:", error);
           }
         }
 

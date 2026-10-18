@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Hand, LoaderCircle, ShieldAlert, ShieldCheck } from "lucide-react";
-import type { OmniRushServerClient, WorkspaceRunMode } from "@/app/lib/omnirush-server";
+import type { MarsServerClient, WorkspaceRunMode } from "@/app/lib/mars-server";
 import { isDesktopRuntime } from "@/app/lib/runtime-env";
 import { toast } from "@/components/ui/sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel
 import { useDesktopRestriction } from "@/react-app/domains/cloud/desktop-config-provider";
 import { useFeatureFlagsPreferences } from "@/react-app/domains/settings/state/feature-flags-preferences";
 
-type Props = { client: OmniRushServerClient | null; workspaceId: string | null; busy: boolean };
+type Props = { client: MarsServerClient | null; workspaceId: string | null; busy: boolean };
 
 const modes = [
   { value: "approve", label: "Ask before actions", description: "Pause for tool approval unless a workspace rule allows it.", icon: Hand },
@@ -26,7 +26,7 @@ export function WorkspaceRunModeMenu(props: Props) {
   return <WorkspaceRunModePicker key={`${props.client.baseUrl}:${props.workspaceId}`} client={props.client} workspaceId={props.workspaceId} busy={props.busy} />;
 }
 
-function WorkspaceRunModePicker({ client, workspaceId, busy }: { client: OmniRushServerClient; workspaceId: string; busy: boolean }) {
+function WorkspaceRunModePicker({ client, workspaceId, busy }: { client: MarsServerClient; workspaceId: string; busy: boolean }) {
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const queryClient = useQueryClient();
@@ -70,7 +70,7 @@ function WorkspaceRunModePicker({ client, workspaceId, busy }: { client: OmniRus
         </DropdownMenuTrigger>
         <DropdownMenuContent side="top" sideOffset={10} className="w-[min(390px,calc(100vw-32px))] p-2">
           <DropdownMenuGroup>
-            <DropdownMenuLabel className="px-3 text-sm">How should omnirush.ai handle approvals?</DropdownMenuLabel>
+            <DropdownMenuLabel className="px-3 text-sm">How should marsai.click handle approvals?</DropdownMenuLabel>
             <DropdownMenuRadioGroup value={mode.data?.mode ?? ""}>
               {modes.map((item) => (
                 <DropdownMenuRadioItem key={item.value} value={item.value} onClick={() => select(item.value)} aria-label={item.label} data-testid={`run-mode-${item.value}`} disabled={locked} className={`gap-3 py-3 ${item.value === "run-everything" ? "text-orange-600 dark:text-orange-400" : ""}`}>
@@ -94,7 +94,7 @@ function WorkspaceRunModePicker({ client, workspaceId, busy }: { client: OmniRus
       <AlertDialog open={confirm} onOpenChange={setConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Let omnirush.ai keep going?</AlertDialogTitle>
+            <AlertDialogTitle>Let marsai.click keep going?</AlertDialogTitle>
             <AlertDialogDescription>
               This changes every chat in this workspace. Tools can edit or delete files, run commands, and use the network without approval, including outside authorized folders. It can override global permission rules and repeated-action prompts. Specific workspace rules still apply; it does not grant operating-system or service access.
             </AlertDialogDescription>

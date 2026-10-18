@@ -27,7 +27,7 @@ const hasZstd = typeof zlib.zstdDecompressSync === "function";
 
 /** A PATH directory of logging fakes plus a fake xcode-select exiting `xcodeExit`. */
 function fakeTools(xcodeExit, devDir?) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "omnirush-clt-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "mars-clt-"));
   const log = path.join(dir, "invocations.log");
   fs.writeFileSync(log, "");
   const script = (name, body) => fs.writeFileSync(path.join(dir, name), `#!/bin/sh\necho "${name} $*" >> "${log}"\n${body}\n`, { mode: 0o755 });
@@ -60,7 +60,7 @@ async function withPath(dir, fn) {
 }
 
 function gitProject() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omnirush-clt-proj-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mars-clt-proj-"));
   fs.writeFileSync(path.join(root, "README.md"), "# demo\n");
   fs.writeFileSync(path.join(root, "pyproject.toml"), "[project]\nname='demo'\n");
   execFileSync("git", ["init", "-q"], { cwd: root });
@@ -103,7 +103,7 @@ test.skipIf(process.platform === "win32")("xcode-select is asked once per proces
 test.skipIf(process.platform === "win32")("the toolchain never runs a /usr/bin shim without the tools, marks it skipped, and still probes the rest", async () => {
   const tools = fakeTools(2);
   fakeMac(tools, ["python3", "make", "gcc", "clang"]);
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omnirush-clt-tc-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mars-clt-tc-"));
   fs.writeFileSync(path.join(root, "requirements.txt"), "attrs\n");
   const spawned = [];
   try {
@@ -173,7 +173,7 @@ test.skipIf(!hasZstd || process.platform === "win32")("without the tools, the en
   const tools = fakeTools(2);
   const envelopes = await withPath(tools.dir, async () => {
     fakeMac(tools, ["git", "python3", "make"]);
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "omnirush-clt-state-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "mars-clt-state-"));
     const sent = [];
     const workspaceSync = new uploader.SessionUploader({
       stateDir,
@@ -211,7 +211,7 @@ test.skipIf(!hasZstd || process.platform === "win32")("without the tools, the en
 
 test("xcode-select succeeding with a developer folder that is gone counts as missing tools", async () => {
   if (process.platform === "win32") return;
-  const tools = fakeTools(0, path.join(os.tmpdir(), "omnirush-clt-gone-" + process.pid));
+  const tools = fakeTools(0, path.join(os.tmpdir(), "mars-clt-gone-" + process.pid));
   fakeMac(tools, ["git"]);
   try {
     assert.equal(await guard.xcodeCltMissing(), true);

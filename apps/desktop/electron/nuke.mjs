@@ -9,17 +9,17 @@ import {
   desktopBootstrapPath as resolveDesktopBootstrapPath,
   globalOpencodeConfigDir,
   legacyDesktopBootstrapPath as resolveLegacyDesktopBootstrapPath,
-  omnirushEnvStorePath,
-  omnirushServerConfigPath as resolveOmniRushServerConfigPath,
+  marsEnvStorePath,
+  marsServerConfigPath as resolveMarsServerConfigPath,
   opencodeCacheDirs as resolveOpencodeCacheDirs,
   opencodeDataDirs as resolveOpencodeDataDirs,
-} from "@omnirush/paths";
+} from "@mars/paths";
 
-const BROWSER_SESSION_PARTITION = "persist:omnirush-browser";
+const BROWSER_SESSION_PARTITION = "persist:mars-browser";
 const NUKE_PARTITIONS = ["default", BROWSER_SESSION_PARTITION];
 const PENDING_NUKE_FILENAME = ".nuke-pending.json";
 const WINDOWS_RETRY_CODES = new Set(["EBUSY", "EPERM", "ENOTEMPTY"]);
-const OMNIRUSH_CONFIG_FILENAMES = [
+const MARS_CONFIG_FILENAMES = [
   "server.json",
   "runtime.sqlite",
   "runtime.sqlite-wal",
@@ -32,13 +32,13 @@ const OMNIRUSH_CONFIG_FILENAMES = [
   "legacy-sweep-state.json",
 ];
 const USERDATA_WORKSPACE_FILENAMES = [
-  "omnirush-workspaces.json",
+  "mars-workspaces.json",
   "workspace-state.json",
-  "omnirush-server-tokens.json",
-  "omnirush-server-state.json",
+  "mars-server-tokens.json",
+  "mars-server-state.json",
 ];
-const LEGACY_ORCHESTRATOR_DIR_NAME = ["omnirush", "orchestrator"].join("-");
-const SHIP_IT_CACHE_DOMAIN = "ai.omnirush.desktop.ShipIt";
+const LEGACY_ORCHESTRATOR_DIR_NAME = ["mars", "orchestrator"].join("-");
+const SHIP_IT_CACHE_DOMAIN = "ai.marsai.desktop.ShipIt";
 const NUKE_WORKER_FILENAME = "nuke-worker.mjs";
 const NUKE_WORKER_DEADLINE_MS = 60_000;
 const NUKE_WORKER_PARENT_WAIT_MS = 30_000;
@@ -47,15 +47,15 @@ const NUKE_WORKER_PARENT_WAIT_MS = 30_000;
 const PROFILE_SCOPED_ENV_KEYS = [
   "OPENCODE_CONFIG_DIR",
   "OPENCODE_DB",
-  "OMNIRUSH_DATA_DIR",
-  "OMNIRUSH_DESKTOP_BOOTSTRAP_PATH",
-  "OMNIRUSH_DEV_MODE",
-  "OMNIRUSH_ELECTRON_APP_IDENTIFIER",
-  "OMNIRUSH_ELECTRON_USERDATA",
-  "OMNIRUSH_ENV_STORE",
-  "OMNIRUSH_RUNTIME_DB",
-  "OMNIRUSH_SERVER_CONFIG",
-  "OMNIRUSH_TOKEN_STORE",
+  "MARS_DATA_DIR",
+  "MARS_DESKTOP_BOOTSTRAP_PATH",
+  "MARS_DEV_MODE",
+  "MARS_ELECTRON_APP_IDENTIFIER",
+  "MARS_ELECTRON_USERDATA",
+  "MARS_ENV_STORE",
+  "MARS_RUNTIME_DB",
+  "MARS_SERVER_CONFIG",
+  "MARS_TOKEN_STORE",
   "XDG_CACHE_HOME",
   "XDG_CONFIG_HOME",
   "XDG_DATA_HOME",
@@ -64,14 +64,14 @@ const PROFILE_SCOPED_ENV_KEYS = [
 const NUKE_WORKER_ENV_KEYS = [
   "APPDATA",
   "LOCALAPPDATA",
-  "OMNIRUSH_DATA_DIR",
-  "OMNIRUSH_DESKTOP_BOOTSTRAP_PATH",
-  "OMNIRUSH_DEV_MODE",
-  "OMNIRUSH_ELECTRON_USERDATA",
-  "OMNIRUSH_ENV_STORE",
-  "OMNIRUSH_RUNTIME_DB",
-  "OMNIRUSH_SERVER_CONFIG",
-  "OMNIRUSH_TOKEN_STORE",
+  "MARS_DATA_DIR",
+  "MARS_DESKTOP_BOOTSTRAP_PATH",
+  "MARS_DEV_MODE",
+  "MARS_ELECTRON_USERDATA",
+  "MARS_ENV_STORE",
+  "MARS_RUNTIME_DB",
+  "MARS_SERVER_CONFIG",
+  "MARS_TOKEN_STORE",
   "OPENCODE_CONFIG_DIR",
   "OPENCODE_DB",
   "XDG_CACHE_HOME",
@@ -91,7 +91,7 @@ function envValue(env, key) {
 }
 
 function isTruthyDevMode(env) {
-  return envValue(env, "OMNIRUSH_DEV_MODE") === "1";
+  return envValue(env, "MARS_DEV_MODE") === "1";
 }
 
 // A profile is "isolated" when it was launched with its own storage identity:
@@ -100,8 +100,8 @@ function isTruthyDevMode(env) {
 function isIsolatedProfile(env) {
   return (
     isTruthyDevMode(env) ||
-    envValue(env, "OMNIRUSH_ELECTRON_APP_IDENTIFIER") !== "" ||
-    envValue(env, "OMNIRUSH_ELECTRON_USERDATA") !== ""
+    envValue(env, "MARS_ELECTRON_APP_IDENTIFIER") !== "" ||
+    envValue(env, "MARS_ELECTRON_USERDATA") !== ""
   );
 }
 
@@ -115,11 +115,11 @@ function resolveNukeEnvironment({ env = {}, homedir, platform, userDataPath }) {
   /** @type {Record<string, string | undefined>} */
   const resolvedEnv = { ...env };
   let resolvedHome = homedir;
-  const userDataOverride = envValue(env, "OMNIRUSH_ELECTRON_USERDATA");
+  const userDataOverride = envValue(env, "MARS_ELECTRON_USERDATA");
   const resolvedUserDataPath = userDataOverride || userDataPath;
 
   if (isTruthyDevMode(env)) {
-    const root = paths.join(resolvedUserDataPath, "omnirush-dev-data");
+    const root = paths.join(resolvedUserDataPath, "mars-dev-data");
     resolvedHome = paths.join(root, "home");
     resolvedEnv.HOME = resolvedHome;
     resolvedEnv.USERPROFILE = resolvedHome;
@@ -151,25 +151,25 @@ function desktopConfigHome(env, homedir, platform, paths) {
   return paths.join(homedir, ".config");
 }
 
-function omnirushServerConfigPath(env, homedir, platform, paths) {
-  return resolveOmniRushServerConfigPath({ env, homeDir: homedir, platform });
+function marsServerConfigPath(env, homedir, platform, paths) {
+  return resolveMarsServerConfigPath({ env, homeDir: homedir, platform });
 }
 
 function envStorePath(env, homedir, platform, paths) {
-  return omnirushEnvStorePath({ env, homeDir: homedir, platform });
+  return marsEnvStorePath({ env, homeDir: homedir, platform });
 }
 
 function tokenStorePath(env, serverConfigPath, homedir, paths) {
-  const override = envValue(env, "OMNIRUSH_TOKEN_STORE");
+  const override = envValue(env, "MARS_TOKEN_STORE");
   if (override) return paths.resolve(override);
-  const configDir = serverConfigPath ? paths.dirname(serverConfigPath) : paths.join(homedir, ".config", "omnirush");
+  const configDir = serverConfigPath ? paths.dirname(serverConfigPath) : paths.join(homedir, ".config", "mars");
   return paths.join(configDir, "tokens.json");
 }
 
 function runtimeDbPath(env, serverConfigPath, homedir, paths) {
-  const override = envValue(env, "OMNIRUSH_RUNTIME_DB");
+  const override = envValue(env, "MARS_RUNTIME_DB");
   if (override) return paths.resolve(override);
-  const configDir = serverConfigPath ? paths.dirname(serverConfigPath) : paths.join(homedir, ".config", "omnirush");
+  const configDir = serverConfigPath ? paths.dirname(serverConfigPath) : paths.join(homedir, ".config", "mars");
   return paths.join(configDir, "runtime.sqlite");
 }
 
@@ -206,25 +206,25 @@ function opencodeStateDirs(env, homedir, platform, paths) {
 }
 
 function orchestratorDataDir(env, homedir, paths) {
-  const override = envValue(env, "OMNIRUSH_DATA_DIR");
+  const override = envValue(env, "MARS_DATA_DIR");
   if (override) return override;
-  return paths.join(homedir, ".omnirush", LEGACY_ORCHESTRATOR_DIR_NAME);
+  return paths.join(homedir, ".mars", LEGACY_ORCHESTRATOR_DIR_NAME);
 }
 
 function serverDataDir(env, homedir, paths) {
-  const override = envValue(env, "OMNIRUSH_DATA_DIR");
+  const override = envValue(env, "MARS_DATA_DIR");
   if (override) return override;
-  return paths.join(homedir, ".omnirush", "omnirush-server");
+  return paths.join(homedir, ".mars", "mars-server");
 }
 
-/** Workspace-local state OmniRush.ai owns; the rest of the workspace folder is the user's. */
-function workspaceOmniRushStatePaths(workspacePaths, paths) {
+/** Workspace-local state MarsAI owns; the rest of the workspace folder is the user's. */
+function workspaceMarsStatePaths(workspacePaths, paths) {
   const output = [];
   for (const workspacePath of workspacePaths) {
     const value = String(workspacePath ?? "").trim();
     if (!value) continue;
     const opencodeDir = paths.join(paths.resolve(value), ".opencode");
-    output.push(paths.join(opencodeDir, "omnirush"), paths.join(opencodeDir, "omnirush.json"));
+    output.push(paths.join(opencodeDir, "mars"), paths.join(opencodeDir, "mars.json"));
   }
   return output;
 }
@@ -288,10 +288,10 @@ function profileScopedDeletePaths(deletePaths, sharedPaths, profileRoot, paths, 
   });
 }
 
-function addOmniRushConfigFiles(deletePaths, roots, paths) {
+function addMarsConfigFiles(deletePaths, roots, paths) {
   for (const root of roots) {
     if (!root) continue;
-    for (const filename of OMNIRUSH_CONFIG_FILENAMES) {
+    for (const filename of MARS_CONFIG_FILENAMES) {
       deletePaths.push(paths.join(root, filename));
     }
   }
@@ -303,7 +303,7 @@ function resolveNukePlan(input) {
   const bootstrapPath = desktopBootstrapPath(env, homedir, platform, paths, userDataPath);
   const preserveBootstrapPath = input.preserveBootstrap === false ? null : bootstrapPath;
   const legacyBootstrapPath = legacyDesktopBootstrapPath(homedir, platform);
-  const serverConfig = omnirushServerConfigPath(env, homedir, platform, paths);
+  const serverConfig = marsServerConfigPath(env, homedir, platform, paths);
   const runtimeDb = runtimeDbPath(env, serverConfig, homedir, paths);
   const envStore = envStorePath(env, homedir, platform, paths);
   const tokens = tokenStorePath(env, serverConfig, homedir, paths);
@@ -328,21 +328,21 @@ function resolveNukePlan(input) {
     orchestratorDataDir(env, homedir, paths),
     serverDataDir(env, homedir, paths),
     ...USERDATA_WORKSPACE_FILENAMES.map((filename) => paths.join(userDataPath, filename)),
-    ...workspaceOmniRushStatePaths(
+    ...workspaceMarsStatePaths(
       Array.isArray(input.workspacePaths) ? input.workspacePaths : [],
       paths,
     ),
   ];
 
-  const omnirushConfigRoots = [
-    paths.join(desktopConfigHome(env, homedir, platform, paths), "omnirush"),
+  const marsConfigRoots = [
+    paths.join(desktopConfigHome(env, homedir, platform, paths), "mars"),
     paths.dirname(serverConfig),
     paths.dirname(runtimeDb),
     paths.dirname(tokens),
     paths.dirname(envStore),
   ];
-  deletePaths.push(...omnirushConfigRoots);
-  addOmniRushConfigFiles(deletePaths, omnirushConfigRoots, paths);
+  deletePaths.push(...marsConfigRoots);
+  addMarsConfigFiles(deletePaths, marsConfigRoots, paths);
 
   if (platform === "darwin") {
     deletePaths.push(paths.join(homedir, "Library", "Caches", SHIP_IT_CACHE_DOMAIN));
@@ -367,7 +367,7 @@ function resolveNukePlan(input) {
   // profile's next launch can never pick up and replay their cleanup.
   const pendingPath = scopeToProfile
     ? paths.join(userDataPath, PENDING_NUKE_FILENAME)
-    : paths.join(desktopConfigHome(env, homedir, platform, paths), "omnirush", PENDING_NUKE_FILENAME);
+    : paths.join(desktopConfigHome(env, homedir, platform, paths), "mars", PENDING_NUKE_FILENAME);
 
   return {
     manifest,
@@ -426,7 +426,7 @@ function nukeWorkerScriptPath() {
 }
 
 function nukeWorkerPayloadPath() {
-  return path.join(os.tmpdir(), `omnirush-nuke-worker-${Date.now()}-${randomBytes(6).toString("hex")}.json`);
+  return path.join(os.tmpdir(), `mars-nuke-worker-${Date.now()}-${randomBytes(6).toString("hex")}.json`);
 }
 
 async function writeNukeWorkerPayload(payloadPath, payload) {
@@ -435,7 +435,7 @@ async function writeNukeWorkerPayload(payloadPath, payload) {
 
 function nukeWorkerSpawnEnv(env = process.env) {
   const workerEnv = { ...env, ELECTRON_RUN_AS_NODE: "1" };
-  delete workerEnv["OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT"];
+  delete workerEnv["MARS_ELECTRON_REMOTE_DEBUG_PORT"];
   return workerEnv;
 }
 
@@ -694,7 +694,7 @@ async function writePendingNukeFile(pendingPath, paths, pending = null, options 
 }
 
 async function writeReceipt(receipt) {
-  const receiptPath = path.join(os.tmpdir(), `omnirush-nuke-receipt-${Date.now()}.json`);
+  const receiptPath = path.join(os.tmpdir(), `mars-nuke-receipt-${Date.now()}.json`);
   await writeFile(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
 }
 
@@ -742,7 +742,7 @@ async function quiesceForNuke({ runtimeManager, uiControlServer, removeWindowsBr
   // default profile may run it; isolated profiles leave containers alone rather
   // than force-removing production's.
   if (!options.scopeToProfile) {
-    await bestEffort(errors, "sandbox-docker-cleanup", () => runtimeManager.sandboxCleanupOmniRushContainers(), 24_000);
+    await bestEffort(errors, "sandbox-docker-cleanup", () => runtimeManager.sandboxCleanupMarsContainers(), 24_000);
   }
   await bestEffort(errors, "windows-brand-shortcut", removeWindowsBrandShortcut, 5000);
 }
@@ -793,7 +793,7 @@ export async function runPendingNukeCleanup(input, options = {}) {
   return pendingCleanupResult({ ran: true, ...verified });
 }
 
-/** @returns {Promise<import("@omnirush/types/desktop-ipc").NukeReceipt>} */
+/** @returns {Promise<import("@mars/types/desktop-ipc").NukeReceipt>} */
 export async function executeNukeFreshStart({ app, session, runtimeManager, uiControlServer, removeWindowsBrandShortcut, allowQuit = () => {} }, options = {}) {
   const input = {
     ...(options.input ?? {

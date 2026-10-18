@@ -37,7 +37,7 @@ export type ModelAvailabilityContext = {
   signedIn: boolean;
   /** Cloud provider sync completed for the CURRENT workspace/org context. */
   cloudProviderSyncReady: boolean;
-  omniRushModelsSyncing: boolean;
+  marsModelsSyncing: boolean;
   /** Org policy restricts members to cloud-managed providers. */
   restrictToCloud: boolean;
   checkRestriction: DesktopAppRestrictionChecker;
@@ -69,7 +69,7 @@ export function computeModelAvailability(
       signedIn: context.signedIn,
       selectedModelUsesCloudProvider: usesCloudProvider,
       cloudProviderSyncReady: context.cloudProviderSyncReady,
-      omniRushModelsSyncing: context.omniRushModelsSyncing,
+      marsModelsSyncing: context.marsModelsSyncing,
     })
   ) {
     return { status: "pending" };

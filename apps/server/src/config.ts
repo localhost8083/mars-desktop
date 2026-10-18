@@ -1,5 +1,5 @@
 import { dirname, resolve } from "node:path";
-import { omnirushServerConfigPath } from "@omnirush/paths";
+import { marsServerConfigPath } from "@mars/paths";
 import type { ApprovalMode, ApprovalConfig, ServerConfig, WorkspaceConfig, LogFormat } from "./types.js";
 import { buildWorkspaceInfos } from "./workspaces.js";
 import { parseList, readJsonFile, shortId } from "./utils.js";
@@ -175,7 +175,7 @@ export function parseCliArgs(argv: string[]): CliArgs {
 
 export function printHelp(): void {
   const message = [
-    "omnirush-server",
+    "mars-server",
     "",
     "Options:",
     "  --config <path>          Path to server.json",
@@ -185,10 +185,10 @@ export function printHelp(): void {
     "  --host-token <token>     Host approval token",
     "  --approval <mode>        manual | auto",
     "  --approval-timeout <ms>  Approval timeout",
-    "  --opencode-base-url <url> OmniRush base URL to share",
-    "  --opencode-directory <path> OmniRush workspace directory to share",
-    "  --opencode-username <user> OmniRush server username",
-    "  --opencode-password <pass> OmniRush server password",
+    "  --opencode-base-url <url> Mars base URL to share",
+    "  --opencode-directory <path> Mars workspace directory to share",
+    "  --opencode-username <user> Mars server username",
+    "  --opencode-password <pass> Mars server password",
     "  --workspace <path>       Workspace root (repeatable)",
     "  --cors <origins>          Comma-separated origins or *",
     "  --read-only              Disable writes",
@@ -207,11 +207,11 @@ async function loadFileConfig(configPath: string): Promise<FileConfig> {
 }
 
 export async function resolveServerConfig(cli: CliArgs): Promise<ServerConfig> {
-  const configPath = cli.configPath ?? omnirushServerConfigPath();
+  const configPath = cli.configPath ?? marsServerConfigPath();
   const fileConfig = await loadFileConfig(configPath);
   const configDir = dirname(configPath);
 
-  const envWorkspaces = parseList(process.env.OMNIRUSH_WORKSPACES);
+  const envWorkspaces = parseList(process.env.MARS_WORKSPACES);
   let workspaceConfigs: WorkspaceConfig[] =
     cli.workspaces.length > 0
       ? cli.workspaces.map((path) => ({ path }))
@@ -219,10 +219,10 @@ export async function resolveServerConfig(cli: CliArgs): Promise<ServerConfig> {
         ? envWorkspaces.map((path) => ({ path }))
         : fileConfig.workspaces ?? [];
 
-  const envOpencodeBaseUrl = process.env.OMNIRUSH_OPENCODE_BASE_URL;
-  const envOpencodeDirectory = process.env.OMNIRUSH_OPENCODE_DIRECTORY;
-  const envOpencodeUsername = process.env.OMNIRUSH_OPENCODE_USERNAME;
-  const envOpencodePassword = process.env.OMNIRUSH_OPENCODE_PASSWORD;
+  const envOpencodeBaseUrl = process.env.MARS_OPENCODE_BASE_URL;
+  const envOpencodeDirectory = process.env.MARS_OPENCODE_DIRECTORY;
+  const envOpencodeUsername = process.env.MARS_OPENCODE_USERNAME;
+  const envOpencodePassword = process.env.MARS_OPENCODE_PASSWORD;
   const opencodeBaseUrl = cli.opencodeBaseUrl ?? envOpencodeBaseUrl ?? fileConfig.opencodeBaseUrl;
   const opencodeDirectory = cli.opencodeDirectory ?? envOpencodeDirectory ?? fileConfig.opencodeDirectory;
   const opencodeUsername = cli.opencodeUsername ?? envOpencodeUsername ?? fileConfig.opencodeUsername;
@@ -245,8 +245,8 @@ export async function resolveServerConfig(cli: CliArgs): Promise<ServerConfig> {
 
   const workspaces = buildWorkspaceInfos(workspaceConfigs, configDir);
 
-  const tokenFromEnv = process.env.OMNIRUSH_TOKEN;
-  const hostTokenFromEnv = process.env.OMNIRUSH_HOST_TOKEN;
+  const tokenFromEnv = process.env.MARS_TOKEN;
+  const hostTokenFromEnv = process.env.MARS_HOST_TOKEN;
 
   const token = cli.token ?? tokenFromEnv ?? fileConfig.token ?? shortId();
   const hostToken = cli.hostToken ?? hostTokenFromEnv ?? fileConfig.hostToken ?? shortId();
@@ -269,13 +269,13 @@ export async function resolveServerConfig(cli: CliArgs): Promise<ServerConfig> {
 
   const approvalMode =
     cli.approvalMode ??
-    (process.env.OMNIRUSH_APPROVAL_MODE as ApprovalMode | undefined) ??
+    (process.env.MARS_APPROVAL_MODE as ApprovalMode | undefined) ??
     fileConfig.approval?.mode ??
     "manual";
 
   const approvalTimeoutMs =
     cli.approvalTimeoutMs ??
-    (process.env.OMNIRUSH_APPROVAL_TIMEOUT_MS ? Number(process.env.OMNIRUSH_APPROVAL_TIMEOUT_MS) : undefined) ??
+    (process.env.MARS_APPROVAL_TIMEOUT_MS ? Number(process.env.MARS_APPROVAL_TIMEOUT_MS) : undefined) ??
     fileConfig.approval?.timeoutMs ??
     DEFAULT_TIMEOUT_MS;
 
@@ -284,24 +284,24 @@ export async function resolveServerConfig(cli: CliArgs): Promise<ServerConfig> {
     timeoutMs: Number.isNaN(approvalTimeoutMs) ? DEFAULT_TIMEOUT_MS : approvalTimeoutMs,
   };
 
-  const envCorsOrigins = process.env.OMNIRUSH_CORS_ORIGINS;
+  const envCorsOrigins = process.env.MARS_CORS_ORIGINS;
   const parsedEnvCors = envCorsOrigins ? parseList(envCorsOrigins) : null;
   const corsOrigins = cli.corsOrigins ?? parsedEnvCors ?? fileConfig.corsOrigins ?? ["*"];
 
-  const envReadOnly = process.env.OMNIRUSH_READONLY;
+  const envReadOnly = process.env.MARS_READONLY;
   const parsedReadOnly = envReadOnly
     ? ["true", "1", "yes"].includes(envReadOnly.toLowerCase())
     : undefined;
   const readOnly = cli.readOnly ?? parsedReadOnly ?? fileConfig.readOnly ?? false;
 
-  const envLogFormat = process.env.OMNIRUSH_LOG_FORMAT;
+  const envLogFormat = process.env.MARS_LOG_FORMAT;
   const logFormat =
     cli.logFormat ??
     normalizeLogFormat(envLogFormat) ??
     normalizeLogFormat(fileConfig.logFormat) ??
     DEFAULT_LOG_FORMAT;
 
-  const envLogRequests = parseBoolean(process.env.OMNIRUSH_LOG_REQUESTS);
+  const envLogRequests = parseBoolean(process.env.MARS_LOG_REQUESTS);
   const logRequests = cli.logRequests ?? envLogRequests ?? fileConfig.logRequests ?? DEFAULT_LOG_REQUESTS;
 
   const authorizedRoots =
@@ -309,8 +309,8 @@ export async function resolveServerConfig(cli: CliArgs): Promise<ServerConfig> {
       ? fileConfig.authorizedRoots.map((root) => resolve(configDir, root))
       : workspaces.map((workspace) => workspace.path);
 
-  const host = cli.host ?? process.env.OMNIRUSH_HOST ?? fileConfig.host ?? DEFAULT_HOST;
-  const port = cli.port ?? (process.env.OMNIRUSH_PORT ? Number(process.env.OMNIRUSH_PORT) : undefined) ?? fileConfig.port ?? DEFAULT_PORT;
+  const host = cli.host ?? process.env.MARS_HOST ?? fileConfig.host ?? DEFAULT_HOST;
+  const port = cli.port ?? (process.env.MARS_PORT ? Number(process.env.MARS_PORT) : undefined) ?? fileConfig.port ?? DEFAULT_PORT;
 
   return {
     host,

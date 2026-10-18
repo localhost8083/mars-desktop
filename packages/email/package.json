@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/email",
+  "name": "@mars/email",
   "private": true,
   "type": "module",
   "exports": {

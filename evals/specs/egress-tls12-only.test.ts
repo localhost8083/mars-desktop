@@ -1,12 +1,12 @@
 import { describe, expect, test } from "vitest";
-import { startEgressLab } from "@omnirush/labs";
+import { startEgressLab } from "@mars/labs";
 import {
   diagnoseEgressLabProduct,
   probeTls,
   productDiagnosticsPrecondition,
   readBunTls12PinningFinding,
-} from "@omnirush/behaviors";
-import { diagnoseTls, matchVerdictExpectations } from "@omnirush/matchers";
+} from "@mars/behaviors";
+import { diagnoseTls, matchVerdictExpectations } from "@mars/matchers";
 
 describe("TLS 1.2-only egress", () => {
   test("reports the TLS 1.3 ClientHello stall from transport facts", async () => {

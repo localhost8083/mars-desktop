@@ -11,8 +11,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@omnirush/email": "workspace:*",
-    "@omnirush/ui": "workspace:*",
+    "@mars/email": "workspace:*",
+    "@mars/ui": "workspace:*",
     "botid": "^1.5.11",
     "framer-motion": "^12.35.1",
     "lucide-react": "^0.577.0",

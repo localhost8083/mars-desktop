@@ -52,15 +52,15 @@ export type ModelPickerModalProps = {
   onOpenSettings: () => void;
   onClose: (options?: { restorePromptFocus?: boolean }) => void;
   /** Den entitlement present. Picker no longer upsells here; callers still pass it. */
-  omniRushModelsEntitled?: boolean;
+  marsModelsEntitled?: boolean;
   /** The server is waiting to reload managed models for this workspace. */
-  omniRushModelsSyncing?: boolean;
+  marsModelsSyncing?: boolean;
   onRefreshOrganizationModels?: () => void | Promise<void>;
   restrictToCloud?: boolean;
 };
 
 type ProviderGroup = {
-  /** The provider; `key` tells apart an omnirush.ai family group (Meta Muse) from the provider's own. */
+  /** The provider; `key` tells apart an marsai.click family group (Meta Muse) from the provider's own. */
   id: string;
   key: string;
   iconProviderId: string;

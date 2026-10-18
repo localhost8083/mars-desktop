@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
 import type {
-  OmniRushCloudMcpFailure,
-  OmniRushCloudMcpHealth,
-} from "../src/app/lib/omnirush-server";
+  MarsCloudMcpFailure,
+  MarsCloudMcpHealth,
+} from "../src/app/lib/mars-server";
 import {
   createCloudMcpSubmissionCoordinator,
   clearCloudMcpSubmissionFailure,
@@ -15,9 +15,9 @@ import {
   type CloudMcpSubmissionPreparationResult,
 } from "../src/react-app/domains/connections/cloud-mcp-submit-readiness";
 
-const PROVIDER_MODEL = { provider: "omnirush", model: "gpt-5" };
+const PROVIDER_MODEL = { provider: "mars", model: "gpt-5" };
 
-function failure(input?: Partial<OmniRushCloudMcpFailure>): OmniRushCloudMcpFailure {
+function failure(input?: Partial<MarsCloudMcpFailure>): MarsCloudMcpFailure {
   return {
     code: input?.code ?? "cloud_registration_failed",
     stage: input?.stage ?? "engine_delivery",
@@ -30,16 +30,16 @@ function failure(input?: Partial<OmniRushCloudMcpFailure>): OmniRushCloudMcpFail
 function health(input?: {
   usable?: boolean;
   usableByCurrentModel?: boolean | null;
-  firstFailure?: OmniRushCloudMcpFailure | null;
+  firstFailure?: MarsCloudMcpFailure | null;
   projectionSource?: "experimental_tool" | "provider_capability";
   projectionChecked?: boolean;
   modelExists?: boolean;
   toolCalling?: boolean | null;
-}): OmniRushCloudMcpHealth {
+}): MarsCloudMcpHealth {
   const usable = input?.usable ?? true;
   const projectionSource = input?.projectionSource ?? "experimental_tool";
   const projected = usable
-    ? ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"]
+    ? ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"]
     : [];
   const projectionPresent = projectionSource === "experimental_tool" ? projected : [];
   const direct = usable ? ["search_capabilities", "execute_capability"] : [];
@@ -52,7 +52,7 @@ function health(input?: {
     workspace: { id: "workspace_1", type: "local", directory: "/workspace", path: "/workspace" },
     desired: {
       present: true,
-      name: "omnirush-cloud",
+      name: "mars-cloud",
       revision: "rev_1",
       config: { type: "remote", enabled: true },
       token: { present: true, metadata: {} },
@@ -67,9 +67,9 @@ function health(input?: {
     },
     engine: { status: usable ? "connected" : "missing" },
     tools: {
-      expected: ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
+      expected: ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
       present: projected,
-      missing: usable ? [] : ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
+      missing: usable ? [] : ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
       direct: {
         checked: true,
         source: "mcp_tools_list",
@@ -90,29 +90,29 @@ function health(input?: {
             }
           : {}),
         present: projectionPresent,
-        missing: projectionPresent.length ? [] : ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
+        missing: projectionPresent.length ? [] : ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
       },
     },
-    pluginCanaries: { expected: ["omnirush_docs_search"], present: usable ? ["omnirush_docs_search"] : [], missing: usable ? [] : ["omnirush_docs_search"] },
+    pluginCanaries: { expected: ["mars_docs_search"], present: usable ? ["mars_docs_search"] : [], missing: usable ? [] : ["mars_docs_search"] },
     compatibility: {
-      omnirush: { serverVersion: "test", app: null },
+      mars: { serverVersion: "test", app: null },
       opencode: { expectedVersion: "test", actualVersion: "test", probe: "ok" },
       pluginFileHashes: [],
       supportedFeatures: { dynamicMcp: true, directoryScoping: true, toolIds: true, providerToolProjection: projectionSource === "experimental_tool", pluginCanaries: true },
       experimentalToolIds: {
         checked: true,
-        expected: ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
+        expected: ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
         present: projected,
-        missing: usable ? [] : ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
+        missing: usable ? [] : ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
         includesMcpTools: usable,
       },
       experimentalProviderTools: {
         checked: true,
         provider: PROVIDER_MODEL.provider,
         model: PROVIDER_MODEL.model,
-        expected: ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
+        expected: ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
         present: projected,
-        missing: usable ? [] : ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
+        missing: usable ? [] : ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
         includesMcpTools: projectionSource === "experimental_tool" && usable,
       },
     },
@@ -132,8 +132,8 @@ function requiredDecision(input?: {
   return decideCloudMcpSubmissionGate({
     cloudAuthStatus: input?.authStatus ?? "signed_in",
     cloudHasSessionToken: input?.hasSessionToken ?? true,
-    denBaseUrl: "https://app.omnirush.test",
-    serverBaseUrl: "https://worker.omnirush.test",
+    denBaseUrl: "https://app.mars.test",
+    serverBaseUrl: "https://worker.mars.test",
     orgId: "org_1",
     workspaceId: input?.workspaceId ?? "workspace_1",
     providerModel: { ...PROVIDER_MODEL, model: input?.model ?? PROVIDER_MODEL.model },
@@ -142,8 +142,8 @@ function requiredDecision(input?: {
 }
 
 function preparation(input: {
-  check: () => Promise<OmniRushCloudMcpHealth | null>;
-  repair: () => Promise<OmniRushCloudMcpHealth | null>;
+  check: () => Promise<MarsCloudMcpHealth | null>;
+  repair: () => Promise<MarsCloudMcpHealth | null>;
 }): () => Promise<CloudMcpSubmissionPreparationResult> {
   return async () => {
     const result = await ensureCloudMcpSubmissionReadiness({

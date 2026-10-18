@@ -1,5 +1,5 @@
-import { installConfigSchema, installExperienceConfigSchema } from "@omnirush/install-config"
-import { connectLinkClaimsSchema } from "@omnirush/connect-link"
+import { installConfigSchema, installExperienceConfigSchema } from "@mars/install-config"
+import { connectLinkClaimsSchema } from "@mars/connect-link"
 import { and, eq, gt, isNull, or } from "@omnirush-ee/den-db/drizzle"
 import { InstallLinkTable, OrganizationTable } from "@omnirush-ee/den-db/schema"
 import { createReadStream } from "node:fs"

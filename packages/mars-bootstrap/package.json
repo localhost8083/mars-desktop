@@ -1,0 +1,22 @@
+{
+  "name": "mars-bootstrap",
+  "version": "0.1.0",
+  "description": "Script-installable MarsAI bootstrap CLI for agents",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "mars-bootstrap": "bin/mars.mjs"
+  },
+  "files": [
+    "bin",
+    "README.md",
+    "start.md"
+  ],
+  "scripts": {
+    "check": "node --check bin/mars.mjs && node --check evals/agent-test-evidence-mars-bootstrap.mjs && node --check evals/agent-test-evidence-mars-app-install.mjs && node --check evals/agent-test-evidence-linux-container.mjs",
+    "test": "node test/mars-bootstrap.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

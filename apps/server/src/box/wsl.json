@@ -1,9 +1,9 @@
 {
   "version": "2026.10.2",
-  "distro": "OmniRushBox",
+  "distro": "MarsBox",
   "base": "debian:bookworm-slim@sha256:7c7b2c966bc9ee8cedfeef67e0e279108992c77681fa595db4a9d65c06ccc587",
   "assets": {
-    "amd64": { "url": "https://github.com/omnirush-ai/omnirush-gui/releases/download/box-2026.10.2/omnirush-wsl-2026.10.2-amd64.tar.gz", "sha256": "564f097293a13d65b9385a46900941025875b7796af70a5d42a30f63432666b7", "bytes": 34557529 },
-    "arm64": { "url": "https://github.com/omnirush-ai/omnirush-gui/releases/download/box-2026.10.2/omnirush-wsl-2026.10.2-arm64.tar.gz", "sha256": "27882dde9268b4e1dabf0cf31779fd35102f2c1e5fb3dee297dbea4104a9607a", "bytes": 33999460 }
+    "amd64": { "url": "https://github.com/mars-ai/mars-gui/releases/download/box-2026.10.2/mars-wsl-2026.10.2-amd64.tar.gz", "sha256": "564f097293a13d65b9385a46900941025875b7796af70a5d42a30f63432666b7", "bytes": 34557529 },
+    "arm64": { "url": "https://github.com/mars-ai/mars-gui/releases/download/box-2026.10.2/mars-wsl-2026.10.2-arm64.tar.gz", "sha256": "27882dde9268b4e1dabf0cf31779fd35102f2c1e5fb3dee297dbea4104a9607a", "bytes": 33999460 }
   }
 }

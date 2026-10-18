@@ -6,7 +6,7 @@ import {
   EnterpriseMcpLifecycleDeadlineError,
   EnterpriseMcpOAuthContractError,
   EnterpriseMcpToolInputError,
-} from "@omnirush/enterprise-mcp-client"
+} from "@mars/enterprise-mcp-client"
 import {
   ExternalMcpDiagnosticTracker,
   catalogDiagnosticError,

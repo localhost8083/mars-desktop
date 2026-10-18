@@ -37,81 +37,81 @@ function inventoryFetch(snapshots, sandboxes = []) {
 
 test("selection prunes only unprotected dev snapshots", () => {
   const snapshots = [
-    snapshot("old", "omnirush-dev-old", "2026-01-01T00:00:00Z"),
-    snapshot("stopped", "omnirush-dev-stopped", "2026-01-02T00:00:00Z"),
-    snapshot("explicit", "omnirush-dev-explicit", "2026-01-03T00:00:00Z"),
-    snapshot("pulling", "omnirush-dev-pulling", "2026-01-04T00:00:00Z", "pulling"),
-    snapshot("active", "omnirush-dev-active-ref", "2026-01-05T00:00:00Z"),
-    snapshot("recent-1", "omnirush-dev-recent-1", "2026-01-06T00:00:00Z"),
-    snapshot("recent-2", "omnirush-dev-recent-2", "2026-01-07T00:00:00Z"),
-    snapshot("release", "omnirush-0.18.23", "2026-01-08T00:00:00Z"),
+    snapshot("old", "mars-dev-old", "2026-01-01T00:00:00Z"),
+    snapshot("stopped", "mars-dev-stopped", "2026-01-02T00:00:00Z"),
+    snapshot("explicit", "mars-dev-explicit", "2026-01-03T00:00:00Z"),
+    snapshot("pulling", "mars-dev-pulling", "2026-01-04T00:00:00Z", "pulling"),
+    snapshot("active", "mars-dev-active-ref", "2026-01-05T00:00:00Z"),
+    snapshot("recent-1", "mars-dev-recent-1", "2026-01-06T00:00:00Z"),
+    snapshot("recent-2", "mars-dev-recent-2", "2026-01-07T00:00:00Z"),
+    snapshot("release", "mars-0.18.23", "2026-01-08T00:00:00Z"),
     snapshot("base", "daytonaio/sandbox:0.8.0", "2026-01-09T00:00:00Z"),
     snapshot("windows", "windows-small", "2026-01-10T00:00:00Z"),
   ]
   const sandboxes = [
-    { id: "started", state: "started", snapshot: "omnirush-dev-active-ref" },
-    { id: "stopped", state: "stopped", snapshot: "omnirush-dev-stopped" },
-    { id: "archived", state: "archived", snapshot: "omnirush-dev-stopped" },
+    { id: "started", state: "started", snapshot: "mars-dev-active-ref" },
+    { id: "stopped", state: "stopped", snapshot: "mars-dev-stopped" },
+    { id: "archived", state: "archived", snapshot: "mars-dev-stopped" },
   ]
 
   const result = selectDevSnapshotPrunes({
     snapshots,
     sandboxes,
-    nameBase: "omnirush",
-    keepNames: ["omnirush-dev-explicit"],
+    nameBase: "mars",
+    keepNames: ["mars-dev-explicit"],
     keepCount: 2,
   })
 
   assert.deepEqual(result.prune.map((item) => item.name), [
-    "omnirush-dev-old",
-    "omnirush-dev-stopped",
+    "mars-dev-old",
+    "mars-dev-stopped",
   ])
   assert.deepEqual(result.keep.map((item) => [item.name, item.reason]), [
-    ["omnirush-dev-explicit", "explicit"],
-    ["omnirush-dev-pulling", "in-flight"],
-    ["omnirush-dev-active-ref", "active-ref"],
-    ["omnirush-dev-recent-1", "recent"],
-    ["omnirush-dev-recent-2", "recent"],
+    ["mars-dev-explicit", "explicit"],
+    ["mars-dev-pulling", "in-flight"],
+    ["mars-dev-active-ref", "active-ref"],
+    ["mars-dev-recent-1", "recent"],
+    ["mars-dev-recent-2", "recent"],
   ])
-  assert.equal(result.prune.some((item) => !item.name.startsWith("omnirush-dev-")), false)
+  assert.equal(result.prune.some((item) => !item.name.startsWith("mars-dev-")), false)
 })
 
 test("release selection prunes only unprotected release snapshots", () => {
   const snapshots = [
-    snapshot("old", "omnirush-0.18.1", "2026-01-01T00:00:00Z"),
-    snapshot("rc", "omnirush-0.18.2-rc.1", "2026-01-02T00:00:00Z"),
-    snapshot("explicit", "omnirush-0.18.3", "2026-01-03T00:00:00Z"),
-    snapshot("pulling", "omnirush-0.18.4", "2026-01-04T00:00:00Z", "pulling"),
-    snapshot("active", "omnirush-0.18.5", "2026-01-05T00:00:00Z"),
-    snapshot("recent-1", "omnirush-0.18.6", "2026-01-06T00:00:00Z"),
-    snapshot("recent-2", "omnirush-0.18.7", "2026-01-07T00:00:00Z"),
-    snapshot("dev", "omnirush-dev-abc1234", "2026-01-08T00:00:00Z"),
+    snapshot("old", "mars-0.18.1", "2026-01-01T00:00:00Z"),
+    snapshot("rc", "mars-0.18.2-rc.1", "2026-01-02T00:00:00Z"),
+    snapshot("explicit", "mars-0.18.3", "2026-01-03T00:00:00Z"),
+    snapshot("pulling", "mars-0.18.4", "2026-01-04T00:00:00Z", "pulling"),
+    snapshot("active", "mars-0.18.5", "2026-01-05T00:00:00Z"),
+    snapshot("recent-1", "mars-0.18.6", "2026-01-06T00:00:00Z"),
+    snapshot("recent-2", "mars-0.18.7", "2026-01-07T00:00:00Z"),
+    snapshot("dev", "mars-dev-abc1234", "2026-01-08T00:00:00Z"),
     snapshot("base", "daytonaio/sandbox:0.8.0", "2026-01-09T00:00:00Z"),
     snapshot("windows", "windows-small", "2026-01-10T00:00:00Z"),
   ]
   const sandboxes = [
-    { id: "started", state: "started", snapshot: "omnirush-0.18.5" },
-    { id: "stopped", state: "stopped", snapshot: "omnirush-0.18.1" },
+    { id: "started", state: "started", snapshot: "mars-0.18.5" },
+    { id: "stopped", state: "stopped", snapshot: "mars-0.18.1" },
   ]
 
   const result = selectReleaseSnapshotPrunes({
     snapshots,
     sandboxes,
-    nameBase: "omnirush",
-    keepNames: ["omnirush-0.18.3"],
+    nameBase: "mars",
+    keepNames: ["mars-0.18.3"],
     keepCount: 2,
   })
 
   assert.deepEqual(result.prune.map((item) => item.name), [
-    "omnirush-0.18.1",
-    "omnirush-0.18.2-rc.1",
+    "mars-0.18.1",
+    "mars-0.18.2-rc.1",
   ])
   assert.deepEqual(result.keep.map((item) => [item.name, item.reason]), [
-    ["omnirush-0.18.3", "explicit"],
-    ["omnirush-0.18.4", "in-flight"],
-    ["omnirush-0.18.5", "active-ref"],
-    ["omnirush-0.18.6", "recent"],
-    ["omnirush-0.18.7", "recent"],
+    ["mars-0.18.3", "explicit"],
+    ["mars-0.18.4", "in-flight"],
+    ["mars-0.18.5", "active-ref"],
+    ["mars-0.18.6", "recent"],
+    ["mars-0.18.7", "recent"],
   ])
   assert.equal(
     result.prune.concat(result.keep).some((item) => item.name.includes("-dev-")),
@@ -123,7 +123,7 @@ test("release channel defaults to keeping the 20 newest release snapshots", asyn
   const snapshots = Array.from({ length: 21 }, (_, index) =>
     snapshot(
       `release-${index}`,
-      `omnirush-0.18.${index}`,
+      `mars-0.18.${index}`,
       `2026-01-${String(index + 1).padStart(2, "0")}T00:00:00Z`,
     ),
   )
@@ -132,12 +132,12 @@ test("release channel defaults to keeping the 20 newest release snapshots", asyn
   const result = await pruneDaytonaSnapshots({
     apiKey,
     channel: "release",
-    keepNames: ["omnirush-0.18.20"],
+    keepNames: ["mars-0.18.20"],
     fetchImpl,
     log: () => {},
   })
 
-  assert.deepEqual(result.prune.map((item) => item.name), ["omnirush-0.18.0"])
+  assert.deepEqual(result.prune.map((item) => item.name), ["mars-0.18.0"])
   assert.equal(result.keep.length, 20)
   assert.deepEqual(
     calls.filter((call) => call.options.method === "DELETE").map((call) => call.url),
@@ -147,16 +147,16 @@ test("release channel defaults to keeping the 20 newest release snapshots", asyn
 
 test("release channel never deletes dev snapshots even when unprotected", async () => {
   const snapshots = [
-    snapshot("dev-old", "omnirush-dev-old", "2026-01-01T00:00:00Z"),
-    snapshot("release-old", "omnirush-0.18.1", "2026-01-02T00:00:00Z"),
-    snapshot("release-new", "omnirush-0.18.2", "2026-01-03T00:00:00Z"),
+    snapshot("dev-old", "mars-dev-old", "2026-01-01T00:00:00Z"),
+    snapshot("release-old", "mars-0.18.1", "2026-01-02T00:00:00Z"),
+    snapshot("release-new", "mars-0.18.2", "2026-01-03T00:00:00Z"),
   ]
   const { calls, fetchImpl } = inventoryFetch(snapshots)
 
   await pruneDaytonaSnapshots({
     apiKey,
     channel: "release",
-    keepNames: ["omnirush-0.18.2"],
+    keepNames: ["mars-0.18.2"],
     keepCount: 1,
     fetchImpl,
     log: () => {},
@@ -173,27 +173,27 @@ test("parseArgs resolves channel and rejects unknown channels", () => {
     "--channel",
     "release",
     "--keep",
-    "omnirush-0.18.2",
+    "mars-0.18.2",
   ])
   assert.equal(options.channel, "release")
   assert.equal(options.keepCount, undefined)
 
-  assert.equal(parseArgs(["--keep", "omnirush-dev-a"]).channel, "dev")
+  assert.equal(parseArgs(["--keep", "mars-dev-a"]).channel, "dev")
   assert.throws(
-    () => parseArgs(["--channel", "nightly", "--keep", "omnirush-dev-a"]),
+    () => parseArgs(["--channel", "nightly", "--keep", "mars-dev-a"]),
     /Invalid channel/,
   )
 })
 
 test("exactly keepCount in-scope snapshots prunes nothing", () => {
   const snapshots = [
-    snapshot("one", "omnirush-dev-one", "2026-01-01T00:00:00Z"),
-    snapshot("two", "omnirush-dev-two", "2026-01-02T00:00:00Z"),
+    snapshot("one", "mars-dev-one", "2026-01-01T00:00:00Z"),
+    snapshot("two", "mars-dev-two", "2026-01-02T00:00:00Z"),
   ]
   const result = selectDevSnapshotPrunes({
     snapshots,
     sandboxes: [],
-    nameBase: "omnirush",
+    nameBase: "mars",
     keepNames: [],
     keepCount: 2,
   })
@@ -203,14 +203,14 @@ test("exactly keepCount in-scope snapshots prunes nothing", () => {
 
 test("dry-run fetches inventory but sends no DELETE requests", async () => {
   const snapshots = [
-    snapshot("old", "omnirush-dev-old", "2026-01-01T00:00:00Z"),
-    snapshot("new", "omnirush-dev-new", "2026-01-02T00:00:00Z"),
+    snapshot("old", "mars-dev-old", "2026-01-01T00:00:00Z"),
+    snapshot("new", "mars-dev-new", "2026-01-02T00:00:00Z"),
   ]
   const { calls, fetchImpl } = inventoryFetch(snapshots)
 
   const result = await pruneDaytonaDevSnapshots({
     apiKey,
-    keepNames: ["omnirush-dev-new"],
+    keepNames: ["mars-dev-new"],
     keepCount: 1,
     dryRun: true,
     fetchImpl,
@@ -224,15 +224,15 @@ test("dry-run fetches inventory but sends no DELETE requests", async () => {
 
 test("real run deletes every selected id and no kept ids", async () => {
   const snapshots = [
-    snapshot("old-1", "omnirush-dev-old-1", "2026-01-01T00:00:00Z"),
-    snapshot("old-2", "omnirush-dev-old-2", "2026-01-02T00:00:00Z"),
-    snapshot("new", "omnirush-dev-new", "2026-01-03T00:00:00Z"),
+    snapshot("old-1", "mars-dev-old-1", "2026-01-01T00:00:00Z"),
+    snapshot("old-2", "mars-dev-old-2", "2026-01-02T00:00:00Z"),
+    snapshot("new", "mars-dev-new", "2026-01-03T00:00:00Z"),
   ]
   const { calls, fetchImpl } = inventoryFetch(snapshots)
 
   await pruneDaytonaDevSnapshots({
     apiKey,
-    keepNames: ["omnirush-dev-new"],
+    keepNames: ["mars-dev-new"],
     keepCount: 1,
     fetchImpl,
     log: () => {},
@@ -248,11 +248,11 @@ test("pagination protects newest snapshots and reads all sandbox pages", async (
   const firstPage = Array.from({ length: 200 }, (_, index) =>
     snapshot(
       `old-${index}`,
-      `omnirush-dev-old-${String(index).padStart(3, "0")}`,
+      `mars-dev-old-${String(index).padStart(3, "0")}`,
       `2025-01-${String((index % 28) + 1).padStart(2, "0")}T00:00:00Z`,
     ),
   )
-  const newest = snapshot("newest", "omnirush-dev-newest", "2026-01-01T00:00:00Z")
+  const newest = snapshot("newest", "mars-dev-newest", "2026-01-01T00:00:00Z")
   const calls = []
   const fetchImpl = async (url, options) => {
     calls.push({ url, options })
@@ -308,9 +308,9 @@ test("pagination protects newest snapshots and reads all sandbox pages", async (
 
 test("a failed DELETE does not prevent later deletes and rejects with the result", async () => {
   const snapshots = [
-    snapshot("old-1", "omnirush-dev-old-1", "2026-01-01T00:00:00Z"),
-    snapshot("old-2", "omnirush-dev-old-2", "2026-01-02T00:00:00Z"),
-    snapshot("new", "omnirush-dev-new", "2026-01-03T00:00:00Z"),
+    snapshot("old-1", "mars-dev-old-1", "2026-01-01T00:00:00Z"),
+    snapshot("old-2", "mars-dev-old-2", "2026-01-02T00:00:00Z"),
+    snapshot("new", "mars-dev-new", "2026-01-03T00:00:00Z"),
   ]
   const calls = []
   const messages = []
@@ -331,7 +331,7 @@ test("a failed DELETE does not prevent later deletes and rejects with the result
   await assert.rejects(
     pruneDaytonaDevSnapshots({
       apiKey,
-      keepNames: ["omnirush-dev-new"],
+      keepNames: ["mars-dev-new"],
       keepCount: 1,
       fetchImpl,
       log: (message) => messages.push(message),

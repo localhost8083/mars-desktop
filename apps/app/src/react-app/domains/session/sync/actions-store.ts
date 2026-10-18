@@ -51,7 +51,7 @@ type SessionActionsSnapshot = {
   sessionAgentById: Record<string, string>;
 };
 
-const FLUSH_PROMPT_EVENT = "omnirush:flushPromptDraft";
+const FLUSH_PROMPT_EVENT = "mars:flushPromptDraft";
 
 export function createSessionActionsStore(options: {
   client: () => Client | null;
@@ -332,7 +332,7 @@ export function createSessionActionsStore(options: {
     const perfEnabled = options.developerMode();
     const startedAt = perfNow();
     const runId = (() => {
-      const key = "__omnirush_create_session_run__";
+      const key = "__mars_create_session_run__";
       const w = window as typeof window & { [key]?: number };
       w[key] = (w[key] ?? 0) + 1;
       return w[key];

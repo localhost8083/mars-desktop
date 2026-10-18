@@ -17,8 +17,8 @@ const {
   toSessionTransportDirectory,
 } = await import("../src/app/lib/session-scope.ts");
 
-const starterRoot = "/Users/test/OmniRush.ai/starter";
-const otherRoot = "/Users/test/OmniRush.ai/second";
+const starterRoot = "/Users/test/MarsAI/starter";
+const otherRoot = "/Users/test/MarsAI/second";
 
 const results = {
   ok: true,
@@ -99,7 +99,7 @@ try {
       },
     });
 
-    const winRoot = String.raw`C:\Users\Test\OmniRush.ai\starter`;
+    const winRoot = String.raw`C:\Users\Test\MarsAI\starter`;
     const transport = toSessionTransportDirectory(winRoot);
 
     assert.equal(transport, winRoot);
@@ -110,9 +110,9 @@ try {
     assert.equal(toSessionTransportDirectory(uncRoot), String.raw`\\server\share\starter`);
     assert.equal(describeDirectoryScope(uncRoot).normalized, "//server/share/starter");
 
-    const verbatimDriveRoot = String.raw`\\?\C:\Users\Test\OmniRush.ai\starter`;
-    assert.equal(toSessionTransportDirectory(verbatimDriveRoot), String.raw`C:\Users\Test\OmniRush.ai\starter`);
-    assert.equal(describeDirectoryScope(verbatimDriveRoot).normalized, "c:/users/test/omnirush/starter");
+    const verbatimDriveRoot = String.raw`\\?\C:\Users\Test\MarsAI\starter`;
+    assert.equal(toSessionTransportDirectory(verbatimDriveRoot), String.raw`C:\Users\Test\MarsAI\starter`);
+    assert.equal(describeDirectoryScope(verbatimDriveRoot).normalized, "c:/users/test/mars/starter");
   });
 
   step("round-trip invariant: every query path equals the create path (unix)", () => {
@@ -126,8 +126,8 @@ try {
     });
 
     const unixPaths = [
-      "/Users/test/OmniRush.ai/starter",
-      "/Users/test/OmniRush.ai/starter/",
+      "/Users/test/MarsAI/starter",
+      "/Users/test/MarsAI/starter/",
       "/home/user/projects/my-app",
       "/tmp/sandbox",
       "/private/tmp/sandbox",
@@ -153,11 +153,11 @@ try {
 
     // Use escaped strings — Bun's parser chokes on String.raw inside array literals.
     const windowsPaths = [
-      "C:\\Users\\Test\\OmniRush.ai\\starter",
-      "C:\\Users\\Test\\OmniRush.ai\\starter\\",
+      "C:\\Users\\Test\\MarsAI\\starter",
+      "C:\\Users\\Test\\MarsAI\\starter\\",
       "D:\\projects\\my-app",
       "\\\\server\\share\\starter",
-      "\\\\?\\C:\\Users\\Test\\OmniRush.ai\\starter",
+      "\\\\?\\C:\\Users\\Test\\MarsAI\\starter",
       "\\\\?\\UNC\\server\\share\\starter",
     ];
 
@@ -181,7 +181,7 @@ try {
     });
 
     const samples = [
-      "/Users/test/OmniRush.ai/starter",
+      "/Users/test/MarsAI/starter",
       "/home/user/projects/my-app",
     ];
     for (const raw of samples) {
@@ -200,7 +200,7 @@ try {
     });
 
     const winSamples = [
-      "C:\\Users\\Test\\OmniRush.ai\\starter",
+      "C:\\Users\\Test\\MarsAI\\starter",
       "\\\\server\\share\\starter",
     ];
     for (const raw of winSamples) {

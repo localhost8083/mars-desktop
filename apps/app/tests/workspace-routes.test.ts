@@ -10,7 +10,7 @@ import {
   removeRouteWorkspace,
   stabilizeRouteWorkspaceOrder,
 } from "../src/react-app/shell/route-workspaces";
-import { OmniRushServerError } from "../src/app/lib/omnirush-server";
+import { MarsServerError } from "../src/app/lib/mars-server";
 import {
   createRouteWorkspaceLoadCoalescer,
   mapRouteWorkspaceLoads,
@@ -159,7 +159,7 @@ describe("removing a workspace", () => {
     const forgotten: string[] = [];
     await expect(removeRouteWorkspace({
       workspaceId: "ws_1",
-      deleteFromServer: async () => { throw new OmniRushServerError(500, "workspace_registry_write_failed", "saving the workspace list failed"); },
+      deleteFromServer: async () => { throw new MarsServerError(500, "workspace_registry_write_failed", "saving the workspace list failed"); },
       forgetOnDesktop: async (id) => { forgotten.push(id); },
     })).rejects.toThrow("saving the workspace list failed");
     expect(forgotten).toEqual([]);
@@ -169,7 +169,7 @@ describe("removing a workspace", () => {
     const forgotten: string[] = [];
     await removeRouteWorkspace({
       workspaceId: "rem_remote",
-      deleteFromServer: async () => { throw new OmniRushServerError(404, "workspace_not_found", "Workspace not found"); },
+      deleteFromServer: async () => { throw new MarsServerError(404, "workspace_not_found", "Workspace not found"); },
       forgetOnDesktop: async (id) => { forgotten.push(id); },
     });
     expect(forgotten).toEqual(["rem_remote"]);
@@ -397,7 +397,7 @@ describe("workspace route list merging", () => {
   const desktopWorkspaces = [{
     id: "workspace-desktop",
     name: "Desktop workspace",
-    path: "/tmp/omnirush",
+    path: "/tmp/mars",
     workspaceType: "local",
     displayNameResolved: "Desktop workspace",
   }];

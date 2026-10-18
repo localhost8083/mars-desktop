@@ -1,6 +1,6 @@
 import type { ProviderListItem } from "../types";
 import type { ModelBehaviorOption } from "../types";
-import { OMNIRUSH_REASONING_EFFORTS } from "../constants";
+import { MARS_REASONING_EFFORTS } from "../constants";
 import { t } from "../../i18n";
 
 type ProviderModel = ProviderListItem["models"][string];
@@ -109,25 +109,25 @@ const providerFamily = (providerID: string, providerName?: string | null) => {
   return normalizedId;
 };
 
-const isOmniRushProvider = (providerID: string) => providerID.trim().toLowerCase() === "omnirush";
+const isMarsProvider = (providerID: string) => providerID.trim().toLowerCase() === "mars";
 
 const usesGlmDisplayAliases = (
   providerID: string,
   model: ProviderModel,
   _providerName?: string | null,
 ) => {
-  return !isOmniRushProvider(providerID) && [model.id, model.name].some(
+  return !isMarsProvider(providerID) && [model.id, model.name].some(
     (value) => value?.trim().toLowerCase().includes("gpt") === true,
   );
 };
 
 /**
- * omnirush.ai models offer their own catalog effort levels. The server
+ * marsai.click models offer their own catalog effort levels. The server
  * disables every other known effort, so the engine reports exactly those; the
  * filter only keeps an engine default outside the known set off the picker.
  */
-const omnirushVariantKeys = (keys: string[]) =>
-  keys.filter((key) => (OMNIRUSH_REASONING_EFFORTS as readonly string[]).includes(key));
+const marsVariantKeys = (keys: string[]) =>
+  keys.filter((key) => (MARS_REASONING_EFFORTS as readonly string[]).includes(key));
 
 const getBehaviorTitle = (
   providerID: string,
@@ -211,8 +211,8 @@ export const getModelBehaviorOptions = (
   providerName?: string | null,
 ): ModelBehaviorOption[] => {
   const reportedVariantKeys = sortVariantKeys(getVariantKeys(model));
-  const variantKeys = isOmniRushProvider(providerID)
-    ? omnirushVariantKeys(reportedVariantKeys)
+  const variantKeys = isMarsProvider(providerID)
+    ? marsVariantKeys(reportedVariantKeys)
     : usesGlmDisplayAliases(providerID, model, providerName)
       ? reportedVariantKeys.filter((key) => key === "low" || key === "high" || key === "xhigh")
       : reportedVariantKeys;

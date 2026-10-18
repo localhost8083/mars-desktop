@@ -1,13 +1,13 @@
-import { browserScript, listTargets } from "@omnirush/cdp";
+import { browserScript, listTargets } from "@mars/cdp";
 import { spawn } from "node:child_process";
 import { chmod, mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { app as startApp, server as startServer, resolveEvalEngine } from "@omnirush/env";
-import { SkipError } from "@omnirush/env";
-import type { Place, Seed } from "@omnirush/env";
-import { createAndSelectWorkspace, evalIn, go, waitFor as waitForBehavior } from "@omnirush/behaviors";
-import { allocateFreePort } from "@omnirush/cdp";
+import { app as startApp, server as startServer, resolveEvalEngine } from "@mars/env";
+import { SkipError } from "@mars/env";
+import type { Place, Seed } from "@mars/env";
+import { createAndSelectWorkspace, evalIn, go, waitFor as waitForBehavior } from "@mars/behaviors";
+import { allocateFreePort } from "@mars/cdp";
 import {
   checkedExec,
   chrome,
@@ -18,10 +18,10 @@ import {
   enterpriseTlsEdgeDaytonaCommands,
   localHost,
   provisionDesktopSandbox,
-} from "@omnirush/hosts";
-import { startEgressLab, startMockMcp } from "@omnirush/labs";
-import { diagnoseEgressLabProduct } from "@omnirush/behaviors";
-import { matchVerdictExpectations } from "@omnirush/matchers";
+} from "@mars/hosts";
+import { startEgressLab, startMockMcp } from "@mars/labs";
+import { diagnoseEgressLabProduct } from "@mars/behaviors";
+import { matchVerdictExpectations } from "@mars/matchers";
 import {
   assignPluginToMarketplace,
   completeDesktopHandoff,
@@ -34,7 +34,7 @@ import {
   readResolvedMarketplace,
   signIn,
   signInInBrowser,
-} from "@omnirush/behaviors";
+} from "@mars/behaviors";
 
 // Transitional helpers for journeys whose product-specific mechanics do not yet
 // have spec primitives. Specs still import through their owned world module.
@@ -47,7 +47,7 @@ export {
   sendComposerMessage,
   visibleText,
   waitFor,
-} from "@omnirush/behaviors";
+} from "@mars/behaviors";
 export {
   checkedExec,
   chrome,
@@ -57,7 +57,7 @@ export {
   desktop,
   enterpriseTlsEdgeDaytonaCommands,
   provisionDesktopSandbox,
-} from "@omnirush/hosts";
+} from "@mars/hosts";
 
 export async function emptyInfraWorld(_seed: Seed) {
   return {};
@@ -68,36 +68,36 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export async function appSmokeWorld(seed: Seed) {
-  const packaged = Boolean(process.env.OMNIRUSH_EVAL_ELECTRON_BINARY);
+  const packaged = Boolean(process.env.MARS_EVAL_ELECTRON_BINARY);
   const app = packaged
     ? await desktop({ name: "app-smoke", prepareSharedResources: false, timeoutMs: 60_000,
-      env: { OMNIRUSH_DEV_MODE: "0", OMNIRUSH_ELECTRON_START_URL: "", ELECTRON_START_URL: "" } })
+      env: { MARS_DEV_MODE: "0", MARS_ELECTRON_START_URL: "", ELECTRON_START_URL: "" } })
     : await seed.desktop({ name: "app-smoke" });
   const workspace = packaged ? null : await seed.workspace(app, seed.tmpPath("app-smoke"));
   return {
     app, workspace, packaged,
     async packagedRuntime() {
       return evalIn(app, async () => {
-        const bridge = window.__OMNIRUSH_ELECTRON__;
+        const bridge = window.__MARS_ELECTRON__;
         if (typeof bridge?.invokeDesktop !== "function") return { bridge: false };
-        const info = await bridge.invokeDesktop("omnirushServerInfo");
+        const info = await bridge.invokeDesktop("marsServerInfo");
         const health = await fetch(info.baseUrl + "/health", { signal: AbortSignal.timeout(5000) });
         return { bridge: true, protocol: location.protocol, health: health.status,
           emptySession: /^#\/workspace\/[^/]+\/session$/.test(location.hash)
             && Boolean(document.querySelector('[contenteditable="true"][data-lexical-editor="true"]')),
-          signedOut: !localStorage.getItem("omnirush.den.authToken") && !localStorage.getItem("omnirush.den.activeOrgId"),
-          onboarding: /Welcome to OmniRush.ai|Power your first task|How did you hear about OmniRush.ai\?/.test(document.body.innerText),
+          signedOut: !localStorage.getItem("mars.den.authToken") && !localStorage.getItem("mars.den.activeOrgId"),
+          onboarding: /Welcome to MarsAI|Power your first task|How did you hear about MarsAI\?/.test(document.body.innerText),
           crash: /Something went wrong|Cannot find module|Maximum update depth exceeded/.test(document.body.innerText) };
       }, { awaitPromise: true });
     },
     async packagedToolIds() {
       return evalIn(app, async () => {
-        const workspaces = await window.__OMNIRUSH_ELECTRON__.invokeDesktop("workspaceBootstrap");
+        const workspaces = await window.__MARS_ELECTRON__.invokeDesktop("workspaceBootstrap");
         const workspace = workspaces.workspaces.find((entry) => entry.id === workspaces.selectedId);
-        if (workspaces.workspaces.length !== 1 || !workspace?.path?.endsWith("OmniRush.ai Chat")) {
+        if (workspaces.workspaces.length !== 1 || !workspace?.path?.endsWith("MarsAI Chat")) {
           throw new Error("Packaged startup did not select its default chat workspace.");
         }
-        const info = await window.__OMNIRUSH_ELECTRON__.invokeDesktop("omnirushServerInfo");
+        const info = await window.__MARS_ELECTRON__.invokeDesktop("marsServerInfo");
         const headers = { Authorization: "Bearer " + info.ownerToken, "Content-Type": "application/json" };
         const tools = await fetch(info.baseUrl + "/workspace/" + workspace.id + "/opencode/experimental/tool/ids", {
           headers, signal: AbortSignal.timeout(30000),
@@ -127,7 +127,7 @@ export async function bareFirstRunWorld(seed: Seed, { place }: { place: Place })
 }
 
 export async function localFirstRunWorld(seed: Seed) {
-  const prompt = "Create a short welcome checklist for this OmniRush.ai workspace. Use exactly three bullets and mention one thing I can do next.";
+  const prompt = "Create a short welcome checklist for this MarsAI workspace. Use exactly three bullets and mention one thing I can do next.";
   const reply = "Your workspace is ready. You can draft a document next.";
   const den = await seed.den({
     provision: false,
@@ -140,10 +140,10 @@ export async function localFirstRunWorld(seed: Seed) {
     name: "first-run-local",
     signIn: false,
     env: {
-      DAYTONA_SECRETS_ENV: "/tmp/omnirush-first-run-no-secrets",
-      OMNIRUSH_DESKTOP_DISTRIBUTION: "public",
-      OMNIRUSH_EVAL_MODEL: "",
-      VITE_DISABLE_OMNIRUSH_MODELS: "0",
+      DAYTONA_SECRETS_ENV: "/tmp/mars-first-run-no-secrets",
+      MARS_DESKTOP_DISTRIBUTION: "public",
+      MARS_EVAL_MODEL: "",
+      VITE_DISABLE_MARS_MODELS: "0",
       OPENCODE_CONFIG: "",
       OPENCODE_CONFIG_CONTENT: JSON.stringify({
         enabled_providers: ["opencode"],
@@ -184,9 +184,9 @@ export async function parentChildPermissionWorld(seed: Seed) {
   const base = await sessionWorld(seed);
   // TODO(primitive): seed a child-session permission request and parent activity row.
   const seeded = await seed.evalIn(base.app, async () => {
-    const child = await window.__omnirushControl.execute("eval.child_permission.seed", null);
+    const child = await window.__marsControl.execute("eval.child_permission.seed", null);
     if (!child?.ok || !child.result || typeof child.result !== "object" || !("childSessionId" in child.result) || typeof child.result.childSessionId !== "string") return { child, activity: null };
-    const activity = await window.__omnirushControl.execute("eval.task_activity.seed", {
+    const activity = await window.__marsControl.execute("eval.task_activity.seed", {
       childSessionId: child.result.childSessionId,
     });
     return { child, activity };
@@ -270,7 +270,7 @@ export async function scopedPermissionRefreshWorld(seed: Seed) {
     await command("Network.enable");
     await command("Fetch.enable", { patterns: [{ urlPattern: `*${prefix}/api/session/*/permission*`, requestStage: "Request" }] });
     await seed.evalIn(base.app, browserScript(async (path) => {
-      const info = await window.__OMNIRUSH_ELECTRON__.invokeDesktop("omnirushServerInfo");
+      const info = await window.__MARS_ELECTRON__.invokeDesktop("marsServerInfo");
       void fetch(info.baseUrl + path, {
         headers: { Authorization: `Bearer ${info.ownerToken}` }, signal: AbortSignal.timeout(120_000),
       }).catch(() => undefined);
@@ -296,8 +296,8 @@ export async function artifactCodeBrowserWorld(seed: Seed) {
   await go(base.app, `/workspace/${base.workspace.workspaceId}/session/${session.sessionId}`);
   // TODO(primitive): write workspace files through the local server fixture.
   const wrote = await seed.evalIn(base.app, browserScript(async (workspaceId) => {
-    const port = localStorage.getItem("omnirush.server.port");
-    const token = localStorage.getItem("omnirush.server.token");
+    const port = localStorage.getItem("mars.server.port");
+    const token = localStorage.getItem("mars.server.token");
     if (!port || !token) return false;
     const write = (path: string, content: string) => fetch(
       "http://127.0.0.1:" + port + "/workspace/" + encodeURIComponent(workspaceId) + "/files/content",
@@ -309,21 +309,21 @@ export async function artifactCodeBrowserWorld(seed: Seed) {
     );
     const responses = await Promise.all([
       write("restricted/hidden-proof.ts", "export const restricted = true;"),
-      write("src/omnirush-artifact-proof.ts", "export const artifactEditor = true;\n"),
-      write("config/omnirush-artifact-settings.json", "{\"artifactEditor\":true}\n"),
+      write("src/mars-artifact-proof.ts", "export const artifactEditor = true;\n"),
+      write("config/mars-artifact-settings.json", "{\"artifactEditor\":true}\n"),
     ]);
     return responses.every((response) => response.ok);
   }, [base.workspace.workspaceId]), { awaitPromise: true });
   if (wrote !== true) throw new Error("Could not seed artifact code files.");
   // TODO(primitive): open an initial built-in browser artifact tab.
-  await seed.evalIn(base.app, () => (window.__omnirushControl.execute("browser.open_url", { url: "about:blank" })), { awaitPromise: true });
+  await seed.evalIn(base.app, () => (window.__marsControl.execute("browser.open_url", { url: "about:blank" })), { awaitPromise: true });
   await waitForBehavior(
     base.app,
-    () => (window.__omnirushControl.listActions().some((action) => action.id === "eval.artifact_tabs.seed_overflow" && !action.disabled)),
+    () => (window.__marsControl.listActions().some((action) => action.id === "eval.artifact_tabs.seed_overflow" && !action.disabled)),
     { timeoutMs: 30_000, label: "artifact seed action enabled" },
   );
   // TODO(primitive): seed artifact tabs through a first-class artifact fixture.
-  const tabs = await seed.evalIn(base.app, () => (window.__omnirushControl.execute("eval.artifact_tabs.seed_overflow", { count: 12 })), { awaitPromise: true });
+  const tabs = await seed.evalIn(base.app, () => (window.__marsControl.execute("eval.artifact_tabs.seed_overflow", { count: 12 })), { awaitPromise: true });
   if (!isRecord(tabs) || tabs.ok !== true) throw new Error(`Could not seed artifact tabs: ${JSON.stringify(tabs)}`);
   return {
     ...base,
@@ -405,7 +405,7 @@ export async function testkitAppBootWorld(_seed: Seed, { place }: { place: Place
 }
 
 export async function unconfiguredNotificationWorld(seed: Seed) {
-  const workspacePath = await mkdtemp(join(tmpdir(), "omnirush-notification-shell-"));
+  const workspacePath = await mkdtemp(join(tmpdir(), "mars-notification-shell-"));
   const app = await seed.desktop({ name: "opencode-unconfigured-notification" });
   const workspace = await seed.workspace(app, workspacePath);
   const serverToken = "owt_unconfigured_notification";
@@ -466,11 +466,11 @@ export async function unconfiguredNotificationWorld(seed: Seed) {
     });
     observer.observe(document.body, { subtree: true, childList: true, characterData: true });
     window.__issue3980NotificationProbe = { observer, state };
-    localStorage.setItem("omnirush.server.urlOverride", `http://127.0.0.1.nip.io:${port}`);
-    localStorage.setItem("omnirush.server.token", serverToken);
-    localStorage.removeItem("omnirush.server.hostToken");
-    await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("engineStop");
-    window.dispatchEvent(new CustomEvent("omnirush-server-settings-changed"));
+    localStorage.setItem("mars.server.urlOverride", `http://127.0.0.1.nip.io:${port}`);
+    localStorage.setItem("mars.server.token", serverToken);
+    localStorage.removeItem("mars.server.hostToken");
+    await window.__MARS_ELECTRON__?.invokeDesktop?.("engineStop");
+    window.dispatchEvent(new CustomEvent("mars-server-settings-changed"));
     return true;
   }, [port, serverToken]), { awaitPromise: true, timeoutMs: 30_000 });
   if (switched !== true) throw new Error("Could not switch the desktop to the unconfigured server.");
@@ -493,17 +493,17 @@ export async function unconfiguredNotificationWorld(seed: Seed) {
 
 async function installAlphaUpdateBridge(app: Awaited<ReturnType<typeof desktop>>) {
   const installed = await evalIn(app, () => {
-    const nativeUpdater = window.__OMNIRUSH_ELECTRON__?.updater;
+    const nativeUpdater = window.__MARS_ELECTRON__?.updater;
     if (!nativeUpdater?.getChannel || !nativeUpdater.setChannel) return false;
-    const state: Window["__omnirushAlphaUpdateEligibilityEvalState"] = { checks: [], currentVersion: "0.18.37-alpha.2491+64d2d37", latestVersion: "0.18.37-alpha.2492+4921a02" };
-    window.__omnirushAlphaUpdateEligibilityEvalState = state;
-    localStorage.setItem("omnirush.react.settings.update-auto-check", "0");
-    window.__omnirushApplyDesktopConfig?.({ allowAlphaUpdates: true });
-    window.__omnirushSetDesktopConfigRefreshResult?.({ allowAlphaUpdates: true });
-    window.__omnirushReadDesktopVersionMetadataEval = () => ({
+    const state: Window["__marsAlphaUpdateEligibilityEvalState"] = { checks: [], currentVersion: "0.18.37-alpha.2491+64d2d37", latestVersion: "0.18.37-alpha.2492+4921a02" };
+    window.__marsAlphaUpdateEligibilityEvalState = state;
+    localStorage.setItem("mars.react.settings.update-auto-check", "0");
+    window.__marsApplyDesktopConfig?.({ allowAlphaUpdates: true });
+    window.__marsSetDesktopConfigRefreshResult?.({ allowAlphaUpdates: true });
+    window.__marsReadDesktopVersionMetadataEval = () => ({
       minAppVersion: "0.17.0", latestAppVersion: "0.18.35", publishedDesktopVersions: ["0.18.35"],
     });
-    window.__omnirushUpdaterEvalBridge = {
+    window.__marsUpdaterEvalBridge = {
       getChannel: () => nativeUpdater.getChannel(),
       setChannel: (channel) => nativeUpdater.setChannel(channel),
       check: async (channel) => {
@@ -523,7 +523,7 @@ async function installAlphaUpdateBridge(app: Awaited<ReturnType<typeof desktop>>
 
 export async function alphaUpdateWorld(seed: Seed) {
   if (process.platform !== "darwin") throw new SkipError(`run on macOS (Alpha is unavailable on ${process.platform})`);
-  const profileDir = await mkdtemp(join(tmpdir(), "omnirush-alpha-update-eligibility-eval-"));
+  const profileDir = await mkdtemp(join(tmpdir(), "mars-alpha-update-eligibility-eval-"));
   const host = localHost();
   const app = await desktop({
     name: "alpha-update-eligibility",
@@ -550,34 +550,34 @@ export async function compatibleReleaseWorld(_seed: Seed, { place }: { place: Pl
     host: place.host(),
     timeoutMs: 30_000,
     env: {
-      OMNIRUSH_EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE: "EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE",
-      OMNIRUSH_EVAL_RECOVERY_TARGET: "darwin-arm64-public",
-      OMNIRUSH_EVAL_RECOVERY_RELEASES: JSON.stringify([
-        { version: "2.4.0", channel: "stable", artifact: { platform: "darwin", arch: "arm64", distribution: "public", url: "https://releases.omnirush.test/v2.4.0/OmniRush.ai-darwin-arm64.dmg" } },
-        { version: "2.3.1", channel: "stable", artifact: { platform: "darwin", arch: "arm64", distribution: "public", url: "https://releases.omnirush.test/v2.3.1/OmniRush.ai-darwin-arm64.dmg" } },
-        { version: "2.3.0", channel: "stable", artifact: { platform: "linux", arch: "x64", distribution: "public", url: "https://incompatible.invalid/OmniRush.ai.AppImage" } },
-        { version: "2.2.9", channel: "stable", artifact: { platform: "darwin", arch: "arm64", distribution: "enterprise", url: "https://wrong-flavor.invalid/OmniRush.ai.dmg" } },
-        { version: "2.2.8-beta.1", channel: "prerelease", artifact: { platform: "darwin", arch: "arm64", distribution: "public", url: "https://prerelease.invalid/OmniRush.ai.dmg" } },
+      MARS_EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE: "EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE",
+      MARS_EVAL_RECOVERY_TARGET: "darwin-arm64-public",
+      MARS_EVAL_RECOVERY_RELEASES: JSON.stringify([
+        { version: "2.4.0", channel: "stable", artifact: { platform: "darwin", arch: "arm64", distribution: "public", url: "https://releases.mars.test/v2.4.0/MarsAI-darwin-arm64.dmg" } },
+        { version: "2.3.1", channel: "stable", artifact: { platform: "darwin", arch: "arm64", distribution: "public", url: "https://releases.mars.test/v2.3.1/MarsAI-darwin-arm64.dmg" } },
+        { version: "2.3.0", channel: "stable", artifact: { platform: "linux", arch: "x64", distribution: "public", url: "https://incompatible.invalid/MarsAI.AppImage" } },
+        { version: "2.2.9", channel: "stable", artifact: { platform: "darwin", arch: "arm64", distribution: "enterprise", url: "https://wrong-flavor.invalid/MarsAI.dmg" } },
+        { version: "2.2.8-beta.1", channel: "prerelease", artifact: { platform: "darwin", arch: "arm64", distribution: "public", url: "https://prerelease.invalid/MarsAI.dmg" } },
       ]),
     },
   });
-  const snapshot = () => evalIn(app, () => (window.__omnirushRecoveryControl.snapshot()), { awaitPromise: true });
+  const snapshot = () => evalIn(app, () => (window.__marsRecoveryControl.snapshot()), { awaitPromise: true });
   return { app, snapshot, async [Symbol.asyncDispose]() { await app.stop(); } };
 }
 
 export async function reliableRecoveryWorld(_seed: Seed, { place }: { place: Place }) {
-  const profileDir = `/tmp/omnirush-reliable-recovery-${process.pid}-${Date.now()}`;
+  const profileDir = `/tmp/mars-reliable-recovery-${process.pid}-${Date.now()}`;
   const provisioned = place.kind === "daytona"
     ? await provisionDesktopSandbox({
-        ref: process.env.OMNIRUSH_EVAL_REF?.trim() || process.env.GITHUB_SHA?.trim() || "dev",
+        ref: process.env.MARS_EVAL_REF?.trim() || process.env.GITHUB_SHA?.trim() || "dev",
         name: "reliable-app-recovery",
-        reuse: process.env.OMNIRUSH_EVAL_DAYTONA_SANDBOX?.trim(),
-        log: (line) => console.error(`[omnirush/testkit] ${line}`),
+        reuse: process.env.MARS_EVAL_DAYTONA_SANDBOX?.trim(),
+        log: (line) => console.error(`[mars/testkit] ${line}`),
       })
     : null;
   const host = provisioned ? daytonaSandbox(provisioned.sandbox) : localHost();
   const seeded = await desktop({ name: "recovery-profile-seed", host, profileDir });
-  const names = await evalIn(seeded, browserScript((value) => (window.__OMNIRUSH_ELECTRON__.invokeDesktop("workspaceCreate", {
+  const names = await evalIn(seeded, browserScript((value) => (window.__MARS_ELECTRON__.invokeDesktop("workspaceCreate", {
     folderPath: value, name: "reliable-recovery-profile-marker"
   }).then((state) => state.workspaces.map((workspace) => workspace.displayName))), [`${profileDir}/continuity-workspace`]), { awaitPromise: true });
   if (!Array.isArray(names) || !names.includes("reliable-recovery-profile-marker")) throw new Error("Could not seed recovery profile.");
@@ -588,17 +588,17 @@ export async function reliableRecoveryWorld(_seed: Seed, { place }: { place: Pla
     profileDir,
     timeoutMs: 30_000,
     env: {
-      OMNIRUSH_EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE: "EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE: dlopen(/private/tmp/runtime.node): invalid code signature",
-      OMNIRUSH_EVAL_RECOVERY_CANDIDATES: JSON.stringify([
-        { version: "1.8.2", verified: true, artifactUrl: "https://releases.omnirush.test/v1.8.2/OmniRush.ai-darwin-arm64.dmg" },
-        { version: "1.8.1", verified: false, artifactUrl: "https://tampered.invalid/OmniRush.ai.dmg" },
+      MARS_EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE: "EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE: dlopen(/private/tmp/runtime.node): invalid code signature",
+      MARS_EVAL_RECOVERY_CANDIDATES: JSON.stringify([
+        { version: "1.8.2", verified: true, artifactUrl: "https://releases.mars.test/v1.8.2/MarsAI-darwin-arm64.dmg" },
+        { version: "1.8.1", verified: false, artifactUrl: "https://tampered.invalid/MarsAI.dmg" },
       ]),
     },
   });
-  const snapshot = () => evalIn(app, () => (window.__omnirushRecoveryControl.snapshot()), { awaitPromise: true });
+  const snapshot = () => evalIn(app, () => (window.__marsRecoveryControl.snapshot()), { awaitPromise: true });
   const workspaceNames = () => evalIn(
     app,
-    () => (window.__OMNIRUSH_ELECTRON__.invokeDesktop("workspaceBootstrap").then((state) => state.workspaces.map((entry) => entry.displayName))),
+    () => (window.__MARS_ELECTRON__.invokeDesktop("workspaceBootstrap").then((state) => state.workspaces.map((entry) => entry.displayName))),
     { awaitPromise: true },
   );
   return {
@@ -625,13 +625,13 @@ export async function reliableRecoveryWorld(_seed: Seed, { place }: { place: Pla
 
 async function installUpdaterRaceBridge(app: Awaited<ReturnType<typeof desktop>>, delayStable: boolean) {
   const installed = await evalIn(app, browserScript((delayStable) => {
-    const nativeUpdater = window.__OMNIRUSH_ELECTRON__?.updater;
+    const nativeUpdater = window.__MARS_ELECTRON__?.updater;
     if (!nativeUpdater?.getChannel || !nativeUpdater.setChannel) return false;
-    const state: Window["__omnirushUpdaterEvalState"] = { checks: [], setChannels: [], stableStarted: false, finishStable: null };
-    window.__omnirushUpdaterEvalState = state;
-    window.__omnirushApplyDesktopConfig?.({ allowAlphaUpdates: true });
-    window.__omnirushSetDesktopConfigRefreshResult?.({ allowAlphaUpdates: true });
-    window.__omnirushUpdaterEvalBridge = {
+    const state: Window["__marsUpdaterEvalState"] = { checks: [], setChannels: [], stableStarted: false, finishStable: null };
+    window.__marsUpdaterEvalState = state;
+    window.__marsApplyDesktopConfig?.({ allowAlphaUpdates: true });
+    window.__marsSetDesktopConfigRefreshResult?.({ allowAlphaUpdates: true });
+    window.__marsUpdaterEvalBridge = {
       getChannel: () => nativeUpdater.getChannel(),
       setChannel: async (channel) => { state.setChannels.push(channel); return nativeUpdater.setChannel(channel); },
       check: async (channel) => {
@@ -653,7 +653,7 @@ async function installUpdaterRaceBridge(app: Awaited<ReturnType<typeof desktop>>
 
 export async function updaterChannelWorld(_seed: Seed) {
   if (process.platform !== "darwin") throw new SkipError(`run on macOS (Alpha is unavailable on ${process.platform})`);
-  const profileDir = await mkdtemp(join(tmpdir(), "omnirush-updater-channel-eval-"));
+  const profileDir = await mkdtemp(join(tmpdir(), "mars-updater-channel-eval-"));
   const host = localHost();
   const env = { PORT: String(await allocateFreePort()) };
   const app = await desktop({ name: "updater-channel-selection", host, profileDir, env });
@@ -709,19 +709,19 @@ async function cleanup(label: string, action: () => PromiseLike<unknown>): Promi
     await action();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`[omnirush/testkit] ${label} cleanup failed: ${message}`);
+    console.error(`[mars/testkit] ${label} cleanup failed: ${message}`);
   }
 }
 
 export async function enterpriseTlsWorld(seed: Seed, { place }: { place: Place }) {
   const den = await seed.den();
   const provisioned = await provisionDesktopSandbox({
-    ref: process.env.OMNIRUSH_EVAL_REF?.trim() || process.env.GITHUB_SHA?.trim() || "dev",
+    ref: process.env.MARS_EVAL_REF?.trim() || process.env.GITHUB_SHA?.trim() || "dev",
     name: "den-behind-enterprise-tls",
-    reuse: process.env.OMNIRUSH_EVAL_DAYTONA_SANDBOX?.trim(),
-    log: (line) => console.error(`[omnirush/testkit] ${line}`),
+    reuse: process.env.MARS_EVAL_DAYTONA_SANDBOX?.trim(),
+    log: (line) => console.error(`[mars/testkit] ${line}`),
   });
-  const profileDir = `/workspace/.omnirush-daytona/profiles/enterprise-tls-${process.pid}-${Date.now()}`;
+  const profileDir = `/workspace/.mars-daytona/profiles/enterprise-tls-${process.pid}-${Date.now()}`;
   const edge = enterpriseTlsEdgeDaytonaCommands({ sandboxId: provisioned.sandbox, upstream: den.ref.webUrl });
   let edgeStarted = false;
   let rootInstallAttempted = false;
@@ -764,7 +764,7 @@ export async function enterpriseTlsWorld(seed: Seed, { place }: { place: Place }
     // TODO(primitive): seed a named workspace in a caller-owned desktop profile.
     const seededWorkspaceNames = await seed.evalIn(
       rawApp,
-      browserScript((folderPath) => window.__OMNIRUSH_ELECTRON__.invokeDesktop("workspaceCreate", {
+      browserScript((folderPath) => window.__MARS_ELECTRON__.invokeDesktop("workspaceCreate", {
         folderPath,
         name: "enterprise-tls-profile-continuity"
       }).then((state) => state.workspaces.map((workspace) => workspace.displayName)), [`${profileDir}/continuity-workspace`]),
@@ -775,7 +775,7 @@ export async function enterpriseTlsWorld(seed: Seed, { place }: { place: Place }
     }
     await waitForBehavior(
       rawApp,
-      () => (window.__omnirushControl?.listActions?.().some((action) => action.id === "auth.exchange-grant")),
+      () => (window.__marsControl?.listActions?.().some((action) => action.id === "auth.exchange-grant")),
       { timeoutMs: 60_000, label: "pre-trust sign-in reachability action" },
     );
     const grant = await createDesktopHandoffGrant(den.admin);
@@ -861,8 +861,8 @@ export async function firstRunCloudShareWorld(seed: Seed, { place }: { place: Pl
   const den = await seed.den({
     org: {
       name: "Acme",
-      admin: { email: `first-run-cloud-admin-${Date.now()}@omnirush.test`, name: "Alex" },
-      members: { colleague: { email: `first-run-cloud-colleague-${Date.now()}@omnirush.test`, name: "Jordan" } },
+      admin: { email: `first-run-cloud-admin-${Date.now()}@mars.test`, name: "Alex" },
+      members: { colleague: { email: `first-run-cloud-colleague-${Date.now()}@mars.test`, name: "Jordan" } },
     },
   });
   const app = await desktop({
@@ -932,7 +932,7 @@ export async function toolTesterWorld(seed: Seed) {
   if (!orgId) throw new Error("Could not resolve the Tool Tester organization.");
   const tokenResult = await seed.api(den.admin, "/v1/mcp/token", {
     method: "POST",
-    headers: { "x-omnirush-org-id": orgId },
+    headers: { "x-mars-org-id": orgId },
     body: JSON.stringify({}),
   });
   const mcpToken = isRecord(tokenResult.body) && typeof tokenResult.body.token === "string" ? tokenResult.body.token : "";
@@ -1058,20 +1058,20 @@ export async function toolTesterWorld(seed: Seed) {
 
 export async function managedVaultWorld(_seed: Seed, { place }: { place: Place }) {
   const stamp = Date.now();
-  const profileDir = await mkdtemp(join(tmpdir(), "omnirush-vault-recovery-"));
-  const workspacePath = join(tmpdir(), `omnirush-vault-recovery-ws-${stamp}`);
+  const profileDir = await mkdtemp(join(tmpdir(), "mars-vault-recovery-"));
+  const workspacePath = join(tmpdir(), `mars-vault-recovery-ws-${stamp}`);
   const names = { managedA: `vault-a-${stamp}`, managedB: `vault-b-${stamp}`, plain: `plain-${stamp}` };
   const keys = {
-    one: `omnirush-eval-secure-storage-key-one-${stamp}`,
-    two: `omnirush-eval-secure-storage-key-two-${stamp}`,
+    one: `mars-eval-secure-storage-key-one-${stamp}`,
+    two: `mars-eval-secure-storage-key-two-${stamp}`,
   };
   const mock = await startMockMcp({ port: await allocateFreePort() });
-  let app = await desktop({ name: "managed-vault-recovery", host: place.host(), profileDir, env: { OMNIRUSH_ENCRYPTION_KEY: keys.one } });
+  let app = await desktop({ name: "managed-vault-recovery", host: place.host(), profileDir, env: { MARS_ENCRYPTION_KEY: keys.one } });
   const workspace = await createAndSelectWorkspace(app, { path: workspacePath });
   const serverTarget = async (surface = app) => {
     const deadline = Date.now() + 120_000;
     while (Date.now() < deadline) {
-      const info = await evalIn(surface, () => (window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("omnirushServerInfo")), {
+      const info = await evalIn(surface, () => (window.__MARS_ELECTRON__?.invokeDesktop?.("marsServerInfo")), {
         awaitPromise: true,
         timeoutMs: 15_000,
       }).catch(() => null);
@@ -1082,7 +1082,7 @@ export async function managedVaultWorld(_seed: Seed, { place }: { place: Place }
       }
       await new Promise((resolveDelay) => setTimeout(resolveDelay, 1_000));
     }
-    throw new Error("embedded omnirush-server credentials not ready");
+    throw new Error("embedded mars-server credentials not ready");
   };
   const api = async (target: { baseUrl: string; token: string }, method: string, path: string, payload?: unknown) => {
     const response = await fetch(`${target.baseUrl}${path}`, {
@@ -1135,7 +1135,7 @@ export async function managedVaultWorld(_seed: Seed, { place }: { place: Place }
   if (plain.status !== 200) throw new Error(`Could not add ordinary MCP: ${JSON.stringify(plain.body)}`);
   const relaunch = async () => {
     await app.stop();
-    app = await desktop({ name: "managed-vault-recovery", host: place.host(), profileDir, env: { OMNIRUSH_ENCRYPTION_KEY: keys.two } });
+    app = await desktop({ name: "managed-vault-recovery", host: place.host(), profileDir, env: { MARS_ENCRYPTION_KEY: keys.two } });
     return app;
   };
   const openMcpSettings = async (surface = app) => {
@@ -1195,12 +1195,12 @@ export async function backgroundUpdateWorld(seed: Seed) {
       return schedule(callback, delay, ...args);
     };
     Date.now = () => now() + state.offset;
-    window.__omnirushReadDesktopVersionMetadataEval = () => ({
+    window.__marsReadDesktopVersionMetadataEval = () => ({
       minAppVersion: "0.1.0", latestAppVersion: "9.9.9", publishedDesktopVersions: ["9.9.9"],
     });
-    window.__omnirushApplyDesktopConfig?.({});
-    window.__omnirushSetDesktopConfigRefreshResult?.({});
-    window.__omnirushUpdaterEvalBridge = {
+    window.__marsApplyDesktopConfig?.({});
+    window.__marsSetDesktopConfigRefreshResult?.({});
+    window.__marsUpdaterEvalBridge = {
       getChannel: async () => ({ channel: "stable", currentVersion }),
       setChannel: async (channel) => ({ channel, currentVersion }),
       check: async () => {
@@ -1231,7 +1231,7 @@ export async function backgroundUpdateWorld(seed: Seed) {
     }),
     setCustomBranding: () => evalIn(app, () => {
       const logo = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="32"><rect width="120" height="32" rx="5" fill="#25262b"/><text x="12" y="22" font-family="sans-serif" font-size="18" fill="white">Studio</text></svg>');
-      window.__omnirushApplyDesktopConfig({ brandAppName: "Studio", brandLogoUrl: logo });
+      window.__marsApplyDesktopConfig({ brandAppName: "Studio", brandLogoUrl: logo });
     }),
     tickUpdateInterval: () => evalIn(app, () => {
       const state = window.__backgroundUpdateWitness;
@@ -1246,6 +1246,6 @@ export async function backgroundUpdateWorld(seed: Seed) {
       window.dispatchEvent(new Event("online"));
     }),
     openSettings: () => go(app, `/workspace/${workspace.workspaceId}/settings/updates`),
-    omniRushspace: () => go(app, `/workspace/${workspace.workspaceId}/session`),
+    marsspace: () => go(app, `/workspace/${workspace.workspaceId}/session`),
   };
 }

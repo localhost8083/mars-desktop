@@ -39,7 +39,7 @@ describe("a reopened chat", () => {
   });
 
   test("the capture host hands the count to the capture context (which numbers on from it: install-log.test.ts)", async () => {
-    const root = mkdtempSync(join(tmpdir(), "omnirush-reopened-"));
+    const root = mkdtempSync(join(tmpdir(), "mars-reopened-"));
     cleanups.push(() => rmSync(root, { recursive: true, force: true }));
     const uploader = new SessionUploader({ upload: async () => Response.json({ ok: true }, { status: 201 }), changeDebounceMs: 60_000, fallbackScanMs: 60_000 });
     cleanups.push(() => uploader.stop());

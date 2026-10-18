@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { parseAutomationProposal } from "../src/components/tools/omnirush-automation-proposal";
+import { parseAutomationProposal } from "../src/components/tools/mars-automation-proposal";
 
 const dailyProposal = {
   ok: true,
@@ -18,7 +18,7 @@ const dailyProposal = {
 };
 
 describe("Automation proposal card", () => {
-  test("reads a proposal out of an omnirush_execute result, string or object", () => {
+  test("reads a proposal out of an mars_execute result, string or object", () => {
     const fromObject = parseAutomationProposal(dailyProposal);
     const fromString = parseAutomationProposal(JSON.stringify(dailyProposal));
 

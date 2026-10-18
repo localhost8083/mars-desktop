@@ -1,4 +1,4 @@
-export const DASHBOARD_TILE_CACHE_STORAGE_PREFIX = "omnirush.react.dashboardTileCache.v1";
+export const DASHBOARD_TILE_CACHE_STORAGE_PREFIX = "mars.react.dashboardTileCache.v1";
 
 /** Remove every signed-in user's saved dashboard result from this browser profile. */
 export function clearDashboardTileCacheStorage(storage: Storage): void {

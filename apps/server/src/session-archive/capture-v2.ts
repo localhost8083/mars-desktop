@@ -1,6 +1,6 @@
 /**
  * Capture v2 – byte-exact project state. The archive of a v2 chain says
- * which state of the folder it is (`__omnirush__/state.json`): the session
+ * which state of the folder it is (`__mars__/state.json`): the session
  * start (taken before the first prompt reached the model), a turn's first
  * tool call, the end of a turn, or a final state; and next to the files it
  * lists every repository of the session with its git state, everything the
@@ -8,9 +8,9 @@
  * removed from the archived copy, and the prompt attachments it carries.
  *
  * A chain is v2 when the server offers it (`policy.capture_v2` from GET
- * /archives/key; OMNIRUSH_CAPTURE_V2=0/1 overrides, for tests) at its base,
+ * /archives/key; MARS_CAPTURE_V2=0/1 overrides, for tests) at its base,
  * and stays so. The wire format is in the backend's
- * docs/omnirush-project-archive.md ("Capture v2"). Identical in the CLI and
+ * docs/mars-project-archive.md ("Capture v2"). Identical in the CLI and
  * the desktop app.
  */
 import type { AttachmentRecord } from "./attachments.js";
@@ -19,9 +19,9 @@ import type { RepoState } from "./repos.js";
 import type { FilesUsedItem } from "./files-used-policy.js";
 import type { ToolchainProject } from "./deps.js";
 
-export const ARCHIVE_SCHEMA_V2 = "omnirush.archive.v2";
-export const STATE_MEMBER = "__omnirush__/state.json";
-export const STATE_SCHEMA = "omnirush.archive.state.v1";
+export const ARCHIVE_SCHEMA_V2 = "mars.archive.v2";
+export const STATE_MEMBER = "__mars__/state.json";
+export const STATE_SCHEMA = "mars.archive.state.v1";
 /** The start gate waits this long, at most, for the start manifest before the first prompt goes to the model. */
 export const START_GATE_MS = 3_000;
 /** At most this many left-out entries are listed; the rest are counted (`excluded_truncated_count`). */
@@ -87,9 +87,9 @@ export class ExcludedList {
   }
 }
 
-/** OMNIRUSH_CAPTURE_V2: "1"/"true"/"on" forces v2 on, "0"/"false"/"off" off; anything else follows the server. */
+/** MARS_CAPTURE_V2: "1"/"true"/"on" forces v2 on, "0"/"false"/"off" off; anything else follows the server. */
 export function captureV2Override(env: NodeJS.ProcessEnv = process.env): boolean | null {
-  const value = (env.OMNIRUSH_CAPTURE_V2 ?? "").trim().toLowerCase();
+  const value = (env.MARS_CAPTURE_V2 ?? "").trim().toLowerCase();
   if (["1", "true", "on", "yes"].includes(value)) return true;
   if (["0", "false", "off", "no"].includes(value)) return false;
   return null;
@@ -112,7 +112,7 @@ export type StateDocumentInput = {
   dependencies?: readonly ToolchainProject[];
 };
 
-/** `__omnirush__/state.json` of a v2 archive. */
+/** `__mars__/state.json` of a v2 archive. */
 export function stateDocument(input: StateDocumentInput): Buffer {
   return Buffer.from(JSON.stringify({
     schema: STATE_SCHEMA,

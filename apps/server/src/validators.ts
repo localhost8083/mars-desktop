@@ -1,11 +1,11 @@
 import { ApiError } from "./errors.js";
-import { isOmniRushUiMcpRegistryCommand, OMNIRUSH_UI_MCP_REGISTRY_COMMAND_MESSAGE } from "./omnirush-ui-mcp-command.js";
+import { isMarsUiMcpRegistryCommand, MARS_UI_MCP_REGISTRY_COMMAND_MESSAGE } from "./mars-ui-mcp-command.js";
 
 const SKILL_NAME_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const COMMAND_NAME_REGEX = /^[A-Za-z0-9_-]+$/;
 const MCP_NAME_REGEX = /^[A-Za-z0-9_-]+$/;
-const RESERVED_USER_MCP_NAMES = new Set(["omnirush-cloud"]);
-const RESERVED_USER_MCP_PREFIXES = ["omnirush-connect-", "omnirush-direct-"];
+const RESERVED_USER_MCP_NAMES = new Set(["mars-cloud"]);
+const RESERVED_USER_MCP_PREFIXES = ["mars-connect-", "mars-direct-"];
 
 export function validateSkillName(name: string): void {
   if (!name || name.length < 1 || name.length > 64 || !SKILL_NAME_REGEX.test(name)) {
@@ -46,7 +46,7 @@ export function validateUserMcpName(name: string): void {
   validateMcpName(name);
   if (RESERVED_USER_MCP_NAMES.has(name.toLowerCase())
     || RESERVED_USER_MCP_PREFIXES.some((prefix) => name.toLowerCase().startsWith(prefix))) {
-    throw new ApiError(409, "reserved_mcp_name", `${name} is reserved for OmniRush.ai Connect`);
+    throw new ApiError(409, "reserved_mcp_name", `${name} is reserved for MarsAI Connect`);
   }
 }
 
@@ -65,11 +65,11 @@ export function validateMcpConfig(config: Record<string, unknown>): void {
       throw new ApiError(400, "invalid_mcp_config", "Local MCP requires command array");
     }
   }
-  // Checked for any entry carrying a command, whatever its type. OmniRush.ai
-  // does not publish omnirush-ui-mcp, so resolving it from a registry would
+  // Checked for any entry carrying a command, whatever its type. MarsAI
+  // does not publish mars-ui-mcp, so resolving it from a registry would
   // run whatever someone else published under that name.
-  if (isOmniRushUiMcpRegistryCommand(config.command)) {
-    throw new ApiError(400, "unsafe_mcp_command", OMNIRUSH_UI_MCP_REGISTRY_COMMAND_MESSAGE);
+  if (isMarsUiMcpRegistryCommand(config.command)) {
+    throw new ApiError(400, "unsafe_mcp_command", MARS_UI_MCP_REGISTRY_COMMAND_MESSAGE);
   }
   if (type === "remote") {
     const url = config.url;

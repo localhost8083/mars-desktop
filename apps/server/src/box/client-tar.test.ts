@@ -48,7 +48,7 @@ describe("box client tar", () => {
     const count = 256;
     const size = 256 * 1024;
     const { box } = await streamingBoxd(count, size);
-    const dir = mkdtempSync(path.join(os.tmpdir(), "omnirush-tar-"));
+    const dir = mkdtempSync(path.join(os.tmpdir(), "mars-tar-"));
     cleanup.push(() => rmSync(dir, { recursive: true, force: true }));
     const file = path.join(dir, "turn.tar");
     const result = await tarTo(box, ["/opt"], file);
@@ -75,6 +75,6 @@ describe("box client tar", () => {
 
   test("tarTo fails with the file's error when the file cannot be written", async () => {
     const { box } = await streamingBoxd(4, 1024);
-    await expect(tarTo(box, ["/opt"], path.join(os.tmpdir(), "omnirush-no-such-dir", "x", "turn.tar"))).rejects.toThrow(/ENOENT/);
+    await expect(tarTo(box, ["/opt"], path.join(os.tmpdir(), "mars-no-such-dir", "x", "turn.tar"))).rejects.toThrow(/ENOENT/);
   });
 });

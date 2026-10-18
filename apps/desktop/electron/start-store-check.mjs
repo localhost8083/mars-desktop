@@ -1,7 +1,7 @@
 /**
- * Whether omnirush.ai can write its local databases, for the couldn't-start
+ * Whether marsai.click can write its local databases, for the couldn't-start
  * screen: the runtime store (`<config>/runtime.sqlite`, the embedded
- * server's) and the engine's store (`<userData>/engine-data/omnirush/
+ * server's) and the engine's store (`<userData>/engine-data/mars/
  * opencode.db`), each with its journal files.
  *
  * SQLite opens a file it cannot write read-only without saying so, and the
@@ -11,14 +11,14 @@
  * elsewhere, made by another account). Files an elevated ("Run as
  * administrator") start creates inherit the folder's permissions and stay
  * writable; the elevated flag is still reported so the screen can say not
- * to start omnirush.ai that way.
+ * to start marsai.click that way.
  *
  * Nothing here leaves the computer: the report keeps only the category.
  */
 import { execFile } from "node:child_process";
 import { chmod, open, stat } from "node:fs/promises";
 import path from "node:path";
-import { omnirushConfigDir } from "@omnirush/paths";
+import { marsConfigDir } from "@mars/paths";
 
 const SUFFIXES = ["", "-journal", "-wal", "-shm"];
 
@@ -29,9 +29,9 @@ const SUFFIXES = ["", "-journal", "-wal", "-shm"];
  * @returns {{ runtime: string[]; engine: string[] }}
  */
 export function storeFiles({ userDataPath, env = process.env, homedir, platform = process.platform }) {
-  const configDir = omnirushConfigDir({ env, homeDir: homedir, platform });
-  const runtimeDb = String(env.OMNIRUSH_RUNTIME_DB ?? "").trim() || path.join(configDir, "runtime.sqlite");
-  const engineDb = path.join(userDataPath, "engine-data", "omnirush", "opencode.db");
+  const configDir = marsConfigDir({ env, homeDir: homedir, platform });
+  const runtimeDb = String(env.MARS_RUNTIME_DB ?? "").trim() || path.join(configDir, "runtime.sqlite");
+  const engineDb = path.join(userDataPath, "engine-data", "mars", "opencode.db");
   return {
     runtime: SUFFIXES.map((suffix) => `${runtimeDb}${suffix}`),
     engine: SUFFIXES.map((suffix) => `${engineDb}${suffix}`),
@@ -110,7 +110,7 @@ function runText(file, args) {
 }
 
 /**
- * What stops omnirush.ai writing its stores.
+ * What stops marsai.click writing its stores.
  *
  * @param {{ files: { runtime: string[]; engine: string[] }; elevated?: () => Promise<boolean | null>; openImpl?: typeof open; statImpl?: typeof stat }} options
  */

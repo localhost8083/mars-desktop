@@ -1,7 +1,7 @@
 /**
- * A function-driven client for native OmniRush.ai threads.
+ * A function-driven client for native MarsAI threads.
  *
- * Every call uses the OpenCode SDK through OmniRush.ai's workspace-scoped mount:
+ * Every call uses the OpenCode SDK through MarsAI's workspace-scoped mount:
  *
  * - `POST /workspace/:id/opencode/session` creates a thread
  * - native session reads provide messages, todos, and status
@@ -125,7 +125,7 @@ export function createHeadlessThreadClient(options: HeadlessThreadClientOptions)
     baseUrl: `${baseUrl}${opencodePath}`,
     headers: {
       Authorization: `Bearer ${options.token}`,
-      ...(options.hostToken === undefined ? {} : { "X-OmniRush-Host-Token": options.hostToken }),
+      ...(options.hostToken === undefined ? {} : { "X-Mars-Host-Token": options.hostToken }),
     },
     redirect: "error",
     fetch: Object.assign(sdkFetch, { preconnect: () => {} }),
@@ -145,8 +145,8 @@ export function createHeadlessThreadClient(options: HeadlessThreadClientOptions)
       message: detail.success && detail.data.message !== undefined
         ? detail.data.message
         : result.response
-          ? `OmniRush.ai returned ${result.response.status} for ${method} ${path}`
-          : `OmniRush.ai request failed for ${method} ${path}`,
+          ? `MarsAI returned ${result.response.status} for ${method} ${path}`
+          : `MarsAI request failed for ${method} ${path}`,
       method,
       path,
       ...(result.response === undefined ? {} : { status: result.response.status }),
@@ -159,7 +159,7 @@ export function createHeadlessThreadClient(options: HeadlessThreadClientOptions)
     if (parsed.success) return parsed.data;
     throw new HeadlessThreadError({
       code: "invalid_response",
-      message: `OmniRush.ai returned an unexpected payload for ${method} ${path}`,
+      message: `MarsAI returned an unexpected payload for ${method} ${path}`,
       method,
       path,
       ...(result.response === undefined ? {} : { status: result.response.status }),

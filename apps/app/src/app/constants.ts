@@ -3,58 +3,58 @@ import { t } from "../i18n";
 import { getDenMcpUrl } from "./lib/den";
 import { canonicalMcpServerName } from "./mcp";
 import {
-  BUILT_IN_OMNIRUSH_EXTENSION_MANIFESTS,
+  BUILT_IN_MARS_EXTENSION_MANIFESTS,
   extensionContribution,
   extensionResource,
   isTrustedBuiltInExtension,
-  type OmniRushExtensionManifest,
-  type OmniRushExtensionPlatform,
+  type MarsExtensionManifest,
+  type MarsExtensionPlatform,
 } from "./extensions";
 
 /** Computer Use is paused for now: hidden from the Library, never reconnected, and the desktop refuses to start it. */
 export const COMPUTER_USE_PAUSED = true;
 
-export const MODEL_PREF_KEY = "omnirush.defaultModel";
-export const SESSION_MODEL_PREF_KEY = "omnirush.sessionModels";
-export const THINKING_PREF_KEY = "omnirush.showThinking";
-export const VARIANT_PREF_KEY = "omnirush.modelVariant";
+export const MODEL_PREF_KEY = "mars.defaultModel";
+export const SESSION_MODEL_PREF_KEY = "mars.sessionModels";
+export const THINKING_PREF_KEY = "mars.showThinking";
+export const VARIANT_PREF_KEY = "mars.modelVariant";
 export { LANGUAGE_PREF_KEY } from "../i18n";
-export const HIDE_TITLEBAR_PREF_KEY = "omnirush.hideTitlebar";
+export const HIDE_TITLEBAR_PREF_KEY = "mars.hideTitlebar";
 
 /**
  * The models the engine serves before the account's catalog first syncs (and
  * offline); the first entry is the default. Mirrors the server's
- * builtinOmniRushModelCatalog (the backend's list at 2026-10-04). Only a
+ * builtinMarsModelCatalog (the backend's list at 2026-10-04). Only a
  * fallback: the picker lists whatever the account's catalog lists.
  */
-export const BUILTIN_OMNIRUSH_MODEL_IDS = ["gpt-6-astra", "gpt-6.1-sol", "gpt-6-sol"] as const;
+export const BUILTIN_MARS_MODEL_IDS = ["gpt-6-astra", "gpt-6.1-sol", "gpt-6-sol"] as const;
 
 export const DEFAULT_MODEL: ModelRef = {
-  providerID: "omnirush",
-  modelID: BUILTIN_OMNIRUSH_MODEL_IDS[0],
+  providerID: "mars",
+  modelID: BUILTIN_MARS_MODEL_IDS[0],
 };
 
-/** omnirush.ai model ids the catalog no longer serves; a stored choice of one resets to the default. */
-export const RETIRED_OMNIRUSH_MODEL_IDS: readonly string[] = [];
+/** marsai.click model ids the catalog no longer serves; a stored choice of one resets to the default. */
+export const RETIRED_MARS_MODEL_IDS: readonly string[] = [];
 
-/** The id syntax of the omnirush.ai model catalog. */
-const OMNIRUSH_CATALOG_MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+/** The id syntax of the marsai.click model catalog. */
+const MARS_CATALOG_MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/;
 
 /**
- * Whether a model id can name an omnirush.ai catalog model. Retired routes
+ * Whether a model id can name an marsai.click catalog model. Retired routes
  * (e.g. the launch release's `z-ai/glm-5.2`) cannot.
  */
-export function isOmniRushModelID(modelID: string): boolean {
+export function isMarsModelID(modelID: string): boolean {
   const id = modelID.trim();
-  return OMNIRUSH_CATALOG_MODEL_ID.test(id) && !RETIRED_OMNIRUSH_MODEL_IDS.includes(id.toLowerCase());
+  return MARS_CATALOG_MODEL_ID.test(id) && !RETIRED_MARS_MODEL_IDS.includes(id.toLowerCase());
 }
 
 /**
- * Every effort an omnirush.ai model may offer, in picker order. Each model
+ * Every effort an marsai.click model may offer, in picker order. Each model
  * offers its own subset: the server's runtime config declares the rest of
  * these disabled, so the engine reports exactly the model's levels.
  */
-export const OMNIRUSH_REASONING_EFFORTS = ["none", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
+export const MARS_REASONING_EFFORTS = ["none", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
 
 export const SUGGESTED_PLUGINS: SuggestedPlugin[] = [];
 
@@ -71,10 +71,10 @@ export type McpDirectoryInfo = {
   type?: "remote" | "local";
   command?: string[];
   oauth: boolean;
-  /** Route OAuth through the local omnirush.ai gateway instead of delegating it to OpenCode. */
+  /** Route OAuth through the local marsai.click gateway instead of delegating it to OpenCode. */
   managedOAuth?: boolean;
-  /** Identifies MCP entries owned by omnirush.ai Connect instead of workspace configuration. */
-  managedBy?: "omnirush-connect";
+  /** Identifies MCP entries owned by marsai.click Connect instead of workspace configuration. */
+  managedBy?: "mars-connect";
   oauthConfig?: {
     clientId?: string;
     clientSecret?: string;
@@ -88,17 +88,17 @@ export type McpDirectoryInfo = {
   iconSrc?: string;
   /** Prompt inserted from the composer extension picker. */
   composerPrompt?: string;
-  /** Whether omnirush.ai should show this extension as enabled before user setup. */
+  /** Whether marsai.click should show this extension as enabled before user setup. */
   defaultEnabled?: boolean;
-  /** Whether omnirush.ai should hide this extension from the default catalog view. */
+  /** Whether marsai.click should hide this extension from the default catalog view. */
   defaultHidden?: boolean;
   /** Whether this extension is still in preview. */
   preview?: boolean;
   /** Normalized extension manifest backing this catalog entry. */
-  extensionManifest?: OmniRushExtensionManifest;
+  extensionManifest?: MarsExtensionManifest;
 };
 
-function extensionManifestToDirectoryInfo(manifest: OmniRushExtensionManifest): McpDirectoryInfo {
+function extensionManifestToDirectoryInfo(manifest: MarsExtensionManifest): McpDirectoryInfo {
   const mcpResource = extensionResource(manifest, "mcp");
   return {
     id: manifest.id,
@@ -119,7 +119,7 @@ function extensionManifestToDirectoryInfo(manifest: OmniRushExtensionManifest): 
   };
 }
 
-export function isBuiltInOmniRushExtension(entry: Pick<McpDirectoryInfo, "kind" | "extensionManifest">): boolean {
+export function isBuiltInMarsExtension(entry: Pick<McpDirectoryInfo, "kind" | "extensionManifest">): boolean {
   return entry.kind === "extension" && isTrustedBuiltInExtension(entry.extensionManifest);
 }
 
@@ -186,9 +186,9 @@ export const MCP_QUICK_CONNECT: McpDirectoryInfo[] = [
     iconSrc: "/ext-context7.svg",
   },
   {
-    get name() { return t("mcp.quick_connect_omnirush_cloud_title"); },
-    serverName: "omnirush-cloud",
-    get description() { return t("mcp.quick_connect_omnirush_cloud_desc"); },
+    get name() { return t("mcp.quick_connect_mars_cloud_title"); },
+    serverName: "mars-cloud",
+    get description() { return t("mcp.quick_connect_mars_cloud_desc"); },
     get url() {
       // The desktop app connects to the minimal, harness-facing surface
       // (/mcp/agent: search_capabilities + execute_capability only), not the
@@ -204,49 +204,49 @@ export const MCP_QUICK_CONNECT: McpDirectoryInfo[] = [
     },
     type: "remote",
     oauth: true,
-    managedBy: "omnirush-connect",
+    managedBy: "mars-connect",
     kind: "mcp",
-    iconSrc: "/omnirush-mark.png",
+    iconSrc: "/mars-mark.png",
     // Auto-managed by the signed-in cloud reconciler (syncCloudControlMcp):
-    // configured + enabled while signed in to omnirush.ai Cloud. Hidden from the
+    // configured + enabled while signed in to marsai.click Cloud. Hidden from the
     // default catalog; "Show hidden" reveals it.
     defaultHidden: true,
   },
   {
-    get name() { return t("mcp.quick_connect_omnirush_ui_title"); },
-    serverName: "omnirush-ui",
-    get description() { return t("mcp.quick_connect_omnirush_ui_desc"); },
+    get name() { return t("mcp.quick_connect_mars_ui_title"); },
+    serverName: "mars-ui",
+    get description() { return t("mcp.quick_connect_mars_ui_desc"); },
     type: "local",
-    // Resolved by the desktop at connect time (getOmniRushUiMcpCommand): the
+    // Resolved by the desktop at connect time (getMarsUiMcpCommand): the
     // MCP ships inside the app and runs under the app's own binary. It is not
     // published on npm, so there is deliberately no `npx` fallback here.
     command: [],
     oauth: false,
     kind: "ui-control",
-    iconSrc: "/omnirush-mark.png",
+    iconSrc: "/mars-mark.png",
     // Internal UI-control surface for agents driving the desktop app. Hidden
     // from the default catalog; "Show hidden" reveals it.
     defaultHidden: true,
   },
   // Computer Use is paused (COMPUTER_USE_PAUSED): not offered in the Library.
-  ...BUILT_IN_OMNIRUSH_EXTENSION_MANIFESTS.filter((manifest) => !(COMPUTER_USE_PAUSED && manifest.id === "computer-use")).map(extensionManifestToDirectoryInfo),
+  ...BUILT_IN_MARS_EXTENSION_MANIFESTS.filter((manifest) => !(COMPUTER_USE_PAUSED && manifest.id === "computer-use")).map(extensionManifestToDirectoryInfo),
 ];
 
-export const OMNIRUSH_EXTENSION_CATALOG = MCP_QUICK_CONNECT.filter((entry) => entry.kind === "extension");
+export const MARS_EXTENSION_CATALOG = MCP_QUICK_CONNECT.filter((entry) => entry.kind === "extension");
 
-export function resolveOmniRushExtensionCatalogPlatform(
+export function resolveMarsExtensionCatalogPlatform(
   platform: "web" | "desktop",
   os?: "macos" | "windows" | "linux",
-): OmniRushExtensionPlatform {
+): MarsExtensionPlatform {
   if (platform === "web") return "web";
   if (os === "macos") return "darwin";
   if (os === "windows") return "windows";
   return "linux";
 }
 
-export function filterOmniRushExtensionCatalogForPlatform<TEntry extends Pick<McpDirectoryInfo, "extensionManifest">>(
+export function filterMarsExtensionCatalogForPlatform<TEntry extends Pick<McpDirectoryInfo, "extensionManifest">>(
   entries: TEntry[],
-  platform: OmniRushExtensionPlatform,
+  platform: MarsExtensionPlatform,
 ): TEntry[] {
   return entries.filter((entry) => {
     const platforms = entry.extensionManifest?.platform;

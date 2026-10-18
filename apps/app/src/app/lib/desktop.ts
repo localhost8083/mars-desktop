@@ -3,20 +3,20 @@ import { nativeDeepLinkEvent } from "./deep-link-bridge";
 export type * from "./desktop-types";
 export type {
   EngineInfo,
-  OmniRushServerInfo,
+  MarsServerInfo,
   EngineDoctorResult,
   WorkspaceInfo,
   WorkspaceList,
   WorkspaceExportSummary,
   OpencodeCommandDraft,
-  WorkspaceOmniRushConfig,
+  WorkspaceMarsConfig,
   AppBuildInfo,
   DesktopDistributionInfo,
   BrandIconApplyResult,
   BrandIconState,
   DesktopBootstrapConfig,
   EvalRelaunchResult,
-  OmniRushDockerCleanupResult,
+  MarsDockerCleanupResult,
   ExecResult,
   LocalSkillCard,
   LocalSkillContent,
@@ -54,8 +54,8 @@ import type {
   BrowserPanelTab,
   BrowserStatePayload,
   OpenBrowserUrlResult,
-} from "@omnirush/browser-tabs";
-import type { ImportableSite, ImportSourceAvailability } from "@omnirush/browser-logins";
+} from "@mars/browser-tabs";
+import type { ImportableSite, ImportSourceAvailability } from "@mars/browser-logins";
 
 export type BrowserLoginSite = ImportableSite;
 
@@ -125,7 +125,7 @@ export type BrowserLoginSyncBridge = {
   testWitnessUrl?: () => Promise<string>;
 };
 
-export type { BrowserStatePayload } from "@omnirush/browser-tabs";
+export type { BrowserStatePayload } from "@mars/browser-tabs";
 
 export type BrowserProxyState = {
   proxy: { rules: string; authenticated: boolean } | null;
@@ -177,11 +177,11 @@ export type UpdaterPackageKind = "deb" | "rpm" | "pacman" | "appimage";
 
 declare global {
   interface Window {
-    __omnirushRecoveryControl?: {
+    __marsRecoveryControl?: {
       snapshot: () => Promise<unknown>;
       select: (id: string) => Promise<unknown>;
     };
-    __OMNIRUSH_ELECTRON__?: {
+    __MARS_ELECTRON__?: {
       invokeDesktop?: <C extends DesktopCommandName>(
         command: C,
         ...args: DesktopCommandArgs<C>
@@ -372,7 +372,7 @@ declare global {
 export async function closeSessionBrowserTabs(sessionId: string): Promise<void> {
   if (typeof window === "undefined" || !sessionId.trim()) return;
   try {
-    await window.__OMNIRUSH_ELECTRON__?.browser?.closeSessionTabs?.(sessionId);
+    await window.__MARS_ELECTRON__?.browser?.closeSessionTabs?.(sessionId);
   } catch {
     // Cleanup is idempotent and must not undo a confirmed session deletion.
   }
@@ -382,7 +382,7 @@ async function invokeElectronHelper<C extends DesktopCommandName>(
   command: C,
   ...args: DesktopCommandArgs<C>
 ): Promise<DesktopCommandResult<C>> {
-  const invokeDesktop = window.__OMNIRUSH_ELECTRON__?.invokeDesktop;
+  const invokeDesktop = window.__MARS_ELECTRON__?.invokeDesktop;
   if (!invokeDesktop) {
     throw new Error(`Electron desktop helper is unavailable: ${command}`);
   }
@@ -431,7 +431,7 @@ export const desktopBridge = new Proxy(electronBridge, {
     if (cached) return cached;
 
     const fn = async (...args: unknown[]) => {
-      const invokeDesktop = window.__OMNIRUSH_ELECTRON__?.invokeDesktop;
+      const invokeDesktop = window.__MARS_ELECTRON__?.invokeDesktop;
       if (!invokeDesktop) {
         throw new Error(`Electron desktop helper is unavailable: ${prop}`);
       }
@@ -450,7 +450,7 @@ export const desktopBridge = new Proxy(electronBridge, {
 
 // ---------------------------------------------------------------------------
 // desktopFetch — proxies non-loopback requests through the Electron main
-// process. Loopback hosts (the local opencode/omnirush server) use the
+// process. Loopback hosts (the local opencode/mars server) use the
 // renderer's own fetch, which works against same-machine services. Cross-origin
 // requests that need CORS headers the target does not send (e.g. the Den API on
 // a different control plane) should instead use `desktopFetchViaMain` directly.
@@ -488,7 +488,7 @@ async function runCancellableDesktopTransfer<T>(
 }
 
 export function electronLocalPathForFile(file: File): string | null {
-  const getPathForFile = window.__OMNIRUSH_ELECTRON__?.fileSystem?.getPathForFile;
+  const getPathForFile = window.__MARS_ELECTRON__?.fileSystem?.getPathForFile;
   if (!getPathForFile) return null;
   try {
     return getPathForFile(file).trim() || null;
@@ -636,7 +636,7 @@ export function assertDesktopWebUrl(url: string): string {
 
 export async function openDesktopUrl(url: string): Promise<void> {
   const safeUrl = assertDesktopWebUrl(url);
-  const openExternal = window.__OMNIRUSH_ELECTRON__?.shell?.openExternal;
+  const openExternal = window.__MARS_ELECTRON__?.shell?.openExternal;
   if (openExternal) {
     const result = await openExternal(safeUrl);
     if (result && result.ok === false) {
@@ -673,18 +673,18 @@ export async function applyBrandAppName(appName: string | null): Promise<string>
 }
 
 export async function applyBrandIcon(url: string | null): Promise<BrandIconApplyResult> {
-  const apply = typeof window !== "undefined" ? window.__OMNIRUSH_ELECTRON__?.brandIcon?.apply : undefined;
+  const apply = typeof window !== "undefined" ? window.__MARS_ELECTRON__?.brandIcon?.apply : undefined;
   if (!apply) return { ok: false, reason: "bridge-unavailable" };
   return apply(url);
 }
 
 export async function getBrandIconState(): Promise<BrandIconState | null> {
-  const getState = typeof window !== "undefined" ? window.__OMNIRUSH_ELECTRON__?.brandIcon?.getState : undefined;
+  const getState = typeof window !== "undefined" ? window.__MARS_ELECTRON__?.brandIcon?.getState : undefined;
   return getState ? getState() : null;
 }
 
 export async function evalRelaunchDesktopApp(): Promise<EvalRelaunchResult> {
-  const relaunch = typeof window !== "undefined" ? window.__OMNIRUSH_ELECTRON__?.dev?.evalRelaunch : undefined;
+  const relaunch = typeof window !== "undefined" ? window.__MARS_ELECTRON__?.dev?.evalRelaunch : undefined;
   if (!relaunch) {
     throw new Error("Electron eval relaunch helper is unavailable.");
   }
@@ -709,7 +709,7 @@ export async function openDesktopWithApp(target: string, appPath: string): Promi
 }
 
 export async function relaunchDesktopApp(): Promise<void> {
-  await window.__OMNIRUSH_ELECTRON__?.shell?.relaunch?.();
+  await window.__MARS_ELECTRON__?.shell?.relaunch?.();
 }
 
 export async function getDesktopHomeDir(): Promise<string> {
@@ -734,7 +734,7 @@ export async function subscribeDesktopDeepLinks(
     }
   };
   window.addEventListener(nativeDeepLinkEvent, listener as EventListener);
-  const initialUrls = window.__OMNIRUSH_ELECTRON__?.meta?.initialDeepLinks;
+  const initialUrls = window.__MARS_ELECTRON__?.meta?.initialDeepLinks;
   if (Array.isArray(initialUrls) && initialUrls.length > 0) {
     handler(initialUrls);
   }
@@ -745,18 +745,18 @@ export async function subscribeDesktopDeepLinks(
 
 export function readInitialDesktopBootstrapConfig(): DesktopBootstrapConfig | null | undefined {
   if (typeof window === "undefined") return undefined;
-  return window.__OMNIRUSH_ELECTRON__?.meta?.desktopBootstrap;
+  return window.__MARS_ELECTRON__?.meta?.desktopBootstrap;
 }
 
 export function readDesktopDistributionInfo(): DesktopDistributionInfo {
   const distribution = typeof window === "undefined"
     ? undefined
-    : window.__OMNIRUSH_ELECTRON__?.meta?.distribution;
+    : window.__MARS_ELECTRON__?.meta?.distribution;
   return distribution ?? {
     flavor: "public",
-    appName: "omnirush.ai",
-    appIdentifier: "ai.omnirush.desktop",
-    protocolScheme: "omnirush",
+    appName: "marsai.click",
+    appIdentifier: "ai.marsai.desktop",
+    protocolScheme: "mars",
     requireSignin: false,
     requireActivation: false,
   };
@@ -779,8 +779,8 @@ const {
   workspaceAddAuthorizedRoot,
   workspaceExportConfig,
   workspaceImportConfig,
-  workspaceOmniRushRead,
-  workspaceOmniRushWrite,
+  workspaceMarsRead,
+  workspaceMarsWrite,
   opencodeCommandList,
   opencodeCommandWrite,
   opencodeCommandDelete,
@@ -793,26 +793,27 @@ const {
   setDesktopBootstrapConfig,
   connectLinkVerify,
   connectLinkAccept,
-  nukeOmniRushAndOpencodeConfigPreview,
-  nukeOmniRushAndOpencodeConfigAndExit,
-  sandboxCleanupOmniRushContainers,
-  omnirushServerInfo,
-  omnirushAccountStatus,
-  omnirushQualityDetails,
-  omnirushQualitySpins,
+  nukeMarsAndOpencodeConfigPreview,
+  nukeMarsAndOpencodeConfigAndExit,
+  sandboxCleanupMarsContainers,
+  marsServerInfo,
+  marsAccountStatus,
+  marsQualityDetails,
+  marsQualitySpins,
   keepAwakeStatus,
   keepAwakeSet,
-  omnirushSessionStatus,
-  omnirushQualitySpin,
-  omnirushBuildathon,
-  omnirushBuildathonSessions,
-  omnirushBuildathonLink,
-  omnirushBuildathonJoin,
-  omnirushBuildathonTagSession,
-  omnirushBuildathonChecklist,
-  omnirushAccountConnect,
-  omnirushAccountSignOut,
-  omnirushServerRestart,
+  marsSessionStatus,
+  marsQualitySpin,
+  marsBuildathon,
+  marsBuildathonSessions,
+  marsBuildathonLink,
+  marsBuildathonJoin,
+  marsBuildathonTagSession,
+  marsBuildathonChecklist,
+  marsAccountConnect,
+  marsAccountConnectApiKey,
+  marsAccountSignOut,
+  marsServerRestart,
   runtimeBootstrap,
   engineInfo,
   engineDoctor,
@@ -831,7 +832,7 @@ const {
   updaterEnvironment,
   readOpencodeConfig,
   writeOpencodeConfig,
-  resetOmniRushState,
+  resetMarsState,
   resetOpencodeCache,
   opencodeMcpAuth,
   setWindowDecorations,
@@ -851,8 +852,8 @@ export {
   workspaceAddAuthorizedRoot,
   workspaceExportConfig,
   workspaceImportConfig,
-  workspaceOmniRushRead,
-  workspaceOmniRushWrite,
+  workspaceMarsRead,
+  workspaceMarsWrite,
   opencodeCommandList,
   opencodeCommandWrite,
   opencodeCommandDelete,
@@ -865,26 +866,27 @@ export {
   setDesktopBootstrapConfig,
   connectLinkVerify,
   connectLinkAccept,
-  nukeOmniRushAndOpencodeConfigPreview,
-  nukeOmniRushAndOpencodeConfigAndExit,
-  sandboxCleanupOmniRushContainers,
-  omnirushServerInfo,
-  omnirushAccountStatus,
-  omnirushQualityDetails,
-  omnirushQualitySpins,
+  nukeMarsAndOpencodeConfigPreview,
+  nukeMarsAndOpencodeConfigAndExit,
+  sandboxCleanupMarsContainers,
+  marsServerInfo,
+  marsAccountStatus,
+  marsQualityDetails,
+  marsQualitySpins,
   keepAwakeStatus,
   keepAwakeSet,
-  omnirushSessionStatus,
-  omnirushQualitySpin,
-  omnirushBuildathon,
-  omnirushBuildathonSessions,
-  omnirushBuildathonLink,
-  omnirushBuildathonJoin,
-  omnirushBuildathonTagSession,
-  omnirushBuildathonChecklist,
-  omnirushAccountConnect,
-  omnirushAccountSignOut,
-  omnirushServerRestart,
+  marsSessionStatus,
+  marsQualitySpin,
+  marsBuildathon,
+  marsBuildathonSessions,
+  marsBuildathonLink,
+  marsBuildathonJoin,
+  marsBuildathonTagSession,
+  marsBuildathonChecklist,
+  marsAccountConnect,
+  marsAccountConnectApiKey,
+  marsAccountSignOut,
+  marsServerRestart,
   runtimeBootstrap,
   engineInfo,
   engineDoctor,
@@ -903,7 +905,7 @@ export {
   updaterEnvironment,
   readOpencodeConfig,
   writeOpencodeConfig,
-  resetOmniRushState,
+  resetMarsState,
   resetOpencodeCache,
   opencodeMcpAuth,
   setWindowDecorations,

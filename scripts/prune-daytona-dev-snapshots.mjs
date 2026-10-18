@@ -267,7 +267,7 @@ async function readSandboxes({ apiUrl, apiKey, fetchImpl }) {
 export async function pruneDaytonaSnapshots({
   apiUrl = DEFAULT_API_URL,
   channel = "dev",
-  nameBase = "omnirush",
+  nameBase = "mars",
   keepNames,
   keepCount,
   dryRun = false,
@@ -355,7 +355,7 @@ Options:
   --channel <channel>   Snapshot family to prune: dev scopes to per-push
                         <base>-dev-* snapshots, release scopes to tagged
                         <base>-<version> snapshots (default: dev).
-  --name-base <base>    Snapshot name base (default: omnirush).
+  --name-base <base>    Snapshot name base (default: mars).
   --keep <name>         Snapshot name to protect; may be repeated.
   --keep-count <n>      Protect the newest n in-scope snapshots
                         (default: 5 for dev, 20 for release).
@@ -369,7 +369,7 @@ export function parseArgs(args) {
   const options = {
     apiUrl: DEFAULT_API_URL,
     channel: "dev",
-    nameBase: "omnirush",
+    nameBase: "mars",
     keepNames: [],
     keepCount: undefined,
     dryRun: false,

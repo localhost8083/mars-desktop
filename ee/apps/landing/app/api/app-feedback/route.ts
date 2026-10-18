@@ -1,5 +1,5 @@
 import { buildResponseHeaders, jsonResponse, rateLimitFormRequest, validateAntiSpamFields, validateTrustedOrigin, verifyFormBotProtection } from "../_lib/security";
-import { EmailSendError, sendEmail, type FeedbackEmailProps } from "@omnirush/email";
+import { EmailSendError, sendEmail, type FeedbackEmailProps } from "@mars/email";
 
 type FeedbackContext = {
   source?: string;

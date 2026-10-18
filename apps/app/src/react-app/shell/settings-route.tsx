@@ -6,22 +6,22 @@ import { closeWorkspaceTerminals } from "../domains/session/terminal/terminal-ru
 
 import {
   SUGGESTED_PLUGINS,
-  filterOmniRushExtensionCatalogForPlatform,
-  resolveOmniRushExtensionCatalogPlatform,
+  filterMarsExtensionCatalogForPlatform,
+  resolveMarsExtensionCatalogPlatform,
 } from "@/app/constants";
 import type { EnablementContext } from "@/app/enablement";
 import { createClient, unwrap } from "@/app/lib/opencode";
 import {
-  createOmniRushServerClient,
-  isLoopbackOmniRushServerUrl,
-  readOmniRushServerSettings,
-  type OmniRushCloudMcpHealth,
-  type OmniRushCloudMcpProviderModelContext,
-  type OmniRushServerCapabilities,
-  type OmniRushServerClient,
-  type OmniRushWorkspaceInfo,
-} from "@/app/lib/omnirush-server";
-import { buildOmniRushEnvRuntimeKey } from "@/app/lib/omnirush-env-runtime";
+  createMarsServerClient,
+  isLoopbackMarsServerUrl,
+  readMarsServerSettings,
+  type MarsCloudMcpHealth,
+  type MarsCloudMcpProviderModelContext,
+  type MarsServerCapabilities,
+  type MarsServerClient,
+  type MarsWorkspaceInfo,
+} from "@/app/lib/mars-server";
+import { buildMarsEnvRuntimeKey } from "@/app/lib/mars-env-runtime";
 import {
   collectAgentContextDiagnosticObservations,
   isAgentContextDiagnosticsWorkspaceAllowed,
@@ -69,9 +69,9 @@ import {
   routeWorkspaceSelectionCommitter,
 } from "@/react-app/shell/route-refresh-control";
 import { createConnectionsStore, useConnectionsStoreSnapshot } from "@/react-app/domains/connections/store";
-import { cleanupOmniRushCloudMcpAfterSignOut } from "@/react-app/domains/connections/cloud-mcp-reconciler";
+import { cleanupMarsCloudMcpAfterSignOut } from "@/react-app/domains/connections/cloud-mcp-reconciler";
 import { useOrgMcpConnections } from "@/react-app/domains/connections/use-org-mcp-connections";
-import { createOmniRushServerStore, useOmniRushServerStoreSnapshot } from "@/react-app/domains/connections/omnirush-server-store";
+import { createMarsServerStore, useMarsServerStoreSnapshot } from "@/react-app/domains/connections/mars-server-store";
 import { createProviderAuthStore, useProviderAuthStoreSnapshot } from "@/react-app/domains/connections/provider-auth/store";
 import ProviderAuthModal from "@/react-app/domains/connections/provider-auth/provider-auth-modal";
 import ConnectionsModals from "@/react-app/domains/connections/modals";
@@ -82,7 +82,7 @@ import "@/react-app/domains/settings/computer-use-config";
 import "@/react-app/domains/settings/browser-extension-config";
 import { useSettingsExtensionController } from "@/react-app/domains/settings/settings-extension-controller";
 import { buildExtensionItems } from "@/react-app/domains/settings/extension-items";
-import { isOmniRushExtensionEnabled, OMNIRUSH_EXTENSION_STATE_CHANGED } from "@/react-app/domains/settings/extension-state";
+import { isMarsExtensionEnabled, MARS_EXTENSION_STATE_CHANGED } from "@/react-app/domains/settings/extension-state";
 import { PreferencesView } from "@/react-app/domains/settings/pages/preferences-view";
 import { GeneralSettingsView } from "@/react-app/domains/settings/pages/general-view";
 import type { BestPracticesClient } from "@/react-app/domains/settings/best-practices";
@@ -115,7 +115,7 @@ import { useDebugViewModel } from "@/react-app/domains/settings/state/debug-view
 import { useDesktopUpdater } from "@/react-app/domains/settings/state/desktop-updater-provider";
 import { CloudSessionProvider, useCloudSession } from "@/react-app/domains/settings/cloud/cloud-session-provider";
 import { useDenSession } from "@/react-app/domains/settings/cloud/use-den-session";
-import { useControlAction, type OmniRushControlAction } from "./control/control-provider";
+import { useControlAction, type MarsControlAction } from "./control/control-provider";
 import { useBootState } from "./boot-state";
 import { SettingsShell } from "@/react-app/domains/settings/shell/settings-shell";
 import { SettingsContent } from "@/react-app/domains/settings/shell/panel";
@@ -123,8 +123,8 @@ import { createExtensionsStore, useExtensionsStoreSnapshot } from "@/react-app/d
 import { usePlatform } from "@/react-app/kernel/platform";
 import { useLocal } from "@/react-app/kernel/local-provider";
 import {
-  omnirushServerInfo,
-  omnirushServerRestart,
+  marsServerInfo,
+  marsServerRestart,
   engineStart,
   resolveWorkspaceListSelectedId,
   workspaceBootstrap,
@@ -170,11 +170,11 @@ import type { ModelRef } from "@/app/types";
 import { workspaceSwatchColor } from "@/react-app/domains/session/sidebar/utils";
 import { recordInspectorEvent } from "../../app/lib/app-inspector";
 import {
-  ensureDesktopLocalOmniRushConnection,
+  ensureDesktopLocalMarsConnection,
   shouldAttemptDesktopLocalReconnect,
-} from "./desktop-local-omnirush";
+} from "./desktop-local-mars";
 import { reloadEngineWithDesktopFallback } from "./engine-reload-escalation";
-import { resolveOmniRushConnection } from "./omnirush-connection";
+import { resolveMarsConnection } from "./mars-connection";
 import { abortSessionSafe, listCommands } from "@/app/lib/opencode-session";
 import { notifyAlert } from "./notifications";
 import { useReloadCoordinator } from "./reload-coordinator";
@@ -211,8 +211,8 @@ import {
   type LibraryCommandItem,
 } from "@/react-app/domains/settings/library";
 
-const ROUTE_OMNIRUSH_CAPABILITIES: OmniRushServerCapabilities = {
-  skills: { read: true, write: true, source: "omnirush" },
+const ROUTE_MARS_CAPABILITIES: MarsServerCapabilities = {
+  skills: { read: true, write: true, source: "mars" },
   plugins: { read: true, write: true },
   mcp: { read: false, write: false },
   commands: { read: true, write: true },
@@ -220,7 +220,7 @@ const ROUTE_OMNIRUSH_CAPABILITIES: OmniRushServerCapabilities = {
 };
 
 async function reloadEngineOrRestartDesktop(
-  client: Pick<OmniRushServerClient, "reloadEngine">,
+  client: Pick<MarsServerClient, "reloadEngine">,
   workspaceId: string,
   afterRestart?: () => Promise<void>,
 ): Promise<void> {
@@ -230,13 +230,13 @@ async function reloadEngineOrRestartDesktop(
   }
 }
 
-function isOmniRushCloudProvider(provider: {
+function isMarsCloudProvider(provider: {
   providerId?: string | null;
   source?: string | null;
   sourceProviderId?: string | null;
 }) {
   return [provider.providerId, provider.source, provider.sourceProviderId].some(
-    (value) => value?.trim().toLowerCase() === "omnirush",
+    (value) => value?.trim().toLowerCase() === "mars",
   );
 }
 
@@ -277,7 +277,7 @@ function reconcileSelectedWorkspaceId(
   return serverList.activeId?.trim() || desktopSelectedId || workspaces[0]?.id || "";
 }
 
-const SETTINGS_HIDE_TITLEBAR_KEY = "omnirush.react.settings.hide-titlebar";
+const SETTINGS_HIDE_TITLEBAR_KEY = "mars.react.settings.hide-titlebar";
 
 export function parseSettingsPath(pathname: string): {
   tab: SettingsTab;
@@ -513,7 +513,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
   }, [location.state, navigate, props.embedded, props.standaloneExtensions, selectedWorkspaceId]);
   const [baseUrl, setBaseUrl] = useState("");
   const [token, setToken] = useState("");
-  const [omnirushClient, setOmniRushClient] = useState<OmniRushServerClient | null>(null);
+  const [marsClient, setMarsClient] = useState<MarsServerClient | null>(null);
   const [bestPracticesClient, setBestPracticesClient] = useState<BestPracticesClient | null>(null);
   const [activeClient, setActiveClient] = useState<Client | null>(null);
   const [busy, setBusy] = useState(false);
@@ -534,12 +534,12 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
   const [disabledProviders, setDisabledProviders] = useState<string[]>([]);
   const [developerMode, setDeveloperMode] = useState(() => {
     if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("omnirush.developerMode") === "1";
+    return window.localStorage.getItem("mars.developerMode") === "1";
   });
   const toggleDeveloperMode = useCallback(() => {
     setDeveloperMode((current) => {
       const next = !current;
-      try { window.localStorage.setItem("omnirush.developerMode", next ? "1" : "0"); } catch {}
+      try { window.localStorage.setItem("mars.developerMode", next ? "1" : "0"); } catch {}
       return next;
     });
   }, []);
@@ -570,7 +570,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
   const [userEnvKeys, setUserEnvKeys] = useState<string[]>([]);
   const [cloudMcpHealthResult, setCloudMcpHealthResult] = useState<{
     workspaceId: string;
-    health: OmniRushCloudMcpHealth;
+    health: MarsCloudMcpHealth;
   } | null>(null);
   const emptyWorkspaceDisplay = useMemo<WorkspaceDisplay>(
     () => ({
@@ -591,10 +591,10 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     selectedWorkspaceRoot: "",
     selectedWorkspaceType: "local" as "local" | "remote",
     runtimeWorkspaceId: null as string | null,
-    omnirushServerClient: null as OmniRushServerClient | null,
-    selectedWorkspaceOmniRushClient: null as OmniRushServerClient | null,
-    omnirushServerStatus: "disconnected" as "connected" | "disconnected",
-    omnirushServerCapabilities: null as OmniRushServerCapabilities | null,
+    marsServerClient: null as MarsServerClient | null,
+    selectedWorkspaceMarsClient: null as MarsServerClient | null,
+    marsServerStatus: "disconnected" as "connected" | "disconnected",
+    marsServerCapabilities: null as MarsServerCapabilities | null,
     selectedWorkspaceDisplay: emptyWorkspaceDisplay as WorkspaceDisplay,
     providerItems: [] as ProviderListItem[],
     providerDefaults: {} as Record<string, string>,
@@ -632,7 +632,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
             preset: "starter",
             workspaceType: selectedWorkspace.workspaceType ?? "local",
             displayName: selectedWorkspace.displayNameResolved,
-            omnirushWorkspaceName: selectedWorkspace.omnirushWorkspaceName,
+            marsWorkspaceName: selectedWorkspace.marsWorkspaceName,
           }
         : emptyWorkspaceDisplay,
     [emptyWorkspaceDisplay, selectedWorkspace],
@@ -669,10 +669,10 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     selectedWorkspaceRoot,
     selectedWorkspaceType: selectedWorkspace?.workspaceType ?? "local",
     runtimeWorkspaceId: selectedWorkspace?.id ?? null,
-    omnirushServerClient: omnirushClient,
-    selectedWorkspaceOmniRushClient: omnirushClient,
-    omnirushServerStatus: omnirushClient ? "connected" : "disconnected",
-    omnirushServerCapabilities: omnirushClient ? ROUTE_OMNIRUSH_CAPABILITIES : null,
+    marsServerClient: marsClient,
+    selectedWorkspaceMarsClient: marsClient,
+    marsServerStatus: marsClient ? "connected" : "disconnected",
+    marsServerCapabilities: marsClient ? ROUTE_MARS_CAPABILITIES : null,
     selectedWorkspaceDisplay,
     providerItems: providers,
     providerDefaults,
@@ -699,17 +699,17 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     [sessionsByWorkspaceId],
   );
 
-  const omnirushServerStore = useMemo(
+  const marsServerStore = useMemo(
     () =>
-      createOmniRushServerStore({
+      createMarsServerStore({
         startupPreference: () => {
           // In desktop mode, loopback URLs are ephemeral local runtime details.
           // Only non-loopback stored URLs indicate an explicit remote/manual
           // server connection preference.
           if (!isDesktopRuntime()) return "server";
-          const stored = readOmniRushServerSettings();
+          const stored = readMarsServerSettings();
           const storedUrl = stored.urlOverride?.trim() ?? "";
-          return storedUrl && !isLoopbackOmniRushServerUrl(storedUrl) ? "server" : "local";
+          return storedUrl && !isLoopbackMarsServerUrl(storedUrl) ? "server" : "local";
         },
         documentVisible: () => typeof document === "undefined" || document.visibilityState === "visible",
         developerMode: () => routeStateRef.current.developerMode,
@@ -719,11 +719,11 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
         restartLocalServer: async () => {
           if (!isDesktopRuntime()) return false;
           try {
-            await omnirushServerRestart({
+            await marsServerRestart({
               reason: "share_remote_access_changed",
               userInitiated: true,
               remoteAccessEnabled:
-                readOmniRushServerSettings().remoteAccessEnabled === true,
+                readMarsServerSettings().remoteAccessEnabled === true,
             });
             return true;
           } catch {
@@ -744,7 +744,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
         selectedWorkspaceId: () => routeStateRef.current.selectedWorkspaceId,
         selectedWorkspaceRoot: () => routeStateRef.current.selectedWorkspaceRoot,
         workspaceType: () => routeStateRef.current.selectedWorkspaceType,
-        omnirushServer: omnirushServerStore,
+        marsServer: marsServerStore,
         runtimeWorkspaceId: () => routeStateRef.current.runtimeWorkspaceId,
         ensureRuntimeWorkspaceId: async () =>
           routeStateRef.current.runtimeWorkspaceId?.trim() ||
@@ -753,7 +753,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
         developerMode: () => routeStateRef.current.developerMode,
         markReloadRequired: reloadCoordinator.markReloadRequired,
       }),
-    [omnirushServerStore, reloadCoordinator.markReloadRequired],
+    [marsServerStore, reloadCoordinator.markReloadRequired],
   );
   refreshMcpServersRef.current = connectionsStore.refreshMcpServers;
   notifyMcpReloadingRef.current = connectionsStore.notifyMcpReloading;
@@ -782,7 +782,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
           routeStateRef.current.runtimeWorkspaceId?.trim() ||
           routeStateRef.current.selectedWorkspaceId.trim() ||
           null,
-        omnirushServer: omnirushServerStore,
+        marsServer: marsServerStore,
         setProviders,
         setProviderDefaults,
         setProviderConnectedIds,
@@ -796,7 +796,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
           });
         },
       }),
-    [checkDesktopRestriction, omnirushServerStore, reloadCoordinator.markReloadRequired],
+    [checkDesktopRestriction, marsServerStore, reloadCoordinator.markReloadRequired],
   );
   const extensionsStore = useMemo(
     () =>
@@ -807,11 +807,11 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
         selectedWorkspaceId: () => routeStateRef.current.selectedWorkspaceId,
         selectedWorkspaceRoot: () => routeStateRef.current.selectedWorkspaceRoot,
         workspaceType: () => routeStateRef.current.selectedWorkspaceType,
-        omnirushServer: omnirushServerStore,
-        omnirushServerConnection: () => ({
-          omnirushServerClient: routeStateRef.current.omnirushServerClient,
-          omnirushServerStatus: routeStateRef.current.omnirushServerStatus,
-          omnirushServerCapabilities: routeStateRef.current.omnirushServerCapabilities,
+        marsServer: marsServerStore,
+        marsServerConnection: () => ({
+          marsServerClient: routeStateRef.current.marsServerClient,
+          marsServerStatus: routeStateRef.current.marsServerStatus,
+          marsServerCapabilities: routeStateRef.current.marsServerCapabilities,
         }),
         runtimeWorkspaceId: () => routeStateRef.current.runtimeWorkspaceId,
         ensureRuntimeWorkspaceId: async () =>
@@ -828,52 +828,52 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
         },
         markReloadRequired: reloadCoordinator.markReloadRequired,
       }),
-    [omnirushServerStore, reloadCoordinator.markReloadRequired],
+    [marsServerStore, reloadCoordinator.markReloadRequired],
   );
-  const omnirushServerSnapshot = useOmniRushServerStoreSnapshot(omnirushServerStore);
+  const marsServerSnapshot = useMarsServerStoreSnapshot(marsServerStore);
   const connectionsSnapshot = useConnectionsStoreSnapshot(connectionsStore);
   const providerAuthSnapshot = useProviderAuthStoreSnapshot(providerAuthStore);
   const extensionsSnapshot = useExtensionsStoreSnapshot(extensionsStore);
   const orgMcpConnections = useOrgMcpConnections();
 
-  const omnirushServerStatusForMcp = omnirushServerSnapshot.omnirushServerStatus;
+  const marsServerStatusForMcp = marsServerSnapshot.marsServerStatus;
   useEffect(() => {
-    if (omnirushServerStatusForMcp !== "connected") return;
-    // The first MCP read races the omnirush-server store's initial health
+    if (marsServerStatusForMcp !== "connected") return;
+    // The first MCP read races the mars-server store's initial health
     // check (a fresh store always starts "disconnected"), so it falls back
     // to config files where server-runtime (config.remote) entries — notably
     // the cloud control MCP — don't exist. Without this re-read the built-in
     // cards show "Tap to connect" until the next full remount even though
     // the entries are configured and healthy.
     void connectionsStore.refreshMcpServers();
-  }, [connectionsStore, omnirushServerStatusForMcp]);
+  }, [connectionsStore, marsServerStatusForMcp]);
 
   useEffect(() => {
-    if (omnirushServerStatusForMcp !== "connected") return;
+    if (marsServerStatusForMcp !== "connected") return;
     // Same race for the Cloud Providers rows: the provider-auth store's
     // start() read fires while this store still reports "disconnected", so
     // it takes the legacy (empty) config read and the rows sit on "Syncing"
     // even though the server's /cloud-provider-sync/status already lists the
     // providers as synced. Re-derive from the server once it is reachable.
     void providerAuthStore.refreshImportedCloudProviders();
-  }, [omnirushServerStatusForMcp, providerAuthStore]);
+  }, [marsServerStatusForMcp, providerAuthStore]);
 
   const cleanupCloudMcpForSignOut = useCallback(async (settings: DenSettings) => {
-    const client = routeStateRef.current.selectedWorkspaceOmniRushClient;
+    const client = routeStateRef.current.selectedWorkspaceMarsClient;
     const workspaceId = routeStateRef.current.runtimeWorkspaceId?.trim() ?? "";
     const orgId = settings.activeOrgId?.trim() ?? "";
     if (!client || !workspaceId || !orgId) return;
     // Settings only has a safe, exact OpenCode client/directory for the active
     // workspace here, so sign-out cleanup is intentionally scoped to that
     // workspace instead of guessing across every configured worker.
-    await cleanupOmniRushCloudMcpAfterSignOut({
+    await cleanupMarsCloudMcpAfterSignOut({
       context: {
         denBaseUrl: settings.baseUrl,
         serverBaseUrl: client.baseUrl,
         workspaceId,
         orgId,
       },
-      omnirushClient: client,
+      marsClient: client,
       opencodeClient: routeStateRef.current.activeClient,
       directory: routeStateRef.current.selectedWorkspaceRoot,
     });
@@ -960,8 +960,8 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
 
   const shareWorkspaceState = useShareWorkspaceState({
     workspaces,
-    omnirushServerHostInfo: omnirushServerSnapshot.omnirushServerHostInfo,
-    omnirushServerSettings: omnirushServerSnapshot.omnirushServerSettings,
+    marsServerHostInfo: marsServerSnapshot.marsServerHostInfo,
+    marsServerSettings: marsServerSnapshot.marsServerSettings,
     engineInfo: null,
     exportWorkspaceBusy,
     openLink: (url) => platform.openLink(url),
@@ -970,8 +970,8 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
 
   const debugViewProps = useDebugViewModel({
     developerMode,
-    omnirushServerStore,
-    omnirushServerSnapshot,
+    marsServerStore,
+    marsServerSnapshot,
     runtimeWorkspaceId: selectedWorkspace?.id ?? null,
     selectedWorkspaceRoot,
     setRouteError: (message) => {
@@ -992,11 +992,11 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
 
   const runtimeWorkspaceId = selectedWorkspaceEndpoint?.workspaceId ?? selectedWorkspace?.id ?? null;
   routeStateRef.current.runtimeWorkspaceId = runtimeWorkspaceId;
-  routeStateRef.current.selectedWorkspaceOmniRushClient = selectedWorkspaceEndpoint?.client ?? omnirushClient;
+  routeStateRef.current.selectedWorkspaceMarsClient = selectedWorkspaceEndpoint?.client ?? marsClient;
   const cloudMcpHealth = cloudMcpHealthResult?.workspaceId === runtimeWorkspaceId
     ? cloudMcpHealthResult.health
     : null;
-  const handleCloudMcpHealthChange = useCallback((health: OmniRushCloudMcpHealth | null) => {
+  const handleCloudMcpHealthChange = useCallback((health: MarsCloudMcpHealth | null) => {
     const workspaceId = runtimeWorkspaceId?.trim() ?? "";
     if ((routeStateRef.current.runtimeWorkspaceId?.trim() ?? "") !== workspaceId) return;
     setCloudMcpHealthResult(health && workspaceId ? { workspaceId, health } : null);
@@ -1009,7 +1009,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
       selectedWorkspaceRoot || undefined,
       {
         token: selectedWorkspaceEndpoint.token,
-        mode: "omnirush",
+        mode: "mars",
       },
     );
   }, [selectedWorkspaceEndpoint, selectedWorkspaceRoot]);
@@ -1059,13 +1059,13 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     onLoadError: handleModelPickerLoadError,
     cloudProvidersEnabled: cloudSession.isSignedIn,
   });
-  const currentCloudMcpModel = useMemo<OmniRushCloudMcpProviderModelContext | null>(() => {
+  const currentCloudMcpModel = useMemo<MarsCloudMcpProviderModelContext | null>(() => {
     const provider = local.prefs.defaultModel?.providerID.trim() ?? "";
     const model = local.prefs.defaultModel?.modelID.trim() ?? "";
     return provider && model ? { provider, model } : null;
   }, [local.prefs.defaultModel]);
   const refreshCloudMcpHealth = useCallback(async () => {
-    const client = selectedWorkspaceEndpoint?.client ?? omnirushClient;
+    const client = selectedWorkspaceEndpoint?.client ?? marsClient;
     const workspaceId = runtimeWorkspaceId?.trim() ?? "";
     if (!client || !workspaceId) {
       setCloudMcpHealthResult(null);
@@ -1073,11 +1073,11 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     }
     // probe: the Advanced page refresh should verify the Cloud endpoint
     // directly (outside the engine), not just report the engine's cached state.
-    const health = await client.getOmniRushCloudMcpHealth(workspaceId, currentCloudMcpModel ?? undefined, { probe: true });
+    const health = await client.getMarsCloudMcpHealth(workspaceId, currentCloudMcpModel ?? undefined, { probe: true });
     if (routeStateRef.current.runtimeWorkspaceId?.trim() !== workspaceId) return null;
     setCloudMcpHealthResult({ workspaceId, health });
     return health;
-  }, [currentCloudMcpModel, omnirushClient, runtimeWorkspaceId, selectedWorkspaceEndpoint]);
+  }, [currentCloudMcpModel, marsClient, runtimeWorkspaceId, selectedWorkspaceEndpoint]);
   const { commandPaletteOpen, setCommandPaletteOpen } = useCommandPaletteShortcut(!props.embedded);
   const developerModePaletteItem = useMemo(
     () => settingsDeveloperModePaletteItem(developerMode, () => {
@@ -1111,10 +1111,10 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
 
   useEffect(() => {
     const refresh = () => setExtensionStateVersion((value) => value + 1);
-    window.addEventListener(OMNIRUSH_EXTENSION_STATE_CHANGED, refresh);
+    window.addEventListener(MARS_EXTENSION_STATE_CHANGED, refresh);
     window.addEventListener("storage", refresh);
     return () => {
-      window.removeEventListener(OMNIRUSH_EXTENSION_STATE_CHANGED, refresh);
+      window.removeEventListener(MARS_EXTENSION_STATE_CHANGED, refresh);
       window.removeEventListener("storage", refresh);
     };
   }, []);
@@ -1135,21 +1135,21 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
   }, []);
 
   useEffect(() => {
-    if (!omnirushClient) {
+    if (!marsClient) {
       setUserEnvKeys([]);
       return;
     }
     let cancelled = false;
-    void omnirushClient.listUserEnvKeys()
+    void marsClient.listUserEnvKeys()
       .then((response) => { if (!cancelled) setUserEnvKeys(response.keys); })
       .catch(() => { if (!cancelled) setUserEnvKeys([]); });
     return () => { cancelled = true; };
-  }, [omnirushClient]);
+  }, [marsClient]);
 
   const installOpenAiImageExtension = useCallback(async (apiKey: string) => {
     const resolvedApiKey = apiKey.trim();
-    if (!omnirushClient) {
-      setImageExtensionError("omnirush.ai server is not connected.");
+    if (!marsClient) {
+      setImageExtensionError("marsai.click server is not connected.");
       return;
     }
     if (!resolvedApiKey) {
@@ -1161,23 +1161,23 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     setImageExtensionStatus(null);
     setImageExtensionError(null);
     try {
-      await omnirushClient.upsertUserEnv([{ key: "OPENAI_API_KEY", value: resolvedApiKey }]);
+      await marsClient.upsertUserEnv([{ key: "OPENAI_API_KEY", value: resolvedApiKey }]);
       setUserEnvKeys((current) => Array.from(new Set([...current, "OPENAI_API_KEY"])));
-      setImageExtensionStatus("Saved OPENAI_API_KEY. Agents can use omnirush.ai extension actions for image generation.");
+      setImageExtensionStatus("Saved OPENAI_API_KEY. Agents can use marsai.click extension actions for image generation.");
     } catch (error) {
       setImageExtensionError(describeRouteError(error));
     } finally {
       setImageExtensionBusy(false);
     }
-  }, [omnirushClient]);
+  }, [marsClient]);
 
   const generateOpenAiTestImage = useCallback(async (input: { apiKey: string; prompt: string }) => {
-    const client = selectedWorkspaceEndpoint?.client ?? omnirushClient;
+    const client = selectedWorkspaceEndpoint?.client ?? marsClient;
     const workspaceId = runtimeWorkspaceId?.trim() ?? "";
     const apiKey = input.apiKey.trim();
     const prompt = input.prompt.trim();
     if (!client || !workspaceId) {
-      setImageGenerationError("omnirush.ai server is not connected for this workspace.");
+      setImageGenerationError("marsai.click server is not connected for this workspace.");
       return;
     }
     if (!apiKey) {
@@ -1193,8 +1193,8 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     setImageGenerationStatus(null);
     setImageGenerationError(null);
     try {
-      if (omnirushClient) {
-        await omnirushClient.upsertUserEnv([{ key: "OPENAI_API_KEY", value: apiKey }]);
+      if (marsClient) {
+        await marsClient.upsertUserEnv([{ key: "OPENAI_API_KEY", value: apiKey }]);
         setUserEnvKeys((current) => Array.from(new Set([...current, "OPENAI_API_KEY"])));
       }
       const response = await client.callExtensionAction({
@@ -1217,14 +1217,14 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     } finally {
       setImageGenerationBusy(false);
     }
-  }, [omnirushClient, runtimeWorkspaceId, selectedWorkspaceEndpoint, selectedWorkspaceRoot]);
+  }, [marsClient, runtimeWorkspaceId, selectedWorkspaceEndpoint, selectedWorkspaceRoot]);
 
   const installLocalProvider = useCallback(async (input: LocalProviderInstallInput) => {
-    const client = selectedWorkspaceEndpoint?.client ?? omnirushClient;
+    const client = selectedWorkspaceEndpoint?.client ?? marsClient;
     const workspaceId = runtimeWorkspaceId?.trim() ?? "";
     const modelId = input.modelId.trim();
     if (!client || !workspaceId) {
-      setLocalProviderError("omnirush.ai server is not connected for this workspace.");
+      setLocalProviderError("marsai.click server is not connected for this workspace.");
       return;
     }
     if (!modelId) {
@@ -1258,7 +1258,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
       }
       await refreshProviderListQueries(getReactQueryClient());
       try {
-        window.dispatchEvent(new CustomEvent("omnirush-server-settings-changed"));
+        window.dispatchEvent(new CustomEvent("mars-server-settings-changed"));
       } catch {
         // ignore browser event dispatch failures
       }
@@ -1268,7 +1268,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     } finally {
       setLocalProviderBusy(false);
     }
-  }, [local, omnirushClient, reloadCoordinator, runtimeWorkspaceId, selectedWorkspaceEndpoint]);
+  }, [local, marsClient, reloadCoordinator, runtimeWorkspaceId, selectedWorkspaceEndpoint]);
 
   useEffect(() => {
     local.setUi((previous) => ({ ...previous, view: "settings", tab: route.tab }));
@@ -1313,11 +1313,11 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
       }
       if (!attempt.isCurrent()) return;
 
-      const { normalizedBaseUrl, resolvedToken, resolvedHostToken } = await resolveOmniRushConnection();
+      const { normalizedBaseUrl, resolvedToken, resolvedHostToken } = await resolveMarsConnection();
       if (!attempt.isCurrent()) return;
 
       if (!normalizedBaseUrl || !resolvedToken) {
-        setOmniRushClient(null);
+        setMarsClient(null);
         setBestPracticesClient(null);
         setBaseUrl("");
         setToken("");
@@ -1332,7 +1332,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
         return;
       }
 
-      const client = createOmniRushServerClient({
+      const client = createMarsServerClient({
         baseUrl: normalizedBaseUrl,
         token: resolvedToken,
         hostToken: resolvedHostToken || undefined,
@@ -1426,7 +1426,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
       );
       if (!attempt.isCurrent()) return;
 
-      setOmniRushClient(client);
+      setMarsClient(client);
       setBaseUrl(normalizedBaseUrl);
       setToken(resolvedToken);
       setWorkspaces(nextWorkspaces);
@@ -1488,16 +1488,16 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
 
   const reloadWorkspaceEngineFromUi = useCallback(async () => {
     const workspaceId = routeStateRef.current.runtimeWorkspaceId?.trim() || selectedWorkspaceId.trim();
-    if (!omnirushClient || !workspaceId) {
+    if (!marsClient || !workspaceId) {
       toast.error(t("app.error_connect_first"));
       return false;
     }
 
-    await reloadEngineOrRestartDesktop(omnirushClient, workspaceId, refreshRouteState);
+    await reloadEngineOrRestartDesktop(marsClient, workspaceId, refreshRouteState);
     await refreshProviderListQueries(getReactQueryClient());
 
     try {
-      window.dispatchEvent(new CustomEvent("omnirush-server-settings-changed"));
+      window.dispatchEvent(new CustomEvent("mars-server-settings-changed"));
     } catch {
       // ignore browser event dispatch failures
     }
@@ -1507,11 +1507,11 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     void pollMcpServersAfterReloadRef.current?.();
 
     return true;
-  }, [omnirushClient, refreshRouteState, selectedWorkspaceId]);
+  }, [marsClient, refreshRouteState, selectedWorkspaceId]);
 
   useEffect(() => {
     return reloadCoordinator.registerWorkspaceReloadControls({
-      canReloadWorkspaceEngine: () => Boolean(omnirushClient && (selectedWorkspace?.id || selectedWorkspaceId)),
+      canReloadWorkspaceEngine: () => Boolean(marsClient && (selectedWorkspace?.id || selectedWorkspaceId)),
       reloadWorkspaceEngine: reloadWorkspaceEngineFromUi,
       activeSessions: () => activeReloadBlockingSessions,
       stopSession: async (sessionId) => {
@@ -1526,7 +1526,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
   }, [
     activeClient,
     activeReloadBlockingSessions,
-    omnirushClient,
+    marsClient,
     reloadCoordinator,
     reloadWorkspaceEngineFromUi,
     selectedWorkspace?.id,
@@ -1581,7 +1581,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
 
   const remoteWorkspaceConnectionEditor = useRemoteWorkspaceConnectionEditor({
     workspaces,
-    client: omnirushClient,
+    client: marsClient,
     onSaved: handleRemoteWorkspaceConnectionSaved,
   });
 
@@ -1644,7 +1644,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
   );
 
   useEffect(() => {
-    if (omnirushClient) {
+    if (marsClient) {
       reconnectAttemptedWorkspaceIdRef.current = "";
     }
     // Same gate as the session route: reconnect must not probe the local
@@ -1655,7 +1655,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
         bootPhase,
         bootRouteReady,
         routeLoading: loading,
-        hasClient: Boolean(omnirushClient),
+        hasClient: Boolean(marsClient),
         connectionPending: false,
         workspaceType: selectedWorkspace?.workspaceType ?? null,
       })
@@ -1667,7 +1667,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     if (!workspaceId || reconnectAttemptedWorkspaceIdRef.current === workspaceId) return;
     reconnectAttemptedWorkspaceIdRef.current = workspaceId;
 
-    void ensureDesktopLocalOmniRushConnection({
+    void ensureDesktopLocalMarsConnection({
       route: "settings",
       workspace: selectedWorkspace,
       allWorkspaces: workspaces,
@@ -1681,7 +1681,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
         dedupeKey: "server-reconnect",
       });
     });
-  }, [bootPhase, bootRouteReady, loading, omnirushClient, selectedWorkspace, workspaces]);
+  }, [bootPhase, bootRouteReady, loading, marsClient, selectedWorkspace, workspaces]);
 
   useEffect(() => {
     // A workspace-route change must invalidate the previous refresh even if
@@ -1691,20 +1691,20 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     const handleSettingsChange = () => {
       void refreshRouteState({ supersede: true });
     };
-    window.addEventListener("omnirush-server-settings-changed", handleSettingsChange);
+    window.addEventListener("mars-server-settings-changed", handleSettingsChange);
     return () => {
-      window.removeEventListener("omnirush-server-settings-changed", handleSettingsChange);
+      window.removeEventListener("mars-server-settings-changed", handleSettingsChange);
     };
   }, [refreshRouteState]);
 
   // Load auto-compaction state from OpenCode config on workspace change.
   useEffect(() => {
-    if (!omnirushClient || !selectedWorkspaceId) return;
+    if (!marsClient || !selectedWorkspaceId) return;
     const workspaceId = routeStateRef.current.runtimeWorkspaceId?.trim() || selectedWorkspaceId;
     let cancelled = false;
     (async () => {
       try {
-        const config = await omnirushClient.getConfig(workspaceId);
+        const config = await marsClient.getConfig(workspaceId);
         if (cancelled) return;
         const compaction = config.opencode?.compaction;
         const auto = compaction && typeof compaction === "object" && "auto" in compaction
@@ -1717,17 +1717,17 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
       }
     })();
     return () => { cancelled = true; };
-  }, [omnirushClient, selectedWorkspaceId]);
+  }, [marsClient, selectedWorkspaceId]);
 
   const toggleAutoCompactContext = useCallback(async () => {
     if (autoCompactContextBusy) return;
     const workspaceId = routeStateRef.current.runtimeWorkspaceId?.trim() || selectedWorkspaceId;
-    if (!omnirushClient || !workspaceId) return;
+    if (!marsClient || !workspaceId) return;
     const next = !autoCompactContext;
     setAutoCompactContext(next);
     setAutoCompactContextBusy(true);
     try {
-      await omnirushClient.patchConfig(workspaceId, {
+      await marsClient.patchConfig(workspaceId, {
         opencode: { compaction: { auto: next } },
       });
       reloadCoordinator.markReloadRequired("config", {
@@ -1740,10 +1740,10 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     } finally {
       setAutoCompactContextBusy(false);
     }
-  }, [autoCompactContext, autoCompactContextBusy, omnirushClient, reloadCoordinator, selectedWorkspaceId]);
+  }, [autoCompactContext, autoCompactContextBusy, marsClient, reloadCoordinator, selectedWorkspaceId]);
 
   useEffect(() => {
-    omnirushServerStore.start();
+    marsServerStore.start();
     connectionsStore.start();
     providerAuthStore.start();
     extensionsStore.start();
@@ -1752,11 +1752,11 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
       extensionsStore.dispose();
       providerAuthStore.dispose();
       connectionsStore.dispose();
-      omnirushServerStore.dispose();
+      marsServerStore.dispose();
     };
-  }, [connectionsStore, extensionsStore, omnirushServerStore, providerAuthStore]);
+  }, [connectionsStore, extensionsStore, marsServerStore, providerAuthStore]);
 
-  const refreshMarketplaceAction = useMemo<OmniRushControlAction>(() => ({
+  const refreshMarketplaceAction = useMemo<MarsControlAction>(() => ({
     id: "extensions.refresh-marketplace",
     label: "Refresh marketplace extensions",
     description: "Force a fresh sync of organization marketplace plugins from the cloud.",
@@ -1783,7 +1783,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
   }, [providerAuthStore, route.tab]);
 
   useEffect(() => {
-    omnirushServerStore.syncFromOptions();
+    marsServerStore.syncFromOptions();
     connectionsStore.syncFromOptions();
     providerAuthStore.syncFromOptions();
     extensionsStore.syncFromOptions();
@@ -1791,7 +1791,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     activeClient,
     connectionsStore,
     extensionsStore,
-    omnirushServerStore,
+    marsServerStore,
     providerAuthStore,
     selectedWorkspace?.id,
     selectedWorkspace?.workspaceType,
@@ -1822,7 +1822,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
   const workspaceType = selectedWorkspace?.workspaceType ?? "local";
   const isRemoteWorkspace = workspaceType === "remote";
   const canWriteWorkspacePlugins =
-    !isRemoteWorkspace || omnirushServerSnapshot.omnirushServerCanWritePlugins;
+    !isRemoteWorkspace || marsServerSnapshot.marsServerCanWritePlugins;
   const pluginsAccessHint =
     isRemoteWorkspace && !canWriteWorkspacePlugins ? t("app.plugins_hint_readonly") : null;
   const defaultModelLabel = local.prefs.defaultModel
@@ -1858,7 +1858,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     disabledProviders.map((id) => id.trim().toLowerCase()).filter(Boolean),
   );
   // Same list as the pickers: providers from the user's own engine config
-  // (source "config") are not omnirush.ai's to show or disconnect here.
+  // (source "config") are not marsai.click's to show or disconnect here.
   const connectedProviders = providers.flatMap((provider) =>
     providerConnectedIdSet.has(provider.id) &&
     isSupportedModelProvider(provider.id) &&
@@ -1870,8 +1870,8 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
         }]
       : [],
   );
-  const omnirushCloudMcpUrl = connectionsSnapshot.mcpServers.find(
-    (server) => server.name === "omnirush-cloud",
+  const marsCloudMcpUrl = connectionsSnapshot.mcpServers.find(
+    (server) => server.name === "mars-cloud",
   )?.config.url ?? null;
 
   // Build enablement context from all available runtime state.
@@ -1899,7 +1899,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
       isToggleEnabled: (ref: string) => {
         const catalog = connectionsStore.quickConnect;
         const match = catalog.find((e: { id?: string; serverName?: string }) => (e.id ?? e.serverName) === ref);
-        return match ? isOmniRushExtensionEnabled(match) : false;
+        return match ? isMarsExtensionEnabled(match) : false;
       },
     };
   }, [computerUsePermissions, connectionsSnapshot, extensionStateVersion, providerConnectedIds, userEnvKeys]);
@@ -1908,22 +1908,22 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
   const restartExtensionLocalServer = useCallback(async () => {
     if (!isDesktopRuntime()) return false;
     try {
-      await omnirushServerRestart({
+      await marsServerRestart({
         reason: "extension_settings_restart",
         userInitiated: true,
         remoteAccessEnabled:
-          readOmniRushServerSettings().remoteAccessEnabled === true,
+          readMarsServerSettings().remoteAccessEnabled === true,
       });
-      await omnirushServerStore.reconnectOmniRushServer();
+      await marsServerStore.reconnectMarsServer();
       await refreshRouteState();
       return true;
     } catch {
       return false;
     }
-  }, [omnirushServerStore, refreshRouteState]);
+  }, [marsServerStore, refreshRouteState]);
   const extensionController = useSettingsExtensionController({
-    omnirushServerClient: selectedWorkspaceEndpoint?.client ?? omnirushClient,
-    hostOmniRushServerClient: omnirushClient,
+    marsServerClient: selectedWorkspaceEndpoint?.client ?? marsClient,
+    hostMarsServerClient: marsClient,
     enablementContext,
     mcpServers: connectionsSnapshot.mcpServers,
     mcpConnectingName: connectionsSnapshot.mcpConnectingName,
@@ -1951,9 +1951,9 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
       onInstall: installLocalProvider,
     },
   });
-  const extensionCatalogPlatform = resolveOmniRushExtensionCatalogPlatform(platform.platform, platform.os);
+  const extensionCatalogPlatform = resolveMarsExtensionCatalogPlatform(platform.platform, platform.os);
   const quickConnectCatalog = useMemo(
-    () => filterOmniRushExtensionCatalogForPlatform(connectionsStore.quickConnect, extensionCatalogPlatform),
+    () => filterMarsExtensionCatalogForPlatform(connectionsStore.quickConnect, extensionCatalogPlatform),
     [connectionsStore.quickConnect, extensionCatalogPlatform],
   );
   const extensionItems = useMemo(
@@ -2008,7 +2008,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     loaded: orgMcpConnections.loaded,
     error: orgMcpConnections.error,
   });
-  const diagnosticsClient = selectedWorkspaceEndpoint?.client ?? omnirushClient;
+  const diagnosticsClient = selectedWorkspaceEndpoint?.client ?? marsClient;
   const diagnosticsWorkspaceAllowed = isAgentContextDiagnosticsWorkspaceAllowed(selectedWorkspace);
   const diagnosticsAvailable = Boolean(
     diagnosticsClient
@@ -2016,7 +2016,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     && diagnosticsWorkspaceAllowed,
   );
   const diagnosticsUnavailableReason = selectedWorkspace?.workspaceType === "remote"
-    && selectedWorkspace.remoteType !== "omnirush"
+    && selectedWorkspace.remoteType !== "mars"
     ? "direct-remote-opencode" as const
     : null;
   const diagnosticsWorkspaceType = selectedWorkspace?.workspaceType === "remote"
@@ -2045,7 +2045,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     token,
   ]);
   const runAgentContextDiagnostics = useCallback(async () => {
-    const client = selectedWorkspaceEndpoint?.client ?? omnirushClient;
+    const client = selectedWorkspaceEndpoint?.client ?? marsClient;
     const workspaceId = runtimeWorkspaceId?.trim() ?? "";
     if (
       !client
@@ -2062,14 +2062,14 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     });
     return client.runAgentContextDiagnostics(workspaceId, observations);
   }, [
-    omnirushClient,
+    marsClient,
     organizationConnectionsProbe,
     orgMcpConnections.connections,
     runtimeWorkspaceId,
     selectedWorkspace,
     selectedWorkspaceEndpoint,
   ]);
-  const routeOmniRushStatus = omnirushClient ? "connected" : "disconnected";
+  const routeMarsStatus = marsClient ? "connected" : "disconnected";
   const notFoundRouteError = !loading && routeWorkspaceId && !selectedWorkspace
     ? "Workspace was not found. Select a new workspace from the sidebar."
     : null;
@@ -2082,15 +2082,15 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
       });
     }
   }, [notFoundRouteError]);
-  const routeOmniRushCapabilities: OmniRushServerCapabilities | null = omnirushClient
-    ? ROUTE_OMNIRUSH_CAPABILITIES
+  const routeMarsCapabilities: MarsServerCapabilities | null = marsClient
+    ? ROUTE_MARS_CAPABILITIES
     : null;
-  const mcpDisabledByPolicy = routeOmniRushStatus !== "connected"
-    || routeOmniRushCapabilities?.mcp?.read !== true;
-  const environmentRuntimeKey = buildOmniRushEnvRuntimeKey({
-    baseUrl: omnirushServerSnapshot.omnirushServerBaseUrl || omnirushServerSnapshot.omnirushServerUrl,
-    pid: omnirushServerSnapshot.omnirushServerHostInfo?.pid ?? null,
-    port: omnirushServerSnapshot.omnirushServerHostInfo?.port ?? null,
+  const mcpDisabledByPolicy = routeMarsStatus !== "connected"
+    || routeMarsCapabilities?.mcp?.read !== true;
+  const environmentRuntimeKey = buildMarsEnvRuntimeKey({
+    baseUrl: marsServerSnapshot.marsServerBaseUrl || marsServerSnapshot.marsServerUrl,
+    pid: marsServerSnapshot.marsServerHostInfo?.pid ?? null,
+    port: marsServerSnapshot.marsServerHostInfo?.port ?? null,
   });
 
   const handleApplyEnvironmentChanges = async () => {
@@ -2121,9 +2121,9 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
       preferSidecar: true,
       runtime: "direct",
       workspacePaths,
-      omnirushRemoteAccess: omnirushServerSnapshot.omnirushServerSettings.remoteAccessEnabled === true,
+      marsRemoteAccess: marsServerSnapshot.marsServerSettings.remoteAccessEnabled === true,
     });
-    const reconnected = await omnirushServerStore.reconnectOmniRushServer();
+    const reconnected = await marsServerStore.reconnectMarsServer();
     if (!reconnected) {
       await refreshRouteState().catch(() => {});
       return { statusMessage: t("settings.environment.apply_refresh_failed") };
@@ -2161,11 +2161,11 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     if (!trimmed) return;
     setRenameWorkspaceBusy(true);
     try {
-      if (!omnirushClient) {
-        toast.error("omnirush.ai server is unavailable. Reconnect the server before renaming workspaces.");
+      if (!marsClient) {
+        toast.error("marsai.click server is unavailable. Reconnect the server before renaming workspaces.");
         return;
       }
-      await omnirushClient.updateWorkspaceDisplayName(renameWorkspaceId, trimmed);
+      await marsClient.updateWorkspaceDisplayName(renameWorkspaceId, trimmed);
       setRenameWorkspaceId(null);
       setRenameWorkspaceTitle("");
       await refreshRouteState();
@@ -2176,7 +2176,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     } finally {
       setRenameWorkspaceBusy(false);
     }
-  }, [omnirushClient, refreshRouteState, renameWorkspaceId, renameWorkspaceTitle]);
+  }, [marsClient, refreshRouteState, renameWorkspaceId, renameWorkspaceTitle]);
 
   const handleRevealWorkspace = useCallback(async (workspaceId: string) => {
     const workspace = workspaces.find((item) => item.id === workspaceId);
@@ -2199,14 +2199,14 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
       }
       return;
     }
-    throw new Error("omnirush.ai server is unavailable. Reconnect the server before exporting workspace config.");
+    throw new Error("marsai.click server is unavailable. Reconnect the server before exporting workspace config.");
   }, [workspaceServerClientResolver, workspaces]);
 
   const removeWorkspaceConfirmed = useCallback(async (workspaceId: string): Promise<void> => {
     try {
       await removeRouteWorkspace({
         workspaceId,
-        deleteFromServer: omnirushClient ? (id) => omnirushClient.deleteWorkspace(id) : null,
+        deleteFromServer: marsClient ? (id) => marsClient.deleteWorkspace(id) : null,
         forgetOnDesktop: isDesktopRuntime() ? workspaceForget : null,
         closeTerminals: closeWorkspaceTerminals,
       });
@@ -2230,7 +2230,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
       }
     }
     await refreshRouteState();
-  }, [omnirushClient, refreshRouteState, selectedWorkspaceId, workspaces]);
+  }, [marsClient, refreshRouteState, selectedWorkspaceId, workspaces]);
 
   const handleForgetWorkspace = useCallback(async (workspaceId: string) => {
     if (typeof window !== "undefined") {
@@ -2283,17 +2283,17 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
           <GeneralSettingsView
             onNavigateTab={(tab) => navigateSettingsPath(tab)}
             developerMode={developerMode}
-            omnirushClient={omnirushClient}
+            marsClient={marsClient}
             bestPracticesClient={bestPracticesClient}
             runtimeWorkspaceId={runtimeWorkspaceId}
-            linuxSandboxClient={omnirushClient}
+            linuxSandboxClient={marsClient}
             sandboxWorkspaceId={selectedWorkspaceId || runtimeWorkspaceId}
             buildathonProject={selectedWorkspace?.workspaceType === "local" && selectedWorkspace.path
               ? { path: selectedWorkspace.path, name: selectedWorkspace.displayName?.trim() || selectedWorkspace.name || selectedWorkspace.path }
               : null}
             buildDiagnosticsBundle={() => buildDiagnosticsBundleJson({
               developerMode,
-              omnirushServerStatus: routeOmniRushStatus,
+              marsServerStatus: routeMarsStatus,
               runtimeWorkspaceId,
               selectedWorkspaceId,
             })}
@@ -2303,9 +2303,9 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
         return (
           <SettingsStack>
             <AuthorizedFoldersPanel
-              omnirushServerClient={omnirushClient}
-              omnirushServerStatus={routeOmniRushStatus}
-              omnirushServerCapabilities={routeOmniRushCapabilities}
+              marsServerClient={marsClient}
+              marsServerStatus={routeMarsStatus}
+              marsServerCapabilities={routeMarsCapabilities}
               runtimeWorkspaceId={runtimeWorkspaceId}
               selectedWorkspaceRoot={selectedWorkspaceRoot}
               activeWorkspaceType={workspaceType}
@@ -2346,7 +2346,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
             organizationName={cloudSession.activeOrgName}
             cloudProviderIds={new Set([
               ...Object.values(providerAuthSnapshot.importedCloudProviders ?? {})
-                .filter((provider) => !isOmniRushCloudProvider(provider))
+                .filter((provider) => !isMarsCloudProvider(provider))
                 .map((provider) => provider.providerId),
             ])}
           />
@@ -2370,7 +2370,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
             onDesktopNotificationsChange={(desktopNotifications) => {
               local.setPrefs((previous) => ({ ...previous, desktopNotifications }));
             }}
-            subagentModelClient={omnirushClient}
+            subagentModelClient={marsClient}
           />
         );
       case "extensions":
@@ -2437,7 +2437,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
                   void connectionsStore.removeMcp(name);
                 }}
                 setMcpEnabled={
-                  routeOmniRushStatus === "connected" && routeOmniRushCapabilities?.mcp?.write
+                  routeMarsStatus === "connected" && routeMarsCapabilities?.mcp?.write
                     ? (name, enabled) => connectionsStore.setMcpEnabled(name, enabled)
                     : undefined
                 }
@@ -2490,11 +2490,11 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
             connectCloudProvider={providerAuthStore.connectCloudProvider}
             importedCloudProviders={providerAuthSnapshot.importedCloudProviders}
             importsUnavailable={
-              omnirushServerSnapshot.omnirushServerCapabilities?.config?.read === false ||
-              omnirushServerSnapshot.omnirushServerCapabilities?.config?.write === false
+              marsServerSnapshot.marsServerCapabilities?.config?.read === false ||
+              marsServerSnapshot.marsServerCapabilities?.config?.write === false
             }
             lastSyncError={providerAuthSnapshot.lastSyncError}
-            omnirushServerAvailable={Boolean(omnirushServerSnapshot.omnirushServerClient)}
+            marsServerAvailable={Boolean(marsServerSnapshot.marsServerClient)}
             onOpenAccount={openCloudAccountSettings}
             refreshCloudOrgProviders={providerAuthStore.refreshCloudOrgProviders}
             runCloudProviderSync={providerAuthStore.runCloudProviderSync}
@@ -2510,39 +2510,39 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
               busy={busy}
               clientConnected={Boolean(opencodeClient)}
               opencodeConnectStatus={null}
-              omnirushServerStatus={omnirushServerSnapshot.omnirushServerStatus}
+              marsServerStatus={marsServerSnapshot.marsServerStatus}
               developerMode={developerMode}
               toggleDeveloperMode={toggleDeveloperMode}
               opencodeDevModeEnabled={false}
               openDebugDeepLink={async () => ({ ok: false, message: "Debug deep links are not wired into the React settings route yet." })}
-              cloudMcpUrl={omnirushCloudMcpUrl}
-              canInspectRuntimeConfig={Boolean(omnirushClient && selectedWorkspaceId)}
+              cloudMcpUrl={marsCloudMcpUrl}
+              canInspectRuntimeConfig={Boolean(marsClient && selectedWorkspaceId)}
               getRuntimeConfigStatus={async () => {
-                if (!omnirushClient || !selectedWorkspaceId) {
+                if (!marsClient || !selectedWorkspaceId) {
                   throw new Error("Select a workspace to inspect runtime config.");
                 }
-                return omnirushClient.getRuntimeConfigStatus(selectedWorkspaceId);
+                return marsClient.getRuntimeConfigStatus(selectedWorkspaceId);
               }}
               cloudMcpHealth={cloudMcpHealth}
               refreshCloudMcpHealth={refreshCloudMcpHealth}
               getEngineV2PreviewStatus={async () => {
-                if (!omnirushClient) throw new Error("omnirush.ai server is not connected.");
-                return omnirushClient.getEngineV2PreviewStatus();
+                if (!marsClient) throw new Error("marsai.click server is not connected.");
+                return marsClient.getEngineV2PreviewStatus();
               }}
               setEngineV2PreviewEnabled={async (enabled) => {
-                if (!omnirushClient) throw new Error("omnirush.ai server is not connected.");
-                return omnirushClient.setEngineV2PreviewEnabled(enabled);
+                if (!marsClient) throw new Error("marsai.click server is not connected.");
+                return marsClient.setEngineV2PreviewEnabled(enabled);
               }}
               setEngineV2PreviewChatRouting={async (enabled) => {
-                if (!omnirushClient) throw new Error("omnirush.ai server is not connected.");
-                return omnirushClient.setEngineV2PreviewChatRouting(enabled);
+                if (!marsClient) throw new Error("marsai.click server is not connected.");
+                return marsClient.setEngineV2PreviewChatRouting(enabled);
               }}
               organizationServer={denSession}
             />
             {platform.capabilities.localRuntimeControl ? (
               <RecoveryView
                 anyActiveRuns={false}
-                workspaceConfigPath={selectedWorkspaceRoot ? `${selectedWorkspaceRoot}/.opencode/omnirush.json` : ""}
+                workspaceConfigPath={selectedWorkspaceRoot ? `${selectedWorkspaceRoot}/.opencode/mars.json` : ""}
                 resetConfigBusy={resetConfigBusy}
                 onResetAppConfigDefaults={() => {}}
                 configActionStatus={configActionStatus}
@@ -2551,13 +2551,13 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
                 onRepairOpencodeCache={() => {}}
                 dockerCleanupBusy={false}
                 dockerCleanupResult={null}
-                onCleanupOmniRushDockerContainers={() => {}}
+                onCleanupMarsDockerContainers={() => {}}
               />
             ) : null}
             <EffectivePermissionsPanel
-              omnirushServerClient={omnirushClient}
-              omnirushServerStatus={routeOmniRushStatus}
-              omnirushServerCapabilities={routeOmniRushCapabilities}
+              marsServerClient={marsClient}
+              marsServerStatus={routeMarsStatus}
+              marsServerCapabilities={routeMarsCapabilities}
               runtimeWorkspaceId={runtimeWorkspaceId}
               refreshToken={permissionsRefreshToken}
             />
@@ -2576,7 +2576,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
           />
         );
       case "voice":
-        return <VoiceSettingsView client={omnirushClient} />;
+        return <VoiceSettingsView client={marsClient} />;
       case "updates":
         return (
           <UpdatesView
@@ -2610,7 +2610,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
       case "environment":
         return (
           <EnvironmentView
-            client={omnirushServerSnapshot.omnirushServerClient}
+            client={marsServerSnapshot.marsServerClient}
             isRemoteWorkspace={isRemoteWorkspace}
             onApplyChanges={isDesktopRuntime() && !isRemoteWorkspace ? handleApplyEnvironmentChanges : undefined}
             applyBlocked={activeReloadBlockingSessions.length > 0}
@@ -2628,7 +2628,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
             key={runtimeWorkspaceId ?? selectedWorkspaceId}
             {...debugViewProps}
             agentAccess={{
-              client: selectedWorkspaceEndpoint?.client ?? omnirushClient,
+              client: selectedWorkspaceEndpoint?.client ?? marsClient,
               workspaceId: runtimeWorkspaceId,
               currentModel: currentCloudMcpModel,
               onHealthChange: handleCloudMcpHealthChange,
@@ -2662,7 +2662,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
           selectedWorkspaceColor={selectedWorkspaceColor}
           workspaces={workspaceOptions}
           onSelectWorkspace={handleSelectSettingsWorkspace}
-          headerStatus={routeOmniRushStatus}
+          headerStatus={routeMarsStatus}
           busyHint={loading ? t("session.loading_detail") : busyLabel}
           onClose={props.onClose ?? (() => navigate(settingsReturnRoute(
             selectedWorkspaceId,

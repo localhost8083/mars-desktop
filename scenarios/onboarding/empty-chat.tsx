@@ -1,4 +1,4 @@
-import { Icon, Mark, mix } from "@omnirush/presentation";
+import { Icon, Mark, mix } from "@mars/presentation";
 
 /** Standalone illustration, not evidence of desktop installation or launch. */
 export function EmptyChat({ f }: { f: number }) {

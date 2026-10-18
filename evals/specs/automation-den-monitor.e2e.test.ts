@@ -1,16 +1,16 @@
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { desktopAutomationOnDenMonitor } from "../worlds/automations.ts";
 
 /**
  * CORE JOURNEY: Den's "My Automations" is a monitor, not an authoring surface.
  * The creating surface owns immutable execution placement — Desktop creates
- * Desktop work and OmniRush.ai Web creates Cloud work — so Den shows what is
+ * Desktop work and MarsAI Web creates Cloud work — so Den shows what is
  * scheduled and running, links each Automation to the surface that manages
  * it, and keeps exactly one operational control: cancelling an in-flight run.
  */
 
 const test = spec.world(desktopAutomationOnDenMonitor, {
-  needs: { optIn: ["OMNIRUSH_EVAL_AUTOMATIONS_E2E_TEST"] },
+  needs: { optIn: ["MARS_EVAL_AUTOMATIONS_E2E_TEST"] },
   timeout: 420_000,
 });
 
@@ -19,14 +19,14 @@ test("Den lists Automations as a read-only monitor that routes management to Web
     await user.see({ text: "My Automations" }, { timeoutMs: 60_000 });
     await user.see({ text: world.name }, { timeoutMs: 60_000 });
     // The routing copy is one clause of the page intro, so match within it.
-    await user.see({ text: /Create and edit Cloud Automations in OmniRush.ai Web/ });
-    await user.see({ text: "Open in OmniRush.ai Web" });
+    await user.see({ text: /Create and edit Cloud Automations in MarsAI Web/ });
+    await user.see({ text: "Open in MarsAI Web" });
     // The group heading renders with CSS uppercase, which innerText reflects.
     await user.see({ text: /^scheduled$/i });
     await user.notSee({ text: /New Automation/ });
     evidence.recordAssertionEvidence(
       "Den monitor has no authoring entry",
-      "The Den Automations page lists Den-scheduled work grouped by attention and routes creation to OmniRush.ai Web instead of offering its own form.",
+      "The Den Automations page lists Den-scheduled work grouped by attention and routes creation to MarsAI Web instead of offering its own form.",
       true,
     );
   });
@@ -35,7 +35,7 @@ test("Den lists Automations as a read-only monitor that routes management to Web
     // The card is a button whose text is the whole summary; its title is the exact-text target.
     await user.click({ text: world.name });
     await user.see({ text: "Run receipt" }, { timeoutMs: 30_000 });
-    await user.see({ text: "Manage in OmniRush.ai Desktop" });
+    await user.see({ text: "Manage in MarsAI Desktop" });
     // No run is in flight, so the only operational control stays hidden too.
     for (const forbidden of ["Edit", "Deactivate", "Activate", "Run now", "Archive", "Save revision", "Create in Cloud", "Cancel run"]) {
       await user.notSee({ role: "button", text: forbidden });
@@ -48,7 +48,7 @@ test("Den lists Automations as a read-only monitor that routes management to Web
 
     await user.looks([
       "An Automation detail page with run history and a run receipt panel",
-      "A note that the Automation is managed in OmniRush.ai Desktop",
+      "A note that the Automation is managed in MarsAI Desktop",
       "No Edit, Run now, Activate, Deactivate, or Archive buttons are visible",
     ]);
   });

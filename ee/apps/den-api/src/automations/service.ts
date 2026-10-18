@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
-import type { AutomationClaimResult, AutomationListItem } from "@omnirush/automations"
-import { AUTOMATION_MIN_CLAIM_WINDOW_MS, desktopRunnerConnected } from "@omnirush/automations"
+import type { AutomationClaimResult, AutomationListItem } from "@mars/automations"
+import { AUTOMATION_MIN_CLAIM_WINDOW_MS, desktopRunnerConnected } from "@mars/automations"
 import type {
   AutomationDesktopRunnerCapability,
   AutomationDesktopRunnerPresence,
@@ -11,7 +11,7 @@ import type {
   AutomationAction,
   CreateAutomationDefinition,
   UpdateAutomation,
-} from "@omnirush/types/automations"
+} from "@mars/types/automations"
 import { env } from "../env.js"
 import { isActiveAutomationOwner, resolveAutomationModelAccess } from "./authority.js"
 import { shouldApplyAutomationModelAccessFailure } from "./model-attention-rollout.js"

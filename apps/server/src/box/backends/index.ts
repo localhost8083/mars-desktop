@@ -1,10 +1,10 @@
-// Ported from the CLI (omnirush-cli src/box/backends/index.js,
+// Ported from the CLI (mars-cli src/box/backends/index.js,
 // feat/local-box-backends); keep the two in step. Desktop differences: types;
 // the "asked" reason names the desktop setting.
 //
 // Which backend runs this machine's boxes: the best one that works, in a
 // ranked order per OS, unless the user (the desktop setting,
-// OMNIRUSH_BOX_BACKEND) or the server (its allowlist) says otherwise. Every
+// MARS_BOX_BACKEND) or the server (its allowlist) says otherwise. Every
 // backend gives the same thing: a persistent Linux box per project from the
 // same pinned image, boxd inside, per-turn snapshots in the same
 // `__sandbox__` format, so the converter and the rebuild do not change.
@@ -12,7 +12,7 @@
 //   Linux:   bwrap (no daemon, no root) > rootless Podman > Docker
 //   macOS:   OrbStack > colima > Docker Desktop > Rancher > Podman machine
 //            (Apple container is opt-in only: never picked on its own, never started unasked)
-//   Windows: WSL containers (wslc, WSL 3.0.1+) > OmniRush's WSL distro > Docker Desktop > Podman machine
+//   Windows: WSL containers (wslc, WSL 3.0.1+) > Mars's WSL distro > Docker Desktop > Podman machine
 //            > Docker in the default WSL distro
 //
 // Nothing found: the project runs on this machine with one line saying why
@@ -41,7 +41,7 @@ export const ORDER: Record<"linux" | "darwin" | "win32", string[]> = {
 
 /**
  * Backends used only when chosen by name (the sandbox backend setting,
- * OMNIRUSH_BOX_BACKEND), never in the automatic order. Apple container: on
+ * MARS_BOX_BACKEND), never in the automatic order. Apple container: on
  * macOS 27 `container system start` can hang and leave the Mac's network
  * sharing stuck until a reboot (apple/container#2275), and it turns the
  * packet filter on for all host traffic (#2335).
@@ -52,7 +52,7 @@ export const OPT_IN: Partial<Record<NodeJS.Platform, string[]>> = { darwin: ["ap
 export const BACKENDS = ["bwrap", "apple", "wslc", "wsl", "orbstack", "colima", "docker-desktop", "rancher", "docker", "podman", "wsl-engine"] as const;
 export type BackendId = (typeof BACKENDS)[number];
 export const LABELS: Record<string, string> = {
-  bwrap: "bubblewrap (no daemon)", apple: "Apple container", wslc: "WSL containers (wslc)", wsl: "OmniRush WSL distro", orbstack: "OrbStack", colima: "colima",
+  bwrap: "bubblewrap (no daemon)", apple: "Apple container", wslc: "WSL containers (wslc)", wsl: "Mars WSL distro", orbstack: "OrbStack", colima: "colima",
   "docker-desktop": "Docker Desktop", rancher: "Rancher Desktop", docker: "Docker", podman: "Podman", "wsl-engine": "Docker/Podman in WSL",
 };
 
@@ -85,7 +85,7 @@ export function containerBackendId(runtime: Pick<RuntimeInfo, "name" | "wsl" | "
   }
 }
 
-/** The backend an OMNIRUSH_BOX_RUNTIME path names when it is not a Docker/Podman CLI. */
+/** The backend an MARS_BOX_RUNTIME path names when it is not a Docker/Podman CLI. */
 export function runtimeBackend(value: unknown, platform: NodeJS.Platform = process.platform): string | null {
   const base = String(value || "").split(/[\\/]/).pop()?.toLowerCase().replace(/\.exe$/, "") ?? "";
   if (base === "wslc") return "wslc";
@@ -212,14 +212,14 @@ function alternative(r: Probed | { backend: string; name: string; ok: false; rea
  * flavor, ..., why }) or { ok: false, reason, tried }. `asked`: a backend id
  * or "auto" (the setting); `allow`: the server's allowlist (null: any).
  */
-export async function detectBackend({ boxHome, env = process.env, platform = process.platform, home = os.homedir(), exists = existsSync, run = runCommand, wsl = platform === "linux" && isWsl(env), now = Date.now(), fresh = false, all = false, timeoutMs, asked = env.OMNIRUSH_BOX_BACKEND, allow = null, arch = process.arch, release = os.release() }: DetectOptions = {}): Promise<RuntimeResult> {
+export async function detectBackend({ boxHome, env = process.env, platform = process.platform, home = os.homedir(), exists = existsSync, run = runCommand, wsl = platform === "linux" && isWsl(env), now = Date.now(), fresh = false, all = false, timeoutMs, asked = env.MARS_BOX_BACKEND, allow = null, arch = process.arch, release = os.release() }: DetectOptions = {}): Promise<RuntimeResult> {
   let wanted = normalizeBackend(asked);
-  let legacyRuntime = String(env.OMNIRUSH_BOX_RUNTIME || "").trim();
-  // OMNIRUSH_BOX_RUNTIME naming a backend's own program picks that backend (the host kits do).
+  let legacyRuntime = String(env.MARS_BOX_RUNTIME || "").trim();
+  // MARS_BOX_RUNTIME naming a backend's own program picks that backend (the host kits do).
   const named = runtimeBackend(legacyRuntime, platform);
   if (named && wanted === "auto") { wanted = normalizeBackend(named); legacyRuntime = ""; }
   const allowList = Array.isArray(allow) ? allow.map(normalizeBackend).filter((id): id is BackendId | "auto" | "native" => Boolean(id)) : null;
-  const key = JSON.stringify([2, platform, wanted, allowList, legacyRuntime, env.DOCKER_HOST || "", env.PATH || env.Path || "", env.OMNIRUSH_BOX_BWRAP || ""]);
+  const key = JSON.stringify([2, platform, wanted, allowList, legacyRuntime, env.DOCKER_HOST || "", env.PATH || env.Path || "", env.MARS_BOX_BWRAP || ""]);
   if (boxHome && !fresh && !all) {
     const cached = readCache(boxHome, now, key);
     if (cached) return { ...cached, cached: true };
@@ -227,7 +227,7 @@ export async function detectBackend({ boxHome, env = process.env, platform = pro
   if (wanted === null) return { ok: false, reason: `unknown sandbox backend "${asked}" (one of: auto, ${BACKENDS.join(", ")}, native)`, tried: [] };
   if (wanted === "native") return { ok: false, reason: "the sandbox backend is set to native (this machine)", tried: [], native: true };
   let order: string[] = backendsFor(platform);
-  // OMNIRUSH_BOX_RUNTIME (docker, podman or a path) keeps meaning "this container CLI".
+  // MARS_BOX_RUNTIME (docker, podman or a path) keeps meaning "this container CLI".
   if (legacyRuntime) order = order.filter((id) => !["bwrap", "apple", "wslc", "wsl", "wsl-engine"].includes(id));
   let why = `the first that works here, in order: ${order.join(" > ")}`;
   if (wanted !== "auto") {
@@ -247,12 +247,12 @@ export async function detectBackend({ boxHome, env = process.env, platform = pro
   let chosen: (RuntimeInfo & { backend: string }) | null = null;
   for (const id of order) {
     let found: Probed[];
-    if (id === "bwrap") found = [{ backend: "bwrap", ...(await probeBwrap({ env, boxHome: boxHome ?? path.join(home, ".omnirush", "box"), run, exists, platform, arch, ...limit })) }];
+    if (id === "bwrap") found = [{ backend: "bwrap", ...(await probeBwrap({ env, boxHome: boxHome ?? path.join(home, ".mars", "box"), run, exists, platform, arch, ...limit })) }];
     else if (id === "apple") found = [{ backend: "apple", ...(await probeApple({ env, platform, arch, release, run, exists, ...limit })) }];
     else if (id === "wsl") found = [{ backend: "wsl", ...(await probeWslDistro({ env, platform, run, exists, arch, ...limit })) }];
     else if (id === "wslc") found = [{ backend: "wslc", ...(await probeWslc({ env, platform, run, exists, arch, explicit: wanted === "wslc", ...limit })) }];
     else if (id === "wsl-engine") {
-      if (platform !== "win32" || env.OMNIRUSH_BOX_WSL === "0") continue;
+      if (platform !== "win32" || env.MARS_BOX_WSL === "0") continue;
       const bin = wslLauncher({ env, exists });
       if (!bin) continue;
       const probed = await probeWsl(bin, { run, env, ...limit });

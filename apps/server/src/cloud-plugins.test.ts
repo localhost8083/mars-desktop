@@ -29,14 +29,14 @@ function serverConfig(root: string): ServerConfig {
 }
 
 async function withWorkspace(fn: (input: { root: string; config: ServerConfig }) => Promise<void>) {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-cloud-plugin-"));
-  const previousDb = process.env.OMNIRUSH_RUNTIME_DB;
-  process.env.OMNIRUSH_RUNTIME_DB = join(root, "runtime.sqlite");
+  const root = await mkdtemp(join(tmpdir(), "mars-cloud-plugin-"));
+  const previousDb = process.env.MARS_RUNTIME_DB;
+  process.env.MARS_RUNTIME_DB = join(root, "runtime.sqlite");
   try {
     await fn({ root, config: serverConfig(root) });
   } finally {
-    if (previousDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-    else process.env.OMNIRUSH_RUNTIME_DB = previousDb;
+    if (previousDb === undefined) delete process.env.MARS_RUNTIME_DB;
+    else process.env.MARS_RUNTIME_DB = previousDb;
     await rm(root, { recursive: true, force: true });
   }
 }

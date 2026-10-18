@@ -21,14 +21,14 @@ export interface CloudModelInfraWorld {
   org: DenOrgHandle;
 }
 
-async function grantOmniRushWebAccess(admin: DenSession, organizationId: string): Promise<void> {
-  // Cloud is entitled by OmniRush.ai Web access (paid subscription or the
+async function grantMarsWebAccess(admin: DenSession, organizationId: string): Promise<void> {
+  // Cloud is entitled by MarsAI Web access (paid subscription or the
   // platform-admin complimentary grant); there is no per-organization Cloud flag.
-  const route = `/v1/admin/organizations/${organizationId}/omnirush-web-access`;
+  const route = `/v1/admin/organizations/${organizationId}/mars-web-access`;
   const result = await denFetch(admin, route, {
     method: "PUT",
     headers: { authorization: `Bearer ${admin.token}` },
-    body: JSON.stringify({ enabled: true, reason: "cloud-model-infra world: complimentary OmniRush.ai Web access for Cloud" }),
+    body: JSON.stringify({ enabled: true, reason: "cloud-model-infra world: complimentary MarsAI Web access for Cloud" }),
   });
   if (!result.response.ok) {
     throw new Error(`PUT ${route} failed: HTTP ${result.response.status} ${result.text.slice(0, 500)}`);
@@ -37,7 +37,7 @@ async function grantOmniRushWebAccess(admin: DenSession, organizationId: string)
 
 /**
  * Cloud model-infrastructure world: a fresh self-hosted Den whose only
- * organization holds complimentary OmniRush.ai Web access (the Cloud entitlement) and whose Daytona
+ * organization holds complimentary MarsAI Web access (the Cloud entitlement) and whose Daytona
  * provisioner gate is satisfied without any real Daytona account.
  *
  * `DAYTONA_API_URL` deliberately points at an unroutable local address: the
@@ -49,7 +49,7 @@ async function grantOmniRushWebAccess(admin: DenSession, organizationId: string)
  *
  * The member-owned cloud worker itself is seeded at the database seam
  * (`worker`, `worker_token`, `daytona_sandbox`) pointing at a real
- * source-first omnirush-server launched from `cloud-model-infra-worker.ts`,
+ * source-first mars-server launched from `cloud-model-infra-worker.ts`,
  * so Den talks to a genuine worker runtime over plain HTTP.
  *
  * Launch: `pnpm world up ./worlds/cloud-model-infra.ts`
@@ -77,7 +77,7 @@ export async function bootCloudModelInfra(
     email: CLOUD_MODEL_INFRA_ADMIN_EMAIL,
   });
   const org = stack.use(await createOrg(den, CLOUD_MODEL_INFRA_ORG));
-  await grantOmniRushWebAccess(admin, org.id);
+  await grantMarsWebAccess(admin, org.id);
   return { den, admin, org };
 }
 

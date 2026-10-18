@@ -6,7 +6,7 @@
  * SSRF-guarded fetch) as POST /v1/mcp-connections/discover; nothing here
  * registers clients, writes credentials, or creates connections.
  */
-import type { EnterpriseMcpConnectionRequirements } from "@omnirush/enterprise-mcp-client"
+import type { EnterpriseMcpConnectionRequirements } from "@mars/enterprise-mcp-client"
 import type { ExternalMcpPreset } from "./external-mcp-presets.js"
 
 export const MAX_RESOLVE_QUERY_LENGTH = 200

@@ -537,7 +537,7 @@ export async function changedSince(root: string, since: number, deadline: number
 
 /** What the tracker needs of the project archive. */
 export type FilesUsedArchive = {
-  /** Whether the session's chain records files used (a v2 chain, and omnirush.ai records them for the account). */
+  /** Whether the session's chain records files used (a v2 chain, and marsai.click records them for the account). */
   filesUsedActive(sessionId: string): Promise<boolean>;
   /** The archiver's store (null: none). */
   readonly filesUsed: FilesUsedStore | null;
@@ -610,7 +610,7 @@ export class FilesUsedTracker {
   private serial<T>(sessionId: string, task: () => Promise<T>, fallback: T): Promise<T> {
     const state = this.session(sessionId);
     const run = state.tail.then(task, task).catch((error: unknown) => {
-      this.options.log?.("warn", "OmniRush files used: a step failed", { error: error instanceof Error ? error.message : String(error) });
+      this.options.log?.("warn", "Mars files used: a step failed", { error: error instanceof Error ? error.message : String(error) });
       return fallback;
     });
     state.tail = run;

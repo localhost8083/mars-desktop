@@ -1,4 +1,4 @@
-import { browserScript } from "@omnirush/testkit";
+import { browserScript } from "@mars/testkit";
 /**
  * Repro attempts for the field report "failed authorization / asks me to
  * reconnect even though the tools/MCPs are connected": a member with many
@@ -17,8 +17,8 @@ import { browserScript } from "@omnirush/testkit";
  * be lost, and the wire log must show no non-injected 401/403 from Den.
  */
 import { expect } from "vitest";
-import { control, evalIn, go, waitFor } from "@omnirush/behaviors";
-import { screenshot, validate } from "@omnirush/test-evidence";
+import { control, evalIn, go, waitFor } from "@mars/behaviors";
+import { screenshot, validate } from "@mars/test-evidence";
 import {
   app,
   eventually,
@@ -31,25 +31,25 @@ import {
   server,
   sleep,
   test,
-} from "@omnirush/testkit";
-import type { App, DenClientState, FaultProxy, FaultRequest } from "@omnirush/testkit";
+} from "@mars/testkit";
+import type { App, DenClientState, FaultProxy, FaultRequest } from "@mars/testkit";
 
-const e2eTestsEnabled = process.env.OMNIRUSH_EVAL_E2E_TESTS === "1";
-const daytonaEnabled = process.env.OMNIRUSH_EVAL_DAYTONA === "1";
-const configuredDen = Boolean(process.env.OMNIRUSH_EVAL_DEN_API_URL?.trim());
+const e2eTestsEnabled = process.env.MARS_EVAL_E2E_TESTS === "1";
+const daytonaEnabled = process.env.MARS_EVAL_DAYTONA === "1";
+const configuredDen = Boolean(process.env.MARS_EVAL_DEN_API_URL?.trim());
 const localMysqlRequired = !daytonaEnabled && !configuredDen;
 const mysqlOpen = await localMysqlIsRunning();
 const runnable = e2eTestsEnabled && (!localMysqlRequired || mysqlOpen);
 
 const skipSuffix = !e2eTestsEnabled
-  ? " skipped — needs: set OMNIRUSH_EVAL_E2E_TESTS=1"
+  ? " skipped — needs: set MARS_EVAL_E2E_TESTS=1"
   : localMysqlRequired && !mysqlOpen
     ? " skipped — needs MySQL on 127.0.0.1:3306"
     : "";
 
 /** Total workspace count for the scale attempt. */
 const STORM_WORKSPACE_TOTAL = (() => {
-  const raw = Number(process.env.OMNIRUSH_EVAL_WORKSPACE_STORM_COUNT ?? "8");
+  const raw = Number(process.env.MARS_EVAL_WORKSPACE_STORM_COUNT ?? "8");
   return Number.isInteger(raw) && raw >= 2 ? raw : 8;
 })();
 
@@ -65,7 +65,7 @@ interface WorkspaceListing {
 /** The local server's own workspace registry, read the way the app reads it. */
 async function listWorkspaces(desktopApp: App): Promise<WorkspaceListing> {
   const value = await evalIn(desktopApp, async () => {
-    const info = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("omnirushServerInfo");
+    const info = await window.__MARS_ELECTRON__?.invokeDesktop?.("marsServerInfo");
     if (!info?.running || !info.baseUrl) return { error: "local_server_unavailable" };
     const response = await fetch(String(info.baseUrl).replace(/\/+$/, "") + "/workspaces", {
       headers: { authorization: "Bearer " + String(info.ownerToken ?? info.clientToken ?? "") },
@@ -90,7 +90,7 @@ async function listWorkspaces(desktopApp: App): Promise<WorkspaceListing> {
 /** Create one workspace through the product's own control action and return its id. */
 async function createWorkspace(desktopApp: App, label: string, index: number): Promise<string> {
   const before = await listWorkspaces(desktopApp);
-  const path = `/tmp/omnirush-${label}-${Date.now()}-${index}`;
+  const path = `/tmp/mars-${label}-${Date.now()}-${index}`;
   await control(desktopApp, "workspace.create", { path }, { timeoutMs: 90_000 });
   const after = await eventually(() => listWorkspaces(desktopApp), {
     within: 90_000,
@@ -113,7 +113,7 @@ async function switchToWorkspace(desktopApp: App, workspaceId: string, dwellMs: 
 async function refreshDenSession(desktopApp: App, times: number): Promise<void> {
   await evalIn(desktopApp, browserScript(async (times) => {
     for (let index = 0; index < times; index += 1) {
-      window.dispatchEvent(new Event("omnirush-den-session-updated"));
+      window.dispatchEvent(new Event("mars-den-session-updated"));
       await new Promise((resolve) => window.setTimeout(resolve, 100));
     }
   }, [times]), { awaitPromise: true, timeoutMs: 10_000 });
@@ -121,7 +121,7 @@ async function refreshDenSession(desktopApp: App, times: number): Promise<void> 
 
 async function probeDenPath(desktopApp: App, apiUrl: string, path: string, times: number): Promise<void> {
   await evalIn(desktopApp, browserScript(async (times, apiUrl, path) => {
-    const token = localStorage.getItem("omnirush.den.authToken") ?? "";
+    const token = localStorage.getItem("mars.den.authToken") ?? "";
     for (let index = 0; index < times; index += 1) {
       try {
         await fetch(apiUrl + path, {
@@ -134,7 +134,7 @@ async function probeDenPath(desktopApp: App, apiUrl: string, path: string, times
 
 /** Wait until the app itself has adopted the workspace as active. */
 async function waitForAdoptedWorkspace(desktopApp: App, workspaceId: string): Promise<void> {
-  await waitFor(desktopApp, browserScript((workspaceId, value) => ((localStorage.getItem("omnirush.react.activeWorkspace") ?? "") === workspaceId
+  await waitFor(desktopApp, browserScript((workspaceId, value) => ((localStorage.getItem("mars.react.activeWorkspace") ?? "") === workspaceId
     && window.location.hash.includes(value)), [workspaceId, `/workspace/${workspaceId}`]), {
     timeoutMs: 60_000,
     label: `workspace ${workspaceId} adopted as active`,
@@ -291,7 +291,7 @@ test.skipIf(!runnable)(
   `${STORM_WORKSPACE_TOTAL} workspaces with rapid round-robin switching keep one coherent Cloud session${skipSuffix}`,
   { timeout: 30 * 60_000 },
   async ({ evidence, place }) => {
-    needs({ optIn: ["OMNIRUSH_EVAL_E2E_TESTS"] });
+    needs({ optIn: ["MARS_EVAL_E2E_TESTS"] });
     await using den = await server({
       place,
       org: {
@@ -346,14 +346,14 @@ test.skipIf(!runnable)(
     });
 
     // The reported symptom is Cloud tools claiming to need a reconnect while
-    // connected: the settled workspace's omnirush-cloud MCP must still be
+    // connected: the settled workspace's mars-cloud MCP must still be
     // usable with its capability tools present.
     const health = await eventually(
       () => readCloudMcpHealth(desktopApp, finalWorkspaceId, { probe: true, timeoutMs: 30_000 }),
       {
         within: 180_000,
         intervalMs: 5_000,
-        label: "omnirush-cloud MCP usable after the scale storm",
+        label: "mars-cloud MCP usable after the scale storm",
         until: (state) => state.ok && state.usable === true,
       },
     );
@@ -374,7 +374,7 @@ test.skipIf(!runnable)(
   `six workspaces switched under Den overload and a transient 401 burst recover without a reconnect${skipSuffix}`,
   { timeout: 25 * 60_000 },
   async ({ evidence, place }) => {
-    needs({ optIn: ["OMNIRUSH_EVAL_E2E_TESTS"] });
+    needs({ optIn: ["MARS_EVAL_E2E_TESTS"] });
     await using den = await server({
       place,
       org: {
@@ -473,7 +473,7 @@ test.skipIf(!runnable)(
   `forty zero-dwell toggles between two workspaces settle on one coherent active workspace${skipSuffix}`,
   { timeout: 20 * 60_000 },
   async ({ evidence, place }) => {
-    needs({ optIn: ["OMNIRUSH_EVAL_E2E_TESTS"] });
+    needs({ optIn: ["MARS_EVAL_E2E_TESTS"] });
     await using den = await server({
       place,
       org: {
@@ -553,14 +553,14 @@ test.skipIf(!runnable)(
     });
     const coherentBeforeRelease = await eventually(
       () => evalIn(desktopApp, async () => {
-        const info = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("omnirushServerInfo");
-        const desktopState = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("workspaceBootstrap");
+        const info = await window.__MARS_ELECTRON__?.invokeDesktop?.("marsServerInfo");
+        const desktopState = await window.__MARS_ELECTRON__?.invokeDesktop?.("workspaceBootstrap");
         const response = await fetch(String(info?.baseUrl ?? "").replace(/\/+$/, "") + "/workspaces", {
           headers: { authorization: "Bearer " + String(info?.ownerToken ?? info?.clientToken ?? "") },
         });
         const body = await response.json();
         return {
-          stored: localStorage.getItem("omnirush.react.activeWorkspace") ?? "",
+          stored: localStorage.getItem("mars.react.activeWorkspace") ?? "",
           selected: String(desktopState?.selectedId ?? ""),
           watched: String(desktopState?.watchedId ?? ""),
           desktop: String(desktopState?.activeId ?? ""),
@@ -589,7 +589,7 @@ test.skipIf(!runnable)(
     });
     await sleep(2_000);
     const afterRelease = await evalIn(desktopApp, () => ((() => ({
-      active: localStorage.getItem("omnirush.react.activeWorkspace") ?? "",
+      active: localStorage.getItem("mars.react.activeWorkspace") ?? "",
       errors: [...(window.__workspaceStormSettingsGate?.errors ?? [])],
       visibleError: /Failed to fetch|OpenCode base URL is missing|Workspace configuration failed|Runtime error/.test(document.body.innerText),
     }))()));
@@ -609,10 +609,10 @@ test.skipIf(!runnable)(
       attempt: "Attempt 3",
     });
 
-    const adopted = await evalIn(desktopApp, () => (localStorage.getItem("omnirush.react.activeWorkspace") ?? ""));
+    const adopted = await evalIn(desktopApp, () => (localStorage.getItem("mars.react.activeWorkspace") ?? ""));
     evidence.recordAssertionEvidence(
       "Attempt 3: no lost update — the adopted workspace is the last one requested",
-      `omnirush.react.activeWorkspace=${JSON.stringify(adopted)} after ${toggles} toggles (expected ${finalWorkspaceId}).`,
+      `mars.react.activeWorkspace=${JSON.stringify(adopted)} after ${toggles} toggles (expected ${finalWorkspaceId}).`,
       adopted === finalWorkspaceId,
     );
     expect(adopted).toBe(finalWorkspaceId);

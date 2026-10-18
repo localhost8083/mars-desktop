@@ -31,7 +31,7 @@ function engineAction(bash: Record<string, string>, command: string, mode: "guar
   return commandNodes(marked).map((node) => winningRule(rules, "bash", node)?.action ?? "ask").join(",");
 }
 
-/** The pinned engine's own default ruleset for the omnirush agent, as effective-permissions.e2e.test.ts records it. */
+/** The pinned engine's own default ruleset for the mars agent, as effective-permissions.e2e.test.ts records it. */
 const ENGINE_DEFAULT_RULES = [
   { permission: "*", pattern: "*", action: "allow" as const },
   { permission: "doom_loop", pattern: "*", action: "ask" as const },

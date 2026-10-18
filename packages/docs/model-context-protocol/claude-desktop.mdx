@@ -1,14 +1,14 @@
 ---
-title: "OmniRush.ai MCP for Claude Desktop"
+title: "MarsAI MCP for Claude Desktop"
 sidebarTitle: "Claude Desktop"
-description: "Claude Desktop MCP setup for OmniRush.ai Connect, using custom connectors or mcp-remote to reach your org's shared capabilities."
+description: "Claude Desktop MCP setup for MarsAI Connect, using custom connectors or mcp-remote to reach your org's shared capabilities."
 ---
 
-The OmniRush.ai MCP server ([OmniRush.ai Connect](/cloud/run-in-the-cloud/cloud-mcp))
-enables Claude Desktop to use the OmniRush.ai capabilities your organization has
+The MarsAI MCP server ([MarsAI Connect](/cloud/run-in-the-cloud/cloud-mcp))
+enables Claude Desktop to use the MarsAI capabilities your organization has
 made available to you: Gmail read/search, Calendar list/create, Drive
 search/read, Gmail draft creation, shared MCP connections such as Notion,
-Linear, Slack, Stripe, Exa, and Context7, shared skills, and OmniRush.ai Cloud
+Linear, Slack, Stripe, Exa, and Context7, shared skills, and MarsAI Cloud
 resources like skills, plugins, Collections, workers, members, roles, teams,
 and LLM providers. The server exposes only `search_capabilities` and
 `execute_capability`, so Claude Desktop searches what you can access and runs
@@ -18,12 +18,12 @@ context.
 ## Server URL
 
 ```text
-https://api.omnirush.example.com/mcp/agent
+https://api.mars.example.com/mcp/agent
 ```
 
-omnirush.ai does not run a hosted Den, so there is no public endpoint: use the
+marsai.click does not run a hosted Den, so there is no public endpoint: use the
 `/mcp/agent` URL on the API origin of your [self-hosted Den](/start-here/self-host)
-(`api.omnirush.example.com` above is a placeholder). OAuth sign-in uses your
+(`api.mars.example.com` above is a placeholder). OAuth sign-in uses your
 account on that Den, and the organization you pick is pinned into the token.
 
 ## Connect
@@ -32,15 +32,15 @@ account on that Den, and the organization you pick is pinned into the token.
 
 2. Click `Add custom connector`.
 
-3. Name it `OmniRush.ai` and set the URL to:
+3. Name it `MarsAI` and set the URL to:
 
    ```text
-   https://api.omnirush.example.com/mcp/agent
+   https://api.mars.example.com/mcp/agent
    ```
 
 4. Click `Connect`, then finish the browser sign-in and choose your
    organization. Claude's connector OAuth uses an HTTPS callback, which
-   OmniRush.ai accepts.
+   MarsAI accepts.
 
 ## Fallback config
 
@@ -50,24 +50,24 @@ For Claude Desktop builds without custom connectors, open `Settings` >
 ```json
 {
   "mcpServers": {
-    "omnirush": {
+    "mars": {
       "command": "npx",
-      "args": ["-y", "mcp-remote@latest", "https://api.omnirush.example.com/mcp/agent"]
+      "args": ["-y", "mcp-remote@latest", "https://api.mars.example.com/mcp/agent"]
     }
   }
 }
 ```
 
 `mcp-remote` runs the OAuth locally on an HTTP loopback callback, which
-OmniRush.ai accepts. Restart Claude Desktop after editing the config.
+MarsAI accepts. Restart Claude Desktop after editing the config.
 
 ## Switch organizations
 
-Remove the stored MCP auth token for `omnirush`, then connect again and choose
+Remove the stored MCP auth token for `mars`, then connect again and choose
 the organization you want during browser sign-in.
 
 <Note>
-This is a setup guide. These steps match OmniRush.ai Connect's OAuth profile:
+This is a setup guide. These steps match MarsAI Connect's OAuth profile:
 HTTPS or HTTP loopback callbacks, PKCE S256, and dynamic client registration
 fallback. Claude Desktop is listed as setup only because native proof is not
 complete. See the
@@ -77,7 +77,7 @@ table.
 
 ## What you can ask
 
-- "Which OmniRush.ai organization am I connected to?"
+- "Which MarsAI organization am I connected to?"
 - "Add omar@example.com to my organization."
 - "Assign Priya to the Sales team."
 - "Find the Q3 launch page in Notion and summarize it."

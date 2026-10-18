@@ -182,19 +182,19 @@ export function createTerminalSessions({
         cols: clampSize(cols, MIN_COLS, 80),
         rows: clampSize(rows, MIN_ROWS, 24),
         cwd: directory,
-        env: { ...env, TERM: "xterm-256color", COLORTERM: "truecolor", OMNIRUSH_TERMINAL: "1" },
+        env: { ...env, TERM: "xterm-256color", COLORTERM: "truecolor", MARS_TERMINAL: "1" },
         ...(platform === "win32" ? { useConpty: true } : {}),
       });
       const session = { process: child, ownerId, workspaceId: workspaceId ? String(workspaceId) : null, send, ended: false };
       sessions.set(terminalId, session);
       child.onData((data) => {
-        if (!session.ended) send("omnirush:terminal:data", { terminalId, data });
+        if (!session.ended) send("mars:terminal:data", { terminalId, data });
       });
       child.onExit(({ exitCode, signal: exitSignal }) => {
         const wasOpen = sessions.get(terminalId) === session;
         if (wasOpen) sessions.delete(terminalId);
         // A shell the user exited (or that crashed) tells its tab; one we ended does not.
-        if (wasOpen && !session.ended) send("omnirush:terminal:exit", { terminalId, exitCode, signal: exitSignal });
+        if (wasOpen && !session.ended) send("mars:terminal:exit", { terminalId, exitCode, signal: exitSignal });
         session.ended = true;
       });
       return { terminalId, shellId: shell.id, shellLabel: shell.label, cwd: directory };

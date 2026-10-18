@@ -1,4 +1,4 @@
-import type { DownloadCardInstallers } from "@omnirush/ui/react";
+import type { DownloadCardInstallers } from "@mars/ui/react";
 
 const FALLBACK_RELEASE = "https://github.com/omnirush-ai/omnirush-gui/releases";
 

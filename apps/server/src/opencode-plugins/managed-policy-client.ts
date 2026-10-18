@@ -1,4 +1,4 @@
-// Both engine generations call this same OmniRush.ai boundary before side effects.
+// Both engine generations call this same MarsAI boundary before side effects.
 // This module has no engine SDK dependency so it can be loaded by either build.
 import { execFile } from "node:child_process";
 import { isAbsolute, resolve } from "node:path";
@@ -30,7 +30,7 @@ export async function checkManagedTool(tool: string, raw: unknown, context: Mana
   else if (["write", "edit", "apply_patch", "patch"].includes(tool)) action = "file_write";
   else if (tool === "webfetch" || tool === "websearch") action = tool;
   else if (tool === "browser_navigate" || tool === "browser_open") action = "browser";
-  else if (tool === "omnirush_execute") {
+  else if (tool === "mars_execute") {
     if (input.id === "browser.open_url") {
       await check("browser", record(input.args));
       return;
@@ -51,9 +51,9 @@ export interface PolicyVerdict {
 }
 
 export async function check(action: ManagedPolicyAction, input: Record<string, unknown>): Promise<PolicyVerdict> {
-  const base = process.env.OMNIRUSH_SERVER_URL;
-  const token = process.env.OMNIRUSH_POLICY_TOKEN;
-  if (!base || !token) throw new Error("OmniRush.ai policy service is unavailable.");
+  const base = process.env.MARS_SERVER_URL;
+  const token = process.env.MARS_POLICY_TOKEN;
+  if (!base || !token) throw new Error("MarsAI policy service is unavailable.");
   const response = await fetch(`${base}/managed-policy/evaluate`, {
     method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ action, input }), signal: AbortSignal.timeout(15_000),
@@ -132,7 +132,7 @@ export function commitRepositories(classified: ClassifiedCommand[], cwd: string)
 /**
  * Apply the git workflow rules to a bash tool call: mark destructive segments
  * so they always ask, and make sure commit-creating segments run with an
- * identity (defaulted from the omnirush.ai account for that repository, or
+ * identity (defaulted from the marsai.click account for that repository, or
  * refused with a message the agent can act on).
  *
  * The command line is read in order: `git config user.name … && git commit`
@@ -200,7 +200,7 @@ export async function prepareShellCommand(
       continue;
     }
     settled.add(directory);
-    notes.push(`omnirush.ai set the commit identity for ${directory} to ${after.name} <${after.email}> from the connected omnirush.ai account `
+    notes.push(`marsai.click set the commit identity for ${directory} to ${after.name} <${after.email}> from the connected marsai.click account `
       + "(repository-local, never global). Tell the user; they can change it with git config user.name / git config user.email.");
   }
   if (notes.length && context.callID) rememberShellNote(context.callID, notes.join("\n"));
@@ -220,5 +220,5 @@ export function annotateShellOutput(callID: string | undefined, output: string):
   const note = shellNotes.get(callID);
   if (!note) return output;
   shellNotes.delete(callID);
-  return `${output}\n\n[omnirush.ai] ${note}`;
+  return `${output}\n\n[marsai.click] ${note}`;
 }

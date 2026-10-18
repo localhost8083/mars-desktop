@@ -3,18 +3,18 @@ import { mkdtemp, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createHeadlessThreadClient } from "@omnirush/headless-threads";
+import { createHeadlessThreadClient } from "@mars/headless-threads";
 
 import { startServer } from "./server.js";
 import type { ServerConfig } from "./types.js";
 
-// These tests dispatch prompts through a local workspace without an omnirush.ai
+// These tests dispatch prompts through a local workspace without an marsai.click
 // account. The server's sign-in gate refuses that unless both development
 // flags are set; the gate itself is covered by session-uploader.server.e2e.test.ts.
-const uploadGateEnv = { OMNIRUSH_DEV_MODE: process.env.OMNIRUSH_DEV_MODE, OMNIRUSH_SESSION_UPLOAD_OPTIONAL: process.env.OMNIRUSH_SESSION_UPLOAD_OPTIONAL };
+const uploadGateEnv = { MARS_DEV_MODE: process.env.MARS_DEV_MODE, MARS_SESSION_UPLOAD_OPTIONAL: process.env.MARS_SESSION_UPLOAD_OPTIONAL };
 beforeAll(() => {
-  process.env.OMNIRUSH_DEV_MODE = "1";
-  process.env.OMNIRUSH_SESSION_UPLOAD_OPTIONAL = "1";
+  process.env.MARS_DEV_MODE = "1";
+  process.env.MARS_SESSION_UPLOAD_OPTIONAL = "1";
 });
 afterAll(() => {
   for (const [name, value] of Object.entries(uploadGateEnv)) {
@@ -69,7 +69,7 @@ const BEATS = [
 ];
 
 async function createWorkspaceRoot() {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-headless-threads-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-headless-threads-"));
   await mkdir(join(root, ".opencode"), { recursive: true });
   roots.push(root);
   return root;
@@ -130,7 +130,7 @@ function startMockOpencode() {
   };
 }
 
-async function startOmniRushServer(input: { workspaceRoot: string; opencodeBaseUrl: string }) {
+async function startMarsServer(input: { workspaceRoot: string; opencodeBaseUrl: string }) {
   const config: ServerConfig = {
     host: "127.0.0.1",
     port: 0,
@@ -161,19 +161,19 @@ async function startOmniRushServer(input: { workspaceRoot: string; opencodeBaseU
   return { server, token: config.token };
 }
 
-test("drives two headless turns on a native OmniRush.ai thread", async () => {
+test("drives two headless turns on a native MarsAI thread", async () => {
   const workspaceRoot = await createWorkspaceRoot();
   const engine = startMockOpencode();
-  const omnirush = await startOmniRushServer({
+  const mars = await startMarsServer({
     workspaceRoot,
     opencodeBaseUrl: `http://127.0.0.1:${engine.server.port}`,
   });
 
   let clock = 0;
   const threads = createHeadlessThreadClient({
-    baseUrl: `http://127.0.0.1:${omnirush.server.port}`,
+    baseUrl: `http://127.0.0.1:${mars.server.port}`,
     workspaceId: "ws_1",
-    token: omnirush.token,
+    token: mars.token,
     defaultModel: { providerId: "anthropic", modelId: "claude-sonnet-5" },
     now: () => clock,
     // Each poll gap moves the engine exactly one beat, so the journey below is
@@ -245,29 +245,29 @@ test("drives two headless turns on a native OmniRush.ai thread", async () => {
 test("leaves the thread readable through the session surface the app uses", async () => {
   const workspaceRoot = await createWorkspaceRoot();
   const engine = startMockOpencode();
-  const omnirush = await startOmniRushServer({
+  const mars = await startMarsServer({
     workspaceRoot,
     opencodeBaseUrl: `http://127.0.0.1:${engine.server.port}`,
   });
-  const base = `http://127.0.0.1:${omnirush.server.port}`;
+  const base = `http://127.0.0.1:${mars.server.port}`;
 
   const thread = await createHeadlessThreadClient({
     baseUrl: base,
     workspaceId: "ws_1",
-    token: omnirush.token,
+    token: mars.token,
   }).createThread({ title: "Refund policy" });
 
   // The app lists and opens sessions through the native workspace mount. A headless thread
   // is an ordinary session, so it has to be visible here with the same id.
   const listed = await fetch(`${base}/workspace/ws_1/opencode/session`, {
-    headers: { Authorization: `Bearer ${omnirush.token}` },
+    headers: { Authorization: `Bearer ${mars.token}` },
   });
   expect(listed.status).toBe(200);
   const listedBody = await listed.json();
   expect(listedBody.map((item: { id: string }) => item.id)).toContain(thread.id);
 
   const opened = await fetch(`${base}/workspace/ws_1/opencode/session/${thread.id}`, {
-    headers: { Authorization: `Bearer ${omnirush.token}` },
+    headers: { Authorization: `Bearer ${mars.token}` },
   });
   expect(opened.status).toBe(200);
   await expect(opened.json()).resolves.toMatchObject({ id: thread.id, title: "Refund policy" });

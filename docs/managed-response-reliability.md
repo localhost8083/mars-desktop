@@ -1,6 +1,6 @@
 # Managed response reliability
 
-This change makes the existing OmniRush.ai managed Chat Completions gateway report
+This change makes the existing MarsAI managed Chat Completions gateway report
 broken transport honestly, preserve usable partial work, and stop upstream work
 when the client cancels. It does not change model configuration or billing.
 
@@ -38,7 +38,7 @@ policy is separate.
 
 Safe error categories distinguish provider authorization/rate/quota failures,
 context/request rejection, unreachable providers, deadlines and malformed or
-unfinished responses. Valid `Retry-After` and the OmniRush.ai request ID are retained.
+unfinished responses. Valid `Retry-After` and the MarsAI request ID are retained.
 Provider error bodies and credential-bearing headers are not copied into routine
 request diagnostics; request summaries contain counts and known role names, never
 prompt, tool arguments or completion text. The organization-specific full-payload
@@ -65,7 +65,7 @@ change does not claim to repair their underlying limitations.
 
 ## Verification
 
-`pnpm evals:pr specs/managed-inference.test.ts` runs the real gateway and OmniRush.ai
+`pnpm evals:pr specs/managed-inference.test.ts` runs the real gateway and MarsAI
 server/OpenCode engine against a controlled HTTP provider, with disposable baseline
 SQL only for authentication/admission. It checks success, fragmentation, terminal
 length responses, choice handling, errors, cancellation, heartbeats, request

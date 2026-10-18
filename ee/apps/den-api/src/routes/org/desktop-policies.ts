@@ -13,7 +13,7 @@ import {
   normalizeDefaultDesktopPolicyDocument,
   normalizeDesktopPolicyDocument,
   resolveDesktopPolicyDocumentWrite,
-} from "@omnirush/types/den/desktop-policies"
+} from "@mars/types/den/desktop-policies"
 import type { Hono } from "hono"
 import { describeRoute } from "hono-openapi"
 import { z } from "zod"

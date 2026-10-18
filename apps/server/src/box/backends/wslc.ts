@@ -1,4 +1,4 @@
-// Ported from the CLI (omnirush-cli src/box/backends/wslc.js,
+// Ported from the CLI (mars-cli src/box/backends/wslc.js,
 // feat/local-box-backends); keep the two in step. Desktop differences: types;
 // the container-name prefix (containerName's env); boxd missing from the
 // sidecars is a reason.
@@ -41,7 +41,7 @@ export const SUPPORTED = { min: "3.0.1" };
 export const UPDATE_HINT = "WSL is older than 3.0.1, which brings WSL containers (`wsl --update`, once)";
 
 export function findWslc({ env = process.env, exists = existsSync }: { env?: Env; exists?: (file: string) => boolean } = {}): string | null {
-  const asked = String(env.OMNIRUSH_BOX_WSLC_BIN || "").trim();
+  const asked = String(env.MARS_BOX_WSLC_BIN || "").trim();
   if (asked) return exists(asked) ? asked : null;
   const dirs = String(env.Path || env.PATH || "").split(";").filter(Boolean);
   const pf = env.ProgramFiles || "C:\\Program Files";
@@ -66,8 +66,8 @@ export function parseWslcVersion(text: unknown): string {
 export async function probeWslc({ env = process.env, platform = process.platform, run = runCommand, exists = existsSync, timeoutMs = 15_000, arch = process.arch, explicit = false }: { env?: Env; platform?: NodeJS.Platform; run?: RunCommand; exists?: (file: string) => boolean; timeoutMs?: number; arch?: string; explicit?: boolean } = {}): Promise<RuntimeResult> {
   const base = { name: "wslc", backend: "wslc" };
   if (platform !== "win32") return { ...base, ok: false, reason: "WSL containers are Windows only" };
-  // OMNIRUSH_BOX_WSL=0 turns off the WSL distro and engines; wslc asked for by name still runs.
-  if (env.OMNIRUSH_BOX_WSL === "0" && !explicit) return { ...base, ok: false, reason: "turned off (OMNIRUSH_BOX_WSL=0)" };
+  // MARS_BOX_WSL=0 turns off the WSL distro and engines; wslc asked for by name still runs.
+  if (env.MARS_BOX_WSL === "0" && !explicit) return { ...base, ok: false, reason: "turned off (MARS_BOX_WSL=0)" };
   const bin = findWslc({ env, exists });
   if (!bin) {
     // Tell "WSL is old" (one `wsl --update`) from "WSL is off" (admin, restart).
@@ -113,8 +113,8 @@ export function labelsOf(value: unknown): Record<string, string> {
 }
 
 export function wslcResources({ env = process.env, cpus = os.cpus().length, memory = os.totalmem() }: { env?: Env; cpus?: number; memory?: number } = {}): string[] {
-  const askedCpus = Number(env.OMNIRUSH_BOX_CPUS);
-  const askedMem = String(env.OMNIRUSH_BOX_MEMORY || "").trim();
+  const askedCpus = Number(env.MARS_BOX_CPUS);
+  const askedMem = String(env.MARS_BOX_MEMORY || "").trim();
   const c = askedCpus > 0 ? Math.round(askedCpus) : Math.max(1, Math.min(8, cpus - 1));
   // wslc takes upper-case units only (512M, 4G).
   const m = askedMem ? askedMem.toUpperCase() : `${Math.max(2, Math.min(8, Math.floor(memory / 2 / 1024 ** 3)))}G`;
@@ -125,10 +125,10 @@ export function createWslcArgs({ name, key, root, croot, image, runFolder, shims
   return [
     "container", "create", "--name", name,
     "--label", `${LABEL}=1`, "--label", `${LABEL}.key=${key}`, "--label", `${LABEL}.root=${root}`, "--label", `${LABEL}.version=1`, "--label", `${LABEL}.port=${port}`,
-    "--hostname", "omnirush-box",
+    "--hostname", "mars-box",
     "--mount", `type=bind,source=${root},target=${croot}`,
     "--mount", `type=bind,source=${runFolder},target=${RUN_DIR}`,
-    "--mount", `type=bind,source=${path.win32.join(runFolder, "bin")},target=/opt/omnirush/bin,readonly`,
+    "--mount", `type=bind,source=${path.win32.join(runFolder, "bin")},target=/opt/mars/bin,readonly`,
     ...(shims ? ["--mount", `type=bind,source=${shims},target=${SHIMS_DIR}-src,readonly`] : []),
     ...(pkglog ? ["--mount", `type=bind,source=${pkglog.root},target=${containerRoot(pkglog.root, "win32")}`] : []),
     "-p", `127.0.0.1:${port}:${BOX_PORT}`,
@@ -136,7 +136,7 @@ export function createWslcArgs({ name, key, root, croot, image, runFolder, shims
     "-e", "LANG=C.UTF-8", "-e", "DEBIAN_FRONTEND=noninteractive",
     "-w", croot,
     ...wslcResources({ env }),
-    "--entrypoint", "/opt/omnirush/bin/boxd",
+    "--entrypoint", "/opt/mars/bin/boxd",
     image,
   ];
 }
@@ -253,7 +253,7 @@ export const wslcDriver: BoxDriver = {
     const res = await wslc(runtime, ["image", "list", "--format", "json"], { run, timeoutMs: 30_000 });
     for (const img of parseJsonRows(res.stdout)) {
       const ref = img.Repository && img.Tag ? `${img.Repository}:${img.Tag}` : String(img.Name ?? img.Reference ?? "");
-      if (!ref || !/(^|\/)omnirush-ai\/box-[a-z]+:/.test(ref) || current.has(ref) || used.has(ref)) continue;
+      if (!ref || !/(^|\/)mars-ai\/box-[a-z]+:/.test(ref) || current.has(ref) || used.has(ref)) continue;
       const del = await wslc(runtime, ["image", "remove", ref], { run, timeoutMs: 60_000 });
       if (del.code === 0) removed.push({ kind: "image", name: ref, reason: "not current" });
     }

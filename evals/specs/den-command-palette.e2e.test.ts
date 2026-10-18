@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { adminDashboardWeb } from "../worlds/den-admin-navigation.ts";
 
 // cmdk group headings render with CSS `uppercase`; the rendered text is what

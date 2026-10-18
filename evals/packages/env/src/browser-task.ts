@@ -1,8 +1,8 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { parseBrowserTaskReply } from "@omnirush/behaviors";
-import type { BrowserTaskInput, BrowserTaskReply } from "@omnirush/behaviors";
-import type { Surface } from "@omnirush/cdp";
+import { parseBrowserTaskReply } from "@mars/behaviors";
+import type { BrowserTaskInput, BrowserTaskReply } from "@mars/behaviors";
+import type { Surface } from "@mars/cdp";
 
 const exec = promisify(execFile);
 
@@ -31,7 +31,7 @@ export async function requestBrowserTask(app: Surface, input: BrowserTaskInput):
   if (!app.handle.profileDir) throw new Error("The isolated desktop has no profile path.");
   return parseBrowserTaskReply(await runBrowserHost(app, `
     const {readFile}=await import('node:fs/promises');
-    const bridge=JSON.parse(await readFile(${browserScriptValue(`${app.handle.profileDir}/electron-userdata/omnirush-ui-control.json`)},'utf8'));
+    const bridge=JSON.parse(await readFile(${browserScriptValue(`${app.handle.profileDir}/electron-userdata/mars-ui-control.json`)},'utf8'));
     const response=await fetch(bridge.baseUrl+'/browser/task',{
       method:'POST',headers:{Authorization:'Bearer '+bridge.token,'Content-Type':'application/json'},
       body:${browserScriptValue(JSON.stringify(input))},signal:AbortSignal.timeout(65000)

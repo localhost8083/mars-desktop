@@ -9,7 +9,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import type { EngineV2PreviewStatus, OmniRushCloudMcpHealth, OmniRushRuntimeConfigStatus, OmniRushServerStatus } from "@/app/lib/omnirush-server";
+import type { EngineV2PreviewStatus, MarsCloudMcpHealth, MarsRuntimeConfigStatus, MarsServerStatus } from "@/app/lib/mars-server";
 import { sanitizeCloudMcpHealthDiagnostic, sanitizeDiagnosticRecord } from "@/app/lib/diagnostic-sanitizer";
 import {
   DEFAULT_DEN_API_BASE_URL,
@@ -52,7 +52,7 @@ import {
 
 type SettingsTone = ComponentProps<typeof SettingsStatusBadge>["tone"];
 
-const DESKTOP_BOOTSTRAP_PATH_HINT = "~/.config/omnirush/desktop-bootstrap.json";
+const DESKTOP_BOOTSTRAP_PATH_HINT = "~/.config/mars/desktop-bootstrap.json";
 
 function sourceBadgeLabel(source: DenEndpointSource): string {
   switch (source) {
@@ -293,9 +293,9 @@ interface AdvancedRuntimeSectionProps {
   clientStatusLabel: string;
   clientTone: SettingsTone;
   clientDetailLines: string[];
-  omnirushStatusLabel: string;
-  omnirushTone: SettingsTone;
-  omnirushDetailLines: string[];
+  marsStatusLabel: string;
+  marsTone: SettingsTone;
+  marsDetailLines: string[];
 }
 
 export function AdvancedRuntimeSection(props: AdvancedRuntimeSectionProps) {
@@ -317,11 +317,11 @@ export function AdvancedRuntimeSection(props: AdvancedRuntimeSectionProps) {
         />
         <RuntimeStatusCard
           icon={<Server size={18} />}
-          title={t("settings.omnirush_server_label")}
-          description={t("settings.omnirush_server_desc")}
-          statusLabel={props.omnirushStatusLabel}
-          tone={props.omnirushTone}
-          detailLines={props.omnirushDetailLines}
+          title={t("settings.mars_server_label")}
+          description={t("settings.mars_server_desc")}
+          statusLabel={props.marsStatusLabel}
+          tone={props.marsTone}
+          detailLines={props.marsDetailLines}
         />
       </div>
     </LayoutSection>
@@ -351,11 +351,11 @@ function formatMetadataRecord(value: Record<string, string | number | boolean | 
   return Object.entries(value).map(([key, nested]) => `${key}=${formatMaybe(nested)}`).join(", ");
 }
 
-function formatSupportedFeatures(features: OmniRushCloudMcpHealth["compatibility"]["supportedFeatures"]): string {
+function formatSupportedFeatures(features: MarsCloudMcpHealth["compatibility"]["supportedFeatures"]): string {
   return Object.entries(features).map(([key, enabled]) => `${key}:${enabled ? "yes" : "no"}`).join(", ");
 }
 
-function formatPluginHashes(hashes: OmniRushCloudMcpHealth["compatibility"]["pluginFileHashes"]): string {
+function formatPluginHashes(hashes: MarsCloudMcpHealth["compatibility"]["pluginFileHashes"]): string {
   if (hashes.length === 0) return "none";
   return hashes.map((hash) => `${hash.name}=${hash.sha256 ? hash.sha256.slice(0, 12) : `unavailable${hash.error ? ` (${hash.error})` : ""}`}`).join(", ");
 }
@@ -367,8 +367,8 @@ function formatMcpToolExposure(input: { checked: boolean; includesMcpTools: bool
 }
 
 interface AdvancedCloudMcpDiagnosticsSectionProps {
-  cloudMcpHealth: OmniRushCloudMcpHealth | null;
-  onRefresh: () => Promise<OmniRushCloudMcpHealth | null>;
+  cloudMcpHealth: MarsCloudMcpHealth | null;
+  onRefresh: () => Promise<MarsCloudMcpHealth | null>;
 }
 
 export function AdvancedCloudMcpDiagnosticsSection(props: AdvancedCloudMcpDiagnosticsSectionProps) {
@@ -461,8 +461,8 @@ export function AdvancedCloudMcpDiagnosticsSection(props: AdvancedCloudMcpDiagno
               <DiagnosticRow label="Safe capabilities" value={`schema v${props.cloudMcpHealth.schemaVersion}; connect catalog ${props.cloudMcpHealth.connectCatalogEnabled ? "enabled" : "disabled"}`} />
               {compatibility ? (
                 <>
-                  <DiagnosticRow label="Runtime versions" value={`server ${formatMaybe(compatibility.omnirush.serverVersion)}; app ${formatMetadataRecord(compatibility.omnirush.app)}`} />
-                  <DiagnosticRow label="omnirush.ai compatibility" value={`expected ${formatMaybe(compatibility.opencode.expectedVersion)}; actual ${formatMaybe(compatibility.opencode.actualVersion)}; probe ${compatibility.opencode.probe}`} />
+                  <DiagnosticRow label="Runtime versions" value={`server ${formatMaybe(compatibility.mars.serverVersion)}; app ${formatMetadataRecord(compatibility.mars.app)}`} />
+                  <DiagnosticRow label="marsai.click compatibility" value={`expected ${formatMaybe(compatibility.opencode.expectedVersion)}; actual ${formatMaybe(compatibility.opencode.actualVersion)}; probe ${compatibility.opencode.probe}`} />
                   <DiagnosticRow label="Feature probes" value={formatSupportedFeatures(compatibility.supportedFeatures)} />
                   <DiagnosticRow label="Experimental tool IDs" value={formatMcpToolExposure(compatibility.experimentalToolIds)} />
                   <DiagnosticRow label="Experimental provider tools" value={formatMcpToolExposure(compatibility.experimentalProviderTools)} />
@@ -489,7 +489,7 @@ export function AdvancedCloudMcpDiagnosticsSection(props: AdvancedCloudMcpDiagno
 interface AdvancedRuntimeConfigSourcesSectionProps {
   busy: boolean;
   canInspect: boolean;
-  configStatus: OmniRushRuntimeConfigStatus | null;
+  configStatus: MarsRuntimeConfigStatus | null;
   configStatusBusy: boolean;
   configStatusError: string | null;
   onRefresh: () => Promise<void>;
@@ -533,7 +533,7 @@ function RuntimeConfigSummary(props: { config: Record<string, unknown> }) {
   const permissions = countRecord(config.permission);
   const disabledProviders = countArray(config.disabled_providers);
   const configuredDefaultAgent = typeof config.default_agent === "string" ? config.default_agent : "not set";
-  const defaultAgent = configuredDefaultAgent.trim().toLowerCase() === "omnirush"
+  const defaultAgent = configuredDefaultAgent.trim().toLowerCase() === "mars"
     ? "Default"
     : configuredDefaultAgent;
 
@@ -607,7 +607,7 @@ export function AdvancedRuntimeConfigSourcesSection(props: AdvancedRuntimeConfig
   return (
     <LayoutSection id="advanced-config-sources">
       <LayoutSectionHeader>
-        <LayoutSectionTitle>omnirush.ai config sources</LayoutSectionTitle>
+        <LayoutSectionTitle>marsai.click config sources</LayoutSectionTitle>
         <LayoutSectionDescription>
           Inspect what the app controls at runtime versus what belongs to your workspace config. This works through the local server and does not require the engine to be healthy.
         </LayoutSectionDescription>
@@ -651,14 +651,14 @@ export function AdvancedRuntimeConfigSourcesSection(props: AdvancedRuntimeConfig
             {props.configStatus.sources ? (
               <div className="space-y-3">
                 <div>
-                  <div className="font-medium text-gray-12">omnirush.ai source breakdown</div>
+                  <div className="font-medium text-gray-12">marsai.click source breakdown</div>
                   <div className="text-[11px] text-gray-9">
                     The engine also reads its own project and global config files. The app injects the runtime config separately; for app-managed keys, the injected config is the source to inspect.
                   </div>
                 </div>
                 <RuntimeConfigSourceBlock
                   title="Project engine configuration"
-                  description="Workspace-level omnirush.ai config owned by the user/project."
+                  description="Workspace-level marsai.click config owned by the user/project."
                   path={props.configStatus.sources.projectOpencode.path}
                   exists={props.configStatus.sources.projectOpencode.exists}
                   keys={props.configStatus.sources.projectOpencode.keys}
@@ -680,7 +680,7 @@ export function AdvancedRuntimeConfigSourcesSection(props: AdvancedRuntimeConfig
                 />
                 <RuntimeConfigSourceBlock
                   title="Injected config"
-                  description="The object the app injects into omnirush.ai at runtime."
+                  description="The object the app injects into marsai.click at runtime."
                   keys={props.configStatus.sources.injected.keys}
                   config={props.configStatus.sources.injected.config}
                 />
@@ -832,7 +832,7 @@ export function AdvancedEngineV2PreviewSection(props: AdvancedEngineV2PreviewSec
         setLoadError(null);
       }
     }).catch((error: unknown) => {
-      if (mounted) setLoadError(error instanceof Error ? error.message : "Failed to load omnirush.ai v2 engine preview status.");
+      if (mounted) setLoadError(error instanceof Error ? error.message : "Failed to load marsai.click v2 engine preview status.");
     });
     return () => {
       mounted = false;
@@ -865,7 +865,7 @@ export function AdvancedEngineV2PreviewSection(props: AdvancedEngineV2PreviewSec
         setStatus(await props.setEnabled(false));
       }
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : "Failed to update omnirush.ai v2 engine preview.");
+      setLoadError(error instanceof Error ? error.message : "Failed to update marsai.click v2 engine preview.");
     } finally {
       setBusy(false);
     }
@@ -877,7 +877,7 @@ export function AdvancedEngineV2PreviewSection(props: AdvancedEngineV2PreviewSec
     ? `Running v${status.version ?? "unknown"} (pid ${status.pid ?? "unknown"}) — ${status.mirroredProviderIds.length} providers mirrored, ${status.catalogModelIds.length} models${skippedCount ? `, ${skippedCount} skipped` : ""}${status.chatRouting ? " — chat routed to v2" : ""}`
     : null;
   const error = (status?.enabled && !status.running ? status.lastError : null) ?? loadError;
-  const starting = status?.enabled && !status.running && !error ? "Starting the omnirush.ai v2 sidecar…" : null;
+  const starting = status?.enabled && !status.running && !error ? "Starting the marsai.click v2 sidecar…" : null;
 
   return (
     <LayoutSection id="advanced-experimental-engine">
@@ -1012,9 +1012,9 @@ interface AdvancedConnectionSectionProps {
   busy: boolean;
   headerStatus: string;
   baseUrl: string;
-  omnirushServerUrl: string;
-  omnirushServerStatus: OmniRushServerStatus;
-  omnirushReconnectBusy: boolean;
+  marsServerUrl: string;
+  marsServerStatus: MarsServerStatus;
+  marsReconnectBusy: boolean;
   isLocalEngineRunning: boolean;
   restartBusy: boolean;
   reconnectStatus: string | null;
@@ -1042,10 +1042,10 @@ export function AdvancedConnectionSection(props: AdvancedConnectionSectionProps)
             variant="outline"
             size="sm"
             onClick={() => void props.onReconnect()}
-            disabled={props.busy || props.omnirushReconnectBusy || !props.omnirushServerUrl.trim()}
+            disabled={props.busy || props.marsReconnectBusy || !props.marsServerUrl.trim()}
           >
-            <RefreshCcw size={14} className={props.omnirushReconnectBusy ? "animate-spin" : ""} />
-            {props.omnirushReconnectBusy ? t("settings.reconnecting") : t("settings.reconnect_server")}
+            <RefreshCcw size={14} className={props.marsReconnectBusy ? "animate-spin" : ""} />
+            {props.marsReconnectBusy ? t("settings.reconnecting") : t("settings.reconnect_server")}
           </Button>
 
           {props.isLocalEngineRunning ? (
@@ -1057,7 +1057,7 @@ export function AdvancedConnectionSection(props: AdvancedConnectionSectionProps)
               disabled={props.busy || props.restartBusy}
             >
               <RefreshCcw size={14} className={props.restartBusy ? "animate-spin" : ""} />
-              {props.restartBusy ? t("settings.restarting") : t("settings.restart_omnirush_server")}
+              {props.restartBusy ? t("settings.restarting") : t("settings.restart_mars_server")}
             </Button>
           ) : null}
 
@@ -1074,7 +1074,7 @@ export function AdvancedConnectionSection(props: AdvancedConnectionSectionProps)
             </Button>
           ) : null}
 
-          {!props.isLocalEngineRunning && props.omnirushServerStatus === "connected" ? (
+          {!props.isLocalEngineRunning && props.marsServerStatus === "connected" ? (
             <Button
               type="button"
               variant="outline"

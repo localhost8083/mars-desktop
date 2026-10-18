@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { eq, or, sql, type SQL } from "@omnirush-ee/den-db/drizzle"
 import { OrganizationTable } from "@omnirush-ee/den-db/schema"
-import { readOrganizationMetadata } from "@omnirush/types/den/managed-models-policy"
+import { readOrganizationMetadata } from "@mars/types/den/managed-models-policy"
 import { z } from "zod"
 import { db } from "../db.js"
 import { getDesktopReleaseMetadata } from "../desktop-releases.js"

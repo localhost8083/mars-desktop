@@ -3,10 +3,10 @@
 // the sidecars folder: box/<goos>-<goarch>/boxsh[.exe] (the shell the engine
 // runs its shell tool with), box/linux-<arch>/boxd (run inside each
 // project's box) and, for Linux and Windows builds, box/linux-<arch>/boxrun
-// (the bubblewrap backend on Linux; copied into the OmniRush WSL distro on
-// Windows). Built from box/go, a copy of the CLI's box/go (omnirush-cli
+// (the bubblewrap backend on Linux; copied into the Mars WSL distro on
+// Windows). Built from box/go, a copy of the CLI's box/go (mars-cli
 // feat/local-box-backends), with Go >= 1.22 (GO=/path/to/go), or copied from
-// OMNIRUSH_BOX_PREBUILT_DIR (a folder with the same layout). Linux builds also
+// MARS_BOX_PREBUILT_DIR (a folder with the same layout). Linux builds also
 // ship box/linux-<arch>/bwrap when the prebuilt folder has one (an optional
 // static bubblewrap for systems without it; never built here). Without the
 // helpers the app ships without them and the sandbox reports itself
@@ -19,10 +19,10 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const source = resolve(here, "..", "box", "go");
-// The same folder prepare-sidecar.mjs fills (OMNIRUSH_SIDECAR_DIR or --outdir).
+// The same folder prepare-sidecar.mjs fills (MARS_SIDECAR_DIR or --outdir).
 const argv = process.argv.slice(2);
 const outdirArg = argv.find((arg) => arg.startsWith("--outdir="))?.split("=")[1] ?? (argv.includes("--outdir") ? argv[argv.indexOf("--outdir") + 1] : null);
-const sidecarOverride = process.env.OMNIRUSH_SIDECAR_DIR?.trim() || outdirArg;
+const sidecarOverride = process.env.MARS_SIDECAR_DIR?.trim() || outdirArg;
 const sidecarDir = sidecarOverride ? resolve(sidecarOverride) : resolve(here, "..", "resources", "sidecars");
 const out = join(sidecarDir, "box");
 
@@ -41,14 +41,14 @@ const { goos, goarch } = target();
 const files = [
   { cmd: "boxsh", goos, goarch, name: goos === "windows" ? "boxsh.exe" : "boxsh" },
   { cmd: "boxd", goos: "linux", goarch, name: "boxd" },
-  // The bubblewrap backend (Linux) and the OmniRush WSL distro's runner (Windows copies it in).
+  // The bubblewrap backend (Linux) and the Mars WSL distro's runner (Windows copies it in).
   ...(goos === "linux" || goos === "windows" ? [{ cmd: "boxrun", goos: "linux", goarch, name: "boxrun", optional: true }] : []),
 ];
 
 const go = process.env.GO?.trim() || "go";
 const haveGo = spawnSync(go, ["version"], { stdio: "ignore" }).status === 0;
-const prebuilt = process.env.OMNIRUSH_BOX_PREBUILT_DIR?.trim() ? resolve(process.env.OMNIRUSH_BOX_PREBUILT_DIR.trim()) : null;
-const version = process.env.OMNIRUSH_BOX_HELPER_VERSION?.trim() || "desktop";
+const prebuilt = process.env.MARS_BOX_PREBUILT_DIR?.trim() ? resolve(process.env.MARS_BOX_PREBUILT_DIR.trim()) : null;
+const version = process.env.MARS_BOX_HELPER_VERSION?.trim() || "desktop";
 
 let missing = 0;
 for (const file of files) {
@@ -81,4 +81,4 @@ if (goos === "linux" && prebuilt && existsSync(join(prebuilt, `linux-${goarch}`,
   chmodSync(dest, 0o755);
   console.log(`Sandbox helper linux-${goarch}/bwrap ready.`);
 }
-if (missing) console.warn("Sandbox helpers missing (no Go and no OMNIRUSH_BOX_PREBUILT_DIR): the Linux sandbox will report itself unavailable.");
+if (missing) console.warn("Sandbox helpers missing (no Go and no MARS_BOX_PREBUILT_DIR): the Linux sandbox will report itself unavailable.");

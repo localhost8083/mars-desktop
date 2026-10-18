@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { eventually, spec } from "@omnirush/testkit";
+import { eventually, spec } from "@mars/testkit";
 import { artifactCodeBrowserWorld } from "../worlds/first-run.ts";
 
 const test = spec.world(artifactCodeBrowserWorld);
@@ -9,11 +9,11 @@ test("artifact editor renders code with Pierre and browses workspace files", asy
   await user.see({ placeholder: "Search files" }, { timeoutMs: 30_000 });
 
   await step("A TypeScript file opens beside the workspace tree", async () => {
-    await user.type({ placeholder: "Search files" }, "omnirush-artifact-proof.ts");
+    await user.type({ placeholder: "Search files" }, "mars-artifact-proof.ts");
     await user.press("Tab");
     await user.press("Tab");
     await user.press("Enter");
-    await user.see("Select tab: omnirush-artifact-proof.ts", { timeoutMs: 30_000 });
+    await user.see("Select tab: mars-artifact-proof.ts", { timeoutMs: 30_000 });
     // Pierre renders code inside a shadow root, outside the generic text locator.
     const code = await eventually(() => world.visibleArtifactCode(), {
       within: 30_000,
@@ -32,7 +32,7 @@ test("artifact editor renders code with Pierre and browses workspace files", asy
     try {
       await user.click("Refresh workspace files");
       await user.see({ text: "Some folders could not be read. Check their permissions and refresh." });
-      await user.see("Select tab: omnirush-artifact-proof.ts");
+      await user.see("Select tab: mars-artifact-proof.ts");
       await user.notSee({ text: "Could not load workspace files." });
       evidence.recordAssertionEvidence("The file browser reports a permission gap without replacing readable files with an error", "After restricting a synthetic sibling folder and refreshing, the permissions notice and readable artifact tab remained visible, with no catalog load error.", true);
     } finally {
@@ -44,11 +44,11 @@ test("artifact editor renders code with Pierre and browses workspace files", asy
   });
 
   await step("Selecting JSON replaces the active code artifact", async () => {
-    await user.type({ placeholder: "Search files" }, "omnirush-artifact-settings.json", { replace: true });
+    await user.type({ placeholder: "Search files" }, "mars-artifact-settings.json", { replace: true });
     await user.press("Tab");
     await user.press("Tab");
     await user.press("Enter");
-    await user.see("Select tab: omnirush-artifact-settings.json", { timeoutMs: 30_000 });
+    await user.see("Select tab: mars-artifact-settings.json", { timeoutMs: 30_000 });
     await user.looks([
       "The artifact panel visibly shows the workspace file tree beside a syntax-highlighted JSON code viewer",
       "The code viewer visibly contains the JSON property artifactEditor set to true, and no TypeScript declaration is visible",

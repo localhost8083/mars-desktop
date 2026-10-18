@@ -11,7 +11,7 @@ app.commandLine.appendSwitch("host-resolver-rules","MAP capture-bench.example.te
 async function run() {
 const adapter=await import(pathToFileURL(adapterPath).href);
 const started=performance.now();
-const headers={"Content-Type":"application/zstd","X-OmniRush-Session-ID":"ses_transport_benchmark"};
+const headers={"Content-Type":"application/zstd","X-Mars-Session-ID":"ses_transport_benchmark"};
 const url="http://capture-bench.example.test:18692/collect";
 let response;
 if(variant==="baseline"){

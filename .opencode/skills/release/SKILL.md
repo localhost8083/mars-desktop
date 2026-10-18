@@ -1,9 +1,9 @@
 ---
 name: release
-description: Cut, rebuild, or verify an OmniRush.ai desktop release for macOS, Windows, and Linux.
+description: Cut, rebuild, or verify an MarsAI desktop release for macOS, Windows, and Linux.
 ---
 
-# OmniRush.ai desktop releases
+# MarsAI desktop releases
 
 The `Desktop Release` workflow builds download-ready macOS, Windows, and Linux applications from a semantic-version tag. Versions live in tags; package files keep their development placeholders.
 
@@ -21,14 +21,14 @@ The command requires a clean, fully pushed `main` branch. It creates an annotate
 ## Rebuild an existing release
 
 ```bash
-gh workflow run "Desktop Release" --repo omnirush-ai/omnirush-gui -f tag=vX.Y.Z
+gh workflow run "Desktop Release" --repo mars-ai/mars-gui -f tag=vX.Y.Z
 ```
 
 ## Verify
 
 ```bash
-gh run list --repo omnirush-ai/omnirush-gui --workflow "Desktop Release" --limit 3
-gh release view vX.Y.Z --repo omnirush-ai/omnirush-gui --json isDraft,assets
+gh run list --repo mars-ai/mars-gui --workflow "Desktop Release" --limit 3
+gh release view vX.Y.Z --repo mars-ai/mars-gui --json isDraft,assets
 ```
 
 Expected downloads include macOS ARM64 and x64 DMGs, a Windows x64 installer, Linux x64 AppImage and tarball builds, plus `SHA256SUMS.txt`.

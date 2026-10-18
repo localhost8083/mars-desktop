@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import type { OmniRushCaptureStatus } from "../src/app/lib/omnirush-server";
+import type { MarsCaptureStatus } from "../src/app/lib/mars-server";
 import { captureBannerVisible, SyncRestartBanner, SYNC_RESTART_BANNER_TEXT } from "../src/react-app/shell/sync-restart-banner";
 
 const NOW = Date.parse("2026-10-10T12:00:00Z");
-const status = (mode: OmniRushCaptureStatus["mode"], secondsAgo: number | null = 1): OmniRushCaptureStatus => ({
+const status = (mode: MarsCaptureStatus["mode"], secondsAgo: number | null = 1): MarsCaptureStatus => ({
   running: mode === "worker" || mode === "local" || mode === "off",
   mode,
   since: secondsAgo === null ? null : new Date(NOW - secondsAgo * 1_000).toISOString(),

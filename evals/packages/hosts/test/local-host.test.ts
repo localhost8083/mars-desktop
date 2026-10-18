@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
-import { allocateFreePort } from "@omnirush/cdp";
+import { allocateFreePort } from "@mars/cdp";
 import { EVAL_DEAD_GATEWAY_URL, electronProfilePaths, electronSurfaceEnv, freePort, pruneStaleSurfaceProfiles, registerLiveProfileRoot, resolveChromeBinary, stopOwnedElectronSurface, unregisterLiveProfileRoot } from "../src/local.ts";
 
 const ENV_KEYS = [
@@ -14,23 +14,23 @@ const ENV_KEYS = [
   "HOME",
   "LOCALAPPDATA",
   "OPENCODE_CONFIG_DIR",
-  "OMNIRUSH_ACCESS_TOKEN",
-  "OMNIRUSH_DATA_DIR",
-  "OMNIRUSH_DESKTOP_BOOTSTRAP_PATH",
-  "OMNIRUSH_DESKTOP_DISABLE_WORKSPACE_RECOVERY",
-  "OMNIRUSH_DEV_MODE",
-  "OMNIRUSH_ELECTRON_APP_IDENTIFIER",
-  "OMNIRUSH_ELECTRON_APP_NAME",
-  "OMNIRUSH_ELECTRON_DISABLE_PROTOCOL_REGISTRATION",
-  "OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT",
-  "OMNIRUSH_ELECTRON_SKIP_SHARED_PREPARE",
-  "OMNIRUSH_ELECTRON_USE_MOCK_KEYCHAIN",
-  "OMNIRUSH_ELECTRON_USERDATA",
-  "OMNIRUSH_ENV_STORE",
-  "OMNIRUSH_GATEWAY_URL",
-  "OMNIRUSH_REFRESH_TOKEN",
+  "MARS_ACCESS_TOKEN",
+  "MARS_DATA_DIR",
+  "MARS_DESKTOP_BOOTSTRAP_PATH",
+  "MARS_DESKTOP_DISABLE_WORKSPACE_RECOVERY",
+  "MARS_DEV_MODE",
+  "MARS_ELECTRON_APP_IDENTIFIER",
+  "MARS_ELECTRON_APP_NAME",
+  "MARS_ELECTRON_DISABLE_PROTOCOL_REGISTRATION",
+  "MARS_ELECTRON_REMOTE_DEBUG_PORT",
+  "MARS_ELECTRON_SKIP_SHARED_PREPARE",
+  "MARS_ELECTRON_USE_MOCK_KEYCHAIN",
+  "MARS_ELECTRON_USERDATA",
+  "MARS_ENV_STORE",
+  "MARS_GATEWAY_URL",
+  "MARS_REFRESH_TOKEN",
   "PORT",
-  "VITE_DISABLE_OMNIRUSH_MODELS",
+  "VITE_DISABLE_MARS_MODELS",
   "XDG_CACHE_HOME",
   "XDG_CONFIG_HOME",
   "XDG_DATA_HOME",
@@ -38,7 +38,7 @@ const ENV_KEYS = [
 ].sort();
 
 test("electronProfilePaths returns all expected paths under the profile root", () => {
-  const root = join(tmpdir(), "omnirush-local-host-profile");
+  const root = join(tmpdir(), "mars-local-host-profile");
   const paths = electronProfilePaths(root);
 
   assert.deepEqual(Object.keys(paths).sort(), [
@@ -64,11 +64,11 @@ test("electronProfilePaths returns all expected paths under the profile root", (
 });
 
 test("electronSurfaceEnv matches the isolated Electron demo contract", () => {
-  const root = join(tmpdir(), "omnirush-local-host-env");
+  const root = join(tmpdir(), "mars-local-host-env");
   const paths = electronProfilePaths(root);
   const env = electronSurfaceEnv(paths, {
-    appName: "OmniRush.ai Eval probe",
-    appIdentifier: "ai.omnirush.desktop.eval.probe",
+    appName: "MarsAI Eval probe",
+    appIdentifier: "ai.marsai.desktop.eval.probe",
     port: 5123,
     cdpPort: 9123,
   });
@@ -83,65 +83,65 @@ test("electronSurfaceEnv matches the isolated Electron demo contract", () => {
   assert.equal(env.APPDATA, paths.appDataDir);
   assert.equal(env.HOME, paths.homeDir);
   assert.equal(env.LOCALAPPDATA, paths.localAppDataDir);
-  assert.equal(env.OMNIRUSH_DATA_DIR, paths.dataDir);
-  assert.equal(env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH, paths.bootstrapPath);
-  assert.equal(env.OMNIRUSH_ENV_STORE, paths.envStorePath);
+  assert.equal(env.MARS_DATA_DIR, paths.dataDir);
+  assert.equal(env.MARS_DESKTOP_BOOTSTRAP_PATH, paths.bootstrapPath);
+  assert.equal(env.MARS_ENV_STORE, paths.envStorePath);
   assert.equal(env.OPENCODE_CONFIG_DIR, paths.opencodeConfigDir);
-  assert.equal(env.OMNIRUSH_ELECTRON_USERDATA, paths.userDataDir);
+  assert.equal(env.MARS_ELECTRON_USERDATA, paths.userDataDir);
   assert.equal(env.PORT, "5123");
-  assert.equal(env.OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT, "9123");
-  assert.equal(env.OMNIRUSH_ELECTRON_APP_NAME, "OmniRush.ai Eval probe");
-  assert.equal(env.OMNIRUSH_ELECTRON_APP_IDENTIFIER, "ai.omnirush.desktop.eval.probe");
-  assert.equal(env.OMNIRUSH_ELECTRON_SKIP_SHARED_PREPARE, "1");
-  assert.equal(env.OMNIRUSH_ELECTRON_USE_MOCK_KEYCHAIN, "1");
+  assert.equal(env.MARS_ELECTRON_REMOTE_DEBUG_PORT, "9123");
+  assert.equal(env.MARS_ELECTRON_APP_NAME, "MarsAI Eval probe");
+  assert.equal(env.MARS_ELECTRON_APP_IDENTIFIER, "ai.marsai.desktop.eval.probe");
+  assert.equal(env.MARS_ELECTRON_SKIP_SHARED_PREPARE, "1");
+  assert.equal(env.MARS_ELECTRON_USE_MOCK_KEYCHAIN, "1");
   assert.equal(env.XDG_CACHE_HOME, paths.cacheHome);
   assert.equal(env.XDG_CONFIG_HOME, paths.configHome);
   assert.equal(env.XDG_DATA_HOME, paths.dataHome);
   assert.equal(env.XDG_STATE_HOME, paths.stateHome);
   // Signed out by default: no tokens, and a gateway nothing answers on.
-  assert.equal(env.OMNIRUSH_ACCESS_TOKEN, "");
-  assert.equal(env.OMNIRUSH_REFRESH_TOKEN, "");
-  assert.equal(env.OMNIRUSH_GATEWAY_URL, EVAL_DEAD_GATEWAY_URL);
-  assert.equal(new URL(env.OMNIRUSH_GATEWAY_URL).host, "127.0.0.1:9");
+  assert.equal(env.MARS_ACCESS_TOKEN, "");
+  assert.equal(env.MARS_REFRESH_TOKEN, "");
+  assert.equal(env.MARS_GATEWAY_URL, EVAL_DEAD_GATEWAY_URL);
+  assert.equal(new URL(env.MARS_GATEWAY_URL).host, "127.0.0.1:9");
   // A spec that needs an account passes its own.
-  const withAccount = electronSurfaceEnv(paths, { appName: "OmniRush.ai Eval probe", appIdentifier: "ai.omnirush.desktop.eval.probe", port: 5123, cdpPort: 9123 }, {
-    OMNIRUSH_GATEWAY_URL: "http://127.0.0.1:8090/omnirush/v1",
-    OMNIRUSH_ACCESS_TOKEN: "spec-access",
-    OMNIRUSH_REFRESH_TOKEN: "spec-refresh",
+  const withAccount = electronSurfaceEnv(paths, { appName: "MarsAI Eval probe", appIdentifier: "ai.marsai.desktop.eval.probe", port: 5123, cdpPort: 9123 }, {
+    MARS_GATEWAY_URL: "http://127.0.0.1:8090/mars/v1",
+    MARS_ACCESS_TOKEN: "spec-access",
+    MARS_REFRESH_TOKEN: "spec-refresh",
   });
-  assert.equal(withAccount.OMNIRUSH_GATEWAY_URL, "http://127.0.0.1:8090/omnirush/v1");
-  assert.equal(withAccount.OMNIRUSH_ACCESS_TOKEN, "spec-access");
+  assert.equal(withAccount.MARS_GATEWAY_URL, "http://127.0.0.1:8090/mars/v1");
+  assert.equal(withAccount.MARS_ACCESS_TOKEN, "spec-access");
 });
 
 test("electronSurfaceEnv maps the v2 eval lane before caller overrides", () => {
-  const previous = process.env.OMNIRUSH_EVAL_ENGINE;
-  process.env.OMNIRUSH_EVAL_ENGINE = "V2";
+  const previous = process.env.MARS_EVAL_ENGINE;
+  process.env.MARS_EVAL_ENGINE = "V2";
   try {
-    const paths = electronProfilePaths(join(tmpdir(), "omnirush-local-host-v2-env"));
+    const paths = electronProfilePaths(join(tmpdir(), "mars-local-host-v2-env"));
     const options = {
-      appName: "OmniRush.ai Eval v2",
-      appIdentifier: "ai.omnirush.desktop.eval.v2",
+      appName: "MarsAI Eval v2",
+      appIdentifier: "ai.marsai.desktop.eval.v2",
       port: 5124,
       cdpPort: 9124,
     };
-    assert.equal(electronSurfaceEnv(paths, options).OMNIRUSH_ENGINE_V2_PREVIEW, "1");
+    assert.equal(electronSurfaceEnv(paths, options).MARS_ENGINE_V2_PREVIEW, "1");
     assert.equal(
-      electronSurfaceEnv(paths, options, { OMNIRUSH_ENGINE_V2_PREVIEW: "sidecar" }).OMNIRUSH_ENGINE_V2_PREVIEW,
+      electronSurfaceEnv(paths, options, { MARS_ENGINE_V2_PREVIEW: "sidecar" }).MARS_ENGINE_V2_PREVIEW,
       "sidecar",
     );
   } finally {
-    if (previous === undefined) delete process.env.OMNIRUSH_EVAL_ENGINE;
-    else process.env.OMNIRUSH_EVAL_ENGINE = previous;
+    if (previous === undefined) delete process.env.MARS_EVAL_ENGINE;
+    else process.env.MARS_EVAL_ENGINE = previous;
   }
 });
 
 test("stopOwnedElectronSurface verifies profile ownership before removing it", async () => {
-  const profileDir = await mkdtemp(join(tmpdir(), "omnirush-owned-electron-"));
+  const profileDir = await mkdtemp(join(tmpdir(), "mars-owned-electron-"));
   const userDataDir = join(profileDir, "electron-userdata");
   await mkdir(userDataDir, { recursive: true });
   const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], {
     detached: true,
-    env: { ...process.env, OMNIRUSH_ELECTRON_USERDATA: userDataDir },
+    env: { ...process.env, MARS_ELECTRON_USERDATA: userDataDir },
     stdio: "ignore",
   });
   child.unref();
@@ -161,7 +161,7 @@ test("resolveChromeBinary returns the macOS default path", () => {
 });
 
 test("resolveChromeBinary finds Linux Chrome on PATH and reports a helpful error otherwise", async () => {
-  const binDir = await mkdtemp(join(tmpdir(), "omnirush-chrome-bin-"));
+  const binDir = await mkdtemp(join(tmpdir(), "mars-chrome-bin-"));
   const chromePath = join(binDir, "google-chrome");
   try {
     await writeFile(chromePath, "#!/bin/sh\nexit 0\n", "utf8");
@@ -215,7 +215,7 @@ test("freePort kills a real child listener and releases its port", {
 });
 
 test("pruneStaleSurfaceProfiles removes untracked profiles and never touches live ones", async () => {
-  const rootDir = await mkdtemp(join(tmpdir(), "omnirush-surface-prune-"));
+  const rootDir = await mkdtemp(join(tmpdir(), "mars-surface-prune-"));
   const livePath = resolve(rootDir, "live-a");
   const stalePath = resolve(rootDir, "stale-b");
   const killed: string[] = [];
@@ -242,7 +242,7 @@ test("pruneStaleSurfaceProfiles removes untracked profiles and never touches liv
 test("pruneStaleSurfaceProfiles kills only processes tied to stale profiles", {
   skip: process.platform !== "darwin" && process.platform !== "linux",
 }, async () => {
-  const rootDir = await mkdtemp(join(tmpdir(), "omnirush-surface-process-prune-"));
+  const rootDir = await mkdtemp(join(tmpdir(), "mars-surface-process-prune-"));
   const livePath = resolve(rootDir, "live-a");
   const stalePath = resolve(rootDir, "stale-b");
   await mkdir(livePath);
@@ -270,7 +270,7 @@ test("pruneStaleSurfaceProfiles kills only processes tied to stale profiles", {
 });
 
 test("disposing a surface unregisters its profile so a later prune can remove it", async () => {
-  const rootDir = await mkdtemp(join(tmpdir(), "omnirush-surface-unregister-"));
+  const rootDir = await mkdtemp(join(tmpdir(), "mars-surface-unregister-"));
   const profilePath = resolve(rootDir, "live-a");
   await mkdir(profilePath);
   try {

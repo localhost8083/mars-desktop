@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/review-app",
+  "name": "@mars/review-app",
   "private": true,
   "version": "0.0.0",
   "scripts": {
@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@omnirush/review": "workspace:*",
+    "@mars/review": "workspace:*",
     "next": "16.2.11",
     "react": "catalog:",
     "react-dom": "catalog:"

@@ -1,4 +1,4 @@
-import { workflowRunPreviewSchema, type WorkflowRunPreview } from "@omnirush/types/workflows";
+import { workflowRunPreviewSchema, type WorkflowRunPreview } from "@mars/types/workflows";
 import { DEN_WORKER_POLL_INTERVAL_MS } from "./CONSTS";
 import { denApiCredentials, denApiEndpoint } from "./den-api-origin";
 import { ORG_SCOPE_HEADER, getRequestOrgScope, shouldPinOrgScopePath } from "./org-scope";

@@ -1,8 +1,8 @@
 import { expect } from "vitest";
-import { runWorkflow, saveWorkflow } from "@omnirush/behaviors";
-import { queryDenDatabase } from "@omnirush/env";
-import { defaultDaytonaExec, execInSandbox } from "@omnirush/hosts";
-import { spec } from "@omnirush/testkit";
+import { runWorkflow, saveWorkflow } from "@mars/behaviors";
+import { queryDenDatabase } from "@mars/env";
+import { defaultDaytonaExec, execInSandbox } from "@mars/hosts";
+import { spec } from "@mars/testkit";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -46,7 +46,7 @@ const test = spec.world(async (seed) => {
     }
   };
   const token = field((await seed.api(den.admin, "/v1/mcp/token", {
-    method: "POST", headers: { "x-omnirush-org-id": organizationId }, body: JSON.stringify({ scopes: ["mcp:read", "mcp:write"] }),
+    method: "POST", headers: { "x-mars-org-id": organizationId }, body: JSON.stringify({ scopes: ["mcp:read", "mcp:write"] }),
   })).body, "token");
   let requestId = 0;
   const execute = async (code: string) => {

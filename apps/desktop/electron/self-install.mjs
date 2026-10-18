@@ -145,7 +145,7 @@ export function environmentOutsideAppImage(env = process.env) {
   const clean = {};
   for (const [key, value] of Object.entries(env)) {
     // The CDP port this copy chose: the new one probes for a free port again.
-    if (["APPDIR", "APPIMAGE", "ARGV0", "OWD", "OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT"].includes(key)) continue;
+    if (["APPDIR", "APPIMAGE", "ARGV0", "OWD", "MARS_ELECTRON_REMOTE_DEBUG_PORT"].includes(key)) continue;
     if (appDir && typeof value === "string" && value.includes(appDir)) {
       // PATH-like lists keep their other entries.
       const rest = value.split(":").filter((entry) => entry && !entry.includes(appDir));
@@ -243,7 +243,7 @@ async function plistValue(bundle, key, exec = run) {
  * in it, after checking it is the expected version of the same app.
  */
 export async function stageMacBundle({ zipPath, version, currentBundle, stagingRoot = os.tmpdir(), exec = run }) {
-  const directory = await mkdtemp(path.join(stagingRoot, "omnirush-update-"));
+  const directory = await mkdtemp(path.join(stagingRoot, "mars-update-"));
   try {
     // ditto keeps the symlinks, modes and extended attributes an .app needs.
     await exec("/usr/bin/ditto", ["-x", "-k", zipPath, directory]);
@@ -326,7 +326,7 @@ export async function launchMacSwap({
   spawnDetached = defaultSpawnDetached,
   exec = run,
 }) {
-  const scriptPath = path.join(path.dirname(stagedBundle), "..", `omnirush-swap-${pid}.sh`);
+  const scriptPath = path.join(path.dirname(stagedBundle), "..", `mars-swap-${pid}.sh`);
   await writeFile(scriptPath, MAC_SWAP_SCRIPT, { mode: 0o755 });
   if (logPath) await mkdir(path.dirname(logPath), { recursive: true }).catch(() => undefined);
   const log = logPath ?? "/dev/null";
@@ -337,7 +337,7 @@ export async function launchMacSwap({
   const command = ["/bin/sh", scriptPath, String(pid), stagedBundle, targetBundle, relaunch ? "1" : "0", String(uid), user]
     .map(shellQuote)
     .join(" ");
-  const script = `do shell script ${appleScriptString(`${command} >> ${shellQuote(log)} 2>&1 &`)} with prompt ${appleScriptString("OmniRush.ai needs permission to replace itself with the new version.")} with administrator privileges`;
+  const script = `do shell script ${appleScriptString(`${command} >> ${shellQuote(log)} 2>&1 &`)} with prompt ${appleScriptString("MarsAI needs permission to replace itself with the new version.")} with administrator privileges`;
   await exec("/usr/bin/osascript", ["-e", script]);
   return { elevated: true };
 }

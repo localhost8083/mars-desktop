@@ -21,7 +21,7 @@ export function classifySpec(source) {
       || /\bnew\s+URL\(\s*["']\.\.\/\.\.\/(?:apps|packages|ee)\/[^"']*["']\s*,\s*import\.meta\.url\s*\)/.test(source),
     importsNodeFs: imports.some((specifier) => /^(?:node:)?fs(?:\/promises)?$/.test(specifier)),
     importsChildProcess: imports.some((specifier) => /^(?:node:)?child_process$/.test(specifier)),
-    crossesBoundary: imports.some((specifier) => /^(?:\.\.\/)?\.\.\/worlds\/|^@omnirush\/world$/.test(specifier))
+    crossesBoundary: imports.some((specifier) => /^(?:\.\.\/)?\.\.\/worlds\/|^@mars\/world$/.test(specifier))
       || /(?<!\.)\b(?:app|chrome|server|inviteMember|faultProxy|startCaptureEfficiencyLab)\s*\(|\bspec\.world\s*\(/.test(source),
   };
 }

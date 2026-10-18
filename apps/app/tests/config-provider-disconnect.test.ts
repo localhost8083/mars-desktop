@@ -86,11 +86,11 @@ function createHarness() {
     providerBaseUrl: () => `http://127.0.0.1:1/${workspace.id}`,
     selectedWorkspaceRoot: () => workspace.path,
     runtimeWorkspaceId: () => null,
-    omnirushServer: {
+    marsServer: {
       getSnapshot: () => ({
-        omnirushServerStatus: "disconnected",
-        omnirushServerClient: null,
-        omnirushServerCapabilities: null,
+        marsServerStatus: "disconnected",
+        marsServerClient: null,
+        marsServerCapabilities: null,
       }),
     },
     setProviders: (value) => {

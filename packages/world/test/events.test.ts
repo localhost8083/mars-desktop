@@ -15,7 +15,7 @@ import {
 } from "../src/events.ts";
 
 test("events append privately and read valid JSONL in order", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-world-events-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-world-events-"));
   try {
     const path = eventsPath(root, "demo");
     const events: WorldEvent[] = [
@@ -33,7 +33,7 @@ test("events append privately and read valid JSONL in order", async () => {
 });
 
 test("tailEvents emits newly completed lines in order", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-world-tail-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-world-tail-"));
   try {
     const path = eventsPath(root, "demo");
     const seen: string[] = [];
@@ -51,7 +51,7 @@ test("tailEvents emits newly completed lines in order", async () => {
 });
 
 test("progress is inert without its env and emits step status with it", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-world-progress-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-world-progress-"));
   const path = eventsPath(root, "demo");
   const previous = process.env[EVENTS_ENV];
   try {

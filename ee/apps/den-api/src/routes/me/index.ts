@@ -1,7 +1,7 @@
 import { eq } from "@omnirush-ee/den-db/drizzle"
 import { AuthAccountTable, AuthUserTable, RateLimitTable } from "@omnirush-ee/den-db/schema"
 import { createDenTypeId, normalizeDenTypeId } from "@omnirush-ee/utils/typeid"
-import { desktopConfigSchema } from "@omnirush/types/den/desktop-policies"
+import { desktopConfigSchema } from "@mars/types/den/desktop-policies"
 import type { Hono } from "hono"
 import { describeRoute } from "hono-openapi"
 import { z } from "zod"

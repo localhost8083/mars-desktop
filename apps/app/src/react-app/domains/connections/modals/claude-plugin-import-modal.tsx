@@ -13,12 +13,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { TextInput } from "../../../design-system/text-input";
-import type { OmniRushClaudePluginPreview } from "../../../../app/lib/omnirush-server";
+import type { MarsClaudePluginPreview } from "../../../../app/lib/mars-server";
 
 export type ClaudePluginImportModalProps = {
   open: boolean;
   onClose: () => void;
-  onPreview: (url: string) => Promise<OmniRushClaudePluginPreview>;
+  onPreview: (url: string) => Promise<MarsClaudePluginPreview>;
   onInstall: (url: string) => Promise<{ ok: boolean; message: string }>;
   /** Called after a successful install so the host view can refresh. */
   onInstalled?: () => void;
@@ -26,7 +26,7 @@ export type ClaudePluginImportModalProps = {
 
 type ModalState = {
   url: string;
-  preview: OmniRushClaudePluginPreview | null;
+  preview: MarsClaudePluginPreview | null;
   /** URL the current preview was generated from; install always targets this. */
   previewedUrl: string | null;
   previewing: boolean;
@@ -46,7 +46,7 @@ const initialState: ModalState = {
 type ModalAction =
   | Partial<ModalState>
   | "reset"
-  | { kind: "preview-success"; url: string; preview: OmniRushClaudePluginPreview };
+  | { kind: "preview-success"; url: string; preview: MarsClaudePluginPreview };
 
 function reducer(state: ModalState, action: ModalAction): ModalState {
   if (action === "reset") return initialState;

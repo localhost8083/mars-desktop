@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: omnirush-den-allow-eval-mock-egress
+  name: mars-den-allow-eval-mock-egress
 spec:
   podSelector:
     matchLabels:
@@ -18,7 +18,7 @@ spec:
   egress:
     - to:
         - ipBlock:
-            cidr: ${OMNIRUSH_EVAL_KUBE_ALLOWED_HOST_IP}/32
+            cidr: ${MARS_EVAL_KUBE_ALLOWED_HOST_IP}/32
       ports:
         - protocol: TCP
-          port: ${OMNIRUSH_EVAL_KUBE_ALLOWED_MOCK_PORT}
+          port: ${MARS_EVAL_KUBE_ALLOWED_MOCK_PORT}

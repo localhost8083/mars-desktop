@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const landingConfig = await readFile(
-  new URL("../ee/apps/landing/components/omnirush-connect-installer-config.ts", import.meta.url),
+  new URL("../ee/apps/landing/components/mars-connect-installer-config.ts", import.meta.url),
   "utf8",
 );
 const docsInstaller = await readFile(
-  new URL("../packages/docs/snippets/omnirush-connect-installer.jsx", import.meta.url),
+  new URL("../packages/docs/snippets/mars-connect-installer.jsx", import.meta.url),
   "utf8",
 );
 const cloudDocs = await readFile(
@@ -21,10 +21,10 @@ function sourceHasLiteral(sourceText, literal) {
 const serverUrlMatch = landingConfig.match(/export const MCP_SERVER_URL = "([^"]+)";/);
 assert.ok(serverUrlMatch, "Landing installer is missing MCP_SERVER_URL");
 const serverUrl = serverUrlMatch[1];
-assert.match(serverUrl, /^https:\/\/[^/]+\/mcp\/agent$/, "OmniRush.ai Connect must use the public /mcp/agent endpoint");
-// omnirush.ai runs no hosted Den, so the in-app docs show a self-hosted
+assert.match(serverUrl, /^https:\/\/[^/]+\/mcp\/agent$/, "MarsAI Connect must use the public /mcp/agent endpoint");
+// marsai.click runs no hosted Den, so the in-app docs show a self-hosted
 // placeholder origin instead of the landing page's endpoint.
-const docsServerUrl = "https://api.omnirush.example.com/mcp/agent";
+const docsServerUrl = "https://api.mars.example.com/mcp/agent";
 const codexDeepLinkMatch = landingConfig.match(/export const CODEX_CONNECTIONS_DEEPLINK = "([^"]+)";/);
 assert.ok(codexDeepLinkMatch, "Landing installer is missing CODEX_CONNECTIONS_DEEPLINK");
 const chatGptSettingsMatch = landingConfig.match(/export const CHATGPT_SETTINGS_URL = "([^"]+)";/);
@@ -110,11 +110,11 @@ for (const name of sharedValueNames) {
 }
 
 const exactCommands = [
-  { docsInstallerNeedle: "opencode mcp auth omnirush", cloudDocsNeedle: "opencode mcp auth omnirush" },
-  { docsInstallerNeedle: "opencode mcp logout omnirush\nopencode mcp auth omnirush", cloudDocsNeedle: "opencode mcp logout omnirush\nopencode mcp auth omnirush" },
-  { docsInstallerNeedle: "codex mcp add omnirush --url ${MCP_SERVER_URL}", cloudDocsNeedle: `codex mcp add omnirush --url ${docsServerUrl}` },
-  { docsInstallerNeedle: "codex mcp login omnirush", cloudDocsNeedle: "codex mcp login omnirush" },
-  { docsInstallerNeedle: "codex mcp logout omnirush\ncodex mcp login omnirush", cloudDocsNeedle: "codex mcp logout omnirush\ncodex mcp login omnirush" },
+  { docsInstallerNeedle: "opencode mcp auth mars", cloudDocsNeedle: "opencode mcp auth mars" },
+  { docsInstallerNeedle: "opencode mcp logout mars\nopencode mcp auth mars", cloudDocsNeedle: "opencode mcp logout mars\nopencode mcp auth mars" },
+  { docsInstallerNeedle: "codex mcp add mars --url ${MCP_SERVER_URL}", cloudDocsNeedle: `codex mcp add mars --url ${docsServerUrl}` },
+  { docsInstallerNeedle: "codex mcp login mars", cloudDocsNeedle: "codex mcp login mars" },
+  { docsInstallerNeedle: "codex mcp logout mars\ncodex mcp login mars", cloudDocsNeedle: "codex mcp logout mars\ncodex mcp login mars" },
 ];
 
 for (const command of exactCommands) {
@@ -124,10 +124,10 @@ for (const command of exactCommands) {
 
 assert.ok(cloudDocs.includes(docsServerUrl), "Cloud MCP docs are missing the gateway endpoint");
 assert.ok(
-  cloudDocs.includes("`omnirush.example.com/api/den` (the `/api/den` path on your Den web origin) is an internal same-origin desktop proxy"),
+  cloudDocs.includes("`mars.example.com/api/den` (the `/api/den` path on your Den web origin) is an internal same-origin desktop proxy"),
   "Cloud MCP docs must describe the Den web origin's /api/den path as an internal same-origin desktop proxy",
 );
-assert.ok(sourceHasLiteral(cloudDocs, "https://omnirush.example.com/api/auth"), "Cloud MCP docs are missing the auth server origin");
+assert.ok(sourceHasLiteral(cloudDocs, "https://mars.example.com/api/auth"), "Cloud MCP docs are missing the auth server origin");
 assert.ok(cloudDocs.includes("RFC9728"), "Cloud MCP docs are missing RFC9728 discovery guidance");
 assert.ok(cloudDocs.includes("PKCE") && cloudDocs.includes("S256"), "Cloud MCP docs are missing PKCE S256 guidance");
 assert.ok(cloudDocs.includes("OAuth authorize and token requests must include exactly one"), "Cloud MCP docs are missing exact resource guidance");
@@ -137,8 +137,8 @@ assert.ok(cloudDocs.includes("invalid_grant"), "Cloud MCP docs are missing inval
 assert.ok(cloudDocs.includes("Retry-After"), "Cloud MCP docs are missing 429 Retry-After guidance");
 assert.ok(cloudDocs.includes("X-Request-Id") && cloudDocs.includes("referenceId") && cloudDocs.includes("reference_id"), "Cloud MCP docs are missing support reference guidance");
 assert.ok(cloudDocs.includes("search_capabilities") && cloudDocs.includes("execute_capability"), "Cloud MCP docs are missing /mcp/agent tool guidance");
-assert.ok(!cloudDocs.includes("omnirush-ui-mcp"), "Cloud MCP docs must not reference the local UI MCP package");
+assert.ok(!cloudDocs.includes("mars-ui-mcp"), "Cloud MCP docs must not reference the local UI MCP package");
 assert.ok(!cloudDocs.includes("opaque bearer tokens") && !cloudDocs.includes("Access tokens are opaque"), "Cloud MCP docs must not claim opaque public access tokens");
 assert.ok(!cloudDocs.includes("JWKS"), "Cloud MCP docs must not expose JWKS implementation details");
 
-console.log("OmniRush.ai Connect landing and docs installers are in parity.");
+console.log("MarsAI Connect landing and docs installers are in parity.");

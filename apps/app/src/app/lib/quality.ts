@@ -7,24 +7,40 @@
 import { create } from "zustand";
 
 import type {
-  OmniRushAccountQuality,
-  OmniRushAccountStatus,
-  OmniRushQualityNotice,
-  OmniRushQualitySpin,
-  OmniRushQualitySpinOutcome,
-  OmniRushQualityTier,
-  OmniRushWheelSegment,
-} from "@omnirush/types/desktop-ipc";
+  MarsAccountQuality,
+  MarsAccountStatus,
+  MarsQualityNotice,
+  MarsQualitySpin,
+  MarsQualitySpinOutcome,
+  MarsQualityTier,
+  MarsWheelSegment,
+} from "@mars/types/desktop-ipc";
 
-import { GOOD_SESSION_LABEL, goodSessionWording } from "./good-session";
-import { compactTokenCount } from "./omnirush-usage";
+import { compactTokenCount } from "./mars-usage";
 
-export type AccountQuality = OmniRushAccountQuality;
-export type QualitySpin = OmniRushQualitySpin;
-export type QualitySpinOutcome = OmniRushQualitySpinOutcome;
-export type QualityTier = OmniRushQualityTier;
-export type WheelSegment = OmniRushWheelSegment;
-export type QualityNotice = OmniRushQualityNotice;
+export const GOOD_SESSION_STAR_LABEL = "Good session ★";
+
+/** Server texts that still say "replay-ready ★" (older servers): users read "Good session ★" everywhere. */
+export function goodSessionWording(text: string): string;
+export function goodSessionWording(text: string | null | undefined): string | null | undefined;
+export function goodSessionWording(text: string | null | undefined): string | null | undefined {
+  if (!text) return text;
+  return String(text)
+    .replace(/\breplay[- ]ready ★ sessions\b/gi, "Good sessions ★")
+    .replace(/\breplay[- ]ready ★ session\b/gi, "Good session ★")
+    .replace(/\breplay[- ]ready ★/gi, GOOD_SESSION_STAR_LABEL)
+    .replace(/★ ?replay[- ]ready sessions\b/gi, "★ Good sessions")
+    .replace(/\breplay[- ]ready sessions\b/gi, "Good sessions")
+    .replace(/\breplay[- ]ready session\b/gi, "Good session")
+    .replace(/\breplay[- ]ready\b/gi, "Good session");
+}
+
+export type AccountQuality = MarsAccountQuality;
+export type QualitySpin = MarsQualitySpin;
+export type QualitySpinOutcome = MarsQualitySpinOutcome;
+export type QualityTier = MarsQualityTier;
+export type WheelSegment = MarsWheelSegment;
+export type QualityNotice = MarsQualityNotice;
 
 /** The wheel as the API documents it; used until GET /me/quality answers. */
 export const DEFAULT_WHEEL_SEGMENTS: WheelSegment[] = [
@@ -70,9 +86,9 @@ export function canSpinNow(quality: AccountQuality | null | undefined): boolean 
 
 // --- Notices, nudges: once per id ---------------------------------------
 
-export const NOTICE_SEEN_STORAGE_KEY = "omnirush.quality.lastNoticeId.v1";
-export const NUDGE_SEEN_STORAGE_KEY = "omnirush.quality.lastNudgeId.v1";
-export const SOUND_STORAGE_KEY = "omnirush.quality.sound.v1";
+export const NOTICE_SEEN_STORAGE_KEY = "mars.quality.lastNoticeId.v1";
+export const NUDGE_SEEN_STORAGE_KEY = "mars.quality.lastNudgeId.v1";
+export const SOUND_STORAGE_KEY = "mars.quality.sound.v1";
 
 type KeyValueStore = Pick<Storage, "getItem" | "setItem">;
 
@@ -211,9 +227,9 @@ export function spinRefusalMessage(reason: Exclude<QualitySpinOutcome, { ok: tru
     case "quality_rewards_off":
       return "Quality rewards are switched off right now.";
     case "signed_out":
-      return "Sign in to omnirush.ai to spin.";
+      return "Sign in to marsai.click to spin.";
     case "unreachable":
-      return "omnirush.ai could not be reached. Try again in a moment.";
+      return "marsai.click could not be reached. Try again in a moment.";
     default:
       return "The spin did not go through. Try again.";
   }
@@ -245,7 +261,6 @@ export function nearMissText(spin: QualitySpin, jackpotTokens?: number | null): 
 /** The star, explained wherever it shows. */
 export const CLIENT_GRADE_NOTE = "★ Good sessions earn +2 spins on a richer wheel.";
 /** What users read for a client-grade session or spin (internal fields keep `client`). */
-export const GOOD_SESSION_STAR_LABEL = GOOD_SESSION_LABEL;
 
 /**
  * The prize shown `progress` (0..1) into the count-up: an ease-out that never
@@ -264,8 +279,8 @@ export function newSpinIdempotencyKey(): string {
 // --- Shared account status (sidebar footer + notice popup) -----------------
 
 type AccountStatusStore = {
-  status: OmniRushAccountStatus | null;
-  set: (status: OmniRushAccountStatus | null) => void;
+  status: MarsAccountStatus | null;
+  set: (status: MarsAccountStatus | null) => void;
 };
 
 export const useAccountStatusStore = create<AccountStatusStore>((set) => ({
@@ -273,7 +288,7 @@ export const useAccountStatusStore = create<AccountStatusStore>((set) => ({
   set: (status) => set({ status }),
 }));
 
-let inFlight: Promise<OmniRushAccountStatus | null> | null = null;
+let inFlight: Promise<MarsAccountStatus | null> | null = null;
 let openSessionId: string | null = null;
 
 /** The session open in the app: profile reads name it so next_spin_hint and nudge speak about it. */
@@ -290,15 +305,15 @@ export function qualitySessionId(): string | null {
  * the sidebar footer and the quality popup share one request.
  */
 export function refreshAccountStatus(
-  read: (options?: { sessionId?: string | null }) => Promise<OmniRushAccountStatus>,
-): Promise<OmniRushAccountStatus | null> {
+  read: (options?: { sessionId?: string | null }) => Promise<MarsAccountStatus>,
+): Promise<MarsAccountStatus | null> {
   inFlight ??= read(openSessionId ? { sessionId: openSessionId } : undefined)
     .then((status) => {
       useAccountStatusStore.getState().set(status);
       return status;
     })
     .catch(() => {
-      const fallback = { connected: false, gatewayConfigured: false } satisfies OmniRushAccountStatus;
+      const fallback = { connected: false, gatewayConfigured: false } satisfies MarsAccountStatus;
       useAccountStatusStore.getState().set(fallback);
       return fallback;
     })

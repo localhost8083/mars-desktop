@@ -7,7 +7,7 @@ import type { Client } from "../types";
  * workspaces, sessions, composer draft, boot phase, and the last
  * refreshRouteState() call — without crawling the UI tree.
  *
- * Consumers read via `window.__omnirush` from a devtools console or from
+ * Consumers read via `window.__mars` from a devtools console or from
  * browser-tool `evaluate_script`. The surface is intentionally plain JSON so
  * it survives postMessage-style bridges.
  *
@@ -34,7 +34,7 @@ type InspectorAPI = {
 
 declare global {
   // eslint-disable-next-line no-var
-  var __omnirush: InspectorAPI | undefined;
+  var __mars: InspectorAPI | undefined;
 }
 
 const INSPECTOR_VERSION = 1;
@@ -106,7 +106,7 @@ function installIfNeeded() {
     },
   };
 
-  Object.defineProperty(window, "__omnirush", {
+  Object.defineProperty(window, "__mars", {
     value: api,
     configurable: true,
     writable: false,
@@ -137,7 +137,7 @@ export function publishInspectorOpencodeClient(client: Client): () => void {
 
 export function recordInspectorEvent(name: string, data?: unknown) {
   installIfNeeded();
-  window.__omnirush?.record(name, data);
+  window.__mars?.record(name, data);
 }
 
 export function ensureInspectorInstalled() {

@@ -1,17 +1,17 @@
 ---
 name: create-plugin
-description: "Create an OpenCode plugin for OmniRush.ai. Scaffolds the plugin file with the correct API shape, tool definitions, and hook registration. Use when the user asks to 'create a plugin', 'write a plugin', or 'make a plugin that does X'."
+description: "Create an OpenCode plugin for MarsAI. Scaffolds the plugin file with the correct API shape, tool definitions, and hook registration. Use when the user asks to 'create a plugin', 'write a plugin', or 'make a plugin that does X'."
 ---
 
 # Skill: Create an OpenCode Plugin
 
-Scaffold a working OpenCode plugin for use in OmniRush.ai.
+Scaffold a working OpenCode plugin for use in MarsAI.
 
 ## When to use
 
 - User asks "create a plugin that does X"
 - User asks "write a plugin" or "make a plugin"
-- User wants to extend OmniRush.ai/OpenCode with custom tools
+- User wants to extend MarsAI/OpenCode with custom tools
 
 ## Plugin API
 

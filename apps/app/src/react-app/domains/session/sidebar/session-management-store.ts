@@ -332,7 +332,7 @@ export const useSessionManagementStore = create<SessionManagementStore>()(
           const ws = state.groupsByWorkspace[workspaceId] ?? EMPTY_GROUP_STATE;
           const knownGroupIds = new Set(serverState.groups.map((group) => group.id));
           const collapsedGroupIds = (ws.collapsedGroupIds ?? []).filter(
-            (id) => id === "__omnirush_ungrouped" || knownGroupIds.has(id),
+            (id) => id === "__mars_ungrouped" || knownGroupIds.has(id),
           );
           if (
             sameGroupDefinitions(ws.groups, serverState.groups)
@@ -397,7 +397,7 @@ export const useSessionManagementStore = create<SessionManagementStore>()(
         }),
     }),
     {
-      name: "omnirush.react.sessionManagement",
+      name: "mars.react.sessionManagement",
       storage: createJSONStorage(() => localStorage),
     },
   ),

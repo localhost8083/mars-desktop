@@ -61,9 +61,9 @@ export const roadmapSections: RoadmapSection[] = [
     eyebrow: "01 · the home base",
     title: "the desktop app is home",
     description:
-      "The desktop app is the main OmniRush.ai experience. It is where people work with files, run agents, manage sessions, create skills, connect services, and customize a workspace.",
+      "The desktop app is the main MarsAI experience. It is where people work with files, run agents, manage sessions, create skills, connect services, and customize a workspace.",
     callout:
-      "The desktop app is where most people configure OmniRush.ai today. Connect is how that configuration travels.",
+      "The desktop app is where most people configure MarsAI today. Connect is how that configuration travels.",
     items: [
       {
         title: "Desktop app for macOS, Windows, and Linux",
@@ -122,16 +122,16 @@ export const roadmapSections: RoadmapSection[] = [
     eyebrow: "02 · portable by design",
     title: "your setup follows you",
     description:
-      "What you configure in OmniRush.ai should not stay trapped in one interface. OmniRush.ai Connect brings the same capabilities into the agents you already use.",
+      "What you configure in MarsAI should not stay trapped in one interface. MarsAI Connect brings the same capabilities into the agents you already use.",
     items: [
       {
-        title: "OmniRush.ai Connect MCP",
+        title: "MarsAI Connect MCP",
         description: "Search and run your assigned capabilities through one remote MCP connection.",
         status: "live",
       },
       {
         title: "Codex, Claude Code, Cursor, and OpenCode",
-        description: "Use OmniRush.ai from compatible agents without rewriting skills or changing MCP servers.",
+        description: "Use MarsAI from compatible agents without rewriting skills or changing MCP servers.",
         status: "live",
       },
       {
@@ -156,9 +156,9 @@ export const roadmapSections: RoadmapSection[] = [
     eyebrow: "03 · central management",
     title: "central management",
     description:
-      "OmniRush.ai Cloud is the control plane for distributing capabilities, applying desktop policies, managing identity and access, and understanding adoption across the organization.",
+      "MarsAI Cloud is the control plane for distributing capabilities, applying desktop policies, managing identity and access, and understanding adoption across the organization.",
     callout:
-      "Configure policies and access once in OmniRush.ai Cloud. The desktop app and OmniRush.ai Connect apply them for each member and team.",
+      "Configure policies and access once in MarsAI Cloud. The desktop app and MarsAI Connect apply them for each member and team.",
     items: [
       {
         title: "Desktop policies",
@@ -177,7 +177,7 @@ export const roadmapSections: RoadmapSection[] = [
       },
       {
         title: "Anthropic-compatible plugins",
-        description: "Import Claude-compatible plugin and marketplace manifests and normalize their skills, MCPs, commands, and tools into OmniRush.ai extensions.",
+        description: "Import Claude-compatible plugin and marketplace manifests and normalize their skills, MCPs, commands, and tools into MarsAI extensions.",
         status: "live",
       },
       {
@@ -192,7 +192,7 @@ export const roadmapSections: RoadmapSection[] = [
       },
       {
         title: "OpenTelemetry coverage",
-        description: "Extend OTLP traces, metrics, and logs across OmniRush.ai services and deployment paths.",
+        description: "Extend OTLP traces, metrics, and logs across MarsAI services and deployment paths.",
         status: "building",
       },
     ],
@@ -241,18 +241,18 @@ export const roadmapSections: RoadmapSection[] = [
   {
     id: "every-surface",
     eyebrow: "05 · meet people where they work",
-    title: "OmniRush.ai on every surface",
+    title: "MarsAI on every surface",
     description:
-      "The desktop app remains the richest OmniRush.ai experience. Other surfaces provide focused ways to reach the same capabilities, permissions, workspaces, and history.",
+      "The desktop app remains the richest MarsAI experience. Other surfaces provide focused ways to reach the same capabilities, permissions, workspaces, and history.",
     items: [
       {
-        title: "OmniRush.ai desktop",
+        title: "MarsAI desktop",
         description: "The complete interface for creating, configuring, and doing work.",
         status: "live",
       },
       {
         title: "Existing AI agents through MCP",
-        description: "Bring OmniRush.ai into the coding and agent tools you already use.",
+        description: "Bring MarsAI into the coding and agent tools you already use.",
         status: "live",
       },
       {
@@ -272,12 +272,12 @@ export const roadmapSections: RoadmapSection[] = [
       },
       {
         title: "Email and messaging",
-        description: "Reach OmniRush.ai from more of the places where requests and decisions arrive.",
+        description: "Reach MarsAI from more of the places where requests and decisions arrive.",
         status: "exploring",
       },
       {
         title: "Custom organization agents",
-        description: "Build specialized surfaces on top of the same OmniRush.ai workspace and capability system.",
+        description: "Build specialized surfaces on top of the same MarsAI workspace and capability system.",
         status: "exploring",
       },
     ],
@@ -291,7 +291,7 @@ export const roadmapSections: RoadmapSection[] = [
     items: [
       {
         title: "Search and execute",
-        description: "Keep agent context small while making the full OmniRush.ai capability catalog available on demand.",
+        description: "Keep agent context small while making the full MarsAI capability catalog available on demand.",
         status: "live",
       },
       {
@@ -366,9 +366,9 @@ function RoadmapSectionBlock({ section }: { section: RoadmapSection }) {
   )
 }
 
-export function OmniRushRoadmap({
-  feedbackHref = "https://github.com/omnirush-ai/omnirush-gui/issues/new?source=roadmap",
-  docsHref = "https://github.com/omnirush-ai/omnirush-gui#readme",
+export function MarsRoadmap({
+  feedbackHref = "https://github.com/mars-ai/mars-gui/issues/new?source=roadmap",
+  docsHref = "https://github.com/mars-ai/mars-gui#readme",
 }: {
   feedbackHref?: string
   docsHref?: string
@@ -376,11 +376,11 @@ export function OmniRushRoadmap({
   const statuses: RoadmapStatus[] = ["live", "partial", "building", "next", "exploring"]
 
   return (
-    <div data-testid="omnirush-roadmap" className="text-[#011627]">
+    <div data-testid="mars-roadmap" className="text-[#011627]">
       <section className="pb-14 pt-10 md:pb-20 md:pt-16">
         <div className="mb-7 flex flex-wrap items-center gap-3">
           <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600 shadow-sm">
-            OmniRush.ai roadmap
+            MarsAI roadmap
           </span>
           <span className="text-xs text-slate-500">Updated August 2026</span>
         </div>
@@ -393,10 +393,10 @@ export function OmniRushRoadmap({
 
         <div className="mt-8 grid gap-6 text-base leading-7 text-slate-600 md:grid-cols-2 md:text-lg md:leading-8">
           <p>
-            Most people use OmniRush.ai through the desktop app today. It is where you create a workspace, work with files, connect services, add skills, and customize how your agent works.
+            Most people use MarsAI through the desktop app today. It is where you create a workspace, work with files, connect services, add skills, and customize how your agent works.
           </p>
           <p>
-            What you create there should not stay trapped there. OmniRush.ai Connect already brings the same capabilities into compatible agents. Next come persistent hosted workspaces, Slack, mobile, and more.
+            What you create there should not stay trapped there. MarsAI Connect already brings the same capabilities into compatible agents. Next come persistent hosted workspaces, Slack, mobile, and more.
           </p>
         </div>
 
@@ -423,7 +423,7 @@ export function OmniRushRoadmap({
       <section className="py-16 text-center md:py-24">
         <div className="mx-auto max-w-2xl">
           <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-600">Help shape what comes next</div>
-          <h2 className="mt-4 text-3xl font-medium tracking-[-0.035em] sm:text-4xl md:text-5xl">what should OmniRush.ai build next?</h2>
+          <h2 className="mt-4 text-3xl font-medium tracking-[-0.035em] sm:text-4xl md:text-5xl">what should MarsAI build next?</h2>
           <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-slate-600">
             Tell us which workflow, workspace, or surface would make the biggest difference to how you work.
           </p>

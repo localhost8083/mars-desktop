@@ -40,7 +40,7 @@ function useNow(active: boolean, intervalMs = 15_000): number {
 }
 
 function openDownload(url: string) {
-  void window.__OMNIRUSH_ELECTRON__?.shell?.openExternal?.(url);
+  void window.__MARS_ELECTRON__?.shell?.openExternal?.(url);
 }
 
 /**
@@ -293,7 +293,7 @@ export function UpdateGate({ children }: { children: ReactNode }) {
   const gate = useUpdateGateState();
   // The product name as the release names it, unless an organization brands the app.
   const brandName = useBrandAppName();
-  const appName = brandName === "omnirush.ai" ? "OmniRush.ai" : brandName;
+  const appName = brandName === "marsai.click" ? "MarsAI" : brandName;
   const update = useRequiredUpdate(gate);
 
   useEffect(() => {

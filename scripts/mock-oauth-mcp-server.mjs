@@ -278,7 +278,7 @@ function skillCatalogArguments(messages, skillName) {
     const update = message.role === "user" ? text.match(/^<system-update>\n([\s\S]*)\n<\/system-update>$/) : null;
     return update ? [update[1].replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&")] : [];
   }).join("\n");
-  if (!system.includes("You are OmniRush.ai.")) throw new Error("The model did not receive OmniRush.ai operating instructions");
+  if (!system.includes("You are MarsAI.")) throw new Error("The model did not receive MarsAI operating instructions");
   // Replay the native catalog protocol in order: initial snapshots, additions,
   // replacement snapshots, and removals. Historical entries are not current.
   const catalog = new Map();
@@ -662,10 +662,10 @@ function authorize(req, res, url) {
   <head><title>Mock MCP OAuth</title></head>
   <body style="font-family: system-ui, sans-serif; max-width: 560px; margin: 48px auto;">
     <h1>Mock MCP OAuth</h1>
-    <p>This fake OAuth provider is for OmniRush.ai MCP end-to-end tests.</p>
+    <p>This fake OAuth provider is for MarsAI MCP end-to-end tests.</p>
     ${requestedScopesHtml}
     <form method="post" action="${escapeHtml(`${approveUrl.pathname}${approveUrl.search}`)}">
-      <button style="font: inherit; padding: 10px 14px;">Approve OmniRush.ai</button>
+      <button style="font: inherit; padding: 10px 14px;">Approve MarsAI</button>
     </form>
   </body>
 </html>`);
@@ -679,7 +679,7 @@ async function registerClient(req, res, entry) {
   const body = await readJson(req).catch(() => ({}));
   if (entry) {
     // Keep conformance evidence useful without recording credentials. These
-    // are the public RFC 7591 fields OmniRush.ai is expected to send.
+    // are the public RFC 7591 fields MarsAI is expected to send.
     entry.registration = {
       application_type: body.application_type ?? null,
       redirect_uris: Array.isArray(body.redirect_uris) ? body.redirect_uris : [],
@@ -1120,7 +1120,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === "/v1/models" && req.method === "GET") {
       json(res, 200, {
         object: "list",
-        data: [{ id: "mock-agent-workload-model", object: "model", owned_by: "omnirush-testkit" }],
+        data: [{ id: "mock-agent-workload-model", object: "model", owned_by: "mars-testkit" }],
       });
       return;
     }

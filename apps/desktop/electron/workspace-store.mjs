@@ -1,5 +1,5 @@
 // Desktop workspace persistence and bootstrap configuration. This module owns
-// on-disk workspace state, per-workspace omnirush.json files, remote workspace
+// on-disk workspace state, per-workspace mars.json files, remote workspace
 // normalization/discovery, and the workspace-facing command operations.
 import { createHash, randomBytes } from "node:crypto";
 import { existsSync, readFileSync, statSync } from "node:fs";
@@ -10,10 +10,10 @@ import {
   desktopBootstrapPath as resolveDesktopBootstrapPath,
   legacyDesktopBootstrapPath as resolveLegacyDesktopBootstrapPath,
   normalizeWorkspaceRootPath,
-  omnirushServerConfigPath as resolveOmniRushServerConfigPath,
-} from "@omnirush/paths";
+  marsServerConfigPath as resolveMarsServerConfigPath,
+} from "@mars/paths";
 
-import { omnirushWorkspaceDisplayName, selectOmniRushWorkspaceForConnection } from "./remote-workspace.mjs";
+import { marsWorkspaceDisplayName, selectMarsWorkspaceForConnection } from "./remote-workspace.mjs";
 import { exportWorkspaceConfig, importWorkspaceConfig } from "./workspace-archive.mjs";
 
 const EMPTY_WORKSPACE_LIST = Object.freeze({
@@ -139,21 +139,21 @@ const DEFAULT_DESKTOP_BOOTSTRAP_PATH = resolveDesktopBootstrapPath({ homeDir: os
 // LOCALAPPDATA and XDG_CONFIG_HOME. Keep reading that file when the canonical one
 // is missing so existing installs keep their deployment config.
 const LEGACY_DESKTOP_BOOTSTRAP_PATH = resolveLegacyDesktopBootstrapPath({ homeDir: os.homedir() });
-// The retired hosted control plane. omnirush.ai has no hosted Den, and these
+// The retired hosted control plane. marsai.click has no hosted Den, and these
 // hosts no longer resolve in DNS: older builds materialized them as the
 // bootstrap default, so a file that still points at them is a stale artifact,
 // not a configuration. It is rejected on read (defaults apply instead) and on
-// write, and nothing here ever contacts these hosts. The omnirush.software
+// write, and nothing here ever contacts these hosts. The mars.software
 // hosts are the upstream product's hosted origins; they were never ours and
 // have no DNS, so they are rejected the same way.
 const RETIRED_HOSTED_CONTROL_PLANE_HOSTS = new Set([
-  "omnirushlabs.com",
-  "app.omnirushlabs.com",
-  "api.omnirushlabs.com",
-  "api.app.omnirushlabs.com",
-  "omnirush.software",
-  "app.omnirush.software",
-  "api.omnirush.software",
+  "marslabs.com",
+  "app.marslabs.com",
+  "api.marslabs.com",
+  "api.app.marslabs.com",
+  "mars.software",
+  "app.mars.software",
+  "api.mars.software",
 ]);
 
 export function isRetiredHostedControlPlaneUrl(value) {
@@ -172,14 +172,14 @@ export function createWorkspaceStore({
   forceRequireSignin,
 }) {
   function desktopBootstrapPath() {
-    if (process.env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH?.trim()) {
+    if (process.env.MARS_DESKTOP_BOOTSTRAP_PATH?.trim()) {
       return resolveDesktopBootstrapPath({ env: process.env, homeDir: os.homedir(), userDataDir: app.getPath("userData") });
     }
     // Dev mode swaps process.env.HOME to the sandboxed dev-data home midway
     // through startup (runtime.mjs buildChildEnv -> Object.assign(process.env)),
     // which changes what os.homedir() returns. Resolve the dev-data home
     // deterministically so early and late IPC reads target the same file.
-    if (process.env.OMNIRUSH_DEV_MODE === "1") {
+    if (process.env.MARS_DEV_MODE === "1") {
       return resolveDesktopBootstrapPath({ env: process.env, homeDir: os.homedir(), userDataDir: app.getPath("userData") });
     }
     return DEFAULT_DESKTOP_BOOTSTRAP_PATH;
@@ -189,7 +189,7 @@ export function createWorkspaceStore({
     // An explicit bootstrap path defines an isolated installation boundary.
     // Never let a legacy global config cross that boundary: it may contain a
     // completed activation from another distribution or deployment.
-    if (process.env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH?.trim()) return null;
+    if (process.env.MARS_DESKTOP_BOOTSTRAP_PATH?.trim()) return null;
     const primary = desktopBootstrapPath();
     if (primary === DEFAULT_DESKTOP_BOOTSTRAP_PATH && LEGACY_DESKTOP_BOOTSTRAP_PATH !== primary) {
       return LEGACY_DESKTOP_BOOTSTRAP_PATH;
@@ -198,24 +198,24 @@ export function createWorkspaceStore({
   }
 
   function workspaceStatePath() {
-    const override = process.env.OMNIRUSH_DESKTOP_WORKSPACE_STATE_PATH?.trim();
+    const override = process.env.MARS_DESKTOP_WORKSPACE_STATE_PATH?.trim();
     if (override) return path.resolve(override);
-    return path.join(app.getPath("userData"), "omnirush-workspaces.json");
+    return path.join(app.getPath("userData"), "mars-workspaces.json");
   }
 
-  function omnirushServerTokenStorePath() {
-    const override = process.env.OMNIRUSH_SERVER_TOKEN_STORE_PATH?.trim();
+  function marsServerTokenStorePath() {
+    const override = process.env.MARS_SERVER_TOKEN_STORE_PATH?.trim();
     if (override) return path.resolve(override);
-    return path.join(app.getPath("userData"), "omnirush-server-tokens.json");
+    return path.join(app.getPath("userData"), "mars-server-tokens.json");
   }
 
-  function omnirushServerConfigPath() {
-    return resolveOmniRushServerConfigPath({ env: process.env, homeDir: os.homedir() });
+  function marsServerConfigPath() {
+    return resolveMarsServerConfigPath({ env: process.env, homeDir: os.homedir() });
   }
 
-  // Earlier Electron alpha builds copied Tauri's omnirush-workspaces.json into
+  // Earlier Electron alpha builds copied Tauri's mars-workspaces.json into
   // an Electron-only workspace-state.json. Keep importing that file when the
-  // shared canonical file is missing, but write omnirush-workspaces.json going
+  // shared canonical file is missing, but write mars-workspaces.json going
   // forward so Tauri rollback and Electron both read the same desktop state.
   function legacyElectronWorkspaceStatePath() {
     return path.join(app.getPath("userData"), "workspace-state.json");
@@ -230,7 +230,7 @@ export function createWorkspaceStore({
       await mkdir(path.dirname(current), { recursive: true });
       const raw = await readFile(legacy, "utf8");
       await writeFile(current, raw, "utf8");
-      console.info("[migration] copied workspace-state.json to omnirush-workspaces.json");
+      console.info("[migration] copied workspace-state.json to mars-workspaces.json");
       return true;
     } catch (error) {
       console.warn("[migration] legacy Electron workspace-state copy failed", error);
@@ -501,7 +501,7 @@ export function createWorkspaceStore({
       legacyExists: legacyPath ? existsSync(legacyPath) : false,
       home: os.homedir(),
       envHome: process.env.HOME ?? null,
-      envOverride: process.env.OMNIRUSH_DESKTOP_BOOTSTRAP_PATH ?? null,
+      envOverride: process.env.MARS_DESKTOP_BOOTSTRAP_PATH ?? null,
       exists: existsSync(configPath),
       raw: null,
       parsed: null,
@@ -541,7 +541,7 @@ export function createWorkspaceStore({
     return undefined;
   }
 
-  function defaultWorkspaceOmniRushConfig(workspacePath, preset = null) {
+  function defaultWorkspaceMarsConfig(workspacePath, preset = null) {
     return {
       version: 1,
       workspace: workspacePath
@@ -591,7 +591,7 @@ export function createWorkspaceStore({
   }
 
   async function recoverWorkspacesFromTokenStore() {
-    const store = await readJsonFile(omnirushServerTokenStorePath(), null);
+    const store = await readJsonFile(marsServerTokenStorePath(), null);
     if (!isRecord(store) || !isRecord(store.workspaces)) return [];
 
     const candidates = [];
@@ -627,7 +627,7 @@ export function createWorkspaceStore({
     const workspaceKey = normalizeWorkspacePathKey(workspacePath);
     if (!workspaceKey) return;
 
-    const store = await readJsonFile(omnirushServerTokenStorePath(), null);
+    const store = await readJsonFile(marsServerTokenStorePath(), null);
     if (!isRecord(store) || !isRecord(store.workspaces)) return;
 
     const workspaces = { ...store.workspaces };
@@ -638,12 +638,12 @@ export function createWorkspaceStore({
       changed = true;
     }
     if (changed) {
-      await writeJsonFileAtomic(omnirushServerTokenStorePath(), { ...store, workspaces });
+      await writeJsonFileAtomic(marsServerTokenStorePath(), { ...store, workspaces });
     }
   }
 
   async function recoverWorkspacesFromServerConfig() {
-    const config = await readJsonFile(omnirushServerConfigPath(), null);
+    const config = await readJsonFile(marsServerConfigPath(), null);
     if (!isRecord(config) || !Array.isArray(config.workspaces)) return [];
 
     const seen = new Set();
@@ -659,13 +659,13 @@ export function createWorkspaceStore({
 
       const baseUrl = typeof entry.baseUrl === "string" ? entry.baseUrl.trim() : "";
       const directory = typeof entry.directory === "string" && entry.directory.trim() ? entry.directory.trim() : null;
-      const remoteType = entry.remoteType === "opencode" ? "opencode" : "omnirush";
-      const omnirushWorkspaceId = typeof entry.omnirushWorkspaceId === "string" ? entry.omnirushWorkspaceId.trim() : "";
+      const remoteType = entry.remoteType === "opencode" ? "opencode" : "mars";
+      const marsWorkspaceId = typeof entry.marsWorkspaceId === "string" ? entry.marsWorkspaceId.trim() : "";
       const id = typeof entry.id === "string" && entry.id.trim()
         ? entry.id.trim()
         : workspaceType === "remote"
-          ? remoteType === "omnirush"
-            ? omnirushRemoteWorkspaceId(baseUrl, omnirushWorkspaceId)
+          ? remoteType === "mars"
+            ? marsRemoteWorkspaceId(baseUrl, marsWorkspaceId)
             : remoteWorkspaceId(baseUrl, directory)
           : localWorkspaceId(normalizedPath);
       const key = workspaceType === "remote" ? id : normalizeWorkspacePathKey(normalizedPath);
@@ -708,7 +708,7 @@ export function createWorkspaceStore({
     return stableWorkspaceId(key);
   }
 
-  function parseOmniRushWorkspaceIdFromUrl(input) {
+  function parseMarsWorkspaceIdFromUrl(input) {
     const raw = String(input ?? "").trim();
     if (!raw) return null;
     try {
@@ -731,7 +731,7 @@ export function createWorkspaceStore({
     }
   }
 
-  function stripOmniRushWorkspaceMount(input) {
+  function stripMarsWorkspaceMount(input) {
     const raw = String(input ?? "").trim();
     if (!raw) return null;
     try {
@@ -750,13 +750,13 @@ export function createWorkspaceStore({
     }
   }
 
-  function omnirushRemoteWorkspaceId(hostUrl, workspaceId) {
-    const remoteWorkspaceId = String(workspaceId ?? "").trim() || parseOmniRushWorkspaceIdFromUrl(hostUrl);
+  function marsRemoteWorkspaceId(hostUrl, workspaceId) {
+    const remoteWorkspaceId = String(workspaceId ?? "").trim() || parseMarsWorkspaceIdFromUrl(hostUrl);
     if (remoteWorkspaceId) return `rem_${remoteWorkspaceId}`;
-    return `rem_${createHash("sha256").update(`omnirush::${hostUrl}`).digest("hex").slice(0, 12)}`;
+    return `rem_${createHash("sha256").update(`mars::${hostUrl}`).digest("hex").slice(0, 12)}`;
   }
 
-  async function fetchOmniRushWorkspaceList(hostUrl, token, hostToken) {
+  async function fetchMarsWorkspaceList(hostUrl, token, hostToken) {
     const url = `${String(hostUrl ?? "").replace(/\/+$/, "")}/workspaces`;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8_000);
@@ -764,7 +764,7 @@ export function createWorkspaceStore({
     const bearerToken = String(token ?? "").trim();
     const hostAuthToken = String(hostToken ?? "").trim();
     if (bearerToken) headers.set("Authorization", `Bearer ${bearerToken}`);
-    if (hostAuthToken) headers.set("X-OmniRush-Host-Token", hostAuthToken);
+    if (hostAuthToken) headers.set("X-Mars-Host-Token", hostAuthToken);
 
     try {
       const electron = await import("electron").catch(() => null);
@@ -776,7 +776,7 @@ export function createWorkspaceStore({
         cache: "no-store",
       });
       if (!response.ok) {
-        throw new Error(`OmniRush.ai workspace discovery failed (${response.status} ${response.statusText || "HTTP error"})`);
+        throw new Error(`MarsAI workspace discovery failed (${response.status} ${response.statusText || "HTTP error"})`);
       }
       return await response.json();
     } finally {
@@ -784,9 +784,9 @@ export function createWorkspaceStore({
     }
   }
 
-  async function discoverOmniRushWorkspace({ hostUrl, token, hostToken, directory }) {
-    const list = await fetchOmniRushWorkspaceList(hostUrl, token, hostToken);
-    return selectOmniRushWorkspaceForConnection(list, directory);
+  async function discoverMarsWorkspace({ hostUrl, token, hostToken, directory }) {
+    const list = await fetchMarsWorkspaceList(hostUrl, token, hostToken);
+    return selectMarsWorkspaceForConnection(list, directory);
   }
 
   function normalizeWorkspaceEntry(input) {
@@ -800,32 +800,32 @@ export function createWorkspaceStore({
       baseUrl: input.baseUrl ?? null,
       directory: input.directory ?? null,
       displayName: input.displayName ?? null,
-      omnirushHostUrl: input.omnirushHostUrl ?? null,
-      omnirushToken: input.omnirushToken ?? null,
-      omnirushClientToken: input.omnirushClientToken ?? null,
-      omnirushHostToken: input.omnirushHostToken ?? null,
-      omnirushWorkspaceId: input.omnirushWorkspaceId ?? null,
-      omnirushWorkspaceName: input.omnirushWorkspaceName ?? null,
+      marsHostUrl: input.marsHostUrl ?? null,
+      marsToken: input.marsToken ?? null,
+      marsClientToken: input.marsClientToken ?? null,
+      marsHostToken: input.marsHostToken ?? null,
+      marsWorkspaceId: input.marsWorkspaceId ?? null,
+      marsWorkspaceName: input.marsWorkspaceName ?? null,
       sandboxBackend: input.sandboxBackend ?? null,
       sandboxRunId: input.sandboxRunId ?? null,
       sandboxContainerName: input.sandboxContainerName ?? null,
     };
   }
 
-  async function readWorkspaceOmniRushConfig(workspacePath) {
-    const omnirushPath = path.join(workspacePath, ".opencode", "omnirush.json");
-    if (!(await pathExists(omnirushPath))) {
-      return defaultWorkspaceOmniRushConfig(workspacePath);
+  async function readWorkspaceMarsConfig(workspacePath) {
+    const marsPath = path.join(workspacePath, ".opencode", "mars.json");
+    if (!(await pathExists(marsPath))) {
+      return defaultWorkspaceMarsConfig(workspacePath);
     }
-    const raw = await readFile(omnirushPath, "utf8");
+    const raw = await readFile(marsPath, "utf8");
     return JSON.parse(raw);
   }
 
-  async function writeWorkspaceOmniRushConfig(workspacePath, config) {
-    const omnirushPath = path.join(workspacePath, ".opencode", "omnirush.json");
-    await mkdir(path.dirname(omnirushPath), { recursive: true });
-    await writeFile(omnirushPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
-    return execResult(true, `Wrote ${omnirushPath}`);
+  async function writeWorkspaceMarsConfig(workspacePath, config) {
+    const marsPath = path.join(workspacePath, ".opencode", "mars.json");
+    await mkdir(path.dirname(marsPath), { recursive: true });
+    await writeFile(marsPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+    return execResult(true, `Wrote ${marsPath}`);
   }
 
   async function writeWorkspaceState(nextState) {
@@ -867,11 +867,11 @@ export function createWorkspaceStore({
     let activeId = typeof state?.activeId === "string" ? state.activeId : null;
     let workspaces = Array.isArray(state?.workspaces) ? state.workspaces : [];
     let changed = false;
-    if (!workspaceStateExists && process.env.OMNIRUSH_DESKTOP_DISABLE_WORKSPACE_RECOVERY !== "1") {
+    if (!workspaceStateExists && process.env.MARS_DESKTOP_DISABLE_WORKSPACE_RECOVERY !== "1") {
       const recoveredWorkspaces = await recoverWorkspacesFromKnownState();
       if (recoveredWorkspaces.length > 0) {
         const selectedWorkspace = recoveredWorkspaces[0];
-        console.info("[migration] recovered desktop workspaces from persisted OmniRush.ai state", {
+        console.info("[migration] recovered desktop workspaces from persisted MarsAI state", {
           count: recoveredWorkspaces.length,
           selectedWorkspaceId: selectedWorkspace.id,
         });
@@ -885,29 +885,29 @@ export function createWorkspaceStore({
     const idMap = new Map();
     const migratedWorkspaces = workspaces.map((entry) => {
       const workspace = entry && typeof entry === "object" ? entry : normalizeWorkspaceEntry(entry ?? {});
-      if (workspace.workspaceType !== "remote" || workspace.remoteType !== "omnirush") return workspace;
+      if (workspace.workspaceType !== "remote" || workspace.remoteType !== "mars") return workspace;
 
-      const remoteWorkspaceId = String(workspace.omnirushWorkspaceId ?? "").trim()
-        || parseOmniRushWorkspaceIdFromUrl(workspace.omnirushHostUrl)
-        || parseOmniRushWorkspaceIdFromUrl(workspace.baseUrl);
+      const remoteWorkspaceId = String(workspace.marsWorkspaceId ?? "").trim()
+        || parseMarsWorkspaceIdFromUrl(workspace.marsHostUrl)
+        || parseMarsWorkspaceIdFromUrl(workspace.baseUrl);
       if (!remoteWorkspaceId) return workspace;
 
-      const hostUrl = stripOmniRushWorkspaceMount(workspace.omnirushHostUrl) || stripOmniRushWorkspaceMount(workspace.baseUrl);
-      const nextId = omnirushRemoteWorkspaceId(hostUrl ?? workspace.baseUrl, remoteWorkspaceId);
+      const hostUrl = stripMarsWorkspaceMount(workspace.marsHostUrl) || stripMarsWorkspaceMount(workspace.baseUrl);
+      const nextId = marsRemoteWorkspaceId(hostUrl ?? workspace.baseUrl, remoteWorkspaceId);
       idMap.set(workspace.id, nextId);
       const nextWorkspace = {
         ...workspace,
         id: nextId,
         baseUrl: hostUrl,
-        omnirushWorkspaceId: remoteWorkspaceId,
-        omnirushHostUrl: hostUrl,
+        marsWorkspaceId: remoteWorkspaceId,
+        marsHostUrl: hostUrl,
       };
-      if (workspace.id !== nextWorkspace.id || workspace.baseUrl !== nextWorkspace.baseUrl || workspace.omnirushWorkspaceId !== nextWorkspace.omnirushWorkspaceId || workspace.omnirushHostUrl !== nextWorkspace.omnirushHostUrl) {
+      if (workspace.id !== nextWorkspace.id || workspace.baseUrl !== nextWorkspace.baseUrl || workspace.marsWorkspaceId !== nextWorkspace.marsWorkspaceId || workspace.marsHostUrl !== nextWorkspace.marsHostUrl) {
         changed = true;
       }
       return nextWorkspace;
     });
-    // Older desktop state can contain multiple OmniRush.ai remote entries that
+    // Older desktop state can contain multiple MarsAI remote entries that
     // normalize to the same rem_<workspaceId> after stripping worker mounts.
     // Collapse them here so React never receives duplicate workspace keys.
     const workspaceIndexById = new Map();
@@ -966,10 +966,10 @@ export function createWorkspaceStore({
     const state = await readWorkspaceState();
     // Recovery and an explicitly saved empty list both take precedence.
     if (state.workspaces.length > 0 || existsSync(workspaceStatePath())) return null;
-    const home = process.env.OMNIRUSH_DEV_MODE === "1" && process.env.OMNIRUSH_DEV_SHARED_STATE !== "1"
-      ? path.join(app.getPath("userData"), "omnirush-dev-data", "home")
+    const home = process.env.MARS_DEV_MODE === "1" && process.env.MARS_DEV_SHARED_STATE !== "1"
+      ? path.join(app.getPath("userData"), "mars-dev-data", "home")
       : os.homedir();
-    const folderPath = await normalizeLocalWorkspacePath(path.join(home, "omnirush.ai"));
+    const folderPath = await normalizeLocalWorkspacePath(path.join(home, "marsai.click"));
     try {
       await createWorkspace({ folderPath });
       return null;
@@ -1000,7 +1000,7 @@ export function createWorkspaceStore({
     const prefixes = new Set();
     for (const workspace of (await readWorkspaceState()).workspaces) {
       if (workspace?.workspaceType !== "remote") continue;
-      for (const value of [workspace.baseUrl, workspace.omnirushHostUrl]) {
+      for (const value of [workspace.baseUrl, workspace.marsHostUrl]) {
         const raw = typeof value === "string" ? value.trim() : "";
         if (raw) prefixes.add(raw);
       }
@@ -1042,8 +1042,8 @@ export function createWorkspaceStore({
       workspaceType: "local",
     });
     await mkdir(path.join(folderPath, ".opencode"), { recursive: true });
-    if (!(await pathExists(path.join(folderPath, ".opencode", "omnirush.json")))) {
-      await writeWorkspaceOmniRushConfig(folderPath, defaultWorkspaceOmniRushConfig(folderPath, preset));
+    if (!(await pathExists(path.join(folderPath, ".opencode", "mars.json")))) {
+      await writeWorkspaceMarsConfig(folderPath, defaultWorkspaceMarsConfig(folderPath, preset));
     }
 
     return mutateWorkspaceState((state) => {
@@ -1065,57 +1065,57 @@ export function createWorkspaceStore({
     if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
       throw new Error("baseUrl must start with http:// or https://");
     }
-    const remoteType = input.remoteType === "opencode" ? "opencode" : "omnirush";
+    const remoteType = input.remoteType === "opencode" ? "opencode" : "mars";
     const directory = typeof input.directory === "string" && input.directory.trim() ? input.directory.trim() : null;
-    const rawOmniRushHostUrl = typeof input.omnirushHostUrl === "string" && input.omnirushHostUrl.trim()
-      ? input.omnirushHostUrl.trim()
+    const rawMarsHostUrl = typeof input.marsHostUrl === "string" && input.marsHostUrl.trim()
+      ? input.marsHostUrl.trim()
       : null;
-    const omnirushHostUrl = remoteType === "omnirush"
-      ? stripOmniRushWorkspaceMount(rawOmniRushHostUrl ?? baseUrl)
-      : rawOmniRushHostUrl;
-    const omnirushWorkspaceId = typeof input.omnirushWorkspaceId === "string" && input.omnirushWorkspaceId.trim()
-      ? input.omnirushWorkspaceId.trim()
-      : remoteType === "omnirush"
-        ? parseOmniRushWorkspaceIdFromUrl(rawOmniRushHostUrl) || parseOmniRushWorkspaceIdFromUrl(baseUrl)
+    const marsHostUrl = remoteType === "mars"
+      ? stripMarsWorkspaceMount(rawMarsHostUrl ?? baseUrl)
+      : rawMarsHostUrl;
+    const marsWorkspaceId = typeof input.marsWorkspaceId === "string" && input.marsWorkspaceId.trim()
+      ? input.marsWorkspaceId.trim()
+      : remoteType === "mars"
+        ? parseMarsWorkspaceIdFromUrl(rawMarsHostUrl) || parseMarsWorkspaceIdFromUrl(baseUrl)
         : null;
-    let resolvedOmniRushWorkspaceId = omnirushWorkspaceId;
-    let resolvedOmniRushWorkspaceName = input.omnirushWorkspaceName ?? null;
-    if (remoteType === "omnirush" && !resolvedOmniRushWorkspaceId) {
-      const discovered = await discoverOmniRushWorkspace({
-        hostUrl: omnirushHostUrl ?? baseUrl,
-        token: input.omnirushToken,
-        hostToken: input.omnirushHostToken,
+    let resolvedMarsWorkspaceId = marsWorkspaceId;
+    let resolvedMarsWorkspaceName = input.marsWorkspaceName ?? null;
+    if (remoteType === "mars" && !resolvedMarsWorkspaceId) {
+      const discovered = await discoverMarsWorkspace({
+        hostUrl: marsHostUrl ?? baseUrl,
+        token: input.marsToken,
+        hostToken: input.marsHostToken,
         directory,
       });
       if (!discovered?.id) {
         throw new Error(
           directory
-            ? `OmniRush.ai server has no workspace matching ${directory}.`
-            : "OmniRush.ai server returned no workspaces.",
+            ? `MarsAI server has no workspace matching ${directory}.`
+            : "MarsAI server returned no workspaces.",
         );
       }
-      resolvedOmniRushWorkspaceId = String(discovered.id).trim();
-      resolvedOmniRushWorkspaceName = omnirushWorkspaceDisplayName(discovered);
+      resolvedMarsWorkspaceId = String(discovered.id).trim();
+      resolvedMarsWorkspaceName = marsWorkspaceDisplayName(discovered);
     }
-    const id = remoteType === "omnirush"
-      ? omnirushRemoteWorkspaceId(omnirushHostUrl ?? baseUrl, resolvedOmniRushWorkspaceId)
+    const id = remoteType === "mars"
+      ? marsRemoteWorkspaceId(marsHostUrl ?? baseUrl, resolvedMarsWorkspaceId)
       : remoteWorkspaceId(baseUrl, directory);
     const workspace = normalizeWorkspaceEntry({
       id,
-      name: String(input.displayName ?? resolvedOmniRushWorkspaceName ?? "Remote workspace"),
+      name: String(input.displayName ?? resolvedMarsWorkspaceName ?? "Remote workspace"),
       displayName: input.displayName ?? null,
       path: directory ?? "",
       preset: "remote",
       workspaceType: "remote",
       remoteType,
-      baseUrl: remoteType === "omnirush" ? (omnirushHostUrl ?? baseUrl) : baseUrl,
+      baseUrl: remoteType === "mars" ? (marsHostUrl ?? baseUrl) : baseUrl,
       directory,
-      omnirushHostUrl,
-      omnirushToken: input.omnirushToken ?? null,
-      omnirushClientToken: input.omnirushClientToken ?? null,
-      omnirushHostToken: input.omnirushHostToken ?? null,
-      omnirushWorkspaceId: resolvedOmniRushWorkspaceId,
-      omnirushWorkspaceName: resolvedOmniRushWorkspaceName,
+      marsHostUrl,
+      marsToken: input.marsToken ?? null,
+      marsClientToken: input.marsClientToken ?? null,
+      marsHostToken: input.marsHostToken ?? null,
+      marsWorkspaceId: resolvedMarsWorkspaceId,
+      marsWorkspaceName: resolvedMarsWorkspaceName,
       sandboxBackend: input.sandboxBackend ?? null,
       sandboxRunId: input.sandboxRunId ?? null,
       sandboxContainerName: input.sandboxContainerName ?? null,
@@ -1138,50 +1138,50 @@ export function createWorkspaceStore({
       if (!existing) return state;
 
       let nextWorkspace = { ...existing, ...patch };
-      const nextRemoteType = nextWorkspace.remoteType === "opencode" ? "opencode" : "omnirush";
-      if (nextRemoteType === "omnirush") {
-        const rawHostUrl = typeof nextWorkspace.omnirushHostUrl === "string" && nextWorkspace.omnirushHostUrl.trim()
-          ? nextWorkspace.omnirushHostUrl.trim()
+      const nextRemoteType = nextWorkspace.remoteType === "opencode" ? "opencode" : "mars";
+      if (nextRemoteType === "mars") {
+        const rawHostUrl = typeof nextWorkspace.marsHostUrl === "string" && nextWorkspace.marsHostUrl.trim()
+          ? nextWorkspace.marsHostUrl.trim()
           : null;
         const nextBaseUrl = String(nextWorkspace.baseUrl ?? "").trim();
-        const hostUrl = stripOmniRushWorkspaceMount(rawHostUrl ?? nextBaseUrl);
+        const hostUrl = stripMarsWorkspaceMount(rawHostUrl ?? nextBaseUrl);
         const directory = typeof nextWorkspace.directory === "string" && nextWorkspace.directory.trim()
           ? nextWorkspace.directory.trim()
           : null;
-        const parsedWorkspaceId = parseOmniRushWorkspaceIdFromUrl(rawHostUrl) || parseOmniRushWorkspaceIdFromUrl(nextBaseUrl);
+        const parsedWorkspaceId = parseMarsWorkspaceIdFromUrl(rawHostUrl) || parseMarsWorkspaceIdFromUrl(nextBaseUrl);
         let remoteWorkspaceId = parsedWorkspaceId || (
-          typeof nextWorkspace.omnirushWorkspaceId === "string" && nextWorkspace.omnirushWorkspaceId.trim()
-            ? nextWorkspace.omnirushWorkspaceId.trim()
+          typeof nextWorkspace.marsWorkspaceId === "string" && nextWorkspace.marsWorkspaceId.trim()
+            ? nextWorkspace.marsWorkspaceId.trim()
             : null
         );
-        let remoteWorkspaceName = nextWorkspace.omnirushWorkspaceName ?? null;
+        let remoteWorkspaceName = nextWorkspace.marsWorkspaceName ?? null;
         if (!remoteWorkspaceId) {
-          const discovered = await discoverOmniRushWorkspace({
+          const discovered = await discoverMarsWorkspace({
             hostUrl: hostUrl ?? nextBaseUrl,
-            token: nextWorkspace.omnirushToken,
-            hostToken: nextWorkspace.omnirushHostToken,
+            token: nextWorkspace.marsToken,
+            hostToken: nextWorkspace.marsHostToken,
             directory,
           });
           if (!discovered?.id) {
             throw new Error(
               directory
-                ? `OmniRush.ai server has no workspace matching ${directory}.`
-                : "OmniRush.ai server returned no workspaces.",
+                ? `MarsAI server has no workspace matching ${directory}.`
+                : "MarsAI server returned no workspaces.",
             );
           }
           remoteWorkspaceId = String(discovered.id).trim();
-          remoteWorkspaceName = omnirushWorkspaceDisplayName(discovered);
+          remoteWorkspaceName = marsWorkspaceDisplayName(discovered);
         }
-        const nextId = omnirushRemoteWorkspaceId(hostUrl ?? nextBaseUrl, remoteWorkspaceId);
+        const nextId = marsRemoteWorkspaceId(hostUrl ?? nextBaseUrl, remoteWorkspaceId);
         nextWorkspace = normalizeWorkspaceEntry({
           ...nextWorkspace,
           id: nextId,
           baseUrl: hostUrl ?? nextBaseUrl,
-          omnirushHostUrl: hostUrl,
+          marsHostUrl: hostUrl,
           directory,
-          remoteType: "omnirush",
-          omnirushWorkspaceId: remoteWorkspaceId,
-          omnirushWorkspaceName: remoteWorkspaceName,
+          remoteType: "mars",
+          marsWorkspaceId: remoteWorkspaceId,
+          marsWorkspaceName: remoteWorkspaceName,
         });
         if (nextId !== workspaceId) {
           if (state.selectedId === workspaceId) state.selectedId = nextId;
@@ -1230,14 +1230,14 @@ export function createWorkspaceStore({
     if (!workspacePath || !authorizedRoot) {
       throw new Error("workspacePath and folderPath are required");
     }
-    const config = await readWorkspaceOmniRushConfig(workspacePath);
+    const config = await readWorkspaceMarsConfig(workspacePath);
     if (!Array.isArray(config.authorizedRoots)) {
       config.authorizedRoots = [];
     }
     if (!config.authorizedRoots.includes(authorizedRoot)) {
       config.authorizedRoots.push(authorizedRoot);
     }
-    return writeWorkspaceOmniRushConfig(workspacePath, config);
+    return writeWorkspaceMarsConfig(workspacePath, config);
   }
 
   async function exportConfig(input = {}) {
@@ -1283,7 +1283,7 @@ export function createWorkspaceStore({
     });
   }
 
-  async function resetOmniRushState() {
+  async function resetMarsState() {
     await rm(workspaceStatePath(), { force: true });
     await clearDesktopBootstrapFiles();
     return undefined;
@@ -1296,7 +1296,7 @@ export function createWorkspaceStore({
     createWorkspace,
     clearDesktopBootstrapConfig,
     debugDesktopBootstrapConfig,
-    defaultWorkspaceOmniRushConfig,
+    defaultWorkspaceMarsConfig,
     exportConfig,
     forgetWorkspace,
     getDesktopBootstrapConfig,
@@ -1305,15 +1305,15 @@ export function createWorkspaceStore({
     listRemoteWorkspaceUrlPrefixes,
     migrateLegacyElectronWorkspaceStateIfNeeded,
     readDesktopBootstrapConfigSync,
-    readWorkspaceOmniRushConfig,
+    readWorkspaceMarsConfig,
     readWorkspaceState,
-    resetOmniRushState,
+    resetMarsState,
     setDesktopBootstrapConfig,
     setRuntimeActiveWorkspace,
     setSelectedWorkspace,
     updateRemoteWorkspace,
     updateWorkspaceDisplayName,
-    writeWorkspaceOmniRushConfig,
+    writeWorkspaceMarsConfig,
     writeWorkspaceState,
   };
 }

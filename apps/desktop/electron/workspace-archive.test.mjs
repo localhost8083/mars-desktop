@@ -41,12 +41,12 @@ function singleEntryArchive({ name, data, uncompressedSize = data.length }) {
 
 describe("workspace archive limits", () => {
   it("rejects an oversized entry before zlib or file writes run", async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), "omnirush-archive-test-"));
+    const root = await mkdtemp(path.join(os.tmpdir(), "mars-archive-test-"));
     const archivePath = path.join(root, "archive.zip");
     const targetDir = path.join(root, "target");
     try {
       await writeFile(archivePath, singleEntryArchive({
-        name: ".opencode/omnirush.json",
+        name: ".opencode/mars.json",
         data: Buffer.from("{}"),
         uncompressedSize: 17 * 1024 * 1024,
       }));

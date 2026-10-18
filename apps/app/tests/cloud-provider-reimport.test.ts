@@ -109,7 +109,7 @@ describe("cloud provider runtime patch (re-import diff #2346)", () => {
   test("cloud-managed key predicate guards re-import vs manual clobber", () => {
     expect(isCloudManagedProviderKey(LPR_ID)).toBe(true);
     expect(isCloudManagedProviderKey("lpr_anything")).toBe(true);
-    expect(isCloudManagedProviderKey("omnirush")).toBe(true);
+    expect(isCloudManagedProviderKey("mars")).toBe(true);
     expect(isCloudManagedProviderKey("openai")).toBe(false);
     expect(isCloudManagedProviderKey("anthropic")).toBe(false);
   });
@@ -140,24 +140,24 @@ describe("cloud provider runtime patch (re-import diff #2346)", () => {
     expect(persistEnd).toBeGreaterThan(persistStart);
 
     const persistSource = source.slice(persistStart, persistEnd);
-    expect(persistSource).toContain("const config = await readWorkspaceOmniRushConfigRecord();");
+    expect(persistSource).toContain("const config = await readWorkspaceMarsConfigRecord();");
     expect(persistSource).toContain("const cloudImports = readWorkspaceCloudImports(config);");
     expect(persistSource).toContain("const nextConfig = withWorkspaceCloudImports(config");
-    expect(persistSource).toContain("const persisted = await writeWorkspaceOmniRushConfigRecord(nextConfig);");
+    expect(persistSource).toContain("const persisted = await writeWorkspaceMarsConfigRecord(nextConfig);");
     expect(persistSource).toContain('setStateField("importedCloudProviders", nextProviders);');
     expect(source).not.toContain("refreshDesktop" + "CloudSync");
     expect(source).not.toContain("getResource" + "Snapshot");
   });
 
-  test("client env mirror includes non-omnirush provider credentials", () => {
+  test("client env mirror includes non-mars provider credentials", () => {
     const source = readFileSync(providerAuthStoreSourcePath, "utf8");
     const mirrorStart = source.indexOf("const mirrorCloudProviderEnv = async");
-    const mirrorEnd = source.indexOf("const readWorkspaceOmniRushConfigRecord", mirrorStart);
+    const mirrorEnd = source.indexOf("const readWorkspaceMarsConfigRecord", mirrorStart);
     expect(mirrorStart).toBeGreaterThanOrEqual(0);
     expect(mirrorEnd).toBeGreaterThan(mirrorStart);
 
     const mirrorSource = source.slice(mirrorStart, mirrorEnd);
-    expect(mirrorSource).not.toContain('provider.source !== "omnirush"');
+    expect(mirrorSource).not.toContain('provider.source !== "mars"');
     expect(mirrorSource).toContain("resolvedEnvEntries");
     expect(mirrorSource).toContain("const entries = [...resolvedEnvEntries]");
     expect(mirrorSource).toContain("getCloudProviderEnv(provider.providerConfig)");

@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto"
-import { createHeadlessThreadClient, type HeadlessThreadTranscript } from "@omnirush/headless-threads"
+import { createHeadlessThreadClient, type HeadlessThreadTranscript } from "@mars/headless-threads"
 import { and, asc, eq, isNull } from "@omnirush-ee/den-db/drizzle"
 import { MemberTable, WorkerTable } from "@omnirush-ee/den-db/schema"
 import { normalizeDenTypeId } from "@omnirush-ee/utils/typeid"
-import type { AutomationAction, AutomationError, AutomationUsage } from "@omnirush/types/automations"
+import type { AutomationAction, AutomationError, AutomationUsage } from "@mars/types/automations"
 import { db } from "../db.js"
 import { env } from "../env.js"
 import {

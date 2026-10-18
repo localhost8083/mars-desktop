@@ -29,7 +29,7 @@ type OAuthFlowContext =
   | { kind: "runtime" }
 
 type VerifiedOAuthDiscoveryState = OAuthDiscoveryState & {
-  omnirushMetadataVerification?: {
+  marsMetadataVerification?: {
     version: 1
     issuer: string
   }
@@ -250,7 +250,7 @@ export class EnterpriseMcpOAuthProvider implements OAuthClientProvider {
   }
 
   private hasCurrentMetadataVerification(state: OAuthDiscoveryState, selectedIssuer: string): boolean {
-    const verification = (state as VerifiedOAuthDiscoveryState).omnirushMetadataVerification
+    const verification = (state as VerifiedOAuthDiscoveryState).marsMetadataVerification
     // The stamp records the canonical metadata issuer; the selected issuer may
     // be its equivalent root trailing-slash alias (RFC 8414's one tolerance).
     return verification?.version === 1
@@ -276,7 +276,7 @@ export class EnterpriseMcpOAuthProvider implements OAuthClientProvider {
       ...state,
       authorizationServerUrl: metadata.issuer,
       authorizationServerMetadata: metadata,
-      omnirushMetadataVerification: {
+      marsMetadataVerification: {
         version: 1,
         issuer: metadata.issuer,
       },

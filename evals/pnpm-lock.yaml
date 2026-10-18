@@ -8,45 +8,45 @@ importers:
 
   .:
     dependencies:
-      '@omnirush/behaviors':
+      '@mars/behaviors':
         specifier: workspace:*
         version: link:packages/behaviors
-      '@omnirush/cdp':
+      '@mars/cdp':
         specifier: workspace:*
         version: link:packages/cdp
-      '@omnirush/env':
+      '@mars/env':
         specifier: workspace:*
         version: link:packages/env
-      '@omnirush/hosts':
+      '@mars/hosts':
         specifier: workspace:*
         version: link:packages/hosts
-      '@omnirush/labs':
+      '@mars/labs':
         specifier: workspace:*
         version: link:packages/labs
-      '@omnirush/matchers':
+      '@mars/matchers':
         specifier: workspace:*
         version: link:packages/matchers
-      '@omnirush/review':
+      '@mars/review':
         specifier: link:../packages/review
         version: link:../packages/review
+      '@mars/test-artifacts':
+        specifier: workspace:*
+        version: link:packages/test-artifacts
+      '@mars/test-evidence':
+        specifier: workspace:*
+        version: link:packages/test-evidence
+      '@mars/testkit':
+        specifier: workspace:*
+        version: link:packages/testkit
+      '@mars/types':
+        specifier: link:../packages/types
+        version: link:../packages/types
+      '@mars/world':
+        specifier: link:../packages/world
+        version: link:../packages/world
       '@omnirush/sdk':
         specifier: link:../packages/sdk
         version: link:../packages/sdk
-      '@omnirush/test-artifacts':
-        specifier: workspace:*
-        version: link:packages/test-artifacts
-      '@omnirush/test-evidence':
-        specifier: workspace:*
-        version: link:packages/test-evidence
-      '@omnirush/testkit':
-        specifier: workspace:*
-        version: link:packages/testkit
-      '@omnirush/types':
-        specifier: link:../packages/types
-        version: link:../packages/types
-      '@omnirush/world':
-        specifier: link:../packages/world
-        version: link:../packages/world
     devDependencies:
       '@vitest/coverage-v8':
         specifier: ^3.2.4
@@ -63,19 +63,19 @@ importers:
 
   ../scenarios:
     dependencies:
-      '@omnirush/behaviors':
+      '@mars/behaviors':
         specifier: workspace:*
         version: link:../evals/packages/behaviors
-      '@omnirush/cdp':
+      '@mars/cdp':
         specifier: workspace:*
         version: link:../evals/packages/cdp
-      '@omnirush/env':
+      '@mars/env':
         specifier: workspace:*
         version: link:../evals/packages/env
-      '@omnirush/presentation':
+      '@mars/presentation':
         specifier: link:../packages/presentation
         version: link:../packages/presentation
-      '@omnirush/testkit':
+      '@mars/testkit':
         specifier: workspace:*
         version: link:../evals/packages/testkit
       '@remotion/bundler':
@@ -106,16 +106,16 @@ importers:
 
   packages/behaviors:
     dependencies:
-      '@omnirush/cdp':
+      '@mars/cdp':
         specifier: workspace:*
         version: link:../cdp
-      '@omnirush/labs':
+      '@mars/labs':
         specifier: workspace:*
         version: link:../labs
-      '@omnirush/matchers':
+      '@mars/matchers':
         specifier: workspace:*
         version: link:../matchers
-      '@omnirush/timeline':
+      '@mars/timeline':
         specifier: workspace:*
         version: link:../timeline
 
@@ -123,19 +123,19 @@ importers:
 
   packages/env:
     dependencies:
-      '@omnirush/behaviors':
+      '@mars/behaviors':
         specifier: workspace:*
         version: link:../behaviors
-      '@omnirush/cdp':
+      '@mars/cdp':
         specifier: workspace:*
         version: link:../cdp
-      '@omnirush/hosts':
+      '@mars/hosts':
         specifier: workspace:*
         version: link:../hosts
-      '@omnirush/labs':
+      '@mars/labs':
         specifier: workspace:*
         version: link:../labs
-      '@omnirush/world':
+      '@mars/world':
         specifier: link:../../../packages/world
         version: link:../../../packages/world
       mysql2:
@@ -144,13 +144,13 @@ importers:
 
   packages/hosts:
     dependencies:
-      '@omnirush/cdp':
+      '@mars/cdp':
         specifier: workspace:*
         version: link:../cdp
-      '@omnirush/paths':
+      '@mars/paths':
         specifier: link:../../../packages/paths
         version: link:../../../packages/paths
-      '@omnirush/timeline':
+      '@mars/timeline':
         specifier: workspace:*
         version: link:../timeline
 
@@ -160,43 +160,43 @@ importers:
 
   packages/test-artifacts:
     dependencies:
-      '@omnirush/review':
+      '@mars/review':
         specifier: link:../../../packages/review
         version: link:../../../packages/review
 
   packages/test-evidence:
     dependencies:
-      '@omnirush/cdp':
+      '@mars/cdp':
         specifier: workspace:*
         version: link:../cdp
-      '@omnirush/env':
+      '@mars/env':
         specifier: workspace:*
         version: link:../env
-      '@omnirush/timeline':
+      '@mars/timeline':
         specifier: workspace:*
         version: link:../timeline
 
   packages/testkit:
     dependencies:
-      '@omnirush/behaviors':
+      '@mars/behaviors':
         specifier: workspace:*
         version: link:../behaviors
-      '@omnirush/cdp':
+      '@mars/cdp':
         specifier: workspace:*
         version: link:../cdp
-      '@omnirush/env':
+      '@mars/env':
         specifier: workspace:*
         version: link:../env
-      '@omnirush/hosts':
+      '@mars/hosts':
         specifier: workspace:*
         version: link:../hosts
-      '@omnirush/labs':
+      '@mars/labs':
         specifier: workspace:*
         version: link:../labs
-      '@omnirush/test-artifacts':
+      '@mars/test-artifacts':
         specifier: workspace:*
         version: link:../test-artifacts
-      '@omnirush/test-evidence':
+      '@mars/test-evidence':
         specifier: workspace:*
         version: link:../test-evidence
       mysql2:

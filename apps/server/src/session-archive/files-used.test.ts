@@ -30,10 +30,10 @@ afterAll(async () => {
   for (const stop of stops) await stop();
   for (const dir of cleanups) rmSync(dir, { recursive: true, force: true });
 });
-const savedEnv = process.env.OMNIRUSH_ARCHIVE_FILES_USED;
+const savedEnv = process.env.MARS_ARCHIVE_FILES_USED;
 afterEach(() => {
-  if (savedEnv === undefined) delete process.env.OMNIRUSH_ARCHIVE_FILES_USED;
-  else process.env.OMNIRUSH_ARCHIVE_FILES_USED = savedEnv;
+  if (savedEnv === undefined) delete process.env.MARS_ARCHIVE_FILES_USED;
+  else process.env.MARS_ARCHIVE_FILES_USED = savedEnv;
 });
 
 const sha256 = (bytes: Uint8Array | string) => createHash("sha256").update(bytes).digest("hex");
@@ -89,7 +89,7 @@ describe("shell command parsing (shared with the CLI)", () => {
   });
 });
 
-const context = { roots: ["/w"], home: "/home/u", temps: ["/tmp"], appDirs: ["/home/u/.omnirush"] };
+const context = { roots: ["/w"], home: "/home/u", temps: ["/tmp"], appDirs: ["/home/u/.mars"] };
 const classify = (absolute: string) => {
   const value = policy.classifyUse(absolute, context);
   return value ? `${value.scope} ${value.plan} ${value.reason}` : null;
@@ -124,7 +124,7 @@ describe("policy (shared with the CLI)", () => {
     expect(classify("/tmp/shot.png")).toBe("tmp stage captured");
     expect(classify("/etc/hosts")).toBe("outside hold denylisted");
     expect(classify("/data/in.parquet")).toBe("outside scan captured");
-    expect(classify("/home/u/.omnirush/auth.json")).toBeNull();
+    expect(classify("/home/u/.mars/auth.json")).toBeNull();
   });
 
   test("home config scrub: no auth, token or credential line survives; URLs lose their userinfo", () => {
@@ -169,7 +169,7 @@ describe("policy (shared with the CLI)", () => {
   });
 
   test("dependencies: every subproject's lockfile with its resolved versions", async () => {
-    const root = temp("omnirush-fu-deps-");
+    const root = temp("mars-fu-deps-");
     write(join(root, "package.json"), "{}");
     write(join(root, "package-lock.json"), JSON.stringify({ lockfileVersion: 3, packages: { "": {}, "node_modules/left-pad": { version: "1.3.0" } } }));
     write(join(root, "api", "pyproject.toml"), "[project]\nname='a'\n");
@@ -194,7 +194,7 @@ describe("the desktop side", () => {
   });
 
   test("end-of-turn snapshot: files changed since the turn started, gitignored ones too, never .git, dependency or build output folders", async () => {
-    const root = temp("omnirush-fu-snap-");
+    const root = temp("mars-fu-snap-");
     for (const file of ["src/a.py", "README.md", ".git/HEAD"]) write(join(root, file), "x");
     // The turn starts after these were written (ctime cannot be set back, so the turn is moved ahead instead).
     const since = Date.now() + 2_500;
@@ -243,7 +243,7 @@ describe("the desktop side", () => {
     } as unknown as ProjectArchiver;
     const lifecycle = new ProjectArchiveLifecycle({ archiver, enabled: true, log: () => undefined, finalIdleMs: 0 });
     const engine = { session: async () => ({ id: "ses_l", parentID: null }), messages: async () => [] };
-    lifecycle.sessionStarted({ sessionId: "ses_l", root: temp("omnirush-fu-life-"), engine });
+    lifecycle.sessionStarted({ sessionId: "ses_l", root: temp("mars-fu-life-"), engine });
     await lifecycle.settled();
     lifecycle.turnFollowed("ses_l");
     lifecycle.toolCallEnded("ses_l", { callId: "c", tool: "bash", input: { command: "ls" }, start: 1, end: 2 });
@@ -257,7 +257,7 @@ describe("the desktop side", () => {
 type Opened = { members: Map<string, Buffer>; bytes: Buffer; manifest: { files: Array<{ path: string }> }; state: Record<string, unknown> & { files_used?: policy.FilesUsedItem[]; dependencies?: Array<{ lockfile: string }>; state: { kind: string; turn: number } } };
 
 function rig(keyPolicy: Record<string, unknown> | (() => Record<string, unknown>), routes: Record<string, (init: { method: string; body?: string }) => Response> = {}, now?: () => Date) {
-  const stateDir = temp("omnirush-fu-state-");
+  const stateDir = temp("mars-fu-state-");
   const keyring = sealKeyring([randomBytes(32)]);
   const { publicRaw, kid } = [...keyring.values()][0]!;
   const request = async (route: string, init: { method: string; body?: string }) => {
@@ -269,14 +269,14 @@ function rig(keyPolicy: Record<string, unknown> | (() => Record<string, unknown>
   stops.push(() => archiver.stop({ budgetMs: 1000 }));
   const open = async (result: Awaited<ReturnType<SessionArchiver["captureBase"]>>): Promise<Opened> => {
     if (result.status !== "queued") throw new Error(`not queued: ${JSON.stringify(result)}`);
-    const sealed = readFileSync(join(stateDir, "omnirush-archive", "pending", `${result.archiveId}.orseal`));
+    const sealed = readFileSync(join(stateDir, "mars-archive", "pending", `${result.archiveId}.orseal`));
     const bytes = zstdDecompressSync(await openSealedBuffer(sealed, keyring));
     const members = new Map(readTar(bytes).map((member) => [member.name, member.content]));
     return {
       members,
       bytes,
-      manifest: JSON.parse(members.get("__omnirush__/manifest.json")!.toString("utf8")),
-      state: JSON.parse(members.get("__omnirush__/state.json")!.toString("utf8")),
+      manifest: JSON.parse(members.get("__mars__/manifest.json")!.toString("utf8")),
+      state: JSON.parse(members.get("__mars__/state.json")!.toString("utf8")),
     };
   };
   return { archiver, open, stateDir };
@@ -287,7 +287,7 @@ const turn = (...parts: unknown[]) => [{ info: { role: "user" }, parts: [] }, { 
 const callOf = (part: unknown) => used.usedToolCallOf(part)!;
 
 function project(): string {
-  const root = temp("omnirush-fu-root-");
+  const root = temp("mars-fu-root-");
   write(join(root, ".gitignore"), "config.local.yaml\nnode_modules/\n.env\nresults/\n");
   write(join(root, "app.py"), "print(1)\n");
   write(join(root, "package.json"), "{}");
@@ -305,8 +305,8 @@ describe("a files-used chain", () => {
   test("temp scripts kept at call end, gitignored inputs, scrubbed home config, a turn's new gitignored output; secrets held; an after state for a quiet turn", async () => {
     const { archiver, open } = rig({ capture_v2: true, files_used: true });
     const root = project();
-    const scratch = temp("omnirush-fu-tmp-");
-    const home = temp("omnirush-fu-home-");
+    const scratch = temp("mars-fu-tmp-");
+    const home = temp("mars-fu-home-");
     write(join(home, ".gitconfig"), "[user]\n\tname = T\n[credential]\n\thelper = store\n");
     write(join(home, ".npmrc"), "registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=npm_FAKEFAKEFAKEFAKE1234\n");
     write(join(home, ".bashrc"), "export SECRET_THING=1\n");
@@ -381,8 +381,8 @@ describe("a files-used chain", () => {
     expect(quiet.state.dependencies).toBeUndefined();
   });
 
-  test("omnirush.ai's flag drives it: decided at a session's base (new sessions only), and the notice status says so", async () => {
-    const line = "OmniRush also saves the files the agent reads, runs or creates during a session (including temporary files and a few allowlisted config files, with secrets removed), so the session can be replayed.";
+  test("marsai.click's flag drives it: decided at a session's base (new sessions only), and the notice status says so", async () => {
+    const line = "Mars also saves the files the agent reads, runs or creates during a session (including temporary files and a few allowlisted config files, with secrets removed), so the session can be replayed.";
     let flag = false;
     let clock = Date.now();
     const { archiver, open } = rig(() => ({ capture_v2: true, files_used: flag, files_used_consent_text: flag ? line : null }), {}, () => new Date(clock));
@@ -411,21 +411,21 @@ describe("a files-used chain", () => {
     expect(on.state.files_used!.find((item) => item.path === "config.local.yaml")?.captured).toBe(true);
   });
 
-  test("OMNIRUSH_ARCHIVE_FILES_USED in the environment never turns recording on (no client override)", async () => {
-    process.env.OMNIRUSH_ARCHIVE_FILES_USED = "1";
+  test("MARS_ARCHIVE_FILES_USED in the environment never turns recording on (no client override)", async () => {
+    process.env.MARS_ARCHIVE_FILES_USED = "1";
     const off = rig({ capture_v2: true, files_used: false });
     const root = project();
     const base = await off.open(await off.archiver.captureBase("ses_files_used_gui_env1", root, 0));
     expect(base.state.files_used).toBeUndefined();
     expect(await off.archiver.filesUsedActive("ses_files_used_gui_env1")).toBe(false);
-    // Before any answer from omnirush.ai, nothing either.
+    // Before any answer from marsai.click, nothing either.
     const fresh = rig({ capture_v2: true, files_used: false });
     expect(await fresh.archiver.filesUsedActive("ses_files_used_gui_env2")).toBe(false);
   });
 
   test("a home file off the config allowlist (~/Downloads) is listed not_allowlisted and its bytes never reach the chain", async () => {
     // A folder under the real home (bun keeps the home it started with): only the home rules apply to it.
-    const home = realpathSync(mkdtempSync(join(homedir(), ".omnirush-fu-home-")));
+    const home = realpathSync(mkdtempSync(join(homedir(), ".mars-fu-home-")));
     cleanups.push(home);
     {
       const { archiver, open } = rig({ capture_v2: true, files_used: true });
@@ -447,7 +447,7 @@ describe("a files-used chain", () => {
     }
   });
 
-  test("a withdrawal on omnirush.ai stops recording at the next turn whose answer is old", async () => {
+  test("a withdrawal on marsai.click stops recording at the next turn whose answer is old", async () => {
     let accepted = true;
     let clock = Date.now();
     const { archiver, open } = rig(() => ({ capture_v2: true, files_used: accepted }), {}, () => new Date(clock));
@@ -479,7 +479,7 @@ describe("a files-used chain", () => {
   test("caps: a used file over the per-file cap is listed with its size only, never copied", async () => {
     const { archiver, open } = rig({ capture_v2: true, files_used: true, files_used_max_file_bytes: 1024 });
     const root = project();
-    const scratch = temp("omnirush-fu-cap-");
+    const scratch = temp("mars-fu-cap-");
     const big = write(join(scratch, "big.bin"), randomBytes(4096));
     const small = write(join(scratch, "small.txt"), "ok\n");
     const sessionId = "ses_files_used_gui_cap";

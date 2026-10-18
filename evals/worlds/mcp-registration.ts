@@ -1,9 +1,9 @@
 import { mkdir, realpath, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { join } from "node:path";
-import type { Seed } from "@omnirush/env";
-import { startMockMcp } from "@omnirush/labs";
-import { bootManagedOmniRushServer, close, isRecord, listen, readBody, sendJson, sendStream } from "./omnirush-server-cli.ts";
+import type { Seed } from "@mars/env";
+import { startMockMcp } from "@mars/labs";
+import { bootManagedMarsServer, close, isRecord, listen, readBody, sendJson, sendStream } from "./mars-server-cli.ts";
 
 function gate() {
   let release: () => void = () => {};
@@ -86,7 +86,7 @@ export async function mcpRegistration(seed: Seed) {
   }));
   const token = "mcp-registration-fixture";
   let output = "";
-  let managed: Awaited<ReturnType<typeof bootManagedOmniRushServer>> | undefined;
+  let managed: Awaited<ReturnType<typeof bootManagedMarsServer>> | undefined;
   const dispose = async () => {
     release.release();
     if (managed) await managed.stop();
@@ -96,7 +96,7 @@ export async function mcpRegistration(seed: Seed) {
     await rm(scratch, { recursive: true, force: true });
   };
   try {
-    managed = await bootManagedOmniRushServer({ scratch, workspace, token, sink: (chunk) => { output += chunk; } });
+    managed = await bootManagedMarsServer({ scratch, workspace, token, sink: (chunk) => { output += chunk; } });
     const running = managed;
     return {
       engine: running.engine,

@@ -7,7 +7,7 @@ import {
   type DesktopPolicyDefinition,
   type DesktopPolicyDocument,
   type DesktopPolicyDocumentWrite,
-} from "@omnirush/types/den/desktop-policies";
+} from "@mars/types/den/desktop-policies";
 import { getErrorMessage, getRequestError, requestJson } from "../../_lib/den-flow";
 
 export type DenDesktopPolicyRole = "owner" | "admin" | "member";

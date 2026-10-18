@@ -116,14 +116,14 @@ services:
     environment:
       <<: *observability-env
       CI: "true"
-      OMNIRUSH_DEV_MODE: ${OMNIRUSH_DEV_MODE:-1}
+      MARS_DEV_MODE: ${MARS_DEV_MODE:-1}
       OTEL_SERVICE_NAME: ${DEN_API_OTEL_SERVICE_NAME:-den-api}
       DATABASE_URL: mysql://root:password@mysql:3306/omnirush_den
       BETTER_AUTH_SECRET: ${DEN_BETTER_AUTH_SECRET:-dev-den-local-auth-secret-please-override-1234567890}
       DEN_DB_ENCRYPTION_KEY: ${DEN_DB_ENCRYPTION_KEY:-dev-den-db-encryption-key-please-change-1234567890}
       BETTER_AUTH_URL: ${DEN_BETTER_AUTH_URL:-http://localhost:3005}
       DEN_ORG_MODE: ${DEN_ORG_MODE:-single_org}
-      DEN_SINGLE_ORG_NAME: ${DEN_SINGLE_ORG_NAME:-OmniRush.ai}
+      DEN_SINGLE_ORG_NAME: ${DEN_SINGLE_ORG_NAME:-MarsAI}
       DEN_SINGLE_ORG_SLUG: ${DEN_SINGLE_ORG_SLUG:-default}
       DEN_SINGLE_ORG_OWNER_EMAILS: ${DEN_SINGLE_ORG_OWNER_EMAILS:-}
       DEN_SINGLE_ORG_ALLOW_PUBLIC_SIGNUP: ${DEN_SINGLE_ORG_ALLOW_PUBLIC_SIGNUP:-false}
@@ -176,15 +176,15 @@ services:
     environment:
       <<: *observability-env
       CI: "true"
-      OMNIRUSH_DEV_MODE: "1"
+      MARS_DEV_MODE: "1"
       OTEL_SERVICE_NAME: ${DEN_WEB_OTEL_SERVICE_NAME:-den-web}
       DEN_API_BASE: http://den:8788
       DEN_AUTH_FALLBACK_BASE: http://den:8788
       DEN_AUTH_ORIGIN: ${DEN_BETTER_AUTH_URL:-http://localhost:3005}
       DEN_WEB_PUBLIC_ORIGIN: ${DEN_BETTER_AUTH_URL:-http://localhost:3005}
-      DEN_WEB_OMNIRUSH_AUTH_CALLBACK_URL: ${DEN_BETTER_AUTH_URL:-http://localhost:3005}
+      DEN_WEB_MARS_AUTH_CALLBACK_URL: ${DEN_BETTER_AUTH_URL:-http://localhost:3005}
       DEN_ORG_MODE: ${DEN_ORG_MODE:-single_org}
-      DEN_SINGLE_ORG_NAME: ${DEN_SINGLE_ORG_NAME:-OmniRush.ai}
+      DEN_SINGLE_ORG_NAME: ${DEN_SINGLE_ORG_NAME:-MarsAI}
       DEN_SINGLE_ORG_SLUG: ${DEN_SINGLE_ORG_SLUG:-default}
       DEN_SINGLE_ORG_ALLOW_PUBLIC_SIGNUP: ${DEN_SINGLE_ORG_ALLOW_PUBLIC_SIGNUP:-false}
       DEN_SINGLE_ORG_ALLOW_EMAIL_PASSWORD_AFTER_SSO: ${DEN_SINGLE_ORG_ALLOW_EMAIL_PASSWORD_AFTER_SSO:-false}

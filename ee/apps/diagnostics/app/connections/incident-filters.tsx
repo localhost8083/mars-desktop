@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
-import { CONNECT_DIAGNOSTIC_PHASES } from "@omnirush/types/den/connect-diagnostics"
+import { CONNECT_DIAGNOSTIC_PHASES } from "@mars/types/den/connect-diagnostics"
 
 type IncidentFiltersProps = {
   client: string

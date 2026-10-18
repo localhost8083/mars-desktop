@@ -4,12 +4,12 @@ import { readFile } from "node:fs/promises";
 import type { EnvService } from "./env-file.js";
 import { selectPrimaryCredentialEnvName, syncManagedProviderAuth } from "./managed-provider-auth.js";
 import { externalFetch } from "./server-fetch.js";
-import { writeOmniRushRuntimeConfigFile } from "./omnirush-runtime-config.js";
+import { writeMarsRuntimeConfigFile } from "./mars-runtime-config.js";
 import {
-  hasOmniRushWorkspaceConfig,
-  readOmniRushWorkspaceConfig,
-  writeOmniRushWorkspaceConfig,
-} from "./omnirush-workspace-config-store.js";
+  hasMarsWorkspaceConfig,
+  readMarsWorkspaceConfig,
+  writeMarsWorkspaceConfig,
+} from "./mars-workspace-config-store.js";
 import {
   mergeRuntimeProviderUpdate,
   readGlobalRuntimeOpencodeConfig,
@@ -19,7 +19,7 @@ import {
   writeRuntimeOpencodeConfig,
 } from "./runtime-opencode-config-store.js";
 import type { ServerConfig } from "./types.js";
-import { omnirushConfigPath } from "./workspace-files.js";
+import { marsConfigPath } from "./workspace-files.js";
 import { findManagedEngineWorkspace } from "./workspaces.js";
 
 type JsonRecord = Record<string, unknown>;
@@ -356,7 +356,7 @@ async function requestJson(
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${session.token}`,
-        "x-omnirush-legacy-org-id": session.orgId,
+        "x-mars-legacy-org-id": session.orgId,
       },
       signal: AbortSignal.timeout(requestTimeoutMs),
     });
@@ -405,11 +405,11 @@ function hashString(value: string): string {
 }
 
 function runtimeProviderId(provider: DenProvider): string {
-  return provider.source === "omnirush" ? "omnirush" : provider.id;
+  return provider.source === "mars" ? "mars" : provider.id;
 }
 
 function isCloudManagedProviderKey(providerId: string): boolean {
-  return /^lpr_/i.test(providerId) || providerId.trim() === "omnirush";
+  return /^lpr_/i.test(providerId) || providerId.trim() === "mars";
 }
 
 function readProviderEnvNames(providerConfig: JsonRecord): string[] {
@@ -425,7 +425,7 @@ function upsertEnvEntry(entries: EnvEntry[], key: string, value: string): void {
   else entries.push({ key: trimmedKey, value: trimmedValue });
 }
 
-function readOmniRushInferenceBaseUrl(providerConfig: JsonRecord): string | null {
+function readMarsInferenceBaseUrl(providerConfig: JsonRecord): string | null {
   const options = providerConfig.options;
   if (isRecord(options)) {
     const baseUrl = readRequiredString(options.baseURL);
@@ -451,10 +451,10 @@ function providerEnvEntries(provider: DenProviderConnection): EnvEntry[] {
   if (provider.apiKey && envNames[0]) upsertEnvEntry(entries, envNames[0], provider.apiKey);
 
   const primaryCredential = provider.apiKey?.trim() || entries[0]?.value || "";
-  if (provider.source === "omnirush" && primaryCredential) {
-    upsertEnvEntry(entries, "OMNIRUSH_API_KEY", primaryCredential);
-    const baseUrl = readOmniRushInferenceBaseUrl(provider.providerConfig);
-    if (baseUrl) upsertEnvEntry(entries, "OMNIRUSH_INFERENCE_BASE_URL", baseUrl);
+  if (provider.source === "mars" && primaryCredential) {
+    upsertEnvEntry(entries, "MARS_API_KEY", primaryCredential);
+    const baseUrl = readMarsInferenceBaseUrl(provider.providerConfig);
+    if (baseUrl) upsertEnvEntry(entries, "MARS_INFERENCE_BASE_URL", baseUrl);
   }
   return entries;
 }
@@ -478,7 +478,7 @@ function buildProviderConfig(provider: DenProviderConnection): JsonRecord {
     name: provider.name,
     env: readProviderEnvNames(provider.providerConfig),
   };
-  if (Object.keys(models).length > 0 || provider.source !== "omnirush") config.models = models;
+  if (Object.keys(models).length > 0 || provider.source !== "mars") config.models = models;
 
   const npm = readRequiredString(provider.providerConfig.npm);
   if (npm) config.npm = npm;
@@ -583,19 +583,19 @@ function managedProviderMap(providers: Record<string, Record<string, unknown>>):
   return Object.fromEntries(Object.entries(providers).filter(([providerId]) => isCloudManagedProviderKey(providerId)));
 }
 
-function removeCloudProviderImportBaselines(omnirush: JsonRecord): JsonRecord | null {
-  if (!isRecord(omnirush.cloudImports) || !isRecord(omnirush.cloudImports.providers)) return null;
-  if (Object.keys(omnirush.cloudImports.providers).length === 0) return null;
+function removeCloudProviderImportBaselines(mars: JsonRecord): JsonRecord | null {
+  if (!isRecord(mars.cloudImports) || !isRecord(mars.cloudImports.providers)) return null;
+  if (Object.keys(mars.cloudImports.providers).length === 0) return null;
   return {
-    ...omnirush,
+    ...mars,
     cloudImports: {
-      ...omnirush.cloudImports,
+      ...mars.cloudImports,
       providers: {},
     },
   };
 }
 
-async function readLegacyOmniRushConfig(path: string): Promise<JsonRecord | null> {
+async function readLegacyMarsConfig(path: string): Promise<JsonRecord | null> {
   try {
     const parsed: unknown = JSON.parse(await readFile(path, "utf8"));
     return isRecord(parsed) ? parsed : null;
@@ -605,12 +605,12 @@ async function readLegacyOmniRushConfig(path: string): Promise<JsonRecord | null
 }
 
 function configuredIntervalMs(): number {
-  const configured = Number(process.env.OMNIRUSH_CLOUD_PROVIDER_SYNC_INTERVAL_MS ?? "");
+  const configured = Number(process.env.MARS_CLOUD_PROVIDER_SYNC_INTERVAL_MS ?? "");
   return Number.isFinite(configured) && configured > 0 ? configured : defaultIntervalMs;
 }
 
 function configuredReloadRetryMs(): number {
-  const configured = Number(process.env.OMNIRUSH_ENGINE_RELOAD_RETRY_MS ?? "");
+  const configured = Number(process.env.MARS_ENGINE_RELOAD_RETRY_MS ?? "");
   return Number.isFinite(configured) && configured > 0 ? configured : 15_000;
 }
 
@@ -1004,7 +1004,7 @@ export class CloudProviderSync {
     const workspaceCleanup = await this.cleanupWorkspaceTakeovers();
     const engineWorkspace = findManagedEngineWorkspace(this.config.workspaces) ?? this.config.workspaces[0];
     const runtimeFileChanged = engineWorkspace
-      ? (await writeOmniRushRuntimeConfigFile(this.config)).changed
+      ? (await writeMarsRuntimeConfigFile(this.config)).changed
       : false;
     // Deliver credentials before disposing the current provider instances.
     // OpenCode constructs and caches SDK clients from config + auth together;
@@ -1093,16 +1093,16 @@ export class CloudProviderSync {
         runtimeChanged = runtimeChanged || result.changed;
       }
 
-      const hasStoredConfig = await hasOmniRushWorkspaceConfig(this.config, workspace.id);
-      const omnirush = hasStoredConfig
-        ? await readOmniRushWorkspaceConfig(this.config, workspace.id)
+      const hasStoredConfig = await hasMarsWorkspaceConfig(this.config, workspace.id);
+      const mars = hasStoredConfig
+        ? await readMarsWorkspaceConfig(this.config, workspace.id)
         : workspace.workspaceType !== "remote" && workspace.path.trim().length > 0
-          ? await readLegacyOmniRushConfig(omnirushConfigPath(workspace.path))
+          ? await readLegacyMarsConfig(marsConfigPath(workspace.path))
           : null;
-      if (!omnirush) continue;
-      const next = removeCloudProviderImportBaselines(omnirush);
+      if (!mars) continue;
+      const next = removeCloudProviderImportBaselines(mars);
       if (!next) continue;
-      await writeOmniRushWorkspaceConfig(this.config, workspace.id, () => next);
+      await writeMarsWorkspaceConfig(this.config, workspace.id, () => next);
       changed = true;
     }
     return { changed, runtimeChanged };
@@ -1144,7 +1144,7 @@ export class CloudProviderSync {
 
     const engineWorkspace = findManagedEngineWorkspace(this.config.workspaces) ?? this.config.workspaces[0];
     if (engineWorkspace) {
-      const fileResult = await writeOmniRushRuntimeConfigFile(this.config);
+      const fileResult = await writeMarsRuntimeConfigFile(this.config);
       this.reloadPending = this.reloadPending || providerChanged || fileResult.changed;
     }
     const authResult = await syncManagedProviderAuth({

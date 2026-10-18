@@ -21,8 +21,8 @@ import { SkillUploadPane } from "./skill-upload-pane";
 /**
  * Local workspace skill authoring.
  *
- * The Library "Add skill" flow otherwise only exists for omnirush.ai Cloud
- * organizations (Den). A desktop user signed in with an omnirush.ai account
+ * The Library "Add skill" flow otherwise only exists for marsai.click Cloud
+ * organizations (Den). A desktop user signed in with an marsai.click account
  * still needs a way to add a skill the engine can load, so this modal writes
  * `.opencode/skills/<name>/SKILL.md` through the local server
  * (`POST /workspace/:id/skills`), which validates, audits, and emits the reload

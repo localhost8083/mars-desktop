@@ -28,7 +28,7 @@ import {
   parseStructuredOutputUIPart,
   STRUCTURED_OUTPUT_TOOL,
 } from "./parse-tool-parts";
-import type { OmniRushSessionSnapshot } from "@/app/lib/omnirush-server";
+import type { MarsSessionSnapshot } from "@/app/lib/mars-server";
 import { applyRevertCursor, reconcileTranscriptMessages } from "./transcript-reconcile";
 import {
   useSessionActivityStore,
@@ -65,7 +65,7 @@ export {
 type SyncOptions = {
   workspaceId: string;
   baseUrl: string;
-  omnirushToken: string;
+  marsToken: string;
   visibleSessionId?: string | null;
   onSessionCreated?: (session: Session) => void;
   onSessionUpdated?: (update: { sessionId: string; info: Record<string, unknown> }) => void;
@@ -77,7 +77,7 @@ type ListenerRegistry<Listener> = Map<Listener, number>;
 
 type SyncEntry = {
   input: SyncOptions;
-  omnirushToken: string;
+  marsToken: string;
   // Reattachment can rotate the token after the stream already failed. This
   // hook advances the stream lifecycle's connection generation so a stream
   // parked in auth backoff restarts immediately with the new credential.
@@ -116,8 +116,8 @@ type DeltaFlushScheduler = (
 
 const idleStatus: SessionStatus = { type: "idle" };
 const syncs = new Map<string, SyncEntry>();
-const sessionSnapshotFetchStarts = new WeakMap<OmniRushSessionSnapshot, number>();
-const todoSnapshotFirstSeen = new WeakMap<OmniRushSessionSnapshot, number>();
+const sessionSnapshotFetchStarts = new WeakMap<MarsSessionSnapshot, number>();
+const todoSnapshotFirstSeen = new WeakMap<MarsSessionSnapshot, number>();
 const workspaceSyncDisposeGraceMs = 2_000;
 const retainedSessionTtlMs = 10 * 60_000;
 const idleRetainedSessionTtlMs = 10_000;
@@ -133,7 +133,7 @@ type SessionStatusSource = "stream" | "connect-reconcile" | "active-reconcile" |
 function developerDiagnosticsEnabled() {
   if (typeof window === "undefined") return false;
   try {
-    return window.localStorage.getItem("omnirush.developerMode") === "1";
+    return window.localStorage.getItem("mars.developerMode") === "1";
   } catch {
     return false;
   }
@@ -176,30 +176,30 @@ function releaseListener<Listener>(registry: ListenerRegistry<Listener>, listene
 
 type SyncSubscriptionFactory = (
   baseUrl: string,
-  omnirushToken: string,
+  marsToken: string,
   signal: AbortSignal,
 ) => Promise<AsyncIterable<unknown>>;
 
 type SessionStatusFetcher = (
   baseUrl: string,
-  omnirushToken: string,
+  marsToken: string,
   signal: AbortSignal,
 ) => Promise<Record<string, SessionStatus>>;
 
-function createSyncClient(baseUrl: string, omnirushToken: string) {
+function createSyncClient(baseUrl: string, marsToken: string) {
   return isOpencodeV2BaseUrl(baseUrl)
-    ? createClientV2(baseUrl, undefined, { token: omnirushToken })
-    : createClient(baseUrl, undefined, { token: omnirushToken, mode: "omnirush" });
+    ? createClientV2(baseUrl, undefined, { token: marsToken })
+    : createClient(baseUrl, undefined, { token: marsToken, mode: "mars" });
 }
 
-const defaultSyncSubscriptionFactory: SyncSubscriptionFactory = async (baseUrl, omnirushToken, signal) => {
-  const client = createSyncClient(baseUrl, omnirushToken);
+const defaultSyncSubscriptionFactory: SyncSubscriptionFactory = async (baseUrl, marsToken, signal) => {
+  const client = createSyncClient(baseUrl, marsToken);
   const subscription = await client.event.subscribe(undefined, { signal });
   return subscription.stream;
 };
 
-const defaultSessionStatusFetcher: SessionStatusFetcher = async (baseUrl, omnirushToken, signal) => {
-  const client = createSyncClient(baseUrl, omnirushToken);
+const defaultSessionStatusFetcher: SessionStatusFetcher = async (baseUrl, marsToken, signal) => {
+  const client = createSyncClient(baseUrl, marsToken);
   const result = await client.session.status(undefined, { signal });
   if (result.data !== undefined) return result.data;
   throw result.error;
@@ -236,7 +236,7 @@ const defaultDeltaFlushScheduler: DeltaFlushScheduler = (lane, run) => {
 
 let deltaFlushScheduler = defaultDeltaFlushScheduler;
 
-export function markSessionSnapshotFetchStart(snapshot: OmniRushSessionSnapshot, startedAt: number) {
+export function markSessionSnapshotFetchStart(snapshot: MarsSessionSnapshot, startedAt: number) {
   sessionSnapshotFetchStarts.set(snapshot, startedAt);
 }
 
@@ -914,11 +914,11 @@ function applyEvent(entry: SyncEntry, workspaceId: string, event: OpencodeEvent)
     // renderer derives the visible transcript from this cursor, so a revert
     // (or its cleanup on the next prompt) must reach the snapshot cache or
     // the transcript stays frozen on stale history.
-    queryClient.setQueryData<OmniRushSessionSnapshot>(
+    queryClient.setQueryData<MarsSessionSnapshot>(
       snapshotKey(workspaceId, update.sessionId),
       (current) => {
         if (!current) return current;
-        const revert = (update.info as { revert?: OmniRushSessionSnapshot["session"]["revert"] }).revert;
+        const revert = (update.info as { revert?: MarsSessionSnapshot["session"]["revert"] }).revert;
         return { ...current, session: { ...current.session, revert } };
       },
     );
@@ -1150,7 +1150,7 @@ function applyEvent(entry: SyncEntry, workspaceId: string, event: OpencodeEvent)
     queryClient.setQueryData<UIMessage[]>(transcriptKey(workspaceId, props.sessionID), (current = []) =>
       current.filter((message) => message.id !== props.messageID),
     );
-    queryClient.setQueryData<OmniRushSessionSnapshot>(
+    queryClient.setQueryData<MarsSessionSnapshot>(
       snapshotKey(workspaceId, props.sessionID),
       (current) => {
         if (!current) return current;
@@ -1347,7 +1347,7 @@ function startSync(input: SyncOptions, entry: SyncEntry) {
   const lifecycle = startSyncStreamLifecycle({
     // Read the token at connect time so every retry — including a
     // generation-triggered restart — uses the latest credential.
-    subscribe: (signal) => syncSubscriptionFactory(input.baseUrl, entry.omnirushToken, signal),
+    subscribe: (signal) => syncSubscriptionFactory(input.baseUrl, entry.marsToken, signal),
     onEvent: (raw) => {
       const event = normalizeEvent(raw);
       if (!event) return;
@@ -1490,7 +1490,7 @@ async function reconcileSessionPermissions(entry: SyncEntry, sessionId: string) 
   const snapshotStartedAt = Date.now();
   const snapshotRevision = getReactQueryClient().getQueryState(permissionKey(entry.input.workspaceId, sessionId))?.dataUpdateCount ?? 0;
   try {
-    const permissions = await sessionPermissionFetcher(entry.input.baseUrl, entry.omnirushToken, sessionId,
+    const permissions = await sessionPermissionFetcher(entry.input.baseUrl, entry.marsToken, sessionId,
       AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]));
     if (controller.signal.aborted || syncs.get(syncKey(entry.input)) !== entry) return;
     seedPermissionState(entry.input.workspaceId, sessionId, permissions, { snapshotStartedAt, snapshotRevision });
@@ -1528,7 +1528,7 @@ async function reconcileSessionRunStatuses(
   }
   let statuses: Record<string, SessionStatus>;
   try {
-    statuses = await sessionStatusFetcher(input.baseUrl, entry.omnirushToken, signal);
+    statuses = await sessionStatusFetcher(input.baseUrl, entry.marsToken, signal);
   } catch {
     // The run state itself is deliberately left untouched: a failed fetch is
     // not evidence that work stopped. It is evidence that the busy state can
@@ -1656,11 +1656,11 @@ export function ensureWorkspaceSessionSync(input: SyncOptions) {
   const existing = syncs.get(key);
   if (existing) {
     existing.input = input;
-    if (existing.omnirushToken !== input.omnirushToken) {
+    if (existing.marsToken !== input.marsToken) {
       // Reattachment with a rotated token (or a restarted runtime's fresh
       // credential) is a new connection generation: restart a stream parked
       // in auth backoff instead of leaving the task streaming nowhere.
-      existing.omnirushToken = input.omnirushToken;
+      existing.marsToken = input.marsToken;
       existing.notifyStreamGenerationChanged?.();
     }
     if (existing.disposeTimer) {
@@ -1678,7 +1678,7 @@ export function ensureWorkspaceSessionSync(input: SyncOptions) {
 
   const created: SyncEntry = {
     input,
-    omnirushToken: input.omnirushToken,
+    marsToken: input.marsToken,
     notifyStreamGenerationChanged: null,
     refs: 1,
     dispose: () => {},
@@ -1705,7 +1705,7 @@ export function ensureWorkspaceSessionSync(input: SyncOptions) {
   };
   created.titleRecovery = createSessionTitleRecovery({
     fetch: async (sessionId) => {
-      const client = createSyncClient(input.baseUrl, created.omnirushToken);
+      const client = createSyncClient(input.baseUrl, created.marsToken);
       const [session, messages] = await Promise.all([
         client.session.get({ sessionID: sessionId }).then(unwrap),
         client.session.messages({ sessionID: sessionId, limit: 20 }).then(unwrap),
@@ -1720,7 +1720,7 @@ export function ensureWorkspaceSessionSync(input: SyncOptions) {
       };
     },
     onResolved: (sessionId, title) => {
-      getReactQueryClient().setQueryData<OmniRushSessionSnapshot>(
+      getReactQueryClient().setQueryData<MarsSessionSnapshot>(
         snapshotKey(input.workspaceId, sessionId),
         (current) => current
           ? { ...current, session: { ...current.session, title } }
@@ -1765,7 +1765,7 @@ function releaseWorkspaceSessionSync(input: SyncOptions) {
   }, workspaceSyncDisposeGraceMs);
 }
 
-export function seedSessionState(workspaceId: string, snapshot: OmniRushSessionSnapshot) {
+export function seedSessionState(workspaceId: string, snapshot: MarsSessionSnapshot) {
   const queryClient = getReactQueryClient();
   const key = transcriptKey(workspaceId, snapshot.session.id);
   const incoming = snapshotToUIMessages(snapshot);
@@ -1855,7 +1855,7 @@ export function applySessionRevert(workspaceId: string, session: Session) {
   const queryClient = getReactQueryClient();
   const revertMessageId = session.revert?.messageID ?? null;
 
-  queryClient.setQueryData<OmniRushSessionSnapshot>(
+  queryClient.setQueryData<MarsSessionSnapshot>(
     snapshotKey(workspaceId, session.id),
     (current) => (current ? { ...current, session: { ...current.session, revert: session.revert } } : current),
   );
@@ -1870,7 +1870,7 @@ export function applySessionRevert(workspaceId: string, session: Session) {
 export function applySessionUnrevert(workspaceId: string, sessionId: string) {
   const queryClient = getReactQueryClient();
   void queryClient.cancelQueries({ queryKey: snapshotKey(workspaceId, sessionId) });
-  queryClient.setQueryData<OmniRushSessionSnapshot>(
+  queryClient.setQueryData<MarsSessionSnapshot>(
     snapshotKey(workspaceId, sessionId),
     (current) => (current ? { ...current, session: { ...current.session, revert: undefined } } : current),
   );
@@ -1922,7 +1922,7 @@ export function __createWorkspaceSessionSyncForTest(input: SyncOptions) {
   const key = syncKey(input);
   syncs.set(key, {
     input,
-    omnirushToken: input.omnirushToken,
+    marsToken: input.marsToken,
     notifyStreamGenerationChanged: null,
     refs: 1,
     dispose: () => {},

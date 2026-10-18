@@ -1,5 +1,5 @@
 import * as React from "react";
-import type { OmniRushServerClient } from "@/app/lib/omnirush-server";
+import type { MarsServerClient } from "@/app/lib/mars-server";
 
 import type { OpenTarget } from "@/react-app/domains/session/artifacts/open-target";
 
@@ -12,7 +12,7 @@ export type OpenTargetOptions = {
 type OpenTargetHandler = (target: OpenTarget, options?: OpenTargetOptions) => void;
 
 type OpenTargetContextValue = {
-  client?: OmniRushServerClient;
+  client?: MarsServerClient;
   workspaceId?: string;
   workspaceRoot?: string;
   openTargets: OpenTarget[];
@@ -21,7 +21,7 @@ type OpenTargetContextValue = {
 
 type OpenTargetProviderProps = {
   children: React.ReactNode;
-  client?: OmniRushServerClient;
+  client?: MarsServerClient;
   workspaceId?: string;
   workspaceRoot?: string;
   openTargets?: OpenTarget[] | undefined;

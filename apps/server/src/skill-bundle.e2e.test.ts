@@ -22,7 +22,7 @@ afterEach(async () => {
 });
 
 async function start() {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-skill-bundle-e2e-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-skill-bundle-e2e-"));
   roots.push(root);
   await mkdir(join(root, ".git"), { recursive: true });
   // Keep global skills (~/.config/opencode/skills, ~/.claude/skills) out of collision checks.

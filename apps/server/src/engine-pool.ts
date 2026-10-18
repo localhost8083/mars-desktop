@@ -42,7 +42,7 @@ export type EngineSpawnTemplate = {
   cwd: string;
   runtimeConfigPath: string;
   env: Record<string, string | undefined>;
-  /** Ports a standby must avoid (the OmniRush.ai server, and the live engine). */
+  /** Ports a standby must avoid (the MarsAI server, and the live engine). */
   reservedPorts: () => number[];
   /** Readiness budget for a standby spawn. Defaults to the managed-engine default. */
   spawnTimeoutMs?: number;
@@ -184,7 +184,7 @@ function nonNegativeIntFromEnv(name: string, fallback: number): number {
  * deadline out, so this bounds inactivity, not total drain time.
  */
 function drainTimeoutMs(): number {
-  return positiveIntFromEnv("OMNIRUSH_ENGINE_DRAIN_TIMEOUT_MS", 15 * 60_000);
+  return positiveIntFromEnv("MARS_ENGINE_DRAIN_TIMEOUT_MS", 15 * 60_000);
 }
 
 /**
@@ -193,7 +193,7 @@ function drainTimeoutMs(): number {
  * anyway.
  */
 function drainRequestGraceMs(): number {
-  return nonNegativeIntFromEnv("OMNIRUSH_ENGINE_DRAIN_REQUEST_GRACE_MS", 60_000);
+  return nonNegativeIntFromEnv("MARS_ENGINE_DRAIN_REQUEST_GRACE_MS", 60_000);
 }
 
 /**
@@ -202,17 +202,17 @@ function drainRequestGraceMs(): number {
  * run starts, which may wait on the folder's instance booting).
  */
 function promptStartGraceMs(): number {
-  return nonNegativeIntFromEnv("OMNIRUSH_ENGINE_PROMPT_START_GRACE_MS", 60_000);
+  return nonNegativeIntFromEnv("MARS_ENGINE_PROMPT_START_GRACE_MS", 60_000);
 }
 
 /** Delay before the drain activity watch reconnects to a lost engine event stream. */
 function drainActivityReconnectMs(): number {
-  return positiveIntFromEnv("OMNIRUSH_ENGINE_DRAIN_ACTIVITY_RECONNECT_MS", 1_000);
+  return positiveIntFromEnv("MARS_ENGINE_DRAIN_ACTIVITY_RECONNECT_MS", 1_000);
 }
 
 /** Floor between automatic spawns, so a burst of triggers cannot thrash. 0 disables it. */
 function minSpawnIntervalMs(): number {
-  return nonNegativeIntFromEnv("OMNIRUSH_ENGINE_MIN_SPAWN_INTERVAL_MS", 30_000);
+  return nonNegativeIntFromEnv("MARS_ENGINE_MIN_SPAWN_INTERVAL_MS", 30_000);
 }
 
 /**
@@ -221,18 +221,21 @@ function minSpawnIntervalMs(): number {
  * fail before a live engine process is closed.
  */
 function recoveryProbeIntervalMs(): number {
-  return nonNegativeIntFromEnv("OMNIRUSH_ENGINE_RECOVERY_PROBE_INTERVAL_MS", 10_000);
+  return nonNegativeIntFromEnv("MARS_ENGINE_RECOVERY_PROBE_INTERVAL_MS", 10_000);
 }
 
 const RECOVERY_PROBE_ATTEMPTS = 3;
 
+/** How long a proxied request waits for a starting engine to take over (server start, account restart). */
+const START_ROUTE_WAIT_MS = 15_000;
+
 function drainPollIntervalMs(): number {
-  return positiveIntFromEnv("OMNIRUSH_ENGINE_DRAIN_POLL_MS", 5_000);
+  return positiveIntFromEnv("MARS_ENGINE_DRAIN_POLL_MS", 5_000);
 }
 
 /** Grace given to aborted sessions to unwind before the engine is closed. */
 function abortSettleMs(): number {
-  return nonNegativeIntFromEnv("OMNIRUSH_ENGINE_ABORT_SETTLE_MS", 5_000);
+  return nonNegativeIntFromEnv("MARS_ENGINE_ABORT_SETTLE_MS", 5_000);
 }
 
 function portOf(url: string): number {
@@ -538,7 +541,7 @@ export class EnginePool {
 
   /**
    * A proxied request to `baseUrl` is going out: a draining engine is not
-   * closed under it (for at most OMNIRUSH_ENGINE_DRAIN_REQUEST_GRACE_MS).
+   * closed under it (for at most MARS_ENGINE_DRAIN_REQUEST_GRACE_MS).
    * Call the returned release once the engine answered or the request failed.
    */
   beginRequest(baseUrl: string, request?: { method: string; proxyPath: string }): () => void {
@@ -624,6 +627,26 @@ export class EnginePool {
     ) ?? null;
     const fallback = draining && isLegacyPromptReply(proxyPath) ? this.connectionFor(draining) : null;
     return { target: primaryConnection, fallback };
+  }
+
+  /**
+   * The route for a proxied request, waiting while a generation is still
+   * starting (a server start or an account restart): the UI's first provider
+   * and config reads land in exactly that window and must not fail with
+   * "engine unavailable". Bounded by `timeoutMs`; null when nothing is
+   * starting or the wait ran out, so the caller fails as before.
+   */
+  async routeRequestWhenReady(method: string, proxyPath: string, timeoutMs = START_ROUTE_WAIT_MS): Promise<EnginePoolRoute | null> {
+    const deadline = this.now() + timeoutMs;
+    for (;;) {
+      const route = this.routeRequest(method, proxyPath);
+      if (route) return route;
+      if (this.disposed || !this.generations.some((entry) => entry.status === "starting") || this.now() >= deadline) return null;
+      await new Promise((resolve) => {
+        const timer = setTimeout(resolve, 100);
+        timer.unref?.();
+      });
+    }
   }
 
   openEventProxy(clientSignal?: AbortSignal): EngineEventProxyLease {
@@ -1293,7 +1316,7 @@ export class EnginePool {
           }
         }
         await previous.handle.close();
-        if (previous.handle.isAlive()) throw new Error("Managed OmniRush process remained alive after close");
+        if (previous.handle.isAlive()) throw new Error("Managed Mars process remained alive after close");
         previous.status = "dead";
         if (previous.registryId) await removeEngineInstance(this.config, previous.registryId).catch(() => undefined);
         this.generations = this.generations.filter((entry) => entry.id !== previous.id);
@@ -1502,7 +1525,7 @@ export class EnginePool {
       }
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
-    throw new Error("Standby OmniRush engine did not report healthy");
+    throw new Error("Standby Mars engine did not report healthy");
   }
 
   private async nonIdleSessionIds(generation: Generation | null): Promise<string[]> {
@@ -1593,11 +1616,11 @@ export class EnginePool {
   private abortEventProxies(): void {
     const controllers = [...this.eventProxyControllers];
     this.eventProxyControllers.clear();
-    for (const controller of controllers) controller.abort(new Error("OmniRush engine generation changed"));
+    for (const controller of controllers) controller.abort(new Error("Mars engine generation changed"));
   }
 
   private async abortSession(generation: Generation, sessionId: string): Promise<void> {
-    this.hooks.logger?.log("info", "Aborting OmniRush session from engine pool.", {
+    this.hooks.logger?.log("info", "Aborting Mars session from engine pool.", {
       "abort.source": "engine_pool.drain_timeout",
       "abort.initiator": "system",
       "abort.reason": "draining engine saw no session activity for the grace period",
@@ -1610,14 +1633,14 @@ export class EnginePool {
         headers: { Authorization: buildEngineAuthProbeHeader(generation.handle.username, generation.handle.password) },
         signal: AbortSignal.timeout(5_000),
       });
-      this.hooks.logger?.log("info", "OmniRush session abort from engine pool completed.", {
+      this.hooks.logger?.log("info", "Mars session abort from engine pool completed.", {
         "abort.source": "engine_pool.drain_timeout",
         "abort.initiator": "system",
         "session.id": sessionId,
         "engine.generation_id": generation.id,
       });
     } catch (error) {
-      this.hooks.logger?.log("error", "OmniRush session abort from engine pool failed.", {
+      this.hooks.logger?.log("error", "Mars session abort from engine pool failed.", {
         "abort.source": "engine_pool.drain_timeout",
         "abort.initiator": "system",
         "session.id": sessionId,

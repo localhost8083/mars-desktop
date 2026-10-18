@@ -62,7 +62,7 @@ export async function spawnOpencodeServe({
   assert.ok(Number.isInteger(port) && port > 0, "port must be a positive integer");
 
   const cwd = realpathSync(directory);
-  const isolatedRoot = mkdtempSync(join(tmpdir(), "omnirush-opencode-smoke-"));
+  const isolatedRoot = mkdtempSync(join(tmpdir(), "mars-opencode-smoke-"));
   const configDir = join(isolatedRoot, "config");
   const xdgConfigHome = join(isolatedRoot, "xdg");
   mkdirSync(configDir);
@@ -101,7 +101,7 @@ export async function spawnOpencodeServe({
         : {}),
       ...env,
       // Make it explicit we're a non-TUI client.
-      OPENCODE_CLIENT: "omnirush-test",
+      OPENCODE_CLIENT: "mars-test",
     },
   });
 

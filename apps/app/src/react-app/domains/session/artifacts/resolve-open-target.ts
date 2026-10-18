@@ -1,8 +1,8 @@
-import type { OmniRushServerClient } from "@/app/lib/omnirush-server";
+import type { MarsServerClient } from "@/app/lib/mars-server";
 
 import { isCollectibleArtifactTarget, type OpenTarget } from "./open-target";
 
-type ArtifactTargetResolver = Pick<OmniRushServerClient, "resolveArtifacts">;
+type ArtifactTargetResolver = Pick<MarsServerClient, "resolveArtifacts">;
 
 export function isWorkspaceContainedArtifactTarget(target: OpenTarget) {
   if (!isCollectibleArtifactTarget(target)) return false;

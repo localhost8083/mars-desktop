@@ -1,4 +1,4 @@
-// The sandbox image files that are the same in omnirush-cli and omnirush-gui: the pins
+// The sandbox image files that are the same in mars-cli and mars-gui: the pins
 // (images.json, wsl.json), their sources (apps/desktop/box) and the scripts (scripts/box).
 // Each list is the same in both repositories; this checks that every listed file still
 // has its listed hash, so a change in one repository shows up until it is ported.

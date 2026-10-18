@@ -1,7 +1,7 @@
 "use client";
 
 import { ExecutionPolicyFields, validateExecutionPolicy } from "./execution-policy-fields";
-import { desktopExecutionPolicySchema, type DesktopExecutionPolicy } from "@omnirush/types/den/desktop-policies";
+import { desktopExecutionPolicySchema, type DesktopExecutionPolicy } from "@mars/types/den/desktop-policies";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,7 +13,7 @@ import {
   isRestrictedDesktopPolicyValue,
   type DesktopPolicyDocumentWrite,
   type DesktopPolicyValue,
-} from "@omnirush/types/den/desktop-policies";
+} from "@mars/types/den/desktop-policies";
 import { DashboardPageTemplate } from "../../_components/ui/dashboard-page-template";
 import { DenButton } from "../../_components/ui/button";
 import { DenInput } from "../../_components/ui/input";

@@ -155,7 +155,7 @@ export function renderArtifactIndexHtml(entries: TestArtifactIndexEntry[]): stri
   }).join("\n");
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OmniRush.ai test artifacts</title><style>
+<title>MarsAI test artifacts</title><style>
 body{font:15px/1.5 system-ui,sans-serif;max-width:1100px;margin:40px auto;padding:0 20px;background:#f6f7f9;color:#17191d}header,.card{background:white;border:1px solid #dfe2e8;border-radius:12px;padding:20px;margin:0 0 24px}header h1{margin:0 0 6px}.muted,time,.summary{color:#636c76}.card{display:grid;grid-template-columns:minmax(220px,40%) 1fr;gap:20px}.card.passed{border-left:6px solid #238636}.card.failed{border-left:6px solid #cf222e}.card.pending,.card.unvalidated{border-left:6px solid #9a6700}.card.legacy{border-left:6px solid #656d76}.thumb img,.empty{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;border:1px solid #dfe2e8;border-radius:8px;background:#f6f7f9}.empty{display:grid;place-items:center;color:#636c76}.topline{display:flex;align-items:center;gap:10px}.badge{font-size:12px;font-weight:700}.passed .badge{color:#1a7f37}.failed .badge{color:#cf222e}.pending .badge,.unvalidated .badge{color:#9a6700}.legacy .badge{color:#656d76}h2{margin:12px 0 6px}a{color:inherit}.caption{font-weight:600}.trace{font-size:13px}.trace div{margin:4px 0}.trace strong{display:inline-block;min-width:65px}@media(max-width:700px){.card{grid-template-columns:1fr}}
 </style></head><body><header><h1>Test artifacts</h1><p class="muted">Test evidence captured as the user experienced it, newest first.</p></header>${cards || '<p class="muted">No test artifacts found.</p>'}</body></html>\n`;
 }

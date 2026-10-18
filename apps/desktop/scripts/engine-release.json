@@ -1,36 +1,36 @@
 {
-  "repo": "omnirush-ai/omnirush-gui",
+  "repo": "localhost8083/mars-desktop",
   "tag": "engine-1.18.32-r3",
   "version": "1.18.32",
-  "origin": "The same archives as release engine-1.18.32-r3 of omnirush-ai/omnirush-cli (the CLI's engine), copied to a public pre-release of this repo that is never marked latest.",
+  "origin": "Deterministic single-binary tarballs repacked from the official sst/opencode v1.18.32 release assets (GNU tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --format=gnu, piped through gzip -n -9). Uploaded to a public pre-release of this repo that is never marked latest.",
   "license": {
     "name": "LICENSE-opencode-MIT",
     "sha256": "625f0f619133f89bbbb2abe37369613dfa1885eba1e50d02170deb62bb42cb6b"
   },
   "assets": {
     "aarch64-apple-darwin": {
-      "name": "omnirush-engine-darwin-arm64-1.18.32.tar.gz",
-      "sha256": "cea7fd63e6c341e2a81f40f9ff0cd9bb47b1d0f51fb52a0ec09225337a851bd5"
+      "name": "mars-engine-darwin-arm64-1.18.32.tar.gz",
+      "sha256": "3ad70765b3910104b4920c3962b03401b376966672fa6306d33a034cca0c80ac"
     },
     "x86_64-apple-darwin": {
-      "name": "omnirush-engine-darwin-x64-1.18.32.tar.gz",
-      "sha256": "40ad5a6957917b3c0d30ec8a17317d2bbab10046da6858809a9429d091da36cd"
+      "name": "mars-engine-darwin-x64-1.18.32.tar.gz",
+      "sha256": "13f5250676d374f45ac8e413b647a51170d16309fd6f1139ab4fcbb964f5418a"
     },
     "x86_64-unknown-linux-gnu": {
-      "name": "omnirush-engine-linux-x64-1.18.32.tar.gz",
-      "sha256": "e09fdf8bd3b5bf4ac252eeabe20910635fca0ae65e33f63f7f51914d4459d19a"
+      "name": "mars-engine-linux-x64-1.18.32.tar.gz",
+      "sha256": "a735536325817112e615ee5ca7f057bd40b9c12bbe8be368a4c4a8f0e6dd2af0"
     },
     "aarch64-unknown-linux-gnu": {
-      "name": "omnirush-engine-linux-arm64-1.18.32.tar.gz",
-      "sha256": "98d6b0b531cf38628a9e0b3ed23f322d5e9be0877865c059c1a79f4b24b69b19"
+      "name": "mars-engine-linux-arm64-1.18.32.tar.gz",
+      "sha256": "0a3444c723a9e04c1c8aee93d8255410630cf296057521b3c82cda68245ecb49"
     },
     "x86_64-pc-windows-msvc": {
-      "name": "omnirush-engine-win32-x64-1.18.32.tar.gz",
-      "sha256": "001d39217789800d9a1adeb88c32004f1926ed2c71ce3f67ca248e45a8e88e40"
+      "name": "mars-engine-win32-x64-1.18.32.tar.gz",
+      "sha256": "cbf19355cc5b944b0ca038818382acea66633912e42a140756947c1d86263b83"
     },
     "aarch64-pc-windows-msvc": {
-      "name": "omnirush-engine-win32-arm64-1.18.32.tar.gz",
-      "sha256": "9eeb4b15e134c654288d7559938642064cb6e0857b869e363b15bc1118459455"
+      "name": "mars-engine-win32-arm64-1.18.32.tar.gz",
+      "sha256": "fe573e32437d351a1bab3453fea3404abcb8018c526df6418e047e51683d4eda"
     }
   }
 }

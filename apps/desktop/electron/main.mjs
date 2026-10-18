@@ -17,7 +17,7 @@ import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { globalOpencodeConfigDir, workspaceOpencodeConfigCandidates } from "@omnirush/paths";
+import { globalOpencodeConfigDir, workspaceOpencodeConfigCandidates } from "@mars/paths";
 
 import { configureFakeMediaForTests, installMediaPermissionHandlers } from "./media-permissions.mjs";
 import { registerMigrationIpc } from "./migration.mjs";
@@ -33,7 +33,7 @@ import {
   openComputerUseSetupApp,
 } from "./computer-use.mjs";
 import { createUiControlServer } from "./ui-control-server.mjs";
-import { resolveOmniRushUiMcpLaunch } from "./omnirush-ui-mcp.mjs";
+import { resolveMarsUiMcpLaunch } from "./mars-ui-mcp.mjs";
 import { createApplicationMenu } from "./app-menu.mjs";
 import { applyBrandAppName } from "./brand-app-name.mjs";
 import { createBrowserLoginSync } from "./browser-login-sync.mjs";
@@ -102,13 +102,13 @@ import { createOpenLogsFolderHandler } from "./logs-folder.mjs";
 import { readSkillFolder } from "./skill-folder.mjs";
 import { createDesktopVaultKeyProvider } from "./secure-vault-key.mjs";
 import { applyLinuxPasswordStore, recordLinuxPasswordStore } from "./linux-password-store.mjs";
-import { createDesktopOmniRushAccountStore, legacyKeychainAllowed } from "./omnirush-account.mjs";
+import { createDesktopMarsAccountStore, legacyKeychainAllowed } from "./mars-account.mjs";
 import { UPDATE_GATE_CHANNEL, createUpdateGate } from "./update-gate.mjs";
 import { createExternalFetch, createExternalFileUpload } from "./external-fetch.mjs";
 import {
-  clearOmniRushSentrySession,
-  initOmniRushSentry,
-  setOmniRushSentrySession,
+  clearMarsSentrySession,
+  initMarsSentry,
+  setMarsSentrySession,
 } from "./sentry.mjs";
 import { installStdioErrorHandlers } from "./stdio-errors.mjs";
 import { createTurnGuard } from "./turn-guard.mjs";
@@ -147,23 +147,23 @@ const pty = require(["node", "pty"].join("-"));
 // process's own requests off the machine; see external-fetch.mjs.
 const desktopExternalFetch = createExternalFetch({ net: electronNet, isReady: () => app.isReady() });
 const desktopExternalFileUpload = createExternalFileUpload({ net: electronNet, isReady: () => app.isReady() });
-const NATIVE_DEEP_LINK_EVENT = "omnirush:deep-link-native";
-const AUTOMATION_RUNNER_CREDENTIAL_REJECTED_EVENT = "omnirush:automation-runner:credential-rejected";
-const isDevMode = process.env.OMNIRUSH_DEV_MODE === "1";
+const NATIVE_DEEP_LINK_EVENT = "mars:deep-link-native";
+const AUTOMATION_RUNNER_CREDENTIAL_REJECTED_EVENT = "mars:automation-runner:credential-rejected";
+const isDevMode = process.env.MARS_DEV_MODE === "1";
 const DESKTOP_DISTRIBUTION = resolveDesktopDistribution({
   isPackaged: app.isPackaged,
-  packageFlavor: Reflect.get(desktopPackageMetadata, "omnirushDistribution"),
-  environmentFlavor: process.env.OMNIRUSH_DESKTOP_DISTRIBUTION,
+  packageFlavor: Reflect.get(desktopPackageMetadata, "marsDistribution"),
+  environmentFlavor: process.env.MARS_DESKTOP_DISTRIBUTION,
   // Optional electron-builder extraMetadata for distributions that run their
   // own Alpha feed. The public build has none, so its Alpha channel is off.
-  packageAlphaUpdateFeedUrl: Reflect.get(desktopPackageMetadata, "omnirushAlphaUpdateFeedUrl"),
-  environmentAlphaUpdateFeedUrl: process.env.OMNIRUSH_DESKTOP_ALPHA_UPDATE_FEED_URL,
+  packageAlphaUpdateFeedUrl: Reflect.get(desktopPackageMetadata, "marsAlphaUpdateFeedUrl"),
+  environmentAlphaUpdateFeedUrl: process.env.MARS_DESKTOP_ALPHA_UPDATE_FEED_URL,
 });
 const TAURI_APP_IDENTIFIER = DESKTOP_DISTRIBUTION.appIdentifier;
 const DEV_APP_IDENTIFIER = `${DESKTOP_DISTRIBUTION.appIdentifier}.dev`;
 const DESKTOP_PROTOCOL_SCHEME = DESKTOP_DISTRIBUTION.protocolScheme;
 const DEFAULT_APP_NAME =
-  (!app.isPackaged ? process.env.OMNIRUSH_ELECTRON_APP_NAME?.trim() : "") ||
+  (!app.isPackaged ? process.env.MARS_ELECTRON_APP_NAME?.trim() : "") ||
   (isDevMode ? `${DESKTOP_DISTRIBUTION.appName} - Dev` : DESKTOP_DISTRIBUTION.appName);
 const BLANK_SLATE_LAUNCH = resolveBlankSlateLaunch({
   appName: DEFAULT_APP_NAME,
@@ -176,22 +176,22 @@ const DISPLAY_APP_NAME = APP_NAME === DESKTOP_DISTRIBUTION.appName ? DESKTOP_DIS
 let currentDisplayAppName = DISPLAY_APP_NAME;
 installStdioErrorHandlers();
 installSocketTypeOfServiceGuard();
-await initOmniRushSentry({
+await initMarsSentry({
   app,
   distribution: DESKTOP_DISTRIBUTION,
   packageMetadata: desktopPackageMetadata,
 });
 const BASE_APP_IDENTIFIER = isDevMode ? DEV_APP_IDENTIFIER : TAURI_APP_IDENTIFIER;
 const APP_IDENTIFIER = resolveAppIdentifier({
-  appIdentifierOverride: process.env.OMNIRUSH_ELECTRON_APP_IDENTIFIER,
+  appIdentifierOverride: process.env.MARS_ELECTRON_APP_IDENTIFIER,
   appRootPath: APP_ROOT,
   baseAppIdentifier: BASE_APP_IDENTIFIER,
   devAppIdentifier: DEV_APP_IDENTIFIER,
-  devProfile: process.env.OMNIRUSH_DEV_PROFILE,
+  devProfile: process.env.MARS_DEV_PROFILE,
   isDevMode,
   isPackaged: app.isPackaged,
 });
-if (BLANK_SLATE_LAUNCH.enabled || process.env.OMNIRUSH_ELECTRON_USE_MOCK_KEYCHAIN === "1") {
+if (BLANK_SLATE_LAUNCH.enabled || process.env.MARS_ELECTRON_USE_MOCK_KEYCHAIN === "1") {
   // Fresh, isolated development profiles otherwise trigger macOS's native
   // "Login" keychain prompt as soon as Chromium persists an authenticated
   // cookie. That modal blocks the entire Electron main loop and makes the demo
@@ -199,9 +199,9 @@ if (BLANK_SLATE_LAUNCH.enabled || process.env.OMNIRUSH_ELECTRON_USE_MOCK_KEYCHAI
   // system keychain normally.
   app.commandLine.appendSwitch("use-mock-keychain");
 }
-const RELEASE_DOWNLOAD_BASE_URL = "https://github.com/omnirush-ai/omnirush-gui/releases/latest/download";
-const RELEASE_PAGE_URL = "https://github.com/omnirush-ai/omnirush-gui/releases/latest";
-const DOCS_PAGE_URL = "https://github.com/omnirush-ai/omnirush-gui#readme";
+const RELEASE_DOWNLOAD_BASE_URL = "https://github.com/localhost8083/mars-desktop/releases/latest/download";
+const RELEASE_PAGE_URL = "https://github.com/localhost8083/mars-desktop/releases/latest";
+const DOCS_PAGE_URL = "https://github.com/localhost8083/mars-desktop#readme";
 const applicationMenu = createApplicationMenu({
   appName: DISPLAY_APP_NAME,
   docsUrl: DOCS_PAGE_URL,
@@ -259,16 +259,16 @@ function watchTerminalOwner(contents) {
 // so in-place migration is a no-op for almost every file. Dev mode uses the
 // separate dev identifier so it can run beside the production app.
 //
-// Dev profile precedence: OMNIRUSH_ELECTRON_USERDATA (explicit profile path)
-// wins over everything; then OMNIRUSH_ELECTRON_APP_IDENTIFIER; then
-// OMNIRUSH_DEV_PROFILE in unpackaged dev; then the legacy identifier default.
+// Dev profile precedence: MARS_ELECTRON_USERDATA (explicit profile path)
+// wins over everything; then MARS_ELECTRON_APP_IDENTIFIER; then
+// MARS_DEV_PROFILE in unpackaged dev; then the legacy identifier default.
 app.setName(APP_NAME);
 app.setAppUserModelId(APP_IDENTIFIER);
 if (BLANK_SLATE_LAUNCH.homePath) app.setPath("home", BLANK_SLATE_LAUNCH.homePath);
 if (
   app.isPackaged
   && !BLANK_SLATE_LAUNCH.enabled
-  && process.env.OMNIRUSH_ELECTRON_DISABLE_PROTOCOL_REGISTRATION !== "1"
+  && process.env.MARS_ELECTRON_DISABLE_PROTOCOL_REGISTRATION !== "1"
   && !(process.platform === "linux" && process.env.APPIMAGE)
 ) {
   app.setAsDefaultProtocolClient(DESKTOP_PROTOCOL_SCHEME);
@@ -276,7 +276,7 @@ if (
 const userDataPath = BLANK_SLATE_LAUNCH.userDataPath ?? resolveUserDataPath({
   appDataPath: app.getPath("appData"),
   appIdentifier: APP_IDENTIFIER,
-  userDataOverride: process.env.OMNIRUSH_ELECTRON_USERDATA,
+  userDataOverride: process.env.MARS_ELECTRON_USERDATA,
 });
 app.setPath("userData", userDataPath);
 const linuxDesktopIntegration = createLinuxDesktopIntegration({
@@ -430,7 +430,7 @@ async function resolveArchitectureInfo() {
   const systemArch = resolveSystemArch();
   const version = app.getVersion();
   const targetArch = systemArch === "arm64" || systemArch === "x64" ? systemArch : appArch;
-  const assetName = `omnirush-${platformDownloadSlug()}-${downloadAssetArch(targetArch)}-${version}.${downloadAssetExtension()}`;
+  const assetName = `mars-${platformDownloadSlug()}-${downloadAssetArch(targetArch)}-${version}.${downloadAssetExtension()}`;
   const latestDownloadUrl = await resolveCorrectArchitectureDownloadUrl(targetArch);
   const hasCorrectArchitectureDownload = Boolean(latestDownloadUrl);
   return {
@@ -491,7 +491,7 @@ function brandIconWindowsPath() {
 }
 
 function defaultAppWindowsIconPath() {
-  return path.join(app.getPath("userData"), "omnirush-stock.ico");
+  return path.join(app.getPath("userData"), "mars-stock.ico");
 }
 
 let cachedWindowsProgramsPath = null;
@@ -515,12 +515,15 @@ function windowsBrandShortcutMarkerPath() {
 }
 
 function windowsExecutablePath() {
-  return windowsInstalledExecutablePath({
+  const installed = windowsInstalledExecutablePath({
     packaged: app.isPackaged,
     execPath: app.getPath("exe"),
     resourcesPath: process.resourcesPath,
     shortcutPath: windowsBrandShortcutPath(),
   });
+  // Unpacked dev/CI builds run outside the install location; keep the brand
+  // shortcut and taskbar relaunch pointed at the binary that actually runs.
+  return existsSync(installed) ? installed : app.getPath("exe");
 }
 
 async function readWindowsBrandShortcutMarker() {
@@ -716,7 +719,7 @@ async function focusMainWindowFromNotification() {
 
 /**
  * @param {unknown} input
- * @returns {import("@omnirush/types/desktop-ipc").DesktopNotificationResult}
+ * @returns {import("@mars/types/desktop-ipc").DesktopNotificationResult}
  */
 function showDesktopNotification(input) {
   if (!ElectronNotification.isSupported()) {
@@ -992,7 +995,7 @@ if (process.platform === "darwin" && INITIAL_APP_ICON_IMAGE && !INITIAL_APP_ICON
 }
 
 // Expose Chrome DevTools Protocol so the opencode-chrome-devtools plugin can
-// drive the built-in browser panel.  Use OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT to
+// drive the built-in browser panel.  Use MARS_ELECTRON_REMOTE_DEBUG_PORT to
 // pin a specific port; otherwise probe for a free one starting at 9223.
 // Must resolve before app.commandLine.appendSwitch (before `ready`).
 function probePort(port) {
@@ -1013,7 +1016,7 @@ async function findFreeCdpPort(candidates) {
 }
 
 const explicitCdpPort = Number.parseInt(
-  process.env.OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT?.trim() ?? "",
+  process.env.MARS_ELECTRON_REMOTE_DEBUG_PORT?.trim() ?? "",
   10,
 );
 const remoteDebugPort = Number.isFinite(explicitCdpPort) && explicitCdpPort > 0
@@ -1024,11 +1027,11 @@ if (remoteDebugPort > 0) {
   app.commandLine.appendSwitch("remote-debugging-address", "127.0.0.1");
 }
 // Make the resolved port available to the embedded server so it flows into
-// agent instructions via ensureOmniRushAgent → resolveAgentTemplate.
-process.env.OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT = String(remoteDebugPort);
+// agent instructions via ensureMarsAgent → resolveAgentTemplate.
+process.env.MARS_ELECTRON_REMOTE_DEBUG_PORT = String(remoteDebugPort);
 if (isDevMode && !app.isPackaged) {
   const cdpAddress = remoteDebugPort > 0 ? `http://127.0.0.1:${remoteDebugPort}` : "disabled";
-  console.log(`[omnirush] dev profile=${app.getPath("userData")} cdp=${cdpAddress}`);
+  console.log(`[mars] dev profile=${app.getPath("userData")} cdp=${cdpAddress}`);
 }
 
 // Apply extra Chromium flags from ELECTRON_EXTRA_LAUNCH_ARGS.
@@ -1058,19 +1061,19 @@ await applyLinuxPasswordStore({ app, userDataPath: app.getPath("userData") });
 function recordKeyringSealed(fileName) {
   return (backend) => recordLinuxPasswordStore({ userDataPath: app.getPath("userData"), fileName, backend }).then(
     (changed) => {
-      if (changed) console.log(`[omnirush] Linux password store recorded for ${fileName}: ${backend}`);
+      if (changed) console.log(`[mars] Linux password store recorded for ${fileName}: ${backend}`);
     },
     () => undefined,
   );
 }
-configureFakeMediaForTests(app, envFlagEnabled("OMNIRUSH_ELECTRON_FAKE_MEDIA"));
-// omnirush.ai has no hosted Den control plane. The default stays empty so no
+configureFakeMediaForTests(app, envFlagEnabled("MARS_ELECTRON_FAKE_MEDIA"));
+// marsai.click has no hosted Den control plane. The default stays empty so no
 // code path contacts one automatically; a Den base URL only exists when
 // desktop-bootstrap.json, a connect link, or the user provides it explicitly.
 const DEFAULT_DEN_BASE_URL = "";
 const DEFAULT_LOCAL_BASE_URL = "http://127.0.0.1:4096";
 const FORCE_DESKTOP_REQUIRE_SIGNIN =
-  DESKTOP_DISTRIBUTION.requireSignin || envFlagEnabled("OMNIRUSH_FORCE_SIGNIN");
+  DESKTOP_DISTRIBUTION.requireSignin || envFlagEnabled("MARS_FORCE_SIGNIN");
 const DEFAULT_DESKTOP_REQUIRE_SIGNIN = FORCE_DESKTOP_REQUIRE_SIGNIN;
 
 function envFlagEnabled(name) {
@@ -1095,7 +1098,7 @@ const IDLE_ENGINE_INFO = Object.freeze({
   lastStderr: null,
 });
 
-const IDLE_OMNIRUSH_SERVER_INFO = Object.freeze({
+const IDLE_MARS_SERVER_INFO = Object.freeze({
   running: false,
   remoteAccessEnabled: false,
   host: null,
@@ -1139,9 +1142,9 @@ browserPanel = createBrowserPanel({
   getWindow: () => mainWindow,
   onDeepLink: (urls) => queueDeepLinks(urls),
   checkPolicy: async (input) => {
-    const server = await runtimeManager.omnirushServerInfo();
-    if (!server.baseUrl || !(server.clientToken ?? server.ownerToken)) throw new Error("OmniRush.ai policy service is unavailable.");
-    // loopback-fetch: the policy service is the locally managed OmniRush.ai server.
+    const server = await runtimeManager.marsServerInfo();
+    if (!server.baseUrl || !(server.clientToken ?? server.ownerToken)) throw new Error("MarsAI policy service is unavailable.");
+    // loopback-fetch: the policy service is the locally managed MarsAI server.
     const response = await fetch(`${server.baseUrl}/managed-policy/evaluate`, {
       method: "POST",
       headers: { Authorization: `Bearer ${server.clientToken ?? server.ownerToken}`, "Content-Type": "application/json" },
@@ -1203,7 +1206,7 @@ const connectLinkReplayGuard = createConnectLinkReplayGuard({
 
 /**
  * @param {string} rawUrl
- * @returns {import("@omnirush/types/connect-link").ConnectLinkVerifyResult}
+ * @returns {import("@mars/types/connect-link").ConnectLinkVerifyResult}
  */
 function verifyConnectLink(rawUrl) {
   return verifyConnectLinkUrl(String(rawUrl ?? ""), {
@@ -1273,7 +1276,7 @@ function forwardedDeepLinks(argv) {
     .filter(
       (entry) =>
         entry.startsWith(`${DESKTOP_PROTOCOL_SCHEME}://`) ||
-        (!app.isPackaged && entry.startsWith("omnirush-dev://")) ||
+        (!app.isPackaged && entry.startsWith("mars-dev://")) ||
         entry.startsWith("https://") ||
         entry.startsWith("http://"),
     );
@@ -1378,15 +1381,15 @@ const updateGate = createUpdateGate({
   },
 });
 
-const omnirushAccountStore = createDesktopOmniRushAccountStore({
-  filePath: path.join(app.getPath("userData"), "omnirush-account.bin"),
+const marsAccountStore = createDesktopMarsAccountStore({
+  filePath: path.join(app.getPath("userData"), "mars-account.bin"),
   // Sign-in, device code, token refresh, profile and sign-out.
   fetchImpl: desktopExternalFetch,
   loadSafeStorage: () => require("electron").safeStorage,
   // Only while no keyring is usable (none on Linux, or one that refuses to
   // encrypt); unencrypted at rest, owner-only.
-  fallbackFilePath: path.join(app.getPath("userData"), "private-credentials", "omnirush-account.json"),
-  onKeyringSealed: recordKeyringSealed("omnirush-account.bin"),
+  fallbackFilePath: path.join(app.getPath("userData"), "private-credentials", "mars-account.json"),
+  onKeyringSealed: recordKeyringSealed("mars-account.bin"),
   onClientUpdate: (clientUpdate) => updateGate.signal({ kind: "profile", clientUpdate }),
   clientVersion: app.getVersion(),
   legacyKeychain: legacyKeychainAllowed({
@@ -1396,9 +1399,9 @@ const omnirushAccountStore = createDesktopOmniRushAccountStore({
   }),
 });
 
-function omnirushUiMcpLaunch() {
-  return resolveOmniRushUiMcpLaunch({
-    devMode: process.env.OMNIRUSH_DEV_MODE === "1",
+function marsUiMcpLaunch() {
+  return resolveMarsUiMcpLaunch({
+    devMode: process.env.MARS_DEV_MODE === "1",
     packaged: app.isPackaged,
     execPath: process.execPath,
     resourcesPath: process.resourcesPath,
@@ -1418,19 +1421,19 @@ const runtimeManager = createRuntimeManager({
   desktopRoot: path.resolve(__dirname, ".."),
   externalFetch: desktopExternalFetch,
   captureFileUpload: desktopExternalFileUpload,
-  // Rewrites persisted `npx -y omnirush-ui-mcp` entries to the bundled launch
+  // Rewrites persisted `npx -y mars-ui-mcp` entries to the bundled launch
   // before the engine starts. Null (bundle missing) removes them instead.
-  omnirushUiMcpLaunch: () => {
+  marsUiMcpLaunch: () => {
     try {
-      return omnirushUiMcpLaunch();
+      return marsUiMcpLaunch();
     } catch (error) {
       console.warn("[ui-control] bundled UI-control MCP unavailable", error);
       return null;
     }
   },
   listLocalWorkspacePaths: () => workspaceStore.listLocalWorkspacePaths(),
-  // When OMNIRUSH_ENCRYPTION_KEY is set, skip the safeStorage provider so it does not shadow the documented env override used by CI/headless/enterprise.
-  localManagedMcpVaultKey: process.env.OMNIRUSH_ENCRYPTION_KEY?.trim()
+  // When MARS_ENCRYPTION_KEY is set, skip the safeStorage provider so it does not shadow the documented env override used by CI/headless/enterprise.
+  localManagedMcpVaultKey: process.env.MARS_ENCRYPTION_KEY?.trim()
     ? undefined
     : createDesktopVaultKeyProvider({
         filePath: path.join(app.getPath("userData"), "local-managed-mcp-vault-key.bin"),
@@ -1440,8 +1443,8 @@ const runtimeManager = createRuntimeManager({
         fallbackFilePath: path.join(app.getPath("userData"), "private-credentials", "local-managed-mcp-vault-key.json"),
         onKeyringSealed: recordKeyringSealed("local-managed-mcp-vault-key.bin"),
       }),
-  omnirushGatewayCredentials: omnirushAccountStore,
-  // The gateway's x-omnirush-update-required header and 426 refusals.
+  marsGatewayCredentials: marsAccountStore,
+  // The gateway's x-mars-update-required header and 426 refusals.
   onUpdateSignal: (signal) => updateGate.signal(signal),
   // The agent started or stopped working (apps/server/src/turn-activity.ts).
   onTurnActivity: (running) => keepAwake.setTurnRunning(running),
@@ -1452,7 +1455,7 @@ const runtimeManager = createRuntimeManager({
 // One impersonal report when the app cannot start (start-report.mjs).
 const startReporter = createStartReporter({
   filePath: path.join(app.getPath("userData"), START_REPORT_FILE),
-  send: (body) => omnirushAccountStore.sendDiagnostic(body),
+  send: (body) => marsAccountStore.sendDiagnostic(body),
   log: (message) => console.warn(message),
 });
 let startAttempt = 0;
@@ -1611,7 +1614,7 @@ const desktopAutomationRunner = createDesktopAutomationRunner({
   // rollout only for endpoints trusted before the renderer starts issuing IPC.
   legacyBaseUrls: legacyRunnerBaseUrls,
   getLocalRuntime: async () => {
-    const server = await runtimeManager.omnirushServerInfo();
+    const server = await runtimeManager.marsServerInfo();
     return { baseUrl: server.baseUrl, token: server.clientToken ?? server.ownerToken };
   },
   log: (state) => console.info(`[automation-runner] ${state}`),
@@ -1661,7 +1664,7 @@ function showShutdownScreen() {
   <body>
     <main>
       <div class="spinner" aria-hidden="true"></div>
-      <div class="title">Stopping OmniRush.ai services</div>
+      <div class="title">Stopping MarsAI services</div>
       <div class="body">Closing local workers and background services...</div>
     </main>
   </body>
@@ -1682,22 +1685,22 @@ async function disposeRuntimeBeforeQuit() {
   }
 }
 
-function assertOmniRushServerReady(info) {
+function assertMarsServerReady(info) {
   if (!info?.running) {
-    throw new Error("OmniRush.ai server did not stay running after startup.");
+    throw new Error("MarsAI server did not stay running after startup.");
   }
   if (!info.baseUrl) {
-    throw new Error("OmniRush.ai server did not report a base URL after startup.");
+    throw new Error("MarsAI server did not report a base URL after startup.");
   }
   if (!info.ownerToken && !info.clientToken) {
-    throw new Error("OmniRush.ai server did not report an access token after startup.");
+    throw new Error("MarsAI server did not report an access token after startup.");
   }
   return info;
 }
 
 async function bootRuntimeForSelectedWorkspace() {
-  if (typeof process.env.OMNIRUSH_EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE === "string") {
-    throw new Error(process.env.OMNIRUSH_EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE);
+  if (typeof process.env.MARS_EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE === "string") {
+    throw new Error(process.env.MARS_EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE);
   }
   const list = await workspaceStore.readWorkspaceState();
   const selectedId = list.selectedId || list.activeId || list.workspaces[0]?.id || "";
@@ -1753,8 +1756,8 @@ async function bootRuntimeForSelectedWorkspace() {
       watchedId: String(fallback.id ?? ""),
     }).catch(() => undefined);
   }
-  const omnirushServer = assertOmniRushServerReady(await runtimeManager.omnirushServerInfo());
-  return { ok: true, skipped: false, engine, omnirushServer, workspaceId: bootWorkspace.id ?? null };
+  const marsServer = assertMarsServerReady(await runtimeManager.marsServerInfo());
+  return { ok: true, skipped: false, engine, marsServer, workspaceId: bootWorkspace.id ?? null };
 }
 
 function startRuntimeBootstrap() {
@@ -2076,9 +2079,9 @@ const openLogsFolder = createOpenLogsFolderHandler({
 // entry here; handlers receive the ipcMain event followed by the renderer
 // arguments. The @type below asserts this registry against the shared
 // DesktopCommandMap contract (packages/types/src/desktop-ipc.ts): a missing,
-// extra, or renamed command fails `pnpm --filter @omnirush/desktop
+// extra, or renamed command fails `pnpm --filter @mars/desktop
 // typecheck:electron`.
-/** @type {import("@omnirush/types/desktop-ipc").DesktopCommandHandlers<import("electron").IpcMainInvokeEvent>} */
+/** @type {import("@mars/types/desktop-ipc").DesktopCommandHandlers<import("electron").IpcMainInvokeEvent>} */
 const desktopCommandHandlers = {
   "workspaceBootstrap": async (event, ...args) => {
       return workspaceStore.readWorkspaceState();
@@ -2110,13 +2113,13 @@ const desktopCommandHandlers = {
   "workspaceAddAuthorizedRoot": async (event, ...args) => {
       return workspaceStore.addAuthorizedRoot(args[0] ?? {});
   },
-  "workspaceOmniRushRead": async (event, ...args) => {
-      return workspaceStore.readWorkspaceOmniRushConfig(String(args[0]?.workspacePath ?? "").trim());
+  "workspaceMarsRead": async (event, ...args) => {
+      return workspaceStore.readWorkspaceMarsConfig(String(args[0]?.workspacePath ?? "").trim());
   },
-  "workspaceOmniRushWrite": async (event, ...args) => {
-      return workspaceStore.writeWorkspaceOmniRushConfig(
+  "workspaceMarsWrite": async (event, ...args) => {
+      return workspaceStore.writeWorkspaceMarsConfig(
         String(args[0]?.workspacePath ?? "").trim(),
-        args[0]?.config ?? workspaceStore.defaultWorkspaceOmniRushConfig(""),
+        args[0]?.config ?? workspaceStore.defaultWorkspaceMarsConfig(""),
       );
   },
   "workspaceExportConfig": async (event, ...args) => {
@@ -2193,9 +2196,9 @@ const desktopCommandHandlers = {
   "appBuildInfo": async (event, ...args) => {
       return {
         version: app.getVersion(),
-        gitSha: process.env.OMNIRUSH_GIT_SHA ?? null,
-        buildEpoch: process.env.OMNIRUSH_BUILD_EPOCH ?? null,
-        omnirushDevMode: process.env.OMNIRUSH_DEV_MODE === "1",
+        gitSha: process.env.MARS_GIT_SHA ?? null,
+        buildEpoch: process.env.MARS_BUILD_EPOCH ?? null,
+        marsDevMode: process.env.MARS_DEV_MODE === "1",
         os: process.platform,
         arch: process.arch,
       };
@@ -2206,14 +2209,14 @@ const desktopCommandHandlers = {
   "desktopSentrySetSession": async (event, ...args) => {
       const input = args[0] ?? {};
       return {
-        enabled: setOmniRushSentrySession({
+        enabled: setMarsSentrySession({
           userId: input.userId,
           orgId: input.orgId,
         }),
       };
   },
   "desktopSentryClearSession": async (event, ...args) => {
-      return { enabled: clearOmniRushSentrySession() };
+      return { enabled: clearMarsSentrySession() };
   },
   "desktopIntegrationStatus": async (event, ...args) => {
       return linuxDesktopIntegration.getStatus();
@@ -2228,18 +2231,18 @@ const desktopCommandHandlers = {
   },
   "getUiControlBridgeInfo": async (event, ...args) => {
       try {
-        const raw = await readFile(path.join(app.getPath("userData"), "omnirush-ui-control.json"), "utf8");
+        const raw = await readFile(path.join(app.getPath("userData"), "mars-ui-control.json"), "utf8");
         return JSON.parse(raw);
       } catch {
         return null;
       }
   },
-  "getOmniRushUiMcpCommand": async (event, ...args) => {
-      return omnirushUiMcpLaunch().command;
+  "getMarsUiMcpCommand": async (event, ...args) => {
+      return marsUiMcpLaunch().command;
   },
   "getComputerUseState": async () => getComputerUseState(),
   "computerUseAction": async (event, value) => {
-    if (!mainWindow || event.sender !== mainWindow.webContents || event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error("Computer Use controls require the main OmniRush.ai window.");
+    if (!mainWindow || event.sender !== mainWindow.webContents || event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error("Computer Use controls require the main MarsAI window.");
     return computerUseAction(value);
   },
   "getComputerUseMcpCommand": async (event, ...args) => {
@@ -2265,10 +2268,10 @@ const desktopCommandHandlers = {
       await openComputerUseSetupApp();
       return checkComputerUsePermissions();
   },
-  "getOmniRushUiMcpEnvironment": async (event, ...args) => {
+  "getMarsUiMcpEnvironment": async (event, ...args) => {
       // Carries ELECTRON_RUN_AS_NODE=1 for packaged launches: the command is
       // this app's own binary, which must run the bundled MCP as plain Node.
-      return omnirushUiMcpLaunch().environment;
+      return marsUiMcpLaunch().environment;
   },
   "getDesktopBootstrapConfig": async (event, ...args) => {
       return workspaceStore.getDesktopBootstrapConfig();
@@ -2333,7 +2336,7 @@ const desktopCommandHandlers = {
       const config = await persistConnectLinkClaims(verified.claims);
       return { ok: true, config };
   },
-  "nukeOmniRushAndOpencodeConfigPreview": async (event, ...args) => {
+  "nukeMarsAndOpencodeConfigPreview": async (event, ...args) => {
       return buildNukeManifest({
         env: process.env,
         homedir: os.homedir(),
@@ -2343,7 +2346,7 @@ const desktopCommandHandlers = {
         workspacePaths: await workspaceStore.listLocalWorkspacePaths(),
       });
   },
-  "nukeOmniRushAndOpencodeConfigAndExit": async (event, ...args) => {
+  "nukeMarsAndOpencodeConfigAndExit": async (event, ...args) => {
       return executeNukeFreshStart({
         app,
         session,
@@ -2362,84 +2365,93 @@ const desktopCommandHandlers = {
         },
       });
   },
-  "sandboxCleanupOmniRushContainers": async (event, ...args) => {
-      return runtimeManager.sandboxCleanupOmniRushContainers();
+  "sandboxCleanupMarsContainers": async (event, ...args) => {
+      return runtimeManager.sandboxCleanupMarsContainers();
   },
-  "omnirushServerInfo": async (event, ...args) => {
-      return runtimeManager.omnirushServerInfo();
+  "marsServerInfo": async (event, ...args) => {
+      return runtimeManager.marsServerInfo();
   },
-  "omnirushAccountStatus": async (event, ...args) => {
+  "marsAccountStatus": async (event, ...args) => {
       // Optional `{ sessionId }`: the session open in the app, for the quality hint.
       const input = args[0] && typeof args[0] === "object" ? args[0] : {};
-      return omnirushAccountStore.status({ sessionId: typeof input.sessionId === "string" ? input.sessionId : null });
+      return marsAccountStore.status({ sessionId: typeof input.sessionId === "string" ? input.sessionId : null });
   },
   // Quality rewards: the wheel's segments and recent sessions, spin totals, and one spin with the device
-  // credential (X-OmniRush-Client like every account request). A refusal
+  // credential (X-Mars-Client like every account request). A refusal
   // (409 no_spins / wheel_resting / quality_rewards_off) comes back as a
   // value, not a thrown error, so the dialog can say which one it was.
-  "omnirushQualityDetails": async (event) => {
-      return omnirushAccountStore.qualityDetails();
+  "marsQualityDetails": async (event) => {
+      return marsAccountStore.qualityDetails();
   },
-  "omnirushQualitySpins": async (event) => {
-      return omnirushAccountStore.qualitySpinTotals();
+  "marsQualitySpins": async (event) => {
+      return marsAccountStore.qualitySpinTotals();
   },
   // The server's live checklist for the open session; null: the app shows its own.
-  "omnirushSessionStatus": async (event, ...args) => {
+  "marsSessionStatus": async (event, ...args) => {
       const input = args[0] && typeof args[0] === "object" ? args[0] : {};
-      return omnirushAccountStore.sessionStatus({ sessionId: input.sessionId });
+      return marsAccountStore.sessionStatus({ sessionId: input.sessionId });
   },
-  "omnirushQualitySpin": async (event, ...args) => {
+  "marsQualitySpin": async (event, ...args) => {
       const input = args[0] && typeof args[0] === "object" ? args[0] : {};
-      return omnirushAccountStore.spinQuality({ idempotencyKey: typeof input.idempotencyKey === "string" ? input.idempotencyKey : undefined });
+      return marsAccountStore.spinQuality({ idempotencyKey: typeof input.idempotencyKey === "string" ? input.idempotencyKey : undefined });
   },
   // Buildathon: shown only to enrolled accounts; every failure is a null
   // (or a "retry"), never a thrown error, so the app quietly shows nothing.
-  "omnirushBuildathon": async (event) => {
-      return omnirushAccountStore.buildathonStatus();
+  "marsBuildathon": async (event) => {
+      return marsAccountStore.buildathonStatus();
   },
-  "omnirushBuildathonSessions": async (event) => {
-      return omnirushAccountStore.buildathonSessions();
+  "marsBuildathonSessions": async (event) => {
+      return marsAccountStore.buildathonSessions();
   },
-  "omnirushBuildathonLink": async (event, ...args) => {
+  "marsBuildathonLink": async (event, ...args) => {
       const input = args[0] && typeof args[0] === "object" ? args[0] : {};
-      return omnirushAccountStore.buildathonLink({ code: input.code });
+      return marsAccountStore.buildathonLink({ code: input.code });
   },
   // Join from the promo (only offered when the server's promo says so).
-  "omnirushBuildathonJoin": async (event) => {
-      return omnirushAccountStore.buildathonJoin();
+  "marsBuildathonJoin": async (event) => {
+      return marsAccountStore.buildathonJoin();
   },
   // The rebuild checklist of one buildathon project, checked in its folder (cheap file checks).
-  "omnirushBuildathonChecklist": async (event, ...args) => {
+  "marsBuildathonChecklist": async (event, ...args) => {
       const input = args[0] && typeof args[0] === "object" ? args[0] : {};
       return projectChecklist({ path: input.path, checklist: input.checklist });
   },
-  "omnirushBuildathonTagSession": async (event, ...args) => {
+  "marsBuildathonTagSession": async (event, ...args) => {
       const input = args[0] && typeof args[0] === "object" ? args[0] : {};
-      return omnirushAccountStore.buildathonTagSession({ sessionId: input.sessionId, track: input.track, project: input.project });
+      return marsAccountStore.buildathonTagSession({ sessionId: input.sessionId, track: input.track, project: input.project });
   },
-  "omnirushAccountConnect": async (event, ...args) => {
+  "marsAccountConnect": async (event, ...args) => {
       const input = args[0] ?? {};
-      const result = await omnirushAccountStore.authorize({
+      const result = await marsAccountStore.authorize({
         gatewayUrl: String(input.gatewayUrl ?? "").trim() || undefined,
         deviceName: String(input.deviceName ?? "").trim() || `${app.getName()} on ${os.hostname()}`,
         openVerification: (url) => shell.openExternal(url),
       });
-      await runtimeManager.omnirushServerRestart({ reason: "account_connected", source: "account", userInitiated: true });
+      await runtimeManager.marsServerRestart({ reason: "account_connected", source: "account", userInitiated: true });
       return result;
   },
-  "omnirushAccountSignOut": async (event, ...args) => {
+  "marsAccountConnectApiKey": async (event, ...args) => {
+      const input = args[0] ?? {};
+      const result = await marsAccountStore.authorizeApiKey({
+        gatewayUrl: String(input.gatewayUrl ?? "").trim() || undefined,
+        apiKey: input.apiKey,
+      });
+      await runtimeManager.marsServerRestart({ reason: "account_connected", source: "account", userInitiated: true });
+      return result;
+  },
+  "marsAccountSignOut": async (event, ...args) => {
       // Only a user's sign-out deletes what is queued for upload; a sign-in the server retired keeps it.
       await runtimeManager.markUploadQueueClear();
-      const result = await omnirushAccountStore.clear();
-      await runtimeManager.omnirushServerRestart({ reason: "account_signed_out", source: "account", userInitiated: true });
+      const result = await marsAccountStore.clear();
+      await runtimeManager.marsServerRestart({ reason: "account_signed_out", source: "account", userInitiated: true });
       return { connected: false, remoteRevoked: result.remoteRevoked, reason: result.reason };
   },
   "automationRunnerConfigure": async (event, ...args) => {
       return desktopAutomationRunner.configure(args[0] ?? null);
   },
-  "omnirushServerRestart": async (event, ...args) => {
+  "marsServerRestart": async (event, ...args) => {
       try {
-        return await runtimeManager.omnirushServerRestart({ source: "renderer", ...(args[0] ?? {}) });
+        return await runtimeManager.marsServerRestart({ source: "renderer", ...(args[0] ?? {}) });
       } catch (error) {
         // Kept for the start report if the window then shows "couldn't start".
         noteStartFailure(error);
@@ -2576,8 +2588,8 @@ const desktopCommandHandlers = {
         String(args[2] ?? ""),
       );
   },
-  "resetOmniRushState": async (event, ...args) => {
-      return workspaceStore.resetOmniRushState();
+  "resetMarsState": async (event, ...args) => {
+      return workspaceStore.resetMarsState();
   },
   "resetOpencodeCache": async (event, ...args) => {
       return { removed: [], missing: [], errors: [] };
@@ -2889,7 +2901,7 @@ function assertDesktopActivation() {
     DESKTOP_DISTRIBUTION,
     workspaceStore.readDesktopBootstrapConfigSync(),
   )) {
-    throw new Error("OmniRush.ai must be activated from your Den portal before this command is available.");
+    throw new Error("MarsAI must be activated from your Den portal before this command is available.");
   }
 }
 
@@ -2911,7 +2923,7 @@ async function handleDesktopInvoke(event, command, ...args) {
         commandTarget = ` ${target.origin}${target.pathname}`;
       } catch {}
     }
-    console.warn(`[omnirush:desktop] ${command}${commandTarget} failed`, desktopErrorMessageWithCauses(error));
+    console.warn(`[mars:desktop] ${command}${commandTarget} failed`, desktopErrorMessageWithCauses(error));
     throw new Error(desktopErrorMessageWithCauses(error), { cause: error });
   }
 }
@@ -3012,7 +3024,7 @@ async function createMainWindow() {
     onRepeatedCrash: (details) => {
       dialog.showErrorBox(
         `${APP_NAME} could not recover`,
-        `The app renderer stopped repeatedly (${details.reason ?? "unknown reason"}). Quit and reopen OmniRush.ai. Your workspace files were not deleted.`,
+        `The app renderer stopped repeatedly (${details.reason ?? "unknown reason"}). Quit and reopen MarsAI. Your workspace files were not deleted.`,
       );
     },
   });
@@ -3067,7 +3079,7 @@ async function createMainWindow() {
     browserPanel.routeBlockedMainWindowNavigation(url);
   });
 
-  const startUrl = process.env.OMNIRUSH_ELECTRON_START_URL?.trim() || process.env.ELECTRON_START_URL?.trim();
+  const startUrl = process.env.MARS_ELECTRON_START_URL?.trim() || process.env.ELECTRON_START_URL?.trim();
   if (startUrl) {
     await mainWindow.loadURL(startUrl);
   } else {
@@ -3079,45 +3091,46 @@ async function createMainWindow() {
   return mainWindow;
 }
 
-ipcMain.on("omnirush:desktop-bootstrap-sync", (event) => {
+ipcMain.on("mars:desktop-bootstrap-sync", (event) => {
   event.returnValue = workspaceStore.readDesktopBootstrapConfigSync();
 });
-ipcMain.on("omnirush:desktop-distribution-sync", (event) => {
+ipcMain.on("mars:desktop-distribution-sync", (event) => {
   event.returnValue = DESKTOP_DISTRIBUTION;
 });
-ipcMain.handle("omnirush:desktop", handleDesktopInvoke);
-ipcMain.handle("omnirush:shell:openExternal", async (_event, url) => {
+ipcMain.handle("mars:desktop", handleDesktopInvoke);
+ipcMain.handle("mars:shell:openExternal", async (_event, url) => {
   if (typeof url !== "string" || url.trim().length === 0) {
     return { ok: false, error: "empty url" };
   }
   return openExternalUrl(url.trim());
 });
-ipcMain.handle("omnirush:update-gate:get", async () => updateGate.state());
-// Asks /device/me again (the renderer does on focus too): client_update there
-// is authoritative, so an update the server stopped requiring clears the gate.
-ipcMain.handle("omnirush:update-gate:refresh", async () => {
-  await omnirushAccountStore.status().catch(() => null);
+ipcMain.handle("mars:update-gate:get", async () => updateGate.state());
+// Asks for the account profile again (the renderer does on focus too): the
+// OAuth profile answer is authoritative for client_update, so an update the
+// server stopped requiring clears the gate.
+ipcMain.handle("mars:update-gate:refresh", async () => {
+  await marsAccountStore.status().catch(() => null);
   return updateGate.state();
 });
 {
   // The profile is read at launch and every 30 minutes even when no
   // account view is open, so a required update is known before the
   // deadline, not only from the first refused model request.
-  const readProfile = () => { void omnirushAccountStore.status().catch(() => null); };
+  const readProfile = () => { void marsAccountStore.status().catch(() => null); };
   setTimeout(readProfile, 15_000).unref?.();
   setInterval(readProfile, 30 * 60_000).unref?.();
 }
-ipcMain.handle("omnirush:shell:relaunch", async () => {
+ipcMain.handle("mars:shell:relaunch", async () => {
   turnGuard.allowQuit();
   app.relaunch();
   app.quit();
 });
-ipcMain.handle("omnirush:system:architecture", async () => resolveArchitectureInfo());
-ipcMain.handle("omnirush:system:microphoneStatus", async () => {
+ipcMain.handle("mars:system:architecture", async () => resolveArchitectureInfo());
+ipcMain.handle("mars:system:microphoneStatus", async () => {
   if (process.platform !== "darwin") return { platform: process.platform, status: "not-mac" };
   return { platform: process.platform, status: systemPreferences.getMediaAccessStatus("microphone") };
 });
-ipcMain.handle("omnirush:system:askMicrophoneAccess", async () => {
+ipcMain.handle("mars:system:askMicrophoneAccess", async () => {
   if (process.platform !== "darwin") return { platform: process.platform, granted: true, status: "not-mac" };
   const before = systemPreferences.getMediaAccessStatus("microphone");
   const granted = await systemPreferences.askForMediaAccess("microphone");
@@ -3126,8 +3139,8 @@ ipcMain.handle("omnirush:system:askMicrophoneAccess", async () => {
 });
 
 // ── Terminal IPC ────────────────────────────────────────────────────────
-ipcMain.handle("omnirush:terminal:shells", () => terminalShellList.map(({ id, label }) => ({ id, label })));
-ipcMain.handle("omnirush:terminal:create", async (event, options = {}) => {
+ipcMain.handle("mars:terminal:shells", () => terminalShellList.map(({ id, label }) => ({ id, label })));
+ipcMain.handle("mars:terminal:create", async (event, options = {}) => {
   assertDesktopActivation();
   const contents = event.sender;
   watchTerminalOwner(contents);
@@ -3143,21 +3156,21 @@ ipcMain.handle("omnirush:terminal:create", async (event, options = {}) => {
     },
   });
 });
-ipcMain.handle("omnirush:terminal:write", (event, terminalId, data) => {
+ipcMain.handle("mars:terminal:write", (event, terminalId, data) => {
   terminalSessions.write(event.sender.id, terminalId, data);
 });
-ipcMain.handle("omnirush:terminal:resize", (event, terminalId, cols, rows) => {
+ipcMain.handle("mars:terminal:resize", (event, terminalId, cols, rows) => {
   terminalSessions.resize(event.sender.id, terminalId, cols, rows);
 });
-ipcMain.handle("omnirush:terminal:kill", async (event, terminalId) => {
+ipcMain.handle("mars:terminal:kill", async (event, terminalId) => {
   await terminalSessions.kill(event.sender.id, terminalId);
 });
-ipcMain.handle("omnirush:terminal:killWorkspace", async (event, workspaceId) => {
+ipcMain.handle("mars:terminal:killWorkspace", async (event, workspaceId) => {
   await terminalSessions.killWorkspace(workspaceId, event.sender.id);
 });
 
 browserPanel.registerIpc(ipcMain);
-const browserLoginEvalSeam = !app.isPackaged && process.env.OMNIRUSH_EVAL_BROWSER_LOGIN_SYNC === "1";
+const browserLoginEvalSeam = !app.isPackaged && process.env.MARS_EVAL_BROWSER_LOGIN_SYNC === "1";
 const browserLoginSync = createBrowserLoginSync({
   statePath: path.join(app.getPath("userData"), "browser-login-sync.json"),
   initialPolicyAllowed:
@@ -3176,12 +3189,12 @@ const browserLoginSync = createBrowserLoginSync({
         title: action === "resume" ? "Resume browser login sync?" : action === "configure" ? "Enable browser login sync?" : action === "discover" ? "Look for browser profiles?" : "Read logins from this browser?",
         message: sourceLabel,
         detail: action === "resume"
-          ? "OmniRush.ai will resume reading the sites you selected from this profile. It never changes the source browser."
+          ? "MarsAI will resume reading the sites you selected from this profile. It never changes the source browser."
           : action === "configure"
-            ? `OmniRush.ai will keep reading login cookies for these sites until you pause or disconnect: ${sites.join(", ")}. It never changes the source browser.`
+            ? `MarsAI will keep reading login cookies for these sites until you pause or disconnect: ${sites.join(", ")}. It never changes the source browser.`
             : action === "discover"
-              ? "OmniRush.ai will look only for supported browser profile locations. It will not read cookie databases until you choose a profile and confirm again."
-              : "OmniRush.ai will read login metadata from this profile so you can choose sites. Nothing syncs until you confirm those sites, and the source browser is never changed.",
+              ? "MarsAI will look only for supported browser profile locations. It will not read cookie databases until you choose a profile and confirm again."
+              : "MarsAI will read login metadata from this profile so you can choose sites. Nothing syncs until you confirm those sites, and the source browser is never changed.",
         noLink: true,
       };
       const result = mainWindow
@@ -3219,10 +3232,10 @@ const { ensureAutoUpdater, prepareInstallOnQuit, offerMoveAtLaunch } = registerU
 
 if (!app.requestSingleInstanceLock()) {
   if (isDevMode && !app.isPackaged) {
-    console.error(`[omnirush] Another OmniRush.ai dev instance already holds this profile directory:
+    console.error(`[mars] Another MarsAI dev instance already holds this profile directory:
   ${app.getPath("userData")}
 The second process is exiting so its CDP port is released.
-Run this worktree with an isolated profile: OMNIRUSH_DEV_PROFILE=auto pnpm dev
+Run this worktree with an isolated profile: MARS_DEV_PROFILE=auto pnpm dev
 or use: pnpm dev:worktree`);
     app.exit(1);
     setImmediate(() => process.exit(1));
@@ -3372,9 +3385,9 @@ or use: pnpm dev:worktree`);
       runDetachedTask("show app data reset notice", async () => {
         const { response } = await dialog.showMessageBox(win, {
           type: "info",
-          message: "omnirush.ai started with fresh app data",
+          message: "marsai.click started with fresh app data",
           detail: `Your previous app data was moved, not deleted, to:\n${startReset.backupDir}\n\n`
-            + "To go back to it, choose Restore previous app data: omnirush.ai restarts and moves it back."
+            + "To go back to it, choose Restore previous app data: marsai.click restarts and moves it back."
             + (startReset.failed.length ? `\n\n${startReset.failed.length} item(s) were in use and stayed in place.` : ""),
           buttons: ["OK", "Open backup folder", "Restore previous app data"],
           defaultId: 0,
@@ -3399,8 +3412,8 @@ or use: pnpm dev:worktree`);
     if (firstLaunchWorkspaceFailure) {
       runDetachedTask("show default workspace warning", () => dialog.showMessageBox(win, {
         type: "warning",
-        message: "OmniRush.ai could not prepare its default folder",
-        detail: `OmniRush.ai is open without a workspace. Use Add workspace in the sidebar to choose another folder.\n\n${firstLaunchWorkspaceFailure.error}`,
+        message: "MarsAI could not prepare its default folder",
+        detail: `MarsAI is open without a workspace. Use Add workspace in the sidebar to choose another folder.\n\n${firstLaunchWorkspaceFailure.error}`,
         buttons: ["Continue"],
       }));
     }
@@ -3430,7 +3443,7 @@ or use: pnpm dev:worktree`);
     console.error("[desktop] startup failed", error);
     dialog.showErrorBox(
       `${APP_NAME} could not start`,
-      "OmniRush.ai hit an unexpected startup error. Quit and reopen the app. If it continues, switch to a Stable build and share the diagnostics with support.",
+      "MarsAI hit an unexpected startup error. Quit and reopen the app. If it continues, switch to a Stable build and share the diagnostics with support.",
     );
     app.quit();
   });

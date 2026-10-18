@@ -12,11 +12,11 @@ import { FakeArchiveServer } from "./session-archive/fake-archive-server.js";
 import { manifestOf, openArchive } from "./session-archive/test-helpers.js";
 import type { ServerConfig } from "./types.js";
 
-/** Schema 1/2 trace uploads carry their events only in files[0] (__omnirush__/trace.json): read them back as `trace`. */
+/** Schema 1/2 trace uploads carry their events only in files[0] (__mars__/trace.json): read them back as `trace`. */
 function withTraceEvents<T>(envelope: T): T {
   const record = envelope as Record<string, unknown>;
   if (record.trace !== undefined || !Array.isArray(record.files)) return envelope;
-  const file = (record.files as Array<{ path?: string; content?: string }>).find((item) => item.path === "__omnirush__/trace.json");
+  const file = (record.files as Array<{ path?: string; content?: string }>).find((item) => item.path === "__mars__/trace.json");
   if (!file?.content) return envelope;
   return { ...record, trace: (JSON.parse(file.content) as { events?: unknown[] }).events ?? [] } as T;
 }
@@ -57,15 +57,15 @@ afterEach(async () => {
 
 // Workflow state and audit logs live under the server data directory; keep
 // them out of the developer's real one.
-const previousDataDir = process.env.OMNIRUSH_DATA_DIR;
+const previousDataDir = process.env.MARS_DATA_DIR;
 let dataDir = "";
 beforeAll(async () => {
-  dataDir = await mkdtemp(join(tmpdir(), "omnirush-upload-server-data-"));
-  process.env.OMNIRUSH_DATA_DIR = dataDir;
+  dataDir = await mkdtemp(join(tmpdir(), "mars-upload-server-data-"));
+  process.env.MARS_DATA_DIR = dataDir;
 });
 afterAll(async () => {
-  if (previousDataDir === undefined) delete process.env.OMNIRUSH_DATA_DIR;
-  else process.env.OMNIRUSH_DATA_DIR = previousDataDir;
+  if (previousDataDir === undefined) delete process.env.MARS_DATA_DIR;
+  else process.env.MARS_DATA_DIR = previousDataDir;
   await rm(dataDir, { recursive: true, force: true });
 });
 
@@ -76,7 +76,7 @@ async function git(root: string, ...args: string[]): Promise<void> {
 }
 
 async function createWorkspace(): Promise<{ root: string; stateDir: string }> {
-  const base = await mkdtemp(join(tmpdir(), "omnirush-upload-server-"));
+  const base = await mkdtemp(join(tmpdir(), "mars-upload-server-"));
   cleanups.push(() => rm(base, { recursive: true, force: true }));
   const root = join(base, "workspace");
   const stateDir = join(base, "state");
@@ -263,7 +263,7 @@ function startMockV2Engine(input: { provider: string; model: string }) {
       }
       if (pathname === "/api/session/active") return Response.json({ data: busy ? { ses_v2root: { type: "running" } } : {} });
       if (pathname === "/api/mcp" || pathname === "/api/skill") return Response.json({ data: [] });
-      if (pathname === "/api/session/ses_v2root/instructions/entries/omnirush.context" && request.method === "PUT") return Response.json({ data: {} });
+      if (pathname === "/api/session/ses_v2root/instructions/entries/mars.context" && request.method === "PUT") return Response.json({ data: {} });
       if (pathname === "/api/session/ses_v2root/prompt" && request.method === "POST") {
         prompts.push(await request.json().catch(() => null));
         turn += 1;
@@ -338,7 +338,7 @@ async function settledRun(base: string, runId: string): Promise<{ status: string
 }
 
 /**
- * The omnirush.ai session upload endpoint (/omnirush/collect), recording every decompressed envelope.
+ * The marsai.click session upload endpoint (/mars/collect), recording every decompressed envelope.
  * With `archive`, it also serves the project archive routes from that fake,
  * with the presigned S3 part URLs pointing back here.
  */
@@ -349,20 +349,20 @@ function startMockGateway(archive?: FakeArchiveServer) {
     port: 0,
     async fetch(request) {
       const url = new URL(request.url);
-      if (archive && url.pathname.startsWith("/omnirush/archives")) {
+      if (archive && url.pathname.startsWith("/mars/archives")) {
         const body = request.method === "GET" ? undefined : await request.text();
-        const response = await archive.respond(`https://api.omnirush.test${url.pathname}`, { method: request.method, headers: request.headers, ...(body ? { body } : {}) });
+        const response = await archive.respond(`https://api.mars.test${url.pathname}`, { method: request.method, headers: request.headers, ...(body ? { body } : {}) });
         const text = (await response.text()).replaceAll("https://bucket.s3.test/", `http://127.0.0.1:${server.port}/s3/`);
         return new Response(text, { status: response.status, headers: { "content-type": "application/json" } });
       }
       if (archive && url.pathname.startsWith("/s3/")) {
         return archive.respond(`https://bucket.s3.test/${url.pathname.slice("/s3/".length)}${url.search}`, { method: request.method, body: await request.arrayBuffer() });
       }
-      if (url.pathname === "/omnirush/collect" && request.method === "POST") {
+      if (url.pathname === "/mars/collect" && request.method === "POST") {
         if (request.headers.get("authorization") !== "Bearer access-token") return Response.json({ detail: "unauthorized" }, { status: 401 });
         const compressed = Buffer.from(await request.arrayBuffer());
         uploads.push({
-          sessionId: request.headers.get("x-omnirush-session-id"),
+          sessionId: request.headers.get("x-mars-session-id"),
           envelope: withTraceEvents(JSON.parse(zstdDecompressSync(compressed).toString("utf8"))) as Envelope,
         });
         return Response.json({ ok: true }, { status: 201 });
@@ -371,7 +371,7 @@ function startMockGateway(archive?: FakeArchiveServer) {
     },
   }) as Served;
   cleanups.push(() => server.stop(true));
-  return { uploads, gatewayUrl: `http://127.0.0.1:${server.port}/omnirush/v1` };
+  return { uploads, gatewayUrl: `http://127.0.0.1:${server.port}/mars/v1` };
 }
 
 function serverConfig(input: { root: string; stateDir: string; engineBaseUrl: string; gatewayUrl?: string; appVersion?: string }): ServerConfig {
@@ -393,15 +393,15 @@ function serverConfig(input: { root: string; stateDir: string; engineBaseUrl: st
     logRequests: false,
     ...(input.gatewayUrl
       ? {
-          omnirushGatewayCredentials: { gatewayUrl: input.gatewayUrl, accessToken: "access-token", refreshToken: "refresh-token" },
-          omnirushEngineToken: "engine-token",
+          marsGatewayCredentials: { gatewayUrl: input.gatewayUrl, accessToken: "access-token", refreshToken: "refresh-token" },
+          marsEngineToken: "engine-token",
         }
       : {}),
     ...(input.appVersion ? { appVersion: input.appVersion } : {}),
   };
 }
 
-async function startOmniRush(config: ServerConfig) {
+async function startMars(config: ServerConfig) {
   const server = await startServer(config) as Served;
   const stop = async () => { await server.stop(true); };
   cleanups.push(stop);
@@ -443,15 +443,15 @@ function events(envelope: Envelope | undefined): Array<{ type: string; data?: Re
 }
 
 function setGateEnv(devMode: string | undefined, optional: string | undefined) {
-  if (devMode === undefined) delete process.env.OMNIRUSH_DEV_MODE;
-  else process.env.OMNIRUSH_DEV_MODE = devMode;
-  if (optional === undefined) delete process.env.OMNIRUSH_SESSION_UPLOAD_OPTIONAL;
-  else process.env.OMNIRUSH_SESSION_UPLOAD_OPTIONAL = optional;
+  if (devMode === undefined) delete process.env.MARS_DEV_MODE;
+  else process.env.MARS_DEV_MODE = devMode;
+  if (optional === undefined) delete process.env.MARS_SESSION_UPLOAD_OPTIONAL;
+  else process.env.MARS_SESSION_UPLOAD_OPTIONAL = optional;
 }
 
 /** Restores the process environment after the test, whatever the test set. */
 function preserveGateEnv() {
-  const previous = { devMode: process.env.OMNIRUSH_DEV_MODE, optional: process.env.OMNIRUSH_SESSION_UPLOAD_OPTIONAL };
+  const previous = { devMode: process.env.MARS_DEV_MODE, optional: process.env.MARS_SESSION_UPLOAD_OPTIONAL };
   cleanups.push(() => setGateEnv(previous.devMode, previous.optional));
 }
 
@@ -460,11 +460,11 @@ async function runTurn(provider: { provider: string; model: string }) {
   const { root, stateDir } = await createWorkspace();
   const engine = startMockEngine(provider);
   const gateway = startMockGateway();
-  const omnirush = await startOmniRush(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl, gatewayUrl: gateway.gatewayUrl, appVersion: "2.3.4" }));
-  const response = await prompt(omnirush.base);
+  const mars = await startMars(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl, gatewayUrl: gateway.gatewayUrl, appVersion: "2.3.4" }));
+  const response = await prompt(mars.base);
   expect(response.status).toBe(204);
   await waitFor(() => (traces(gateway.uploads).length >= 1 ? true : undefined));
-  await omnirush.stop();
+  await mars.stop();
   return { uploads: gateway.uploads, engine, gateway, root, stateDir };
 }
 
@@ -481,12 +481,12 @@ function shape(uploads: Upload[]) {
 }
 
 describe("session uploader server integration", () => {
-  test("captures an external-provider session exactly like an omnirush.ai session, subagents included", async () => {
+  test("captures an external-provider session exactly like an marsai.click session, subagents included", async () => {
     const anthropic = await runTurn({ provider: "anthropic", model: "claude-sonnet-4-5" });
-    const omnirush = await runTurn({ provider: "omnirush", model: "gpt-5.6-sol" });
+    const mars = await runTurn({ provider: "mars", model: "gpt-5.6-sol" });
 
-    expect(shape(anthropic.uploads)).toEqual(shape(omnirush.uploads));
-    for (const run of [anthropic, omnirush]) {
+    expect(shape(anthropic.uploads)).toEqual(shape(mars.uploads));
+    for (const run of [anthropic, mars]) {
       expect(run.uploads.map((upload) => [upload.envelope.snapshot_type, upload.envelope.trigger])).toEqual([
         ["start", "session_start"],
         ["trace", "trace_flush"],
@@ -504,8 +504,8 @@ describe("session uploader server integration", () => {
     expect(events(trace).find((event) => event.type === "session.model")?.data).toEqual({
       provider_id: "anthropic", model_id: "claude-sonnet-4-5", variant: "high", agent: "build",
     });
-    expect(events(traces(omnirush.uploads)[0]).find((event) => event.type === "session.model")?.data).toEqual({
-      provider_id: "omnirush", model_id: "gpt-5.6-sol", variant: "high", agent: "build",
+    expect(events(traces(mars.uploads)[0]).find((event) => event.type === "session.model")?.data).toEqual({
+      provider_id: "mars", model_id: "gpt-5.6-sol", variant: "high", agent: "build",
     });
     const children = events(trace).filter((event) => event.type === "session.child");
     // Every swarm layer the engine allows (3) is captured with its parent and
@@ -534,7 +534,7 @@ describe("session uploader server integration", () => {
     const engine = startMockEngine({ provider: "openai", model: "gpt-5" });
     const gateway = startMockGateway();
     const config = serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl, gatewayUrl: gateway.gatewayUrl });
-    const first = await startOmniRush(config);
+    const first = await startMars(config);
     expect((await prompt(first.base)).status).toBe(204);
     await waitFor(() => (traces(gateway.uploads).length >= 1 ? true : undefined));
     expect((await prompt(first.base)).status).toBe(204);
@@ -554,7 +554,7 @@ describe("session uploader server integration", () => {
     expect((events(turnTwo).find((event) => event.type === "turn.completed")?.data?.messages as unknown[]).length).toBe(2);
 
     // Restart: the ledger carries the root and per-child checkpoints forward.
-    const second = await startOmniRush({ ...config, startedAt: Date.now() });
+    const second = await startMars({ ...config, startedAt: Date.now() });
     expect((await prompt(second.base)).status).toBe(204);
     await waitFor(() => (traces(gateway.uploads).length >= 3 ? true : undefined));
     await second.stop();
@@ -573,13 +573,13 @@ describe("session uploader server integration", () => {
     const engine = startMockEngine({ provider: "openai", model: "gpt-5.4", steerable: true });
     engine.control.busyMs = 2_500;
     const gateway = startMockGateway();
-    const omnirush = await startOmniRush(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl, gatewayUrl: gateway.gatewayUrl, appVersion: "2.3.4" }));
-    expect((await prompt(omnirush.base)).status).toBe(204);
+    const mars = await startMars(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl, gatewayUrl: gateway.gatewayUrl, appVersion: "2.3.4" }));
+    expect((await prompt(mars.base)).status).toBe(204);
     await new Promise((resolve) => setTimeout(resolve, 400));
     const statusReads = engine.received.filter((request) => request === "GET /session/status").length;
     const messageReads = () => engine.received.filter((request) => request === "GET /session/ses_root/message").length;
     const steerSent = Date.now();
-    expect((await prompt(omnirush.base, { parts: [{ type: "text", text: "use port 8080" }] })).status).toBe(204);
+    expect((await prompt(mars.base, { parts: [{ type: "text", text: "use port 8080" }] })).status).toBe(204);
     // The steer went to the engine at once: no hold behind the running turn.
     expect(Date.now() - steerSent).toBeLessThan(2_000);
     expect(engine.prompts).toHaveLength(2);
@@ -587,9 +587,9 @@ describe("session uploader server integration", () => {
     expect(messageReads()).toBeGreaterThan(0);
     const steerTrace = await waitFor(() => traces(gateway.uploads).find((envelope) => events(envelope).some((event) => event.type === "turn.completed")));
     // The next prompt, once idle, is a turn of its own.
-    expect((await prompt(omnirush.base, { parts: [{ type: "text", text: "next task" }] })).status).toBe(204);
+    expect((await prompt(mars.base, { parts: [{ type: "text", text: "next task" }] })).status).toBe(204);
     await waitFor(() => (traces(gateway.uploads).filter((envelope) => events(envelope).some((event) => event.type === "turn.completed")).length >= 2 ? true : undefined));
-    await omnirush.stop();
+    await mars.stop();
 
     const all = traces(gateway.uploads).flatMap((envelope) => events(envelope));
     const steer = all.find((event) => event.type === "turn.steer")?.data;
@@ -613,32 +613,32 @@ describe("session uploader server integration", () => {
     const { root, stateDir } = await createWorkspace();
     const engine = startMockEngine({ provider: "anthropic", model: "claude-sonnet-4-5" });
     const gateway = startMockGateway();
-    const omnirush = await startOmniRush(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl, gatewayUrl: gateway.gatewayUrl }));
-    const response = await fetch(`${omnirush.base}/workspace/ws_1/opencode/session/ses_missing_chat/prompt_async`, {
+    const mars = await startMars(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl, gatewayUrl: gateway.gatewayUrl }));
+    const response = await fetch(`${mars.base}/workspace/ws_1/opencode/session/ses_missing_chat/prompt_async`, {
       method: "POST",
       headers: { Authorization: "Bearer owt_test_token", "content-type": "application/json" },
       body: JSON.stringify({ parts: [{ type: "text", text: "Do the task" }] }),
     });
     expect(response.status).toBe(404);
-    await omnirush.stop();
+    await mars.stop();
     expect(gateway.uploads.filter((upload) => upload.sessionId === "ses_missing_chat")).toEqual([]);
   }, 30_000);
 
   test("a user's sign-out (clearUploadQueue) deletes the queued uploads; a start without an account keeps them", async () => {
     const { root, stateDir } = await createWorkspace();
     const engine = startMockEngine({ provider: "anthropic", model: "claude-sonnet-4-5" });
-    const spool = join(stateDir, "omnirush-upload-spool");
+    const spool = join(stateDir, "mars-upload-spool");
     await mkdir(spool, { recursive: true });
     const id = "000000000001-000001-00000001";
     await writeFile(join(spool, `${id}.zst`), Buffer.alloc(64, 1));
     await writeFile(join(spool, `${id}.json`), JSON.stringify({ id, session_id: "ses_queued_0001", snapshot_type: "trace", trigger: "trace_flush", sequence: 1, bytes: 64, created_at: new Date().toISOString(), attempts: 1, account_id: "user-1" }));
     // Signed out by a refused refresh: the next start has no account, and the queue stays.
-    const retired = await startOmniRush(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl }));
+    const retired = await startMars(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl }));
     await new Promise((resolve) => setTimeout(resolve, 300));
     await retired.stop();
     expect((await readdir(spool)).sort()).toEqual([`${id}.json`, `${id}.zst`]);
     // The user signed out: the start after it deletes it.
-    const signedOut = await startOmniRush({ ...serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl }), clearUploadQueue: true });
+    const signedOut = await startMars({ ...serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl }), clearUploadQueue: true });
     await signedOut.stop();
     expect(await readdir(spool).catch(() => [])).toEqual([]);
   }, 30_000);
@@ -646,7 +646,7 @@ describe("session uploader server integration", () => {
   test("refuses prompt dispatch on a local workspace without an account, unless both development flags are set", async () => {
     const { root, stateDir } = await createWorkspace();
     const engine = startMockEngine({ provider: "anthropic", model: "claude-sonnet-4-5" });
-    const omnirush = await startOmniRush(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl }));
+    const mars = await startMars(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl }));
 
     preserveGateEnv();
     setGateEnv(undefined, undefined);
@@ -658,32 +658,32 @@ describe("session uploader server integration", () => {
       "sessio%6E/ses_root/prompt_async", "session/ses%5Froot/prompt_async", "%73ession/ses_root/%70rompt_async/",
     ];
     for (const path of dispatchPaths) {
-      const response = await fetch(`${omnirush.base}/workspace/ws_1/opencode/${path}`, {
+      const response = await fetch(`${mars.base}/workspace/ws_1/opencode/${path}`, {
         method: "POST",
         headers: { Authorization: "Bearer owt_test_token", "content-type": "application/json" },
         body: JSON.stringify({ parts: [{ type: "text", text: "Do the task" }] }),
       });
       expect([path, response.status]).toEqual([path, 403]);
       expect(await response.json()).toEqual({
-        error: "omnirush_account_required",
-        message: "Sign in to omnirush.ai from Settings to start a session.",
+        error: "mars_account_required",
+        message: "Sign in to marsai.click from Settings to start a session.",
       });
     }
     expect(engine.prompts).toHaveLength(0);
     expect(engine.received.filter((entry) => entry.startsWith("POST"))).toEqual([]);
     // Reads and non-dispatch writes are not gated.
-    const list = await fetch(`${omnirush.base}/workspace/ws_1/opencode/session`, { headers: { Authorization: "Bearer owt_test_token" } });
+    const list = await fetch(`${mars.base}/workspace/ws_1/opencode/session`, { headers: { Authorization: "Bearer owt_test_token" } });
     expect(list.status).toBe(200);
 
     // One flag alone is not a bypass.
     setGateEnv("1", undefined);
-    expect((await prompt(omnirush.base)).status).toBe(403);
+    expect((await prompt(mars.base)).status).toBe(403);
     setGateEnv(undefined, "1");
-    expect((await prompt(omnirush.base)).status).toBe(403);
+    expect((await prompt(mars.base)).status).toBe(403);
     expect(engine.prompts).toHaveLength(0);
 
     setGateEnv("1", "1");
-    expect((await prompt(omnirush.base)).status).toBe(204);
+    expect((await prompt(mars.base)).status).toBe(204);
     expect(engine.prompts).toHaveLength(1);
   }, 30_000);
 
@@ -691,8 +691,8 @@ describe("session uploader server integration", () => {
     const { root, stateDir } = await createWorkspace();
     const engine = startMockEngine({ provider: "anthropic", model: "claude-sonnet-4-5" });
     const gateway = startMockGateway();
-    const omnirush = await startOmniRush(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl, gatewayUrl: gateway.gatewayUrl }));
-    const send = (path: string) => fetch(`${omnirush.base}/workspace/ws_1/opencode/${path}`, {
+    const mars = await startMars(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl, gatewayUrl: gateway.gatewayUrl }));
+    const send = (path: string) => fetch(`${mars.base}/workspace/ws_1/opencode/${path}`, {
       method: "POST",
       headers: { Authorization: "Bearer owt_test_token", "content-type": "application/json" },
       body: JSON.stringify({ parts: [{ type: "text", text: "Do the task" }] }),
@@ -716,7 +716,7 @@ describe("session uploader server integration", () => {
     expect(malformed.ok).toBe(false);
     expect(engine.prompts).toHaveLength(1);
     expect(engine.received.filter((entry) => entry.startsWith("POST"))).toEqual(["POST /sessio%6E/ses%5Froot/prompt%5Fasync"]);
-    await omnirush.stop();
+    await mars.stop();
   }, 60_000);
 
   test("the proxy itself refuses a dispatch with a session identifier the engine cannot decode", async () => {
@@ -727,7 +727,7 @@ describe("session uploader server integration", () => {
     setGateEnv("1", "1");
     const { root, stateDir } = await createWorkspace();
     const config = serverConfig({ root, stateDir, engineBaseUrl: "http://127.0.0.1:9" });
-    const url = new URL("http://omnirush.invalid/workspace/ws_1/opencode/session/ses%E0/prompt_async");
+    const url = new URL("http://mars.invalid/workspace/ws_1/opencode/session/ses%E0/prompt_async");
     const response = await proxyOpencodeRequest({
       config,
       workspace: config.workspaces[0]!,
@@ -743,12 +743,12 @@ describe("session uploader server integration", () => {
     const { root, stateDir } = await createWorkspace();
     const engine = startMockEngine({ provider: "anthropic", model: "claude-sonnet-4-5" });
     const gateway = startMockGateway();
-    const omnirush = await startOmniRush(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl, gatewayUrl: gateway.gatewayUrl }));
+    const mars = await startMars(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl, gatewayUrl: gateway.gatewayUrl }));
 
     const noteText = `OPENAI_API_KEY=sk-1234567890abcdefghijklmnop\n${"attachment text ".repeat(20_000)}`;
     const noteUrl = `data:text/plain;base64,${Buffer.from(noteText).toString("base64")}`;
     const pngBytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 1, 2, 3]);
-    const response = await prompt(omnirush.base, {
+    const response = await prompt(mars.base, {
       parts: [
         { type: "text", text: "Summarise the note" },
         { type: "file", mime: "text/plain", filename: "note.txt", url: noteUrl },
@@ -760,7 +760,7 @@ describe("session uploader server integration", () => {
     // The browser tools report visits for the subagent that made them; the
     // event lands on the root session the session uploader tracks.
     const pageText = `Contact jane@example.com ${"visible page text ".repeat(8_000)}`;
-    const report = await fetch(`${omnirush.base}/session-upload/events`, {
+    const report = await fetch(`${mars.base}/session-upload/events`, {
       method: "POST",
       headers: { Authorization: "Bearer owt_test_token", "content-type": "application/json" },
       body: JSON.stringify({
@@ -778,7 +778,7 @@ describe("session uploader server integration", () => {
     expect(response.status).toBe(204);
     expect(await report.json()).toEqual({ ok: true, recorded: 1 });
     // The route's pre-2.2.2 path still answers (an unknown session records nothing).
-    const unknown = await fetch(`${omnirush.base}/collector/events`, {
+    const unknown = await fetch(`${mars.base}/collector/events`, {
       method: "POST",
       headers: { Authorization: "Bearer owt_test_token", "content-type": "application/json" },
       body: JSON.stringify({ sessionId: "ses_other", events: [{ type: "web.visit", data: { url: "https://example.com/", text: "orphan" } }] }),
@@ -794,7 +794,7 @@ describe("session uploader server integration", () => {
     await writeFile(join(root, "summary.md"), "generated summary\n");
 
     await waitFor(() => (traces(gateway.uploads).length >= 1 ? true : undefined));
-    await omnirush.stop();
+    await mars.stop();
 
     const all = traces(gateway.uploads).flatMap((envelope) => events(envelope));
     const attachments = all.filter((event) => event.type === "attachment").map((event) => event.data);
@@ -840,7 +840,7 @@ describe("collection gaps: the v2 mount and local workflow steps", () => {
     const engine = startMockEngine(provider);
     const v2 = startMockV2Engine(provider);
     const config = serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl });
-    await startOmniRush(config);
+    await startMars(config);
 
     preserveGateEnv();
     setGateEnv(undefined, undefined);
@@ -848,7 +848,7 @@ describe("collection gaps: the v2 mount and local workflow steps", () => {
     for (const path of ["api/session/ses_v2root/prompt", "api/session/ses_v2root/command", "api/session/ses_v2root/promp%74", "api/sessio%6E/ses_v2root/prompt"]) {
       const response = await promptV2(config, v2.connection, path);
       expect([path, response.status]).toEqual([path, 403]);
-      expect(await response.json()).toEqual({ error: "omnirush_account_required", message: "Sign in to omnirush.ai from Settings to start a session." });
+      expect(await response.json()).toEqual({ error: "mars_account_required", message: "Sign in to marsai.click from Settings to start a session." });
     }
     // Nothing reached the daemon: no ownership lookup, no instruction sync, no prompt.
     expect(v2.received).toEqual([]);
@@ -863,7 +863,7 @@ describe("collection gaps: the v2 mount and local workflow steps", () => {
     const bypassed = await promptV2(config, v2.connection);
     expect(bypassed.status).toBe(200);
     expect(v2.prompts).toEqual([{ text: "Do the task" }]);
-    expect(v2.received).toContain("PUT /api/session/ses_v2root/instructions/entries/omnirush.context");
+    expect(v2.received).toContain("PUT /api/session/ses_v2root/instructions/entries/mars.context");
     // Even bypassed, a session identifier the daemon cannot decode is refused before the request is forwarded.
     const malformed = await promptV2(config, v2.connection, "api/session/ses%E0/prompt");
     expect(malformed.status).toBe(400);
@@ -877,7 +877,7 @@ describe("collection gaps: the v2 mount and local workflow steps", () => {
     const v2 = startMockV2Engine(provider);
     const gateway = startMockGateway();
     const config = serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl, gatewayUrl: gateway.gatewayUrl });
-    const omnirush = await startOmniRush(config);
+    const mars = await startMars(config);
 
     const noteText = "OPENAI_API_KEY=sk-1234567890abcdefghijklmnop attached note";
     const noteUri = `data:text/plain;base64,${Buffer.from(noteText).toString("base64")}`;
@@ -885,7 +885,7 @@ describe("collection gaps: the v2 mount and local workflow steps", () => {
     expect(response.status).toBe(200);
     expect(v2.prompts).toHaveLength(1);
     await waitFor(() => (traces(gateway.uploads).length >= 1 ? true : undefined));
-    await omnirush.stop();
+    await mars.stop();
 
     expect(gateway.uploads.map((upload) => [upload.sessionId, upload.envelope.snapshot_type, upload.envelope.trigger])).toEqual([
       ["ses_v2root", "start", "session_start"],
@@ -918,27 +918,27 @@ describe("collection gaps: the v2 mount and local workflow steps", () => {
   test("refuses a local workflow run without an account, unless both development flags are set", async () => {
     const { root, stateDir } = await createWorkspace();
     const engine = startMockEngine(provider);
-    const omnirush = await startOmniRush(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl }));
-    const workflowId = await createWorkflow(omnirush.base, provider);
+    const mars = await startMars(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl }));
+    const workflowId = await createWorkflow(mars.base, provider);
 
     preserveGateEnv();
     setGateEnv(undefined, undefined);
-    const refused = await runWorkflow(omnirush.base, workflowId);
+    const refused = await runWorkflow(mars.base, workflowId);
     expect(refused.status).toBe(403);
-    expect(await refused.json()).toMatchObject({ code: "omnirush_account_required", message: "Sign in to omnirush.ai from Settings to start a session." });
+    expect(await refused.json()).toMatchObject({ code: "mars_account_required", message: "Sign in to marsai.click from Settings to start a session." });
     setGateEnv("1", undefined);
-    expect((await runWorkflow(omnirush.base, workflowId)).status).toBe(403);
+    expect((await runWorkflow(mars.base, workflowId)).status).toBe(403);
     setGateEnv(undefined, "1");
-    expect((await runWorkflow(omnirush.base, workflowId)).status).toBe(403);
+    expect((await runWorkflow(mars.base, workflowId)).status).toBe(403);
     // No engine session was created and no prompt was sent; no run was recorded.
     expect(engine.received.filter((entry) => entry.startsWith("POST"))).toEqual([]);
-    const snapshot = await fetch(`${omnirush.base}/workspace/ws_1/local-workflows`, { headers: clientHeaders });
+    const snapshot = await fetch(`${mars.base}/workspace/ws_1/local-workflows`, { headers: clientHeaders });
     expect(((await snapshot.json()) as { runs: unknown[] }).runs).toEqual([]);
 
     setGateEnv("1", "1");
-    const accepted = await runWorkflow(omnirush.base, workflowId);
+    const accepted = await runWorkflow(mars.base, workflowId);
     expect(accepted.status).toBe(202);
-    const run = await settledRun(omnirush.base, ((await accepted.json()) as { id: string }).id);
+    const run = await settledRun(mars.base, ((await accepted.json()) as { id: string }).id);
     expect(run.status).toBe("completed");
     expect(run.steps.map((step) => [step.status, step.sessionId, step.output])).toEqual([["completed", "ses_workflow", "workflow answer 1"]]);
     expect(engine.workflowPrompts).toEqual([{ model: { providerID: "anthropic", modelID: "claude-sonnet-4-5" }, parts: [{ type: "text", text: "Summarise the repository" }] }]);
@@ -948,14 +948,14 @@ describe("collection gaps: the v2 mount and local workflow steps", () => {
     const { root, stateDir } = await createWorkspace();
     const engine = startMockEngine(provider);
     const gateway = startMockGateway();
-    const omnirush = await startOmniRush(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl, gatewayUrl: gateway.gatewayUrl }));
-    const workflowId = await createWorkflow(omnirush.base, provider);
-    const accepted = await runWorkflow(omnirush.base, workflowId);
+    const mars = await startMars(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl, gatewayUrl: gateway.gatewayUrl }));
+    const workflowId = await createWorkflow(mars.base, provider);
+    const accepted = await runWorkflow(mars.base, workflowId);
     expect(accepted.status).toBe(202);
-    const run = await settledRun(omnirush.base, ((await accepted.json()) as { id: string }).id);
+    const run = await settledRun(mars.base, ((await accepted.json()) as { id: string }).id);
     expect(run.status).toBe("completed");
     await waitFor(() => (traces(gateway.uploads).length >= 1 ? true : undefined));
-    await omnirush.stop();
+    await mars.stop();
 
     expect(gateway.uploads.map((upload) => [upload.sessionId, upload.envelope.snapshot_type, upload.envelope.trigger])).toEqual([
       ["ses_workflow", "start", "session_start"],
@@ -990,21 +990,21 @@ describe("project archive wiring", () => {
     archive.token = "access-token";
     setup(archive);
     const gateway = startMockGateway(archive);
-    const omnirush = await startOmniRush(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl, gatewayUrl: gateway.gatewayUrl }));
-    return { root, stateDir, engine, archive, gateway, omnirush };
+    const mars = await startMars(serverConfig({ root, stateDir, engineBaseUrl: engine.baseUrl, gatewayUrl: gateway.gatewayUrl }));
+    return { root, stateDir, engine, archive, gateway, mars };
   }
 
   test("a git workspace's root session is archived through the device session: one base, then a delta for a turn that changed the folder", async () => {
-    const { root, archive, gateway, omnirush } = await archivedServer();
-    expect((await prompt(omnirush.base)).status).toBe(204);
+    const { root, archive, gateway, mars } = await archivedServer();
+    expect((await prompt(mars.base)).status).toBe(204);
     await waitFor(() => (traces(gateway.uploads).length >= 1 ? true : undefined));
     const [base] = await waitFor(() => (archive.objects().length >= 1 ? archive.objects() : undefined));
 
     await writeFile(join(root, "feature.txt"), "new work\n");
-    expect((await prompt(omnirush.base)).status).toBe(204);
+    expect((await prompt(mars.base)).status).toBe(204);
     await waitFor(() => (traces(gateway.uploads).length >= 2 ? true : undefined));
     const objects = await waitFor(() => (archive.objects().some((object) => object.request.turn === 2) ? archive.objects() : undefined));
-    await omnirush.stop();
+    await mars.stop();
 
     expect(base!.request).toMatchObject({ session_id: "ses_root", kind: "base", sequence: 0, marker: ".git" });
     expect((await openArchive(base!.object!)).map((member) => member.name)).toEqual(expect.arrayContaining(["app.txt", ".git/HEAD"]));
@@ -1023,8 +1023,8 @@ describe("project archive wiring", () => {
   }, 60_000);
 
   test("a turn whose status the engine stops answering is waited out, not given up: once it answers, the turn gets its delta, numbered from the engine", async () => {
-    const { root, engine, archive, gateway, omnirush } = await archivedServer();
-    expect((await prompt(omnirush.base)).status).toBe(204);
+    const { root, engine, archive, gateway, mars } = await archivedServer();
+    expect((await prompt(mars.base)).status).toBe(204);
     await waitFor(() => (traces(gateway.uploads).length >= 1 ? true : undefined));
     await waitFor(() => (archive.objects().length >= 1 ? true : undefined));
     // The status route stops answering JSON: the observer retries with backoff instead of failing.
@@ -1032,12 +1032,12 @@ describe("project archive wiring", () => {
     await writeFile(join(root, "feature.txt"), "new work\n");
     const statusReads = () => engine.received.filter((request) => request === "GET /session/status").length;
     const before = statusReads();
-    expect((await prompt(omnirush.base)).status).toBe(204);
+    expect((await prompt(mars.base)).status).toBe(204);
     await waitFor(() => (statusReads() >= before + 2 ? true : undefined));
     engine.control.statusBody = null;
     const objects = await waitFor(() => (archive.objects().some((object) => object.request.turn === 2) ? archive.objects() : undefined));
     const settled = await waitFor(() => traces(gateway.uploads).slice(1).find((envelope) => events(envelope).some((event) => event.type === "turn.completed")));
-    await omnirush.stop();
+    await mars.stop();
 
     // The turn settled as any other: its messages went out, and the observer neither failed nor timed out.
     const completed = events(settled).find((event) => event.type === "turn.completed")?.data?.messages as Array<{ info: { id: string } }>;
@@ -1067,21 +1067,21 @@ describe("project archive wiring", () => {
         message(`old_assistant_${index + 1}`, "assistant", { type: "text", text: "x".repeat(100 * 1024) }),
       ]).flat(),
     ];
-    const { root, engine, archive, gateway, omnirush } = await archivedServer(undefined, history);
-    expect((await prompt(omnirush.base)).status).toBe(204);
+    const { root, engine, archive, gateway, mars } = await archivedServer(undefined, history);
+    expect((await prompt(mars.base)).status).toBe(204);
     await waitFor(() => (traces(gateway.uploads).length >= 1 ? true : undefined));
     await writeFile(join(root, "feature.txt"), "new work\n");
-    expect((await prompt(omnirush.base)).status).toBe(204);
+    expect((await prompt(mars.base)).status).toBe(204);
     await waitFor(() => (traces(gateway.uploads).length >= 2 ? true : undefined));
     await waitFor(() => (archive.objects().some((object) => object.request.kind === "delta") ? true : undefined));
     // Then the engine stops answering for the messages (a turn long enough to be seen running).
     engine.control.rootMessagesStatus = 500;
     engine.control.busyMs = 2_500;
     await writeFile(join(root, "later.txt"), "more work\n");
-    expect((await prompt(omnirush.base)).status).toBe(204);
+    expect((await prompt(mars.base)).status).toBe(204);
     await waitFor(() => (traces(gateway.uploads).length >= 3 ? true : undefined));
     const objects = await waitFor(() => (archive.objects().filter((object) => object.request.kind === "delta").length >= 2 ? archive.objects() : undefined));
-    await omnirush.stop();
+    await mars.stop();
 
     const [turnOne, turnTwo, turnThree] = traces(gateway.uploads);
     const turnMessageIds = (envelope: Envelope | undefined) => (events(envelope).find((event) => event.type === "turn.completed")?.data?.messages as Array<{ info: { id: string } }>)
@@ -1110,30 +1110,30 @@ describe("project archive wiring", () => {
   }, 90_000);
 
   test("without archive consent (428) nothing is packed or uploaded, consent is checked once, and the chat carries on", async () => {
-    const { stateDir, archive, gateway, omnirush } = await archivedServer((fake) => {
+    const { stateDir, archive, gateway, mars } = await archivedServer((fake) => {
       fake.gate = { status: 428, detail: "archive_consent_required" };
     });
-    expect((await prompt(omnirush.base)).status).toBe(204);
+    expect((await prompt(mars.base)).status).toBe(204);
     await waitFor(() => (traces(gateway.uploads).length >= 1 ? true : undefined));
-    expect((await prompt(omnirush.base)).status).toBe(204);
+    expect((await prompt(mars.base)).status).toBe(204);
     await waitFor(() => (traces(gateway.uploads).length >= 2 ? true : undefined));
-    await omnirush.stop();
+    await mars.stop();
     expect(archive.callPaths()).toEqual(["GET archives/key 428"]);
-    expect(await readdir(join(stateDir, "omnirush-archive", "pending"))).toEqual([]);
+    expect(await readdir(join(stateDir, "mars-archive", "pending"))).toEqual([]);
   }, 60_000);
 
-  test("OMNIRUSH_ARCHIVE_ENABLED=0 turns the archive off on this device: no archive request at all", async () => {
-    const previous = process.env.OMNIRUSH_ARCHIVE_ENABLED;
-    process.env.OMNIRUSH_ARCHIVE_ENABLED = "0";
+  test("MARS_ARCHIVE_ENABLED=0 turns the archive off on this device: no archive request at all", async () => {
+    const previous = process.env.MARS_ARCHIVE_ENABLED;
+    process.env.MARS_ARCHIVE_ENABLED = "0";
     cleanups.push(() => {
-      if (previous === undefined) delete process.env.OMNIRUSH_ARCHIVE_ENABLED;
-      else process.env.OMNIRUSH_ARCHIVE_ENABLED = previous;
+      if (previous === undefined) delete process.env.MARS_ARCHIVE_ENABLED;
+      else process.env.MARS_ARCHIVE_ENABLED = previous;
     });
-    const { stateDir, archive, gateway, omnirush } = await archivedServer();
-    expect((await prompt(omnirush.base)).status).toBe(204);
+    const { stateDir, archive, gateway, mars } = await archivedServer();
+    expect((await prompt(mars.base)).status).toBe(204);
     await waitFor(() => (traces(gateway.uploads).length >= 1 ? true : undefined));
-    await omnirush.stop();
+    await mars.stop();
     expect(archive.calls).toEqual([]);
-    expect(await readdir(stateDir)).not.toContain("omnirush-archive");
+    expect(await readdir(stateDir)).not.toContain("mars-archive");
   }, 60_000);
 });

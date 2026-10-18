@@ -19,10 +19,10 @@ describe("agent diagnostics effective engine inspection", () => {
   test("reduces valid engine config and agent responses to the bounded allowlist", () => {
     const snapshot = validateEffectiveEngineSnapshot({
       config: {
-        default_agent: "omnirush",
-        plugin: [["file:///plugins/omnirush-extensions-preview.ts", { secret: "not-copied" }]],
+        default_agent: "mars",
+        plugin: [["file:///plugins/mars-extensions-preview.ts", { secret: "not-copied" }]],
         mcp: {
-          "omnirush-cloud": {
+          "mars-cloud": {
             type: "remote",
             url: "https://den.example.com/mcp/agent",
             headers: { Authorization: "Bearer NOT_REPORTED" },
@@ -30,33 +30,33 @@ describe("agent diagnostics effective engine inspection", () => {
         },
       },
       agents: [{
-        name: "omnirush",
+        name: "mars",
         mode: "primary",
-        prompt: "search_capabilities execute_capability ## OmniRush.ai Artifacts",
+        prompt: "search_capabilities execute_capability ## MarsAI Artifacts",
         hidden: false,
-        permission: [{ permission: "omnirush-cloud_*", pattern: "*", action: "allow" }],
+        permission: [{ permission: "mars-cloud_*", pattern: "*", action: "allow" }],
         options: { secret: "not-copied" },
       }],
     });
 
     expect(snapshot).toMatchObject({
-      defaultAgent: "omnirush",
-      pluginSpecs: ["file:///plugins/omnirush-extensions-preview.ts"],
-      agents: [{ name: "omnirush", mode: "primary", hidden: false }],
-      mcps: [{ name: "omnirush-cloud" }],
+      defaultAgent: "mars",
+      pluginSpecs: ["file:///plugins/mars-extensions-preview.ts"],
+      agents: [{ name: "mars", mode: "primary", hidden: false }],
+      mcps: [{ name: "mars-cloud" }],
     });
     expect(snapshot).not.toHaveProperty("agents.0.options");
   });
 
   test("mirrors OpenCode's last-match whole-resource tool visibility rule", () => {
     const rules = [
-      { permission: "omnirush-cloud_*", pattern: "*", action: "allow" as const },
-      { permission: "omnirush-cloud_search_*", pattern: "tenant-a", action: "deny" as const },
-      { permission: "omnirush-cloud_execute_capability", pattern: "*", action: "deny" as const },
+      { permission: "mars-cloud_*", pattern: "*", action: "allow" as const },
+      { permission: "mars-cloud_search_*", pattern: "tenant-a", action: "deny" as const },
+      { permission: "mars-cloud_execute_capability", pattern: "*", action: "deny" as const },
     ];
 
-    expect(effectiveToolDecision(rules, "omnirush-cloud_search_capabilities")).toBe("allow");
-    expect(effectiveToolDecision(rules, "omnirush-cloud_execute_capability")).toBe("deny");
+    expect(effectiveToolDecision(rules, "mars-cloud_search_capabilities")).toBe("allow");
+    expect(effectiveToolDecision(rules, "mars-cloud_execute_capability")).toBe("deny");
   });
 
   test("bounds engine bodies and rejects redirects without following them", async () => {

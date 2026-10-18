@@ -28,7 +28,7 @@ try {
 
   // Create a session that asks for tool permission.
   const session = await client.session.create({
-    title: "OmniRush.ai permission test",
+    title: "MarsAI permission test",
     permission: [
       {
         permission: "bash",
@@ -75,8 +75,8 @@ try {
   }
 
   // Try to trigger an external-directory permission request deterministically.
-  const externalPath = "/tmp/omnirush-permission-test.txt";
-  await writeFile(externalPath, "omnirush permission test\n", "utf8");
+  const externalPath = "/tmp/mars-permission-test.txt";
+  await writeFile(externalPath, "mars permission test\n", "utf8");
 
   try {
     await client.file.read({ path: externalPath });

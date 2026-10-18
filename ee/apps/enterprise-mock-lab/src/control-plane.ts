@@ -11,7 +11,7 @@ import {
   type FaultDefinition,
   type ProviderProfile,
   type SafeTraceEvent,
-} from "@omnirush/enterprise-mcp-mock-server"
+} from "@mars/enterprise-mcp-mock-server"
 import {
   ControlPlaneError,
   type CreateInstanceInput,

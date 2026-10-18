@@ -4,7 +4,7 @@ import { access, appendFile, mkdir, mkdtemp, readFile, rm, writeFile } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { eventually, test } from "@omnirush/testkit";
+import { eventually, test } from "@mars/testkit";
 import {
   isProcessAlive,
   main,
@@ -12,7 +12,7 @@ import {
   readScriptWorldSnapshot,
   rewriteLedger,
   type WorldCliOptions,
-} from "@omnirush/world";
+} from "@mars/world";
 
 const REPO_ROOT = fileURLToPath(new URL("../..", import.meta.url));
 
@@ -31,7 +31,7 @@ async function stopPid(pid: number, label: string): Promise<void> {
 }
 
 test("a crashed world is reaped and recreated without leaking or duplicating resources", async ({ evidence }) => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-world-crash-reap-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-world-crash-reap-"));
   const worldsDirectory = join(root, "worlds");
   const scriptsDirectory = join(root, ".worlds", "scripts");
   const fixtureName = "reap-world";
@@ -41,8 +41,8 @@ test("a crashed world is reaped and recreated without leaking or duplicating res
   const snapshotPath = join(scriptsDirectory, `${stagedName}.json`);
   const ledgerPath = join(scriptsDirectory, `${stagedName}.ledger.jsonl`);
   const recipeUrl = pathToFileURL(join(REPO_ROOT, "evals", "packages", "env", "src", "recipe.ts")).href;
-  const previousSnapshotDirectory = process.env.OMNIRUSH_WORLD_SNAPSHOT_DIR;
-  const previousStubCrash = process.env.OMNIRUSH_WORLD_STUB_CRASH;
+  const previousSnapshotDirectory = process.env.MARS_WORLD_SNAPSHOT_DIR;
+  const previousStubCrash = process.env.MARS_WORLD_STUB_CRASH;
   const launchedPids = new Set<number>();
   const sleeperPids = new Set<number>();
   let unrelatedPid: number | undefined;
@@ -67,8 +67,8 @@ test("a crashed world is reaped and recreated without leaking or duplicating res
     `Retained ${count} resources for "${stagedName}"; run pnpm world down ${fixtureName} --stage ${stage} --purge to remove them.`;
 
   try {
-    process.env.OMNIRUSH_WORLD_SNAPSHOT_DIR = scriptsDirectory;
-    delete process.env.OMNIRUSH_WORLD_STUB_CRASH;
+    process.env.MARS_WORLD_SNAPSHOT_DIR = scriptsDirectory;
+    delete process.env.MARS_WORLD_STUB_CRASH;
     await mkdir(worldsDirectory);
     await writeFile(fixturePath, `
 import { spawn } from "node:child_process";
@@ -82,11 +82,11 @@ const world = recipe(${JSON.stringify(fixtureName)}, async (tools) => {
   if (child.pid === undefined) throw new Error("Expected sleeper child pid.");
   child.unref();
   await tools.track({ kind: "process", id: String(child.pid), label: "sleeper", match: "setInterval" });
-  const dir = await mkdtemp(join(tmpdir(), "omnirush-reap-"));
+  const dir = await mkdtemp(join(tmpdir(), "mars-reap-"));
   await tools.track({ kind: "tmpdir", id: dir, label: "scratch" });
-  const kept = await mkdtemp(join(tmpdir(), "omnirush-reap-kept-"));
+  const kept = await mkdtemp(join(tmpdir(), "mars-reap-kept-"));
   await tools.track({ kind: "tmpdir", id: kept, label: "kept", retain: true });
-  if (process.env.OMNIRUSH_WORLD_STUB_CRASH === "1") process.kill(process.pid, "SIGKILL");
+  if (process.env.MARS_WORLD_STUB_CRASH === "1") process.kill(process.pid, "SIGKILL");
   tools.stack.use({
     async [Symbol.asyncDispose](): Promise<void> {
       try { process.kill(child.pid, "SIGKILL"); } catch {}
@@ -272,7 +272,7 @@ if (import.meta.main) await runRecipe(world);
       true,
     );
 
-    const guardPath = `/omnirush-reaper-guard-${Math.random().toString(16).slice(2)}-does-not-exist`;
+    const guardPath = `/mars-reaper-guard-${Math.random().toString(16).slice(2)}-does-not-exist`;
     await appendFile(ledgerPath, `${JSON.stringify({
       kind: "tmpdir",
       id: guardPath,
@@ -292,7 +292,7 @@ if (import.meta.main) await runRecipe(world);
       true,
     );
 
-    process.env.OMNIRUSH_WORLD_STUB_CRASH = "1";
+    process.env.MARS_WORLD_STUB_CRASH = "1";
     const midBootCrash = await up();
     assert.equal(midBootCrash.code, 1, midBootCrash.lines.join("\n"));
     assert.equal(midBootCrash.lines.includes(`Script world "${stagedName}" exited before creating its snapshot.`), true);
@@ -304,7 +304,7 @@ if (import.meta.main) await runRecipe(world);
     const crashedBootChildPid = Number(crashedBootProcess.id);
     sleeperPids.add(crashedBootChildPid);
     assert.equal(isProcessAlive(crashedBootChildPid), true);
-    delete process.env.OMNIRUSH_WORLD_STUB_CRASH;
+    delete process.env.MARS_WORLD_STUB_CRASH;
     const postCrashUp = await up();
     assert.equal(postCrashUp.code, 0, postCrashUp.lines.join("\n"));
     assert.equal(postCrashUp.lines[0], `Reaped 2 leaked resources from "${stagedName}".`);
@@ -342,7 +342,7 @@ if (import.meta.main) await runRecipe(world);
       true,
     );
   } finally {
-    delete process.env.OMNIRUSH_WORLD_STUB_CRASH;
+    delete process.env.MARS_WORLD_STUB_CRASH;
     try { await main(["down", fixtureName, "--stage", stage, "--purge"], { ...options, print: () => {} }); } catch {}
     for (const pid of launchedPids) {
       try { await stopPid(pid, "crash-reap world cleanup"); } catch {}
@@ -353,10 +353,10 @@ if (import.meta.main) await runRecipe(world);
     if (unrelatedPid !== undefined) {
       try { await stopPid(unrelatedPid, "crash-reap unrelated child cleanup"); } catch {}
     }
-    if (previousSnapshotDirectory === undefined) delete process.env.OMNIRUSH_WORLD_SNAPSHOT_DIR;
-    else process.env.OMNIRUSH_WORLD_SNAPSHOT_DIR = previousSnapshotDirectory;
-    if (previousStubCrash === undefined) delete process.env.OMNIRUSH_WORLD_STUB_CRASH;
-    else process.env.OMNIRUSH_WORLD_STUB_CRASH = previousStubCrash;
+    if (previousSnapshotDirectory === undefined) delete process.env.MARS_WORLD_SNAPSHOT_DIR;
+    else process.env.MARS_WORLD_SNAPSHOT_DIR = previousSnapshotDirectory;
+    if (previousStubCrash === undefined) delete process.env.MARS_WORLD_STUB_CRASH;
+    else process.env.MARS_WORLD_STUB_CRASH = previousStubCrash;
     await rm(root, { recursive: true, force: true });
   }
 }, 60_000);

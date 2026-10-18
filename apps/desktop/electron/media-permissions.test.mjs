@@ -14,15 +14,15 @@ test("no test switches without the flags", () => {
   assert.deepEqual(app.switches, []);
 });
 
-test("OMNIRUSH_ELECTRON_FAKE_MEDIA gives a fake device only", () => {
+test("MARS_ELECTRON_FAKE_MEDIA gives a fake device only", () => {
   const app = fakeApp();
   configureFakeMediaForTests(app, true, {});
   assert.deepEqual(app.switches, [["use-fake-device-for-media-stream"]]);
 });
 
-test("OMNIRUSH_VOICE_INPUT_FILE plays the WAV once through the fake microphone", () => {
+test("MARS_VOICE_INPUT_FILE plays the WAV once through the fake microphone", () => {
   const app = fakeApp();
-  configureFakeMediaForTests(app, false, { OMNIRUSH_VOICE_INPUT_FILE: " /tmp/clip.wav " });
+  configureFakeMediaForTests(app, false, { MARS_VOICE_INPUT_FILE: " /tmp/clip.wav " });
   assert.deepEqual(app.switches, [
     ["use-fake-device-for-media-stream"],
     ["use-fake-ui-for-media-stream"],

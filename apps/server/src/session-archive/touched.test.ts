@@ -36,10 +36,10 @@ describe("scanTouchedFiles", () => {
     await mkdir(join(root, "sub"));
     await writeFile(join(root, "sub/a.txt"), "inside a touched folder");
     await writeFile(join(root, ".env"), "TOKEN=abc");
-    await mkdir(join(root, "__omnirush__"));
-    await writeFile(join(root, "__omnirush__/x"), "reserved");
-    await mkdir(join(root, ".omnirush-state"));
-    await writeFile(join(root, ".omnirush-state/ledger.json"), "{}");
+    await mkdir(join(root, "__mars__"));
+    await writeFile(join(root, "__mars__/x"), "reserved");
+    await mkdir(join(root, ".mars-state"));
+    await writeFile(join(root, ".mars-state/ledger.json"), "{}");
     await mkdir(join(root, "real"));
     const data = Buffer.from("a,b\n1,2\n");
     await writeFile(join(root, "real/data.csv"), data);
@@ -51,9 +51,9 @@ describe("scanTouchedFiles", () => {
     const access = accessLog(root);
 
     const scan = await scanTouchedFiles(root, [
-      "render.png", "brief.pdf", "sub", ".env", "__omnirush__/x", ".omnirush-state/ledger.json", "alias.csv", "link-out", "link-up",
+      "render.png", "brief.pdf", "sub", ".env", "__mars__/x", ".mars-state/ledger.json", "alias.csv", "link-out", "link-up",
       "linked-dir/inner.txt", "missing.txt", "pipe", "../touched-outside/secret.txt", `${outside}/secret.txt`, "sub/./a.txt", "",
-    ], { excludedDirs: [join(root, ".omnirush-state")], onAccess: access.onAccess });
+    ], { excludedDirs: [join(root, ".mars-state")], onAccess: access.onAccess });
 
     expect(scan.entries.map((entry) => [entry.path, entry.type, entry.size, entry.sha256])).toEqual([
       ["brief.pdf", "file", brief.length, sha256(brief)],

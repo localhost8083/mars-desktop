@@ -44,14 +44,14 @@ test("a listed chat the engine does not have is handed back to the shell instead
     mock.module(moduleId, () => moduleExports);
   }
   const [
-    { createOmniRushServerClient },
+    { createMarsServerClient },
     { IDLE_CLOUD_MCP_SUBMISSION_GATE_STATE },
     { useComposerStateStore },
     { getReactQueryClient },
     { LocalProvider },
     { ShellConfigProvider },
   ] = await Promise.all([
-    import("../src/app/lib/omnirush-server"),
+    import("../src/app/lib/mars-server"),
     import("../src/react-app/domains/connections/cloud-mcp-submit-readiness"),
     import("../src/react-app/domains/session/surface/composer-state-store"),
     import("../src/react-app/infra/query-client"),
@@ -68,7 +68,7 @@ test("a listed chat the engine does not have is handed back to the shell instead
   const fetchStub = async () => new Response("{}", { headers: { "content-type": "application/json" } });
   Object.defineProperty(globalThis, "fetch", { configurable: true, value: fetchStub });
   Object.defineProperty(window, "fetch", { configurable: true, value: fetchStub });
-  window.localStorage.setItem("omnirush.shell-config", JSON.stringify({ starterCards: false }));
+  window.localStorage.setItem("mars.shell-config", JSON.stringify({ starterCards: false }));
 
   // Per session: what the snapshot read and the confirming read answer.
   const snapshotError: Record<string, Error> = {};
@@ -94,7 +94,7 @@ test("a listed chat the engine does not have is handed back to the shell instead
   const { snapshotKey } = await import("../src/react-app/domains/session/sync/session-sync");
   const queryClient = getReactQueryClient();
   queryClient.clear();
-  const client = createOmniRushServerClient({ baseUrl: "http://127.0.0.1:1", token: "test-token" });
+  const client = createMarsServerClient({ baseUrl: "http://127.0.0.1:1", token: "test-token" });
   const missing: Array<[string, string]> = [];
 
   const surface = (sessionId: string) => (
@@ -109,7 +109,7 @@ test("a listed chat the engine does not have is handed back to the shell instead
             draftScope="local"
             isControlTarget={false}
             opencodeBaseUrl="http://127.0.0.1:1/opencode"
-            omnirushToken="test-token"
+            marsToken="test-token"
             developerMode={false}
             modelLabel="Test model"
             onModelClick={() => {}}
@@ -126,7 +126,7 @@ test("a listed chat the engine does not have is handed back to the shell instead
             modelVariantLabel="Default"
             modelVariant={null}
             onModelVariantChange={() => {}}
-            agentLabel="OmniRush.ai"
+            agentLabel="MarsAI"
             selectedAgent={null}
             listAgents={async () => []}
             onSelectAgent={() => {}}
@@ -177,7 +177,7 @@ test("a listed chat the engine does not have is handed back to the shell instead
     await settle();
 
     // Any other failure (engine restarting, bare 404) never drops a chat.
-    snapshotError.ses_restarting = Object.assign(new Error("OmniRush request failed"), { status: 503, code: "opencode_engine_unreachable" });
+    snapshotError.ses_restarting = Object.assign(new Error("Mars request failed"), { status: 503, code: "opencode_engine_unreachable" });
     snapshotError.ses_bare = Object.assign(new Error("404 Not Found"), { status: 404, code: "session_not_found" });
     const restarting = await mount("ses_restarting");
     await mount("ses_bare");

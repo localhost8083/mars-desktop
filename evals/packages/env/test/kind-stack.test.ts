@@ -42,8 +42,8 @@ function createExec(handler: (call: ExecCall) => KubeExecResult): { exec: KubeEx
 function imagePlan(mode: "published" | "local"): KubeImagePlan {
   return {
     mode,
-    denApiRepository: mode === "local" ? "omnirush-den-api" : "ghcr.io/omnirush-ai/omnirush-den-api",
-    denWebRepository: mode === "local" ? "omnirush-den-web" : "ghcr.io/omnirush-ai/omnirush-den-web",
+    denApiRepository: mode === "local" ? "mars-den-api" : "ghcr.io/mars-ai/mars-den-api",
+    denWebRepository: mode === "local" ? "mars-den-web" : "ghcr.io/mars-ai/mars-den-web",
     tag: mode === "local" ? "kube-lab" : "latest",
     pullPolicy: "IfNotPresent",
     reason: "test",
@@ -55,11 +55,11 @@ function manifestFor(architecture: string): unknown {
 }
 
 function withCleanImageEnv<T>(fn: () => Promise<T>): Promise<T> {
-  const previous = process.env.OMNIRUSH_EVAL_KUBE_IMAGES;
-  delete process.env.OMNIRUSH_EVAL_KUBE_IMAGES;
+  const previous = process.env.MARS_EVAL_KUBE_IMAGES;
+  delete process.env.MARS_EVAL_KUBE_IMAGES;
   return fn().finally(() => {
-    if (previous === undefined) delete process.env.OMNIRUSH_EVAL_KUBE_IMAGES;
-    else process.env.OMNIRUSH_EVAL_KUBE_IMAGES = previous;
+    if (previous === undefined) delete process.env.MARS_EVAL_KUBE_IMAGES;
+    else process.env.MARS_EVAL_KUBE_IMAGES = previous;
   });
 }
 
@@ -90,16 +90,16 @@ test("helm upgrade argv includes release, chart, profile, context, and local ima
   ]);
   assert(args.includes("image.tag=kube-lab"));
   assert(args.includes("image.pullPolicy=IfNotPresent"));
-  assert(args.includes("denApi.image.repository=omnirush-den-api"));
-  assert(args.includes("denWeb.image.repository=omnirush-den-web"));
+  assert(args.includes("denApi.image.repository=mars-den-api"));
+  assert(args.includes("denWeb.image.repository=mars-den-web"));
   assert(args.includes("--kube-context"));
-  assert(args.includes("kind-omnirush-kube-lab"));
+  assert(args.includes("kind-mars-kube-lab"));
 });
 
 test("kubectl rollout and port-forward argv use the kind context", () => {
   assert.deepEqual(rolloutStatusArgs("omnirush-ee-den-api", "300s"), [
     "--context",
-    "kind-omnirush-kube-lab",
+    "kind-mars-kube-lab",
     "rollout",
     "status",
     "deployment/omnirush-ee-den-api",
@@ -107,7 +107,7 @@ test("kubectl rollout and port-forward argv use the kind context", () => {
   ]);
   assert.deepEqual(portForwardArgs("omnirush-ee-den-web", 3005, 3005), [
     "--context",
-    "kind-omnirush-kube-lab",
+    "kind-mars-kube-lab",
     "port-forward",
     "service/omnirush-ee-den-web",
     "3005:3005",
@@ -153,7 +153,7 @@ test("explicit published image mode fails when manifests do not support this pla
 });
 
 test("endpoint handles return credentials and stop only their recorded port-forwards", async () => {
-  const stateDir = await mkdtemp(join(tmpdir(), "omnirush-kind-endpoints-test-"));
+  const stateDir = await mkdtemp(join(tmpdir(), "mars-kind-endpoints-test-"));
   const spawned: { command: string; args: string[]; pid: number }[] = [];
   const killed: number[] = [];
   const pids = [987_651, 987_652];
@@ -184,10 +184,10 @@ test("endpoint handles return credentials and stop only their recorded port-forw
     return new Response("ok", { status: 200 });
   };
   const envBefore = {
-    apiUrl: process.env.OMNIRUSH_EVAL_DEN_API_URL,
-    webUrl: process.env.OMNIRUSH_EVAL_DEN_WEB_URL,
-    token: process.env.OMNIRUSH_EVAL_DEN_TOKEN,
-    multiOrg: process.env.OMNIRUSH_EVAL_DEN_MULTI_ORG,
+    apiUrl: process.env.MARS_EVAL_DEN_API_URL,
+    webUrl: process.env.MARS_EVAL_DEN_WEB_URL,
+    token: process.env.MARS_EVAL_DEN_TOKEN,
+    multiOrg: process.env.MARS_EVAL_DEN_MULTI_ORG,
   };
   globalThis.fetch = fakeFetch;
   try {
@@ -219,10 +219,10 @@ test("endpoint handles return credentials and stop only their recorded port-forw
     await assert.rejects(() => readFile(join(stateDir, "api-port-forward.pid"), "utf8"), /ENOENT/);
     await assert.rejects(() => readFile(join(stateDir, "web-port-forward.pid"), "utf8"), /ENOENT/);
     assert.deepEqual({
-      apiUrl: process.env.OMNIRUSH_EVAL_DEN_API_URL,
-      webUrl: process.env.OMNIRUSH_EVAL_DEN_WEB_URL,
-      token: process.env.OMNIRUSH_EVAL_DEN_TOKEN,
-      multiOrg: process.env.OMNIRUSH_EVAL_DEN_MULTI_ORG,
+      apiUrl: process.env.MARS_EVAL_DEN_API_URL,
+      webUrl: process.env.MARS_EVAL_DEN_WEB_URL,
+      token: process.env.MARS_EVAL_DEN_TOKEN,
+      multiOrg: process.env.MARS_EVAL_DEN_MULTI_ORG,
     }, envBefore);
   } finally {
     globalThis.fetch = previousFetch;
@@ -231,7 +231,7 @@ test("endpoint handles return credentials and stop only their recorded port-forw
 });
 
 test("endpoint acquisition failure stops both newly started port-forwards", async () => {
-  const stateDir = await mkdtemp(join(tmpdir(), "omnirush-kind-endpoints-failure-test-"));
+  const stateDir = await mkdtemp(join(tmpdir(), "mars-kind-endpoints-failure-test-"));
   const killed: number[] = [];
   const pids = [987_661, 987_662];
   let spawned = 0;
@@ -289,7 +289,7 @@ test("ensureKindDenReady fails fast when the shared kind cluster is absent", asy
 test("ensureKindDenReady verifies both Den rollouts before reading shared state", async () => {
   const { exec, calls } = createExec((call) => {
     const text = `${call.command} ${call.args.join(" ")}`;
-    if (text === "kind get clusters") return success("omnirush-kube-lab\n");
+    if (text === "kind get clusters") return success("mars-kube-lab\n");
     if (text.includes("SHOW TABLES LIKE")) {
       return success("organization\ndesktop_connect_grant\nscim_group\ngroup_mapping_mode\n");
     }
@@ -309,7 +309,7 @@ test("ensureKindDenReady verifies both Den rollouts before reading shared state"
 });
 
 test("kubeStackDown stops port-forwards before uninstalling the release", async () => {
-  const stateDir = await mkdtemp(join(tmpdir(), "omnirush-kube-stack-test-"));
+  const stateDir = await mkdtemp(join(tmpdir(), "mars-kube-stack-test-"));
   const order: string[] = [];
   const { exec } = createExec((call) => {
     order.push(`${call.command}:${call.args[0] ?? ""}`);

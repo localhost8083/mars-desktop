@@ -7,18 +7,18 @@
     <meta name="theme-color" content="#0b0f19" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="OmniRush.ai" />
-    <title>OmniRush.ai</title>
+    <meta name="apple-mobile-web-app-title" content="MarsAI" />
+    <title>MarsAI</title>
 
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" type="image/svg+xml" href="/omnirush-mark.svg" />
+    <link rel="icon" type="image/svg+xml" href="/mars-mark.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <script>
       (function () {
         try {
-          var mode = localStorage.getItem("omnirush.themePref") || "system";
+          var mode = localStorage.getItem("mars.themePref") || "system";
           var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
           var resolved = mode === "dark" || (mode === "system" && prefersDark) ? "dark" : "light";
           document.documentElement.dataset.theme = resolved;
@@ -33,13 +33,13 @@
       // Pre-boot error beacon for web deployments: reports a web instance
       // that fails to load (entry bundle error, early exception) to Sentry
       // before the app's own error monitoring can start. Inert unless the
-      // build sets VITE_OMNIRUSH_DEPLOYMENT=web and VITE_OMNIRUSH_SENTRY_DSN.
+      // build sets VITE_MARS_DEPLOYMENT=web and VITE_MARS_SENTRY_DSN.
       // Once src/app/lib/error-monitoring.ts starts, it takes over via
-      // window.__omnirushWebErrorMonitorActive.
+      // window.__marsWebErrorMonitorActive.
       (function () {
         try {
-          var dsn = "%VITE_OMNIRUSH_SENTRY_DSN%";
-          var deployment = "%VITE_OMNIRUSH_DEPLOYMENT%";
+          var dsn = "%VITE_MARS_SENTRY_DSN%";
+          var deployment = "%VITE_MARS_DEPLOYMENT%";
           if (deployment !== "web" || !dsn || dsn.charAt(0) === "%") return;
           var match = dsn.match(/^https:\/\/([\w.-]+)@([\w.-]+(?::\d+)?)\/(\d+)$/);
           if (!match) return;
@@ -49,7 +49,7 @@
           var sent = 0;
           function analyticsAllowed() {
             try {
-              var raw = localStorage.getItem("omnirush.preferences");
+              var raw = localStorage.getItem("mars.preferences");
               if (!raw) return true;
               return JSON.parse(raw).analyticsEnabled !== false;
             } catch (e) {
@@ -57,7 +57,7 @@
             }
           }
           function send(type, message) {
-            if (sent >= 3 || window.__omnirushWebErrorMonitorActive === true) return;
+            if (sent >= 3 || window.__marsWebErrorMonitorActive === true) return;
             if (!analyticsAllowed()) return;
             sent += 1;
             var id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())).replace(/-/g, "");

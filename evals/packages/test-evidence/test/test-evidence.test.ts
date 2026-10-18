@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import type { CdpClient, Surface } from "@omnirush/cdp";
+import type { CdpClient, Surface } from "@mars/cdp";
 import { withTestEvidence } from "../src/ambient.ts";
 import { screenshot } from "../src/screenshot.ts";
 import type { ScreenshotArtifact } from "../src/screenshot.ts";
@@ -44,7 +44,7 @@ async function payload(dir: string): Promise<Record<string, unknown>> {
 }
 
 test("test evidence writes visual validations, assertions, failures, and unvalidated screenshots", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "omnirush-test-evidence-"));
+  const dir = await mkdtemp(join(tmpdir(), "mars-test-evidence-"));
   try {
     const testEvidence = createTestEvidence({ name: "body cam", outDir: dir });
     const passing = screenshotArtifact("passing");
@@ -109,7 +109,7 @@ test("test evidence writes visual validations, assertions, failures, and unvalid
 });
 
 test("test evidence writes a JSON artifact and lists it in the test run", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "omnirush-test-evidence-json-"));
+  const dir = await mkdtemp(join(tmpdir(), "mars-test-evidence-json-"));
   try {
     const testEvidence = createTestEvidence({ name: "world evidence", outDir: dir });
     testEvidence.recordJsonArtifact("world-snapshot primary", { version: 1, name: "primary" });
@@ -131,9 +131,9 @@ test("test evidence writes a JSON artifact and lists it in the test run", async 
 });
 
 test("test evidence records the selected engine in JSON and the HTML header", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "omnirush-test-evidence-engine-"));
-  const previous = process.env.OMNIRUSH_EVAL_ENGINE;
-  process.env.OMNIRUSH_EVAL_ENGINE = "v2";
+  const dir = await mkdtemp(join(tmpdir(), "mars-test-evidence-engine-"));
+  const previous = process.env.MARS_EVAL_ENGINE;
+  process.env.MARS_EVAL_ENGINE = "v2";
   try {
     const testEvidence = createTestEvidence({ name: "engine lane", outDir: dir });
     await testEvidence.close();
@@ -142,14 +142,14 @@ test("test evidence records the selected engine in JSON and the HTML header", as
     assert.equal(testRun.engine, "v2");
     assert.match(await readFile(join(dir, "index.html"), "utf8"), /engine v2/);
   } finally {
-    if (previous === undefined) delete process.env.OMNIRUSH_EVAL_ENGINE;
-    else process.env.OMNIRUSH_EVAL_ENGINE = previous;
+    if (previous === undefined) delete process.env.MARS_EVAL_ENGINE;
+    else process.env.MARS_EVAL_ENGINE = previous;
     await rm(dir, { recursive: true, force: true });
   }
 });
 
 test("test evidence accepts unchanged screenshots and only lets one validation use their pixel hash", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "omnirush-test-evidence-retake-"));
+  const dir = await mkdtemp(join(tmpdir(), "mars-test-evidence-retake-"));
   try {
     const testEvidence = createTestEvidence({ name: "retakes", outDir: dir });
     const duplicate = screenshotArtifact("same pixels");
@@ -191,7 +191,7 @@ test("test evidence accepts unchanged screenshots and only lets one validation u
 });
 
 test("screenshot automatically records an artifact in ambient test evidence", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "omnirush-test-evidence-screenshot-"));
+  const dir = await mkdtemp(join(tmpdir(), "mars-test-evidence-screenshot-"));
   try {
     const png = Buffer.from("ambient screenshot pixels");
     const client: CdpClient = {

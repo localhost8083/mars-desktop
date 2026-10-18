@@ -4,8 +4,8 @@ import { ApiError, formatError } from "./errors.js";
 import { resolveWithinRoot } from "./paths.js";
 import type { ServerConfig } from "./types.js";
 
-const WEB_ROOT_ENV = "OMNIRUSH_WEB_ROOT";
-const WEB_BOOTSTRAP_TOKEN_ENV = "OMNIRUSH_WEB_BOOTSTRAP_TOKEN";
+const WEB_ROOT_ENV = "MARS_WEB_ROOT";
+const WEB_BOOTSTRAP_TOKEN_ENV = "MARS_WEB_BOOTSTRAP_TOKEN";
 const ASSET_CACHE = "public, max-age=31536000, immutable";
 const INDEX_CACHE = "no-cache";
 
@@ -126,7 +126,7 @@ function injectBootstrap(html: string, token: string): string {
   if (!clientToken) return html;
 
   const bootstrap = escapeScriptJson(JSON.stringify({ token: clientToken }));
-  const script = `<script>window.__OMNIRUSH_BOOTSTRAP__ = ${bootstrap}</script>`;
+  const script = `<script>window.__MARS_BOOTSTRAP__ = ${bootstrap}</script>`;
   const headCloseIndex = html.toLowerCase().indexOf("</head>");
   if (headCloseIndex < 0) return `${script}${html}`;
   return `${html.slice(0, headCloseIndex)}${script}${html.slice(headCloseIndex)}`;

@@ -84,10 +84,10 @@ test("updates both the live window icon and Windows taskbar identity", async () 
 
   await applyWindowsTaskbarIcon(window, {
     image,
-    appId: "ai.omnirush.desktop",
+    appId: "ai.marsai.desktop",
     appIconPath: "C:\\Users\\Admin\\brand-icon.ico",
-    relaunchCommand: "C:\\Program Files\\OmniRush.ai\\OmniRush.ai.exe",
-    relaunchDisplayName: "OmniRush.ai",
+    relaunchCommand: "C:\\Program Files\\MarsAI\\MarsAI.exe",
+    relaunchDisplayName: "MarsAI",
   }, async () => calls.push(["waitForRefresh"]));
 
   assert.deepEqual(calls, [
@@ -96,10 +96,10 @@ test("updates both the live window icon and Windows taskbar identity", async () 
     ["setAppDetails", {
       appIconPath: "C:\\Users\\Admin\\brand-icon.ico",
       appIconIndex: 0,
-      relaunchCommand: "C:\\Program Files\\OmniRush.ai\\OmniRush.ai.exe",
-      relaunchDisplayName: "OmniRush.ai",
+      relaunchCommand: "C:\\Program Files\\MarsAI\\MarsAI.exe",
+      relaunchDisplayName: "MarsAI",
     }],
-    ["setAppDetails", { appId: "ai.omnirush.desktop" }],
+    ["setAppDetails", { appId: "ai.marsai.desktop" }],
     ["setIcon", image],
     ["waitForRefresh"],
     ["setSkipTaskbar", false],
@@ -107,12 +107,12 @@ test("updates both the live window icon and Windows taskbar identity", async () 
 });
 
 test("uses a stable per-brand AppUserModelID to avoid the installed shortcut icon", () => {
-  const base = "ai.omnirush.desktop";
+  const base = "ai.marsai.desktop";
   const first = windowsBrandAppUserModelId(base, "https://den.internal/assets/acme.png");
   const repeated = windowsBrandAppUserModelId(base, "https://den.internal/assets/acme.png");
   const second = windowsBrandAppUserModelId(base, "https://den.internal/assets/other.png");
 
-  assert.match(first, /^ai\.omnirush\.desktop\.brand\.[a-f0-9]{16}$/);
+  assert.match(first, /^ai\.marsai\.desktop\.brand\.[a-f0-9]{16}$/);
   assert.equal(first, repeated);
   assert.notEqual(first, second);
   assert.equal(windowsBrandAppUserModelId(base, null), base);
@@ -128,10 +128,10 @@ test("does not refresh the taskbar button before the boot window is shown", asyn
     setSkipTaskbar: () => calls.push("skip"),
   }, {
     image: { id: "company-icon" },
-    appId: "ai.omnirush.desktop.brand.1234",
+    appId: "ai.marsai.desktop.brand.1234",
     appIconPath: "C:\\brand.ico",
-    relaunchCommand: "C:\\OmniRush.ai.exe",
-    relaunchDisplayName: "OmniRush.ai",
+    relaunchCommand: "C:\\MarsAI.exe",
+    relaunchDisplayName: "MarsAI",
   }, async () => calls.push("wait"));
 
   assert.deepEqual(calls, ["details", "details", "icon"]);
@@ -146,10 +146,10 @@ test("restores a visible taskbar button when refresh staging fails", async () =>
     setSkipTaskbar: (value) => calls.push(["skip", value]),
   }, {
     image: { id: "company-icon" },
-    appId: "ai.omnirush.desktop.brand.1234",
+    appId: "ai.marsai.desktop.brand.1234",
     appIconPath: "C:\\brand.ico",
-    relaunchCommand: "C:\\OmniRush.ai.exe",
-    relaunchDisplayName: "OmniRush.ai",
+    relaunchCommand: "C:\\MarsAI.exe",
+    relaunchDisplayName: "MarsAI",
   }, async () => {
     calls.push("wait");
     throw new Error("refresh failed");
@@ -160,41 +160,41 @@ test("restores a visible taskbar button when refresh staging fails", async () =>
 
 test("builds a per-user Start Menu shortcut with the branded Windows identity", () => {
   assert.equal(windowsBrandShortcutFileName('Agent: Blue/West'), "Agent- Blue-West.lnk");
-  assert.equal(windowsInstalledShortcutFileName("OmniRush.ai"), "OmniRush.ai.lnk");
+  assert.equal(windowsInstalledShortcutFileName("MarsAI"), "MarsAI.lnk");
   assert.deepEqual(windowsBrandShortcutDetails({
-    target: "C:\\Program Files\\OmniRush.ai\\OmniRush.ai.exe",
-    appId: "ai.omnirush.desktop.brand.1234",
+    target: "C:\\Program Files\\MarsAI\\MarsAI.exe",
+    appId: "ai.marsai.desktop.brand.1234",
     appIconPath: "C:\\Users\\Admin\\brand-icon.ico",
-    appName: "OmniRush.ai",
+    appName: "MarsAI",
   }), {
-    target: "C:\\Program Files\\OmniRush.ai\\OmniRush.ai.exe",
-    cwd: "C:\\Program Files\\OmniRush.ai",
-    description: "OmniRush.ai organization desktop",
+    target: "C:\\Program Files\\MarsAI\\MarsAI.exe",
+    cwd: "C:\\Program Files\\MarsAI",
+    description: "MarsAI organization desktop",
     icon: "C:\\Users\\Admin\\brand-icon.ico",
     iconIndex: 0,
-    appUserModelId: "ai.omnirush.desktop.brand.1234",
+    appUserModelId: "ai.marsai.desktop.brand.1234",
   });
 });
 
 test("anchors a packaged shortcut target to the active Windows user profile", () => {
   assert.equal(windowsInstalledExecutablePath({
     packaged: true,
-    execPath: "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Local\\Programs\\@omnirushdesktop\\OmniRush.ai.exe",
-    resourcesPath: "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Local\\Programs\\@omnirushdesktop\\resources",
+    execPath: "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Local\\Programs\\@marsdesktop\\MarsAI.exe",
+    resourcesPath: "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Local\\Programs\\@marsdesktop\\resources",
     shortcutPath: "C:\\Users\\Administrator\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Northwind.lnk",
-  }), "C:\\Users\\Administrator\\AppData\\Local\\Programs\\@omnirushdesktop\\OmniRush.ai.exe");
+  }), "C:\\Users\\Administrator\\AppData\\Local\\Programs\\@marsdesktop\\MarsAI.exe");
 });
 
 test("creates a branded shortcut after callers remove stale Windows metadata", () => {
   const calls = [];
-  const details = { appUserModelId: "ai.omnirush.desktop.brand.1234" };
+  const details = { appUserModelId: "ai.marsai.desktop.brand.1234" };
   const shellApi = {
     writeShortcutLink: (...args) => {
       calls.push(args);
       return true;
     },
   };
-  const shortcutPath = "C:\\Users\\Admin\\OmniRush.ai Organization.lnk";
+  const shortcutPath = "C:\\Users\\Admin\\MarsAI Organization.lnk";
 
   const created = writeWindowsBrandShortcut(shellApi, shortcutPath, details, false);
   assert.equal(created, true);

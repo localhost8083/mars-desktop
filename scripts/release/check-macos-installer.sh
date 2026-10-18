@@ -95,8 +95,8 @@ osascript -e "tell application \"Finder\" to close every window" >/dev/null 2>&1
 hdiutil detach -quiet "$mount" || hdiutil detach -force "$mount"
 
 echo "== in-place update from the latest release"
-latest=$(curl -fsSL https://github.com/omnirush-ai/omnirush-gui/releases/latest/download/latest-mac.yml | awk '/^version:/ { print $2 }')
-curl -fsSL -o "$work/latest.zip" "https://github.com/omnirush-ai/omnirush-gui/releases/download/v$latest/omnirush-mac-arm64-$latest.zip"
+latest=$(curl -fsSL https://github.com/mars-ai/mars-gui/releases/latest/download/latest-mac.yml | awk '/^version:/ { print $2 }')
+curl -fsSL -o "$work/latest.zip" "https://github.com/mars-ai/mars-gui/releases/download/v$latest/mars-mac-arm64-$latest.zip"
 applications="$work/Applications"
 mkdir -p "$applications" "$work/update" "$work/shipit"
 ditto -x -k "$work/latest.zip" "$applications"

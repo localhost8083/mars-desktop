@@ -1,19 +1,19 @@
-# @omnirush/headless-threads
+# @mars/headless-threads
 
-Drive a native OmniRush.ai thread from code, without rendering the app.
+Drive a native MarsAI thread from code, without rendering the app.
 
-A "thread" here is an ordinary OmniRush.ai session. Same workspace, same managed
+A "thread" here is an ordinary MarsAI session. Same workspace, same managed
 OpenCode engine, same session id, same persisted messages, tool activity, and
 final state the desktop UI shows. A thread this package creates can be opened
 in the app afterwards, because there is no separate headless thread type.
 
 This is a client, not a runtime. It adds no chat engine, no session store, no
 model gateway, and no new server route — it is a typed workflow over the
-official OpenCode SDK through OmniRush.ai's workspace-scoped proxy.
+official OpenCode SDK through MarsAI's workspace-scoped proxy.
 
 ## Why
 
-Anything that drives OmniRush.ai without a UI — a load check, an automation
+Anything that drives MarsAI without a UI — a load check, an automation
 harness, an agent-quality benchmark — currently re-implements the same
 sequence by hand against raw HTTP: create a session, submit `prompt_async`,
 poll `/session/status`, poll messages, work out when the turn actually
@@ -30,12 +30,12 @@ that was not there when the turn was submitted.
 ## Use
 
 ```ts
-import { createHeadlessThreadClient } from "@omnirush/headless-threads";
+import { createHeadlessThreadClient } from "@mars/headless-threads";
 
 const threads = createHeadlessThreadClient({
   baseUrl: "http://127.0.0.1:8787",
   workspaceId: "ws_1",
-  token: process.env.OMNIRUSH_TOKEN,
+  token: process.env.MARS_TOKEN,
   defaultModel: { providerId: "anthropic", modelId: "claude-sonnet-5" },
 });
 
@@ -60,7 +60,7 @@ if (waited.outcome === "settled") {
 }
 ```
 
-`thread.id` is the native session id. Opening OmniRush.ai on the same workspace
+`thread.id` is the native session id. Opening MarsAI on the same workspace
 shows this conversation in the sidebar.
 
 ## Contract
@@ -76,7 +76,7 @@ native protocol instead of expanding this port speculatively.
 | `createThread` | Creates a thread, optionally with its first turn and a model. |
 | `sendTurn` | Submits a turn and returns an acceptance that records the pre-turn message count. |
 | `waitForThread` | Polls to a bounded deadline. Returns `settled`, `timeout`, or `aborted` — never throws on a slow thread. |
-| `getThreadSnapshot` | Status, messages, and todos as OmniRush.ai stores them. |
+| `getThreadSnapshot` | Status, messages, and todos as MarsAI stores them. |
 | `abortThread` | Requests a stop. Acceptance is not proof the run ended; wait afterwards to observe idle. |
 | `exportTranscript` | Flattens a snapshot into per-message text, reasoning, and tool calls. |
 
@@ -91,13 +91,13 @@ whole contract against fixtures with no wall-clock dependency.
 ## Test
 
 ```bash
-pnpm --filter @omnirush/headless-threads test
+pnpm --filter @mars/headless-threads test
 ```
 
 The end-to-end proof lives with the server it drives, in
 `apps/server/src/headless-threads.e2e.test.ts`, and runs against a real
-OmniRush.ai server:
+MarsAI server:
 
 ```bash
-pnpm --filter omnirush-server test src/headless-threads.e2e.test.ts
+pnpm --filter mars-server test src/headless-threads.e2e.test.ts
 ```

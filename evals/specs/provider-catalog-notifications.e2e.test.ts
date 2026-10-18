@@ -1,6 +1,6 @@
 import { expect } from "vitest";
-import { control, readAvailableModels } from "@omnirush/behaviors";
-import { eventually, spec } from "@omnirush/testkit";
+import { control, readAvailableModels } from "@mars/behaviors";
+import { eventually, spec } from "@mars/testkit";
 import { providerCatalogNotifications } from "../worlds/chat.ts";
 
 const test = spec.world(providerCatalogNotifications, { timeout: 600_000 });

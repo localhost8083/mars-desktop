@@ -7,15 +7,15 @@ legacy whole-desktop tool.
 
 ## Start
 
-In OmniRush.ai, open **Library → Computer Use** and choose **Enable Computer Use**
+In MarsAI, open **Library → Computer Use** and choose **Enable Computer Use**
 for the current workspace. If macOS access is missing, open permission setup
 from that page and grant Accessibility and Screen Recording to the app macOS
-identifies. Return to OmniRush.ai and wait for **Ready**. macOS permissions alone
+identifies. Return to MarsAI and wait for **Ready**. macOS permissions alone
 do not enable the workspace connection. Mention an
-app in a message. OmniRush.ai can launch an installed app, then asks you to choose
+app in a message. MarsAI can launch an installed app, then asks you to choose
 its window and **Allow and start** in the main app. Ordinary work shows no control dashboard. Your input interrupts the agent;
 it must wait and obtain a fresh observation before continuing. **Stop** in the
-native preview ends access. Hide leaves the grant intact; OmniRush.ai can show the preview again. The small floating preview shows the last approved
+native preview ends access. Hide leaves the grant intact; MarsAI can show the preview again. The small floating preview shows the last approved
 observation and the last action location, not a continuous desktop recording. The setup window can stop all sessions.
 
 | Mode | Access | Foreground behavior |
@@ -26,7 +26,7 @@ observation and the last action location, not a continuous desktop recording. Th
 
 The app and mode are fixed for the session. Changing either requires a new
 approval. A session lasts at most 15 minutes, pauses after two minutes without
-an operation, and permits at most 200 action attempts. System or window failures can still require an explicit Continue prompt in OmniRush.ai. In control mode, it brings the approved window forward
+an operation, and permits at most 200 action attempts. System or window failures can still require an explicit Continue prompt in MarsAI. In control mode, it brings the approved window forward
 and requires a fresh observation before any further input. The main app shows approval and exceptional recovery prompts. There is no resume, scope-upgrade, clipboard, URL-open,
 shell, whole-screen, or permission-grant tool.
 
@@ -37,8 +37,8 @@ migration's authority understandable and revocable.
 ## Runtime and protocol
 
 ```
-OmniRush.ai engine → stdio relay → desktop broker → native MCPServer
-OmniRush.ai main window → desktop IPC → broker's private UI channel
+MarsAI engine → stdio relay → desktop broker → native MCPServer
+MarsAI main window → desktop IPC → broker's private UI channel
                                       └─ native session authority
                                           ├─ MacAccessibility: AX + window-only capture
                                           ├─ MacInput: exact-process input and focus checks
@@ -46,7 +46,7 @@ OmniRush.ai main window → desktop IPC → broker's private UI channel
 Standalone MCP client → ComputerUse mcp → native approval and controls
 ```
 
-OmniRush.ai launches a filtered stdio-to-Unix-socket relay for MCP and owns the
+MarsAI launches a filtered stdio-to-Unix-socket relay for MCP and owns the
 native helper process. Only the main window's desktop IPC can approve or recover a blocked session;
 private UI messages are removed from the engine transport. The socket is inside
 a user-only directory. Existing enabled bundled commands migrate when a local
@@ -104,7 +104,7 @@ sheet so cancellation and the UI remain responsive.
 Use dedicated integrations for structured data and the built-in browser for
 websites. For native apps, use `assist` when the accessibility tree exposes
 the needed controls. Choose `control` only when visual interaction is needed.
-The runtime has no provider lock or second hidden model loop; OmniRush.ai's
+The runtime has no provider lock or second hidden model loop; MarsAI's
 selected tool-capable model invokes the same MCP contract. A model must accept
 images to make visual decisions. Text-only models can request
 `include_image: false` and work with accessible controls.
@@ -177,13 +177,13 @@ The agent receives `user_interacting` during a one-second quiet period, then
 alone never resumes input. A new observation after quiet brings only the approved
 window forward in control mode, checks focus, and refreshes state. Further person
 input interrupts that recovery too. Interrupted typing or dragging is never replayed.
-The one-second duration and event selection are OmniRush.ai choices, not verified
+The one-second duration and event selection are MarsAI choices, not verified
 constants from another product.
 
 Sleep, desktop unavailability, idle expiry, and failed focus recovery still need
-an explicit **Continue** prompt in OmniRush.ai. Normal work and recoverable person
+an explicit **Continue** prompt in MarsAI. Normal work and recoverable person
 input do not show a permanent controller. **Hide** hides only the native preview;
-**Show preview** in OmniRush.ai restores it. **Stop** revokes the grant, and neither
+**Show preview** in MarsAI restores it. **Stop** revokes the grant, and neither
 observation nor further actions can restart that session. The access countdown
 continues while interrupted.
 
@@ -195,7 +195,7 @@ manual Continue after quiet, then a fresh observation.
 Session status includes the purpose, approved window, preview visibility, and
 `phase`: `person_interacting`, `requery_required`, `ready_to_continue`,
 `refreshing`, or `working`. Desktop approval/preview coordination is global, not
-bound to an OmniRush.ai task ID. The preview displays the latest requested image,
+bound to an MarsAI task ID. The preview displays the latest requested image,
 not a continuous capture stream. There is no combined start-and-get-state tool.
 Stop is enforced for the existing grant, not a native assistant-turn ID: caller
 instructions end the current turn, but another open-session call can request new
@@ -211,18 +211,18 @@ or recover during active person input.
 ## Build, migration and verification
 
 ```
-pnpm --filter @omnirush/computer-use build:native
+pnpm --filter @mars/computer-use build:native
 swift test --package-path packages/computer-use/native
 pnpm evals:e2e computer-use-window-scope
 ```
 
-The desktop build stages this package as **OmniRush.ai Computer Use.app** while
+The desktop build stages this package as **MarsAI Computer Use.app** while
 preserving the existing bundle identifier and executable location for TCC and
 installed MCP configurations. The helper's `--check` includes
-`protocolVersion: "omnirush.computer-use/1"`; setup identifies an old helper
+`protocolVersion: "mars.computer-use/1"`; setup identifies an old helper
 and asks for a rebuild/reinstall. Reconnect Computer Use in each existing
 workspace to replace an old package command and refresh tool schemas.
-There is no runtime fallback to `@omnirush/handsfree`; its historical sources
+There is no runtime fallback to `@mars/handsfree`; its historical sources
 remain separate and are not part of this implementation.
 
 The native journey owns two disposable windows and drives the real helper

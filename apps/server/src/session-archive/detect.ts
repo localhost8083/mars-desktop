@@ -432,7 +432,7 @@ export function refusedFolderRoot(root: string, context: FolderGateContext): Fol
 }
 
 export type FolderGateOptions = {
-  /** The Electron userData directory (the desktop sets OMNIRUSH_DESKTOP_USER_DATA_DIR); unknown outside the desktop app. */
+  /** The Electron userData directory (the desktop sets MARS_DESKTOP_USER_DATA_DIR); unknown outside the desktop app. */
   userDataDir?: string;
   /** Tests only; defaults to os.homedir(). */
   homeDir?: string;

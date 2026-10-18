@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 import { Hono } from "hono"
-import { assertManagedModelsAllowed, ManagedModelsPolicyError } from "@omnirush/types/den/managed-models-policy"
+import { assertManagedModelsAllowed, ManagedModelsPolicyError } from "@mars/types/den/managed-models-policy"
 import type { InferenceHandledErrorReport, InferenceReporter, InferenceRequestReport } from "../src/inference-reporting.js"
 
 process.env.OMNIRUSH_DEV_MODE = "1"

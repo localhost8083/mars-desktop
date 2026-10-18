@@ -87,7 +87,7 @@ done
 # There is no hosted Den to fall back to: any Den-dependent option needs an
 # explicit --den-base-url.
 if [ -z "$DEN_BASE_URL" ] && { [ -n "$DEN_API_BASE_URL" ] || [ "$DEN_REQUIRE_SIGNIN" = 1 ]; }; then
-  echo "--den-api-base-url and --require-signin need --den-base-url <your Den web origin>; omnirush.ai runs no hosted Den." >&2
+  echo "--den-api-base-url and --require-signin need --den-base-url <your Den web origin>; marsai.click runs no hosted Den." >&2
   exit 1
 fi
 
@@ -96,19 +96,19 @@ if [ -z "$REF" ]; then
   REF="${REF:-$(git rev-parse HEAD)}"
 fi
 
-SANDBOX="omnirush-test-$(date +%Y%m%d-%H%M%S)"
+SANDBOX="mars-test-$(date +%Y%m%d-%H%M%S)"
 CDP_PORT=9825
 NOVNC_PORT=6080
 ARTIFACTS_PORT=8090
 MAX_WAIT=90
-DAYTONA_EVAL_SNAPSHOT="${DAYTONA_EVAL_SNAPSHOT:-omnirush-eval-vnc}"
-DAYTONA_SECRETS_VOLUME="${DAYTONA_SECRETS_VOLUME:-omnirush-eval-secrets}"
+DAYTONA_EVAL_SNAPSHOT="${DAYTONA_EVAL_SNAPSHOT:-mars-eval-vnc}"
+DAYTONA_SECRETS_VOLUME="${DAYTONA_SECRETS_VOLUME:-mars-eval-secrets}"
 DAYTONA_SECRETS_MOUNT="${DAYTONA_SECRETS_MOUNT:-/daytona-secrets}"
 DAYTONA_SECRETS_ENV="${DAYTONA_SECRETS_ENV:-${DAYTONA_SECRETS_MOUNT}}"
-DAYTONA_ARTIFACTS_VOLUME="${DAYTONA_ARTIFACTS_VOLUME:-omnirush-eval-artifacts}"
+DAYTONA_ARTIFACTS_VOLUME="${DAYTONA_ARTIFACTS_VOLUME:-mars-eval-artifacts}"
 DAYTONA_ARTIFACTS_MOUNT="${DAYTONA_ARTIFACTS_MOUNT:-/daytona-artifacts}"
 DAYTONA_ELECTRON_EXTRA_LAUNCH_ARGS="${DAYTONA_ELECTRON_EXTRA_LAUNCH_ARGS:---disable-gpu --disable-dev-shm-usage --enable-unsafe-swiftshader}"
-OMNIRUSH_ELECTRON_FAKE_MEDIA="${OMNIRUSH_ELECTRON_FAKE_MEDIA:-0}"
+MARS_ELECTRON_FAKE_MEDIA="${MARS_ELECTRON_FAKE_MEDIA:-0}"
 
 if [ -z "$RECORDING_NAME" ]; then
   RECORDING_NAME="$SANDBOX"
@@ -183,7 +183,7 @@ fi
 SNAPSHOT_ID="$(snapshot_id "$DAYTONA_EVAL_SNAPSHOT")"
 if [ -z "$SNAPSHOT_ID" ]; then
   echo "ERROR: Daytona snapshot '$DAYTONA_EVAL_SNAPSHOT' not found." >&2
-  echo "Create it with: bash .devcontainer/create-daytona-omnirush-snapshot.sh" >&2
+  echo "Create it with: bash .devcontainer/create-daytona-mars-snapshot.sh" >&2
   exit 1
 fi
 
@@ -224,11 +224,11 @@ fi
 
 echo ""
 echo "==> Checking out $REF..."
-daytona exec "$SANDBOX" -- "bash -lc 'set -euo pipefail; cd /workspace; REF=\"$REF\"; FORCE_INSTALL=\"$FORCE_INSTALL\"; PNPM_STORE=/workspace/.omnirush-daytona/pnpm-store; if git fetch origin \"\$REF\"; then git checkout --detach FETCH_HEAD; else git fetch origin dev --depth 50 || true; git checkout \"\$REF\"; fi; git rev-parse --short HEAD; mkdir -p \"\$PNPM_STORE\" .omnirush-daytona; baseline=.omnirush-daytona/pnpm-lock.sha256; current=\$(sha256sum pnpm-lock.yaml | cut -d \" \" -f 1); if [ \"\$FORCE_INSTALL\" = 1 ] || [ ! -d node_modules ] || [ ! -f \"\$baseline\" ] || [ \"\$(cat \"\$baseline\")\" != \"\$current\" ]; then echo \"==> Installing deps (missing node_modules, lockfile changed, or forced)...\"; CI=1 pnpm install --store-dir \"\$PNPM_STORE\" --frozen-lockfile || CI=1 pnpm install --store-dir \"\$PNPM_STORE\"; printf \"%s\" \"\$current\" > \"\$baseline\"; else echo \"==> Skipping pnpm install (node_modules present and lockfile unchanged).\"; fi'"
+daytona exec "$SANDBOX" -- "bash -lc 'set -euo pipefail; cd /workspace; REF=\"$REF\"; FORCE_INSTALL=\"$FORCE_INSTALL\"; PNPM_STORE=/workspace/.mars-daytona/pnpm-store; if git fetch origin \"\$REF\"; then git checkout --detach FETCH_HEAD; else git fetch origin dev --depth 50 || true; git checkout \"\$REF\"; fi; git rev-parse --short HEAD; mkdir -p \"\$PNPM_STORE\" .mars-daytona; baseline=.mars-daytona/pnpm-lock.sha256; current=\$(sha256sum pnpm-lock.yaml | cut -d \" \" -f 1); if [ \"\$FORCE_INSTALL\" = 1 ] || [ ! -d node_modules ] || [ ! -f \"\$baseline\" ] || [ \"\$(cat \"\$baseline\")\" != \"\$current\" ]; then echo \"==> Installing deps (missing node_modules, lockfile changed, or forced)...\"; CI=1 pnpm install --store-dir \"\$PNPM_STORE\" --frozen-lockfile || CI=1 pnpm install --store-dir \"\$PNPM_STORE\"; printf \"%s\" \"\$current\" > \"\$baseline\"; else echo \"==> Skipping pnpm install (node_modules present and lockfile unchanged).\"; fi'"
 
 echo ""
-echo "==> Starting OmniRush.ai sandbox dev stack..."
-daytona exec "$SANDBOX" -- "bash -lc 'set -euo pipefail; cd /workspace; DEN_BASE_URL=\"$DEN_BASE_URL\"; DEN_API_BASE_URL=\"$DEN_API_BASE_URL\"; DEN_REQUIRE_SIGNIN=\"$DEN_REQUIRE_SIGNIN\"; if [ -n \"\$DEN_BASE_URL\" ] || [ -n \"\$DEN_API_BASE_URL\" ] || [ \"\$DEN_REQUIRE_SIGNIN\" = 1 ]; then mkdir -p /workspace/.omnirush-daytona; DEN_BASE_URL=\"\$DEN_BASE_URL\" DEN_API_BASE_URL=\"\$DEN_API_BASE_URL\" DEN_REQUIRE_SIGNIN=\"\$DEN_REQUIRE_SIGNIN\" node -e '\''const fs = require(\"node:fs\"); const baseUrl = process.env.DEN_BASE_URL; const apiBaseUrl = process.env.DEN_API_BASE_URL || null; const requireSignin = process.env.DEN_REQUIRE_SIGNIN === \"1\"; fs.writeFileSync(\"/workspace/.omnirush-daytona/desktop-bootstrap.json\", JSON.stringify({ baseUrl, apiBaseUrl, requireSignin }, null, 2) + \"\\n\");'\''; fi; export DAYTONA_SECRETS_ENV=\"$DAYTONA_SECRETS_ENV\" DAYTONA_ELECTRON_EXTRA_LAUNCH_ARGS=\"$DAYTONA_ELECTRON_EXTRA_LAUNCH_ARGS\" OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT=$CDP_PORT OMNIRUSH_ELECTRON_FAKE_MEDIA=\"$OMNIRUSH_ELECTRON_FAKE_MEDIA\" OMNIRUSH_WORKSPACE_DIR=/workspace OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT=1; if [ -f /workspace/.omnirush-daytona/desktop-bootstrap.json ]; then export OMNIRUSH_DESKTOP_BOOTSTRAP_PATH=/workspace/.omnirush-daytona/desktop-bootstrap.json; fi; pnpm dev:sandbox'"
+echo "==> Starting MarsAI sandbox dev stack..."
+daytona exec "$SANDBOX" -- "bash -lc 'set -euo pipefail; cd /workspace; DEN_BASE_URL=\"$DEN_BASE_URL\"; DEN_API_BASE_URL=\"$DEN_API_BASE_URL\"; DEN_REQUIRE_SIGNIN=\"$DEN_REQUIRE_SIGNIN\"; if [ -n \"\$DEN_BASE_URL\" ] || [ -n \"\$DEN_API_BASE_URL\" ] || [ \"\$DEN_REQUIRE_SIGNIN\" = 1 ]; then mkdir -p /workspace/.mars-daytona; DEN_BASE_URL=\"\$DEN_BASE_URL\" DEN_API_BASE_URL=\"\$DEN_API_BASE_URL\" DEN_REQUIRE_SIGNIN=\"\$DEN_REQUIRE_SIGNIN\" node -e '\''const fs = require(\"node:fs\"); const baseUrl = process.env.DEN_BASE_URL; const apiBaseUrl = process.env.DEN_API_BASE_URL || null; const requireSignin = process.env.DEN_REQUIRE_SIGNIN === \"1\"; fs.writeFileSync(\"/workspace/.mars-daytona/desktop-bootstrap.json\", JSON.stringify({ baseUrl, apiBaseUrl, requireSignin }, null, 2) + \"\\n\");'\''; fi; export DAYTONA_SECRETS_ENV=\"$DAYTONA_SECRETS_ENV\" DAYTONA_ELECTRON_EXTRA_LAUNCH_ARGS=\"$DAYTONA_ELECTRON_EXTRA_LAUNCH_ARGS\" MARS_ELECTRON_REMOTE_DEBUG_PORT=$CDP_PORT MARS_ELECTRON_FAKE_MEDIA=\"$MARS_ELECTRON_FAKE_MEDIA\" MARS_WORKSPACE_DIR=/workspace MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT=1; if [ -f /workspace/.mars-daytona/desktop-bootstrap.json ]; then export MARS_DESKTOP_BOOTSTRAP_PATH=/workspace/.mars-daytona/desktop-bootstrap.json; fi; pnpm dev:sandbox'"
 
 echo ""
 echo "==> Waiting for Electron CDP on port $CDP_PORT (up to ${MAX_WAIT}s)..."

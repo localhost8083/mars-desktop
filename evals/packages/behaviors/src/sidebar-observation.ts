@@ -1,4 +1,4 @@
-import { callFunctionOnSurface, type Surface } from "@omnirush/cdp";
+import { callFunctionOnSurface, type Surface } from "@mars/cdp";
 
 /** Overflow, action-lane, and rail geometry without changing scroll position or focus. */
 export function readSidebarOverflow(surface: Surface, title = "") {
@@ -87,7 +87,7 @@ export async function observeSidebarExpansion(surface: Surface) {
         hash: location.hash,
         selected: [...document.querySelectorAll<HTMLElement>('[data-session-tab-active="true"]')]
           .map(row => row.dataset.sessionTabId ?? ""),
-        management: localStorage.getItem("omnirush.react.sessionManagement"),
+        management: localStorage.getItem("mars.react.sessionManagement"),
       };
     };
     let frame = 0;

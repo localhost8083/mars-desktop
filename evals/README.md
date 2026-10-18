@@ -1,7 +1,7 @@
-# OmniRush.ai tests and test evidence
+# MarsAI tests and test evidence
 
 All executable coverage lives in [`specs/**/*.test.ts`](./specs) and imports
-`test` from `@omnirush/testkit`. Tests that drive Electron, Den, or another app
+`test` from `@mars/testkit`. Tests that drive Electron, Den, or another app
 surface use `.e2e.test.ts`.
 
 ## Paved path
@@ -68,7 +68,7 @@ pnpm evals:e2e app-smoke
 
 Run the E2E lane with `pnpm evals:e2e [test-names...]`. Naming a test
 auto-satisfies the opt-in flags declared in its source, but value-bearing
-environment variables such as `OMNIRUSH_EVAL_MODEL` are never auto-set. Vision
+environment variables such as `MARS_EVAL_MODEL` are never auto-set. Vision
 judging is deferred by default; add `--with-llm-vision` to judge inline. Use
 `--local` to force isolated local resources, `--daytona` to require Daytona,
 `--den <url>` to reuse Den, or `--publish --pr <number>` to judge and publish
@@ -98,7 +98,7 @@ Surface and substrate are independent axes:
 Run a live spec only by exact name and with explicit consent and endpoint values:
 
 ```bash
-OMNIRUSH_EVAL_LIVE=1 OMNIRUSH_EVAL_LIVE_DEN_API_URL=https://api.omnirush.example.com OMNIRUSH_EVAL_SECRET_LIVE_MAILBOX_EMAIL=<mailbox> pnpm evals:pr specs/prod-den-signup-invites.live.test.ts
+MARS_EVAL_LIVE=1 MARS_EVAL_LIVE_DEN_API_URL=https://api.mars.example.com MARS_EVAL_SECRET_LIVE_MAILBOX_EMAIL=<mailbox> pnpm evals:pr specs/prod-den-signup-invites.live.test.ts
 ```
 
 The live Den is attached and never deleted. Timestamped plus-addressed identities,
@@ -116,7 +116,7 @@ world import); a file with no boundary is also called out for `node:fs` and
 grandfathers legacy files and only shrinks. Cleanup deletes them, moves unit
 tests next to their module, or folds their assertions into a journey spec.
 
-- Import `test` from `@omnirush/testkit`.
+- Import `test` from `@mars/testkit`.
 - Name app-driving files `<slug>.e2e.test.ts`; app-less tests use `<slug>.test.ts`.
 - Live specs use `<slug>.live.test.ts`, never run in PR/E2E suites, and require a consent environment variable.
 - Acquire resources in dependency order with `needs()` → `server()` → `app()`.
@@ -129,20 +129,20 @@ tests next to their module, or folds their assertions into a journey spec.
 ## Writing specs
 
 New app-driving specs use `spec.world()` and four capability-restricted
-channels. Import them only from `@omnirush/testkit`.
+channels. Import them only from `@mars/testkit`.
 
 | Channel | Purpose | Allowed effects |
 | --- | --- | --- |
 | `seed` | Arrange the world | Create Den, desktops, browsers, data, mocks, sessions, and faults; this is the only API/state write channel. |
 | `user` | Act as a person | Trusted CDP mouse, keyboard, navigation, reload, visible assertions, screenshots, and vision checks. It cannot evaluate JS, fetch, or use app controls. |
-| `agent` | Use the product automation rail | Explicit `window.__omnirushControl` actions, including agent sends and session actions. |
+| `agent` | Use the product automation rail | Explicit `window.__marsControl` actions, including agent sends and session actions. |
 | `probe` | Observe without changing state | Read text, composer/storage/hash/API/witness state, and poll with `eventually`. Probe API calls are GET-only. |
 
 A world is an imperative async function. Resources created through `seed` are
 owned by the fixture's `AsyncDisposableStack` and released in reverse order.
 Worlds are per-test by default; `{ scope: "file" }` shares exactly the handles
 the world returns. E2E files automatically need
-`OMNIRUSH_EVAL_E2E_TESTS=1`, and unmet needs skip before the world starts.
+`MARS_EVAL_E2E_TESTS=1`, and unmet needs skip before the world starts.
 
 ```ts
 export async function emptySession(seed: Seed) {
@@ -182,14 +182,14 @@ evidence APIs directly. After, the journey is only:
 const test = spec.world(emptySession);
 test("a draft survives reloads", async ({ user, probe, step }) => {
   await user.type("composer", "Keep this draft");
-  const revision = await probe.storage("omnirush.session-drafts.v2", pickRevision);
+  const revision = await probe.storage("mars.session-drafts.v2", pickRevision);
   await step("draft survives three reloads", async () => {
     for (let i = 0; i < 3; i += 1) {
       await user.reload();
       await user.see("composer", { editable: true, text: "Keep this draft" });
     }
   });
-  expect(await probe.storage("omnirush.session-drafts.v2", pickRevision)).toBe(revision);
+  expect(await probe.storage("mars.session-drafts.v2", pickRevision)).toBe(revision);
 });
 ```
 
@@ -224,11 +224,11 @@ This is enforced by `pnpm --dir evals run lint:layers`.
 
 | Layer | Contents | Rule |
 | --- | --- | --- |
-| L0 | `@omnirush/matchers` | Turn supplied facts into pure findings; no I/O. |
-| L1 | `@omnirush/cdp`, `@omnirush/labs` | Provide protocol and lab primitives; do not own journeys or test lifecycle. |
-| L2 | `@omnirush/behaviors` | Provide framework-free actions and observations over narrow handles. |
-| L3 | root `@omnirush/world` + `@omnirush/env` | The shared package owns script discovery, CLI receipts, and the headless-web surface; env provides concrete eval resources. Neither depends on Vitest. |
-| L4 | `@omnirush/testkit` and `evals/bin/evals.mjs` | Adapt environments to specs, Vitest, and evidence. |
+| L0 | `@mars/matchers` | Turn supplied facts into pure findings; no I/O. |
+| L1 | `@mars/cdp`, `@mars/labs` | Provide protocol and lab primitives; do not own journeys or test lifecycle. |
+| L2 | `@mars/behaviors` | Provide framework-free actions and observations over narrow handles. |
+| L3 | root `@mars/world` + `@mars/env` | The shared package owns script discovery, CLI receipts, and the headless-web surface; env provides concrete eval resources. Neither depends on Vitest. |
+| L4 | `@mars/testkit` and `evals/bin/evals.mjs` | Adapt environments to specs, Vitest, and evidence. |
 
 ## Composable packages and diagnostics
 
@@ -237,21 +237,21 @@ executable coverage is always assembled as a test under `specs/`.
 
 | Package | Owns |
 | --- | --- |
-| root `@omnirush/world` | script discovery, CLI lifecycle receipts, local state store, `hold()`, and headless-web surface |
-| `@omnirush/env` | places and concrete Den, desktop, mock, LiteLLM, and kind resources |
-| `@omnirush/testkit` | thin Vitest adapter: fixture, needs/skip mapping, evidence bridging, and spec-facing re-exports |
-| `@omnirush/cdp` | raw CDP client, targets, `Surface`, and `attachSurface` |
-| `@omnirush/labs` | egress, identity-provider, release-feed, and mock-MCP labs |
-| `@omnirush/hosts` | local and Daytona hosts and `resolveHost()` |
-| `@omnirush/behaviors` | framework-free actions and observations over narrow handles |
-| `@omnirush/matchers` | pure findings over facts, with no I/O |
-| `@omnirush/test-evidence` | screenshot capture, visual validation, and ambient test-evidence recording used by testkit |
-| `@omnirush/timeline` | timing spans for long test journeys |
-| `@omnirush/test-artifacts` | index, render, and PR publication for completed test runs |
+| root `@mars/world` | script discovery, CLI lifecycle receipts, local state store, `hold()`, and headless-web surface |
+| `@mars/env` | places and concrete Den, desktop, mock, LiteLLM, and kind resources |
+| `@mars/testkit` | thin Vitest adapter: fixture, needs/skip mapping, evidence bridging, and spec-facing re-exports |
+| `@mars/cdp` | raw CDP client, targets, `Surface`, and `attachSurface` |
+| `@mars/labs` | egress, identity-provider, release-feed, and mock-MCP labs |
+| `@mars/hosts` | local and Daytona hosts and `resolveHost()` |
+| `@mars/behaviors` | framework-free actions and observations over narrow handles |
+| `@mars/matchers` | pure findings over facts, with no I/O |
+| `@mars/test-evidence` | screenshot capture, visual validation, and ambient test-evidence recording used by testkit |
+| `@mars/timeline` | timing spans for long test journeys |
+| `@mars/test-artifacts` | index, render, and PR publication for completed test runs |
 
 Because behaviors and matchers do not depend on a test context, they also power
 the standalone diagnostic script at `evals/scripts/diagnose.mts`. It imports
-only `@omnirush/behaviors` and `@omnirush/matchers` and can inspect a real
+only `@mars/behaviors` and `@mars/matchers` and can inspect a real
 endpoint without creating test evidence.
 
 ## Worlds
@@ -309,7 +309,7 @@ metadata only; it does not stop the process. `help` and `list` discover
 `desktop-prod-live` is a deliberately dangerous local-only mode. It launches
 source Electron through `pnpm dev` with isolated Electron userData, app
 identifier, Vite/CDP ports, and protocol registration, while resolving the
-installed production `OMNIRUSH_DATA_DIR` and channel-aware `OPENCODE_DB` only at
+installed production `MARS_DATA_DIR` and channel-aware `OPENCODE_DB` only at
 launch time. It never copies or symlinks those stores, does not boot or modify a
 Den, and does not seed a workspace, session, or sign-in. Production may remain
 running, but concurrent writes from production and dev are unsupported and may
@@ -318,17 +318,17 @@ corrupt state. Its parser requires exactly `--allow-shared-state`, after the
 does not delete shared stores.
 
 `headless-prod-live` applies the same symbolic state selection to source Vite +
-`omnirush-server` without Electron. Its production tokens, server state, config,
-OmniRush.ai data, and OpenCode database are resolved in place and never copied into
+`mars-server` without Electron. Its production tokens, server state, config,
+MarsAI data, and OpenCode database are resolved in place and never copied into
 the receipt. It requires the same exact script argument and refuses remote
 access, public hosts, and non-loopback host bindings.
 
 `worlds/den-split-origin-kind.ts` attaches to the shared
-`omnirush-kube-lab` kind substrate and owns only its local port-forwards. Run its
+`mars-kube-lab` kind substrate and owns only its local port-forwards. Run its
 opt-in proof on a machine with local Docker, kind, kubectl, and Helm:
 
 ```bash
-OMNIRUSH_EVAL_E2E_TESTS=1 OMNIRUSH_EVAL_KIND_E2E=1 pnpm --dir evals exec vitest run --config vitest.config.ts --project e2e specs/world-kind-den.e2e.test.ts
+MARS_EVAL_E2E_TESTS=1 MARS_EVAL_KIND_E2E=1 pnpm --dir evals exec vitest run --config vitest.config.ts --project e2e specs/world-kind-den.e2e.test.ts
 ```
 
 Daytona cannot host this substrate: its sandbox has no Docker binary or daemon,
@@ -340,7 +340,7 @@ runtime can start kind there.
 ### Drive the app
 
 Import the script's builder, create one disposal stack, and call the builder.
-Compose journeys from `@omnirush/behaviors`; executable coverage belongs in
+Compose journeys from `@mars/behaviors`; executable coverage belongs in
 `evals/specs`.
 
 ```ts
@@ -410,7 +410,7 @@ pnpm --dir evals dev:den -- down --port 8891 --drop-database
 
 The port and database are generated when omitted. The helper starts MySQL,
 pushes the current schema, and prints the eval URL exports and teardown command.
-It also adds the printed `OMNIRUSH_EVAL_DEN_WEB_URL` to the trusted origins;
+It also adds the printed `MARS_EVAL_DEN_WEB_URL` to the trusted origins;
 without that origin, Better Auth rejects eval sign-in with
 `403 INVALID_ORIGIN`.
 
@@ -426,10 +426,10 @@ Without a placement flag, the CLI uses Daytona when `daytona snapshot list`
 succeeds and local otherwise, then prints the placement and reason. `--daytona`
 requires Daytona; `--local` forces local.
 
-Set `OMNIRUSH_EVAL_ENGINE=v2` to run any named spec with the app's chat routed
+Set `MARS_EVAL_ENGINE=v2` to run any named spec with the app's chat routed
 through the OpenCode v2 sidecar, locally or on Daytona; unset it (or use `v1`)
 for the unchanged default. For example,
-`OMNIRUSH_EVAL_ENGINE=v2 pnpm evals:e2e <slug> [--daytona]`. The test-evidence
+`MARS_EVAL_ENGINE=v2 pnpm evals:e2e <slug> [--daytona]`. The test-evidence
 header records the selected engine.
 
 Use direct CDP tools only to explore or debug. Convert repeatable coverage into
@@ -467,7 +467,7 @@ These names are designed but not built. Do not attempt to use them:
   secret references, never secret values.
 
 The low-level escape hatch available today is
-`OMNIRUSH_EVAL_DEN_API_URL` with `OMNIRUSH_EVAL_DEN_WEB_URL`. It attaches an
+`MARS_EVAL_DEN_API_URL` with `MARS_EVAL_DEN_WEB_URL`. It attaches an
 existing Den at the `server()` level and is called `reuse` in current code.
 Attached mode has no `apiLog()` and does not support `seedProfile`. Locally
 launched mocks are loopback-only and therefore unreachable from a remote Den.
@@ -538,7 +538,7 @@ const count: number = await probe.eval(browserScript(
 ));
 ```
 
-Import `browserScript` from `@omnirush/testkit` in specs and `@omnirush/cdp` in
+Import `browserScript` from `@mars/testkit` in specs and `@mars/cdp` in
 worlds and lower layers. It binds explicit serializable arguments; browser code
 cannot capture test variables or imported runtime helpers. Return plain data,
 not elements or functions. API JSON remains `unknown` where the contract is

@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from "react";
 import { Check, Loader2, Share2 } from "lucide-react";
-import type { SavedAppSummary } from "@omnirush/types/workflows";
+import type { SavedAppSummary } from "@mars/types/workflows";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";

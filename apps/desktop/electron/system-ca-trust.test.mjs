@@ -16,7 +16,7 @@ import { commandEnv, extendDefaultCaCertificates, isUsableCaCertificate } from "
 const UNPARSABLE = "-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----";
 
 async function interceptionFixture() {
-  const directory = await mkdtemp(path.join(tmpdir(), "omnirush-intercept-"));
+  const directory = await mkdtemp(path.join(tmpdir(), "mars-intercept-"));
   const run = (...args) => execFileSync("openssl", args, { cwd: directory, stdio: "ignore" });
   await writeFile(path.join(directory, "root.ext"), "basicConstraints=critical,CA:TRUE\nkeyUsage=critical,keyCertSign,cRLSign\n");
   run("req", "-new", "-newkey", "rsa:2048", "-nodes", "-keyout", "root.key", "-out", "root.csr", "-subj", "/CN=Test Interception Root");
@@ -60,7 +60,7 @@ test("Node fetch and Node child processes trust an OS-store interception root af
     // The reported failure: Node's bundled roots reject the intercepted chain.
     await assert.rejects(fetch(fixture.url), (/** @type {any} */ error) => /self[- ]signed certificate in certificate chain/i.test(String(error?.cause?.message)));
 
-    const userDataDir = await mkdtemp(path.join(tmpdir(), "omnirush-system-ca-"));
+    const userDataDir = await mkdtemp(path.join(tmpdir(), "mars-system-ca-"));
     const logs = [];
     const childEnv = await resolveSystemCaEnv({
       tlsModule: tls,

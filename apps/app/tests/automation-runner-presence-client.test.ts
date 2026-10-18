@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createDenClient } from "../src/app/lib/den";
 
 const originalFetch = globalThis.fetch;
-const originalElectronBridge = typeof window === "undefined" ? undefined : (window as Window).__OMNIRUSH_ELECTRON__;
+const originalElectronBridge = typeof window === "undefined" ? undefined : (window as Window).__MARS_ELECTRON__;
 
 function stubFetch(fetchMock: typeof fetch) {
   Object.defineProperty(globalThis, "fetch", { configurable: true, value: fetchMock });
@@ -21,11 +21,11 @@ describe("Automation desktop runner presence client", () => {
     // set, which would route these requests through the main-process proxy
     // instead of the stubbed fetch. This client behaves identically on both
     // paths; pin the plain-fetch one so the stub observes the request.
-    if (typeof window !== "undefined") (window as Window).__OMNIRUSH_ELECTRON__ = undefined;
+    if (typeof window !== "undefined") (window as Window).__MARS_ELECTRON__ = undefined;
   });
   afterEach(() => {
     Object.defineProperty(globalThis, "fetch", { configurable: true, value: originalFetch });
-    if (typeof window !== "undefined") (window as Window).__OMNIRUSH_ELECTRON__ = originalElectronBridge;
+    if (typeof window !== "undefined") (window as Window).__MARS_ELECTRON__ = originalElectronBridge;
   });
 
   test("reports presence a Den can answer", async () => {

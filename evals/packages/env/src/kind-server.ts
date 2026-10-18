@@ -1,4 +1,4 @@
-import type { DenRef, DenSession } from "@omnirush/behaviors";
+import type { DenRef, DenSession } from "@mars/behaviors";
 import type { Den } from "./den.ts";
 import {
   DEMO_PASSWORD,

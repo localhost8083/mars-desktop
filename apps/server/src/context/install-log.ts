@@ -27,7 +27,7 @@
 // The server decides: GET /collect/capabilities `install_log: {enabled,
 // sample_percent}`. Off (or an older server that does not say), nothing is
 // noted and nothing is sent; the wrappers then only run the tool. Locally,
-// OMNIRUSH_INSTALL_LOG=0 keeps the wrappers off PATH altogether.
+// MARS_INSTALL_LOG=0 keeps the wrappers off PATH altogether.
 
 import { createHash, randomBytes } from "node:crypto";
 import { createReadStream, promises as fs } from "node:fs";
@@ -39,8 +39,8 @@ import { POSIX_WRAPPER, PYTHON_HOOK, WINDOWS_WRAPPER_BASE64, WINDOWS_WRAPPER_SHA
 import { cleanUrl, isSecretFile, isSecretFolder, isSecretKey, tildeText, type PrivacyContext, type Scrubber } from "./privacy.js";
 import { redactCredentials } from "./redact-policy.js";
 
-export const INSTALL_LOG_SCHEMA = "omnirush.install-log.v1";
-export const ENV_TURN_SCHEMA = "omnirush.env-turn.v1";
+export const INSTALL_LOG_SCHEMA = "mars.install-log.v1";
+export const ENV_TURN_SCHEMA = "mars.env-turn.v1";
 
 /** The tools wrapped on Linux, macOS and WSL (pip itself is also seen by the hook, however it is started). */
 export const POSIX_TOOLS = [
@@ -72,9 +72,9 @@ const MATCH_SLACK_MS = 3_000;
 
 // --- switches ------------------------------------------------------------------
 
-/** OMNIRUSH_INSTALL_LOG=0 (or false/off/no) keeps the wrappers off the engine's PATH. On by default. */
+/** MARS_INSTALL_LOG=0 (or false/off/no) keeps the wrappers off the engine's PATH. On by default. */
 export function installLogLocallyEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return !/^(?:0|false|off|no)$/i.test((env.OMNIRUSH_INSTALL_LOG ?? "").trim());
+  return !/^(?:0|false|off|no)$/i.test((env.MARS_INSTALL_LOG ?? "").trim());
 }
 
 export type InstallLogGate = { enabled: boolean; samplePercent: number };
@@ -150,13 +150,13 @@ async function materialize(dir: string, write: (tmp: string) => Promise<void>): 
 }
 
 async function writePosixWrappers(dir: string): Promise<void> {
-  const main = path.join(dir, "omnirush-pkg");
+  const main = path.join(dir, "mars-pkg");
   await fs.writeFile(main, POSIX_WRAPPER, { mode: 0o755 });
   await fs.chmod(main, 0o755);
   for (const tool of POSIX_TOOLS) {
     const target = path.join(dir, tool);
     try {
-      await fs.symlink("omnirush-pkg", target);
+      await fs.symlink("mars-pkg", target);
     } catch {
       await fs.copyFile(main, target);
       await fs.chmod(target, 0o755);
@@ -167,10 +167,10 @@ async function writePosixWrappers(dir: string): Promise<void> {
 async function writeWindowsWrappers(dir: string): Promise<void> {
   const exe = Buffer.from(WINDOWS_WRAPPER_BASE64, "base64");
   if (createHash("sha256").update(exe).digest("hex") !== WINDOWS_WRAPPER_SHA256) throw new Error("install log: the Windows wrapper does not match its digest");
-  const main = path.join(dir, "omnirush-pkg.exe");
+  const main = path.join(dir, "mars-pkg.exe");
   await fs.writeFile(main, exe);
   // The marker tells every wrapper (of any version) that this folder holds wrappers, never the real tool.
-  await fs.writeFile(path.join(dir, "omnirush-pkg.marker"), "");
+  await fs.writeFile(path.join(dir, "mars-pkg.marker"), "");
   for (const tool of WINDOWS_TOOLS) {
     const target = path.join(dir, `${tool}.exe`);
     try {
@@ -250,7 +250,7 @@ export function installLogEnv(paths: InstallLogPaths, base: Record<string, strin
   return {
     [pathKey]: restPath ? `${paths.bin}${sep}${restPath}` : paths.bin,
     [pyKey]: restPy ? `${paths.py}${sep}${restPy}` : paths.py,
-    OMNIRUSH_PKGLOG_DIR: paths.raw,
+    MARS_PKGLOG_DIR: paths.raw,
   };
 }
 
@@ -1037,7 +1037,7 @@ async function resolveCall(call: RawCall, cls: Classified, tool: string, ctx: Re
       }
       case "go": {
         if (cls.scope === "global") {
-          const envOut = await ctx.run(real ?? "go", ["env", "GOBIN", "GOPATH"], { timeoutMs: 5_000, env: quietEnv({ ...ctx.env, OMNIRUSH_PKGLOG_OFF: "1" }) });
+          const envOut = await ctx.run(real ?? "go", ["env", "GOBIN", "GOPATH"], { timeoutMs: 5_000, env: quietEnv({ ...ctx.env, MARS_PKGLOG_OFF: "1" }) });
           const [gobin = "", gopath = ""] = (envOut?.stdout ?? "").split(/\r?\n/);
           const bin = gobin.trim() || (gopath.trim() ? path.join(gopath.trim().split(path.delimiter)[0]!, "bin") : "");
           for (const spec of cls.requested) {
@@ -1050,7 +1050,7 @@ async function resolveCall(call: RawCall, cls: Classified, tool: string, ctx: Re
               continue;
             }
             if (!bin || !exe) continue;
-            const info = await ctx.run(real ?? "go", ["version", "-m", path.join(bin, ctx.platform === "win32" ? `${exe}.exe` : exe)], { timeoutMs: 5_000, env: quietEnv({ ...ctx.env, OMNIRUSH_PKGLOG_OFF: "1" }) });
+            const info = await ctx.run(real ?? "go", ["version", "-m", path.join(bin, ctx.platform === "win32" ? `${exe}.exe` : exe)], { timeoutMs: 5_000, env: quietEnv({ ...ctx.env, MARS_PKGLOG_OFF: "1" }) });
             const mod = /^\s*mod\s+(\S+)\s+(\S+)(?:\s+(\S+))?/m.exec(info?.stdout ?? "");
             if (mod) resolved.push({ name: pkg, version: mod[2]!, ...(mod[3] ? { integrity: mod[3] } : {}) });
           }
@@ -1065,7 +1065,7 @@ async function resolveCall(call: RawCall, cls: Classified, tool: string, ctx: Re
         for (const spec of cls.requested.slice(0, 10)) {
           const [name = "", wanted = ""] = spec.split("@");
           if (!name) continue;
-          const listed = await ctx.run(real ?? "gem", ["list", "--local", "--exact", name], { timeoutMs: 10_000, env: quietEnv({ ...ctx.env, OMNIRUSH_PKGLOG_OFF: "1" }) });
+          const listed = await ctx.run(real ?? "gem", ["list", "--local", "--exact", name], { timeoutMs: 10_000, env: quietEnv({ ...ctx.env, MARS_PKGLOG_OFF: "1" }) });
           const versions = /\(([^)]*)\)/.exec(listed?.stdout ?? "")?.[1]?.split(",").map((item) => item.trim().replace(/^default:\s*/, "").split(" ")[0]!) ?? [];
           const version = wanted && versions.includes(wanted) ? wanted : versions[0];
           if (version) resolved.push({ name, version });
@@ -1518,8 +1518,8 @@ const fingerprintCache = new Map<string, { key: string; runtimes: Record<string,
 type EnvFingerprint = Omit<EnvTurn, "schema" | "turn" | "at" | "installs" | "outside_writes" | "outside_truncated" | "timings_ms">;
 
 /** The box's machine, kernel and the runtimes on its PATH (`<command> <path>` lines). */
-// PATH is walked by hand so the install log's wrappers (~/.omnirush/pkglog/bin-*, the box's
-// /opt/omnirush/pkglog) are skipped, as `skipDir` does on this machine. It always exits 0: a
+// PATH is walked by hand so the install log's wrappers (~/.mars/pkglog/bin-*, the box's
+// /opt/mars/pkglog) are skipped, as `skipDir` does on this machine. It always exits 0: a
 // loop whose last command is missing would end 127, which reads as "no box".
 const BOX_WHICH = `uname -m; uname -r; IFS=:; for c in ${[...new Set(["mise", ...RUNTIMES.flatMap((runtime) => runtime.commands)])].join(" ")}; do for d in $PATH; do case "$d" in */pkglog|*/pkglog/*) continue;; esac; if [ -f "$d/$c" ] && [ -x "$d/$c" ]; then echo "$c $d/$c"; break; fi; done; done; true`;
 
@@ -1628,7 +1628,7 @@ export async function envFingerprint(options: { root: string; pathValue: string;
     await Promise.all(RUNTIMES.map(async (runtime) => {
       const file = paths[runtime.name];
       if (!file) return;
-      const result = await options.run(file, runtime.args, { timeoutMs: 5_000, cwd: options.root, env: quietEnv({ ...options.env, OMNIRUSH_PKGLOG_OFF: "1" }), maxBytes: 64 * 1024 });
+      const result = await options.run(file, runtime.args, { timeoutMs: 5_000, cwd: options.root, env: quietEnv({ ...options.env, MARS_PKGLOG_OFF: "1" }), maxBytes: 64 * 1024 });
       const match = runtime.pattern.exec(`${result?.stdout ?? ""}\n${result?.stderr ?? ""}`);
       if (match) runtimes[runtime.name] = match[1]!;
     }));
@@ -1651,7 +1651,7 @@ export async function envFingerprint(options: { root: string; pathValue: string;
 const SKIP_NAMES = new Set([
   "node_modules", "site-packages", "dist-packages", "__pycache__", ".cache", ".npm", ".pnpm-store", ".yarn", ".bun", "registry", ".rustup", "pkg", ".gradle", ".m2",
   "Library", "ms-playwright", ".git", ".venv", "venv", ".tox", ".vscode", ".vscode-server", ".cursor", ".cursor-server", "Code", "google-chrome", "chromium", "mozilla", ".mozilla",
-  "Trash", "systemd", "pulse", "dconf", "omnirush", "OmniRush.ai", "opencode", "pip", "uv", "pypoetry", "go-build", "JetBrains", "Cache", "CachedData", "logs", "Temp", "snap",
+  "Trash", "systemd", "pulse", "dconf", "mars", "MarsAI", "opencode", "pip", "uv", "pypoetry", "go-build", "JetBrains", "Cache", "CachedData", "logs", "Temp", "snap",
   ".ssh", ".gnupg", ".aws", ".kube", ".docker", "keyrings", "Microsoft", "Packages", "fontconfig", "gvfs-metadata", "recently-used.xbel", "tracker3", "nvim", ".local/state",
 ]);
 
@@ -1745,7 +1745,7 @@ export async function scanOutside(options: OutsideScanOptions): Promise<{ entrie
         return;
       }
       const full = path.join(dir, entry.name);
-      if (seen.has(full) || isExcluded(full) || SKIP_NAMES.has(entry.name) || entry.name.startsWith("omnirush")) continue;
+      if (seen.has(full) || isExcluded(full) || SKIP_NAMES.has(entry.name) || entry.name.startsWith("mars")) continue;
       seen.add(full);
       if (entry.isDirectory()) {
         // A busy temp folder: only folders that changed in the window are looked into (with inode times).
@@ -1838,7 +1838,7 @@ export class InstallLogReader {
   }
 }
 
-/** The engine's shell call a noted call ran under, as the wrapper read it from its environment (OMNIRUSH_CALL; the engine's shell.env hook), or null. */
+/** The engine's shell call a noted call ran under, as the wrapper read it from its environment (MARS_CALL; the engine's shell.env hook), or null. */
 export function notedCallId(call: RawCall): string | null {
   const id = call.meta.call ?? call.hooks[0]?.meta.call;
   return typeof id === "string" && /^[A-Za-z0-9_.:-]{1,200}$/.test(id) ? id : null;
@@ -1846,7 +1846,7 @@ export function notedCallId(call: RawCall): string | null {
 
 /**
  * Which session and shell call a noted call belongs to: the call its wrapper
- * names (OMNIRUSH_CALL: parallel calls, a sub-agent's, a background command
+ * names (MARS_CALL: parallel calls, a sub-agent's, a background command
  * a call started), else its start inside one call window (strictly first,
  * then with slack; folder breaks ties).
  */

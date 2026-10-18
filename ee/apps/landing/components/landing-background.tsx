@@ -1,6 +1,6 @@
 "use client";
 
-import { PaperGrainGradient } from "@omnirush/ui/react";
+import { PaperGrainGradient } from "@mars/ui/react";
 
 export function LandingBackground({ fadeOnScroll = true }: { fadeOnScroll?: boolean }) {
   return (

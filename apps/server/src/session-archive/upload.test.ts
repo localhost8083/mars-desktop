@@ -47,10 +47,10 @@ function uploader(server: FakeArchiveServer, options: Partial<ArchiveUploaderOpt
 
 describe("archive upload client", () => {
   test("the API root is derived like the session upload URL", () => {
-    expect(resolveArchiveApiRoot("https://api.omnirush.ai/omnirush/v1/")).toBe("https://api.omnirush.ai/omnirush");
-    expect(resolveArchiveApiRoot("https://api.omnirush.ai/omnirush")).toBe("https://api.omnirush.ai/omnirush");
+    expect(resolveArchiveApiRoot("https://api.marsai.click/mars/v1/")).toBe("https://api.marsai.click/mars");
+    expect(resolveArchiveApiRoot("https://api.marsai.click/mars")).toBe("https://api.marsai.click/mars");
     expect(resolveArchiveApiRoot("http://127.0.0.1:8080/v1")).toBe("http://127.0.0.1:8080");
-    expect(resolveArchiveApiRoot("http://api.omnirush.ai/v1")).toBeNull();
+    expect(resolveArchiveApiRoot("http://api.marsai.click/v1")).toBeNull();
     expect(resolveArchiveApiRoot(undefined)).toBeNull();
   });
 
@@ -181,7 +181,7 @@ describe("archive upload client", () => {
       retry: FAST_RETRY,
       request: (path, init) => {
         seen.push({ path, refresh: "refresh" in init ? init.refresh : "absent", signal: init.signal instanceof AbortSignal });
-        return server.respond(`https://api.omnirush.test/omnirush/${path}`, { method: init.method, headers: { authorization: `Bearer ${server.token}` } });
+        return server.respond(`https://api.mars.test/mars/${path}`, { method: init.method, headers: { authorization: `Bearer ${server.token}` } });
       },
     });
     expect((await client.probeKey()).status).toBe("ok");
@@ -421,7 +421,7 @@ describe("archive upload client", () => {
       retry: FAST_RETRY,
       request: (path, init) => {
         seen.push(`${init.method} ${path}`);
-        return server.respond(`https://api.omnirush.test/omnirush/${path}`, { method: init.method, body: init.body, headers: { Authorization: `Bearer ${server.token}` } });
+        return server.respond(`https://api.mars.test/mars/${path}`, { method: init.method, body: init.body, headers: { Authorization: `Bearer ${server.token}` } });
       },
     });
     expect(client.configured).toBe(true);

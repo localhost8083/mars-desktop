@@ -35,9 +35,9 @@ function serverConfig(logFormat: ServerConfig["logFormat"] = "pretty"): ServerCo
 const tempDirs: string[] = [];
 
 function tempLogPath() {
-  const dir = mkdtempSync(join(tmpdir(), "omnirush-server-log-"));
+  const dir = mkdtempSync(join(tmpdir(), "mars-server-log-"));
   tempDirs.push(dir);
-  return join(dir, "nested", "omnirush-server.log");
+  return join(dir, "nested", "mars-server.log");
 }
 
 async function settled(sink: { close: () => void }) {
@@ -126,7 +126,7 @@ describe("createServerLogger file sink", () => {
     expect(record.severityText).toBe("INFO");
     expect(record.attributes["engine.rollover.reason"]).toBe("engine_reload");
     expect(record.attributes.Authorization).toBe("<redacted>");
-    expect(record.resource["service.name"]).toBe("omnirush-server");
+    expect(record.resource["service.name"]).toBe("mars-server");
     expect(readFileSync(path, "utf8")).not.toContain("should-not-persist");
   });
 

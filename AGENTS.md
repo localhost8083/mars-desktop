@@ -1,84 +1,25 @@
-# AGENTS.md
+# Agent instructions
 
-OmniRush.ai is a free, open-source desktop app (macOS, Windows, Linux) for doing
-work with AI agents on your own files — an open-source alternative to Claude
-Cowork and Codex, built on OpenCode with a curated provider experience.
-Desktop mode keeps files local; cloud is optional. Three surfaces live in this
-repo:
+## Repository shape
 
-- **Desktop app** (`apps/`, `packages/`) — local-first agent workspace: chat on
-  files, skills, browser automation, scheduled automations, Anthropic-compatible
-  plugins.
-- **OmniRush.ai MCP gateway** (`ee/apps/den-api`) — one URL per Den
-  deployment (`<den-api-origin>/mcp/agent`; omnirush.ai runs no hosted Den)
-  that brings org-assigned skills, plugins,
-  and connections (Google Workspace, Microsoft 365, MCPs) into Codex, Claude
-  Code, Cursor, or any MCP client via `search_capabilities` /
-  `execute_capability`.
-- **OmniRush.ai Den** (`ee/apps/den-*`) — the org control plane: provision
-  inference, manage teams and access, set desktop policies, publish skills and
-  plugins through marketplaces.
+- This is a pnpm workspace (`apps/*`, `packages/*`, `ee/apps/*`, `ee/packages/*`) plus a separate `evals/` pnpm workspace. The main product surfaces are `apps/app` (Vite UI), `apps/desktop` (Electron shell), `apps/server` (filesystem-backed server), and `ee/apps/den-*` (Den control plane).
+- Use the root toolchain: Node 24, pnpm 11.4.0, and Bun 1.3.10+. Use `pnpm`, never npm or yarn; run `pnpm install --frozen-lockfile` from the root. `evals/` also needs `pnpm --dir evals install`.
+- `packages/sdk` is generated from the Den API. After changing the API or SDK inputs, run `pnpm sdk:generate`, then `pnpm sdk:check`; do not hand-edit generated SDK output.
+- Den DB schema changes require a migration: run `pnpm --filter @omnirush-ee/den-db db:generate` and commit the generated files under `ee/packages/den-db/drizzle`.
 
-The app consumes OmniRush.ai server surfaces (self-hosted or hosted) rather than
-inventing parallel behavior. The product UI prioritizes the internal model
-gateway and a small set of widely used providers.
+## Commands
 
-## Confidentiality (hard rule — this repo is public)
+- Desktop development: `pnpm dev` (or `pnpm dev:worktree` for an isolated profile). UI-only: `pnpm dev:ui`. Headless web: `pnpm world up dev-headless --detach`; stop it with `pnpm world down dev-headless` and inspect `tmp/dev-headless-web.json` for its manifest.
+- Main checks: `pnpm typecheck`, `pnpm test:core`, and `pnpm --filter @mars/desktop typecheck:electron`. The full product suite is `pnpm test:extended` and is substantially more expensive.
+- Focused checks use package scripts: `pnpm --filter @mars/app test:core`, `pnpm --filter mars-server test:core`, `pnpm --filter @mars/desktop test:core`, or `pnpm --filter @omnirush-ee/den-api test`. For one Bun test, run the package's script with the test path, e.g. `pnpm --filter @mars/app exec bun test tests/<file>.test.ts`.
+- Journey proof lives in `evals/specs/**` or `scenarios/<name>/*.e2e.test.ts`; unit tests are not proof. Run a selected journey with `pnpm evals:e2e <slug>` or a PR spec with `pnpm evals:pr specs/<name>.test.ts`. Load the repository skills `write-a-spec`, `run-tests`, `diagnose-a-red-run` (only when red), and `publish-evidence` as applicable.
+- `evals` is independently checked: `pnpm --dir evals run lint:layers`, `pnpm evals:typecheck`, and `pnpm --dir evals test`. E2E placement is printed by the CLI; named runs can use `--local` or `--daytona`.
+- Local Den development requires MySQL and Redis: `pnpm dev:den:mysql`, `pnpm dev:den:db-push`, then use the relevant `pnpm dev:den:api` / `pnpm dev:den:web` scripts. These scripts provide local development defaults; do not reuse them for production.
 
-Never let a branch name, commit, PR text, comment, fixture, or evidence identify
-a customer, prospect, partner, or outside person; use internal ticket IDs, and
-escalate any leak instead of rewriting history.
+## Change constraints
 
-## Verification (every change)
-
-- Proof is a journey spec in `evals/specs/**` or `scenarios/<name>/e2e.test.ts` (`*.e2e.test.ts` drives the app/Den; `*.test.ts` hits a server or gateway boundary). Unit tests are not proof and never live in journey directories; the boundary ratchet rejects new ones that import product source, read the repo, or spawn test runners.
-- Default is zero new test files: run the journey spec that covers the change; extend it for a gap; new file only for a new user journey.
-- Run `pnpm evals:e2e <slug>` or `pnpm evals:pr specs/<name>.test.ts`; report the printed placement and verdict.
-- `Passed` requires an observable assertion for every claim; skips are never passed.
-- Docs/comments, types-only, and inert agent config may skip runtime proof — say so.
-- Skill chain: `write-a-spec` → `run-tests` → `diagnose-a-red-run` when red → `publish-evidence`.
-
-## Pull requests
-
-- Do not default to draft PRs. A request to create or make a PR means a
-  ready-for-review PR once the required proof is published. Use a draft only
-  when the requester explicitly asks for one or the current verdict is
-  `Incomplete` or `Failed`, and state exactly what proof is missing.
-- Run tests and report commands + results. A runtime-observable change is not
-  done until its test evidence is visible on the PR. If validation cannot run,
-  say why and give exact repro steps.
-## Local headless web (agents)
-
-- `pnpm world up dev-headless --detach` launches an isolated browser UI +
- local `omnirush-server` without Electron as a detached script world.
- `pnpm dev:headless-web` remains a compatibility alias with its prior foreground
- default (`--detach` still works). Read
- `tmp/dev-headless-web.json` for the owner-only runtime manifest.
- It does not use `~/.config/omnirush/server.json`, and its engine keeps its own
- sessions database at `tmp/dev-headless-opencode.db` instead of the desktop
- app's `~/.local/share/opencode/opencode.db`. Stop a running script with
- `pnpm world down dev-headless`; pass script options after `--`, for example
- `pnpm world up dev-headless --detach -- --replace --keep-tokens`. Cloud sign-in
- is copy/paste handoff (Den cannot redirect grants to localhost): Account → Sign
- in → copy OmniRush.ai link on Den → Paste sign-in code in Settings.
-
-## Coding
-
-- pnpm only, never npm/yarn. TypeScript: never `any`, typecasts, or `as` unless
-  100% necessary or instructed.
-- Prefer Tailwind, React, shadcn/ui (Base UI), TanStack Query, Zustand, Zod,
-  Drizzle, Better-Auth. Reuse `@/components`; end users are non-technical.
-- Smallest possible diff, then make it smaller. Propose the simpler solution. No
-  fallback expressions when types or control flow already guarantee a value.
-- If asked to do too much at once, stop and say so.
-
-## Hands-on PR previews
-
-For a preview the user can test inside Codex, use
-[preview-my-work](.opencode/skills/preview-my-work/SKILL.md): named Daytona
-worlds for Den or real Electron through noVNC, with isolated scenarios,
-frontend updates, reset and teardown.
-
-## Reusable scenarios
-
-Start at [scenarios/README.md](scenarios/README.md) for workflows, videos, and documentation screenshots. Keep each scenario together; reuse the existing world, testkit, behavior, and DocShot packages. Author ordinary TypeScript functions and React/Remotion components.
+- Keep diffs small and do not add a new test file when an existing journey covers the behavior; extend the existing journey instead. Runtime-observable changes need observable journey assertions and published evidence. Skips are not passes.
+- TypeScript uses strict typing: do not introduce `any` or unnecessary type assertions. Follow existing React/Tailwind/shadcn patterns and reuse shared components.
+- Never commit secrets, credentials, personal data, or customer/partner identities. Public branch names, commits, PRs, fixtures, and evidence must use internal ticket IDs or neutral names.
+- Every commit must be DCO signed (`git commit -s`). Contributions under `ee/` additionally require the applicable CLA; see `CONTRIBUTING.md`.
+- For previews, use `.opencode/skills/preview-my-work/SKILL.md`; do not improvise a shared running environment. Repo-local OpenCode configuration is `.opencode/opencode.json`.

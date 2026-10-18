@@ -1,5 +1,5 @@
-import { connect, debuggerUrlFor, evaluate, evaluateOnSurface, listTargets } from "@omnirush/cdp";
-import type { Surface } from "@omnirush/cdp";
+import { connect, debuggerUrlFor, evaluate, evaluateOnSurface, listTargets } from "@mars/cdp";
+import type { Surface } from "@mars/cdp";
 
 export interface BrowserTaskInput {
   sessionId: string;
@@ -84,7 +84,7 @@ export function parseBrowserTaskReply(value: unknown): BrowserTaskReply {
 
 /** Read only the native state, never focus, attach, or select a browser view. */
 export async function readBrowserState(app: Surface): Promise<BrowserState> {
-  const value = await evaluateOnSurface(app, () => window.__OMNIRUSH_ELECTRON__.browser.getState(), { awaitPromise: true });
+  const value = await evaluateOnSurface(app, () => window.__MARS_ELECTRON__.browser.getState(), { awaitPromise: true });
   if (!record(value) || !Array.isArray(value.tabs) || !Array.isArray(value.nativeViews)
     || typeof value.visibleWindowCount !== "number" || typeof value.backgroundWindowVisible !== "boolean") throw new Error("Missing native browser state.");
   return {

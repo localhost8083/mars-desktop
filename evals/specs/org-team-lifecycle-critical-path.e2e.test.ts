@@ -1,6 +1,6 @@
-import { browserScript } from "@omnirush/testkit";
+import { browserScript } from "@mars/testkit";
 import { expect, onTestFinished } from "vitest";
-import type { Surface } from "@omnirush/cdp";
+import type { Surface } from "@mars/cdp";
 import {
   assignPluginToMarketplace,
   control,
@@ -18,9 +18,9 @@ import {
   waitFor,
   waitForAssistantReply,
   waitForButtonGone,
-} from "@omnirush/behaviors";
-import type { DenSession } from "@omnirush/behaviors";
-import { screenshot, validate } from "@omnirush/test-evidence";
+} from "@mars/behaviors";
+import type { DenSession } from "@mars/behaviors";
+import { screenshot, validate } from "@mars/test-evidence";
 import {
   app,
   eventually,
@@ -31,8 +31,8 @@ import {
   server,
   test,
   unmetNeeds,
-} from "@omnirush/testkit";
-import type { TestNeeds } from "@omnirush/testkit";
+} from "@mars/testkit";
+import type { TestNeeds } from "@mars/testkit";
 
 /**
  * CRITICAL-PATH E2E JOURNEY: a new organization invites a second person, publishes a real
@@ -40,11 +40,11 @@ import type { TestNeeds } from "@omnirush/testkit";
  * shares that skill through a person-scoped marketplace, and proves from a
  * sequential teammate desktop that the real model runs and the shared skill
  * uses the organization connector.
- * It also claims each desktop's omnirush-cloud MCP health and direct tool probe.
+ * It also claims each desktop's mars-cloud MCP health and direct tool probe.
  *
  * Step-0 research (2026-08-09): the preferred path exists today. The signed-in
  * app reconciler requires an active org, mints a fresh token, and repairs the
- * `omnirush-cloud` entry (apps/app/src/react-app/domains/connections/store.ts:
+ * `mars-cloud` entry (apps/app/src/react-app/domains/connections/store.ts:
  * 883-927). The desktop server persists and dynamically registers that remote
  * MCP with the engine (apps/server/src/cloud-mcp-health.ts:2112-2123). The server
  * reads Den's remote skill index (apps/server/src/connect-skill-catalog.ts:45-78,
@@ -72,7 +72,7 @@ import type { TestNeeds } from "@omnirush/testkit";
 const requirements: TestNeeds = {
   model: "tool-capable",
   env: ["OPENAI_API_KEY"],
-  optIn: ["OMNIRUSH_EVAL_E2E_TESTS", "OMNIRUSH_EVAL_CRITICAL_PATH_E2E_JOURNEY"],
+  optIn: ["MARS_EVAL_E2E_TESTS", "MARS_EVAL_CRITICAL_PATH_E2E_JOURNEY"],
 };
 const missingRequirements = unmetNeeds(requirements, process.env);
 const title = missingRequirements.length > 0
@@ -132,9 +132,9 @@ function errorText(error: unknown): string {
 }
 
 function resolveProviderTarget(): ProviderTarget {
-  const requestedModelId = process.env.OMNIRUSH_EVAL_MODEL?.trim() ?? "";
+  const requestedModelId = process.env.MARS_EVAL_MODEL?.trim() ?? "";
   if (!requestedModelId || requestedModelId.includes("/")) {
-    throw new Error(`OMNIRUSH_EVAL_MODEL must be the bare OpenAI model id; received ${requestedModelId}.`);
+    throw new Error(`MARS_EVAL_MODEL must be the bare OpenAI model id; received ${requestedModelId}.`);
   }
   const apiKey = process.env.OPENAI_API_KEY?.trim() ?? "";
   if (!apiKey) throw new Error(`${requestedModelId} requires OPENAI_API_KEY.`);
@@ -164,7 +164,7 @@ async function organizationMembership(session: DenSession, organizationName: str
 
 async function readProviders(session: DenSession, orgId: string): Promise<ProviderFacts[]> {
   const result = await denFetch(session, "/v1/llm-providers", {
-    headers: { ...auth(session), "x-omnirush-org-id": orgId },
+    headers: { ...auth(session), "x-mars-org-id": orgId },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!result.response.ok) {
@@ -187,7 +187,7 @@ async function createProvider(
 ): Promise<string> {
   const result = await denFetch(admin, "/v1/llm-providers", {
     method: "POST",
-    headers: { ...auth(admin), "x-omnirush-org-id": orgId },
+    headers: { ...auth(admin), "x-mars-org-id": orgId },
     body: JSON.stringify({
       name,
       source: "custom",
@@ -217,7 +217,7 @@ async function createProvider(
 async function deleteProvider(admin: DenSession, orgId: string, providerId: string): Promise<void> {
   const result = await denFetch(admin, `/v1/llm-providers/${encodeURIComponent(providerId)}`, {
     method: "DELETE",
-    headers: { ...auth(admin), "x-omnirush-org-id": orgId },
+    headers: { ...auth(admin), "x-mars-org-id": orgId },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!result.response.ok && result.response.status !== 404) {
@@ -227,8 +227,8 @@ async function deleteProvider(admin: DenSession, orgId: string, providerId: stri
 
 async function configureWorkspaceOpenAi(appSurface: Surface, workspaceId: string, apiKey: string): Promise<void> {
   const providerConfigured = await evalIn(appSurface, browserScript(async (inputWorkspaceId, inputApiKey) => {
-    const port = localStorage.getItem("omnirush.server.port");
-    const token = localStorage.getItem("omnirush.server.token");
+    const port = localStorage.getItem("mars.server.port");
+    const token = localStorage.getItem("mars.server.token");
     if (!port || !token) return "missing local server credentials";
     const request = async (path: string, init?: RequestInit) => {
       const response = await fetch("http://127.0.0.1:" + port + path, {
@@ -305,7 +305,7 @@ async function readAuthoredPlugin(
 async function mintGatewayToken(session: DenSession, orgId: string): Promise<string> {
   const result = await denFetch(session, "/v1/mcp/token", {
     method: "POST",
-    headers: { ...auth(session), "x-omnirush-org-id": orgId },
+    headers: { ...auth(session), "x-mars-org-id": orgId },
     body: JSON.stringify({}),
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
@@ -369,7 +369,7 @@ test.skipIf(missingRequirements.length > 0)(title, { timeout: 45 * 60_000 }, asy
   const providerName = `Mega OpenAI Models ${stamp}`;
   const teammateEmail = `taylor.critical-path.${stamp}@acme.test`;
   const outsiderEmail = `riley.critical-path.${stamp}@acme.test`;
-  const password = "OmniRushEval123!";
+  const password = "MarsEval123!";
   // The authored skill's marker must survive verbatim model reproduction, so keep it short (base36), like llmNonce below.
   const skillNonce = `critical-path-${stamp.toString(36)}`;
   const skillName = `critical-path-echo-${stamp}`;
@@ -471,7 +471,7 @@ test.skipIf(missingRequirements.length > 0)(title, { timeout: 45 * 60_000 }, asy
       {
         within: 180_000,
         intervalMs: 5_000,
-        label: "admin omnirush-cloud MCP ready",
+        label: "admin mars-cloud MCP ready",
         until: (h) => h.ok && h.phase === "ready" && h.direct.checked && h.direct.missing.length === 0,
       },
     );
@@ -495,7 +495,7 @@ test.skipIf(missingRequirements.length > 0)(title, { timeout: 45 * 60_000 }, asy
       && adminCloudMcp.direct.missing.length === 0
       && adminCloudMcp.tools.missing.length === 0;
     evidence.recordAssertionEvidence(
-      "The admin desktop's OmniRush.ai Connect MCP connector is registered and live-probed ready",
+      "The admin desktop's MarsAI Connect MCP connector is registered and live-probed ready",
       `Health phase=${adminCloudMcp.phase}, engine=${adminCloudMcp.engineStatus}, probed tools=${JSON.stringify(adminCloudMcp.direct.present)}.`,
       adminCloudMcpReady,
     );
@@ -508,7 +508,7 @@ test.skipIf(missingRequirements.length > 0)(title, { timeout: 45 * 60_000 }, asy
     );
 
     await sendComposerMessage(appAdmin, [
-      "Create exactly one OmniRush.ai Cloud skill, not a local skill.",
+      "Create exactly one MarsAI Cloud skill, not a local skill.",
       "Load and follow the remote create-skill capability `skill:create-skill`, then verify the created plugin.",
       `Use skill name ${skillName} and plugin title ${pluginName}.`,
       `The complete SKILL.md must contain nonce ${skillNonce}.`,
@@ -621,7 +621,7 @@ test.skipIf(missingRequirements.length > 0)(title, { timeout: 45 * 60_000 }, asy
     await waitForButtonGone(appAdmin, "Stop", { timeoutMs: 240_000 });
     const shot = await screenshot(appAdmin);
     const seen = await validate(shot, [
-      "An OmniRush.ai chat surface shows the admin's completed Cloud skill creation task",
+      "An MarsAI chat surface shows the admin's completed Cloud skill creation task",
       "No 'Something went wrong', blank screen, or crash message is visible",
     ]);
     expect(seen.ok, seen.why).toBe(true);
@@ -702,7 +702,7 @@ test.skipIf(missingRequirements.length > 0)(title, { timeout: 45 * 60_000 }, asy
       {
         within: 180_000,
         intervalMs: 5_000,
-        label: "teammate omnirush-cloud MCP ready",
+        label: "teammate mars-cloud MCP ready",
         until: (h) => h.ok && h.phase === "ready" && h.direct.checked && h.direct.missing.length === 0,
       },
     );
@@ -726,7 +726,7 @@ test.skipIf(missingRequirements.length > 0)(title, { timeout: 45 * 60_000 }, asy
       && teammateCloudMcp.direct.missing.length === 0
       && teammateCloudMcp.tools.missing.length === 0;
     evidence.recordAssertionEvidence(
-      "The plain-member desktop's OmniRush.ai Connect MCP connector is registered and live-probed ready",
+      "The plain-member desktop's MarsAI Connect MCP connector is registered and live-probed ready",
       `Health phase=${teammateCloudMcp.phase}, engine=${teammateCloudMcp.engineStatus}, probed tools=${JSON.stringify(teammateCloudMcp.direct.present)}.`,
       teammateCloudMcpReady,
     );

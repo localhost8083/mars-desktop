@@ -21,7 +21,7 @@ export type OpencodeModelsEnv =
  *
  * The engine re-fetches `${OPENCODE_MODELS_URL}/api.json` every hour and trusts
  * the response as model and provider metadata, provider API base URLs
- * included. omnirush.ai does not host a catalog, so there is no production
+ * included. marsai.click does not host a catalog, so there is no production
  * default: a catalog is used only when OPENCODE_MODELS_URL names one or, in
  * development, when the local inference stack serves one.
  */
@@ -31,7 +31,7 @@ export async function resolveOpencodeModelsUrl(
   const env = options.env ?? process.env;
   const override = env.OPENCODE_MODELS_URL?.trim();
   if (override) return override;
-  if (env.OMNIRUSH_DEV_MODE !== "1") return undefined;
+  if (env.MARS_DEV_MODE !== "1") return undefined;
 
   try {
     const response = await (options.fetchModels ?? loopbackFetch)(`${LOCAL_MODELS_URL}/api.json`, {

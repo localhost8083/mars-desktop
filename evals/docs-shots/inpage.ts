@@ -1,6 +1,6 @@
-import { browserScript } from "@omnirush/cdp";
-import { evalIn } from "@omnirush/behaviors";
-import type { Surface, EvaluateOptions } from "@omnirush/cdp";
+import { browserScript } from "@mars/cdp";
+import { evalIn } from "@mars/behaviors";
+import type { Surface, EvaluateOptions } from "@mars/cdp";
 export type InPageOptions = EvaluateOptions;
 
 /** Execute a checked browser callback with one explicit argument. */

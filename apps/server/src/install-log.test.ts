@@ -26,7 +26,7 @@ const posix = process.platform !== "win32";
 const tmpdir = (prefix) => fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 const has = (cmd) => spawnSync("sh", ["-c", `command -v ${cmd}`], { encoding: "utf8" }).status === 0;
 const online = (() => {
-  if (process.env.OMNIRUSH_TEST_OFFLINE === "1" || !has("npm")) return false;
+  if (process.env.MARS_TEST_OFFLINE === "1" || !has("npm")) return false;
   const probe = spawnSync("npm", ["view", "is-number@7.0.0", "version"], { encoding: "utf8", timeout: 20_000 });
   return probe.status === 0 && probe.stdout.trim() === "7.0.0";
 })();
@@ -48,17 +48,17 @@ test("the server switch comes from the capabilities answer; a missing key is off
 });
 
 test("managed engines get the wrappers first on PATH (and only once the desktop prepared them)", async () => {
-  const root = tmpdir("omnirush-pkglog-host-");
+  const root = tmpdir("mars-pkglog-host-");
   try {
     resetDesktopInstallLog();
     assert.deepEqual(engineInstallLogEnv({ PATH: "/usr/bin" }), {});
-    assert.equal(await prepareDesktopInstallLog(path.join(root, "state"), { OMNIRUSH_INSTALL_LOG: "0" }), null);
+    assert.equal(await prepareDesktopInstallLog(path.join(root, "state"), { MARS_INSTALL_LOG: "0" }), null);
     const paths = await prepareDesktopInstallLog(path.join(root, "state"), {});
     assert.ok(paths);
     const env = engineInstallLogEnv({ PATH: "/usr/bin:/bin", PYTHONPATH: "/x" });
     assert.equal(env.PATH, `${paths.bin}${path.delimiter}/usr/bin:/bin`);
     assert.equal(env.PYTHONPATH, `${paths.py}${path.delimiter}/x`);
-    assert.equal(env.OMNIRUSH_PKGLOG_DIR, paths.raw);
+    assert.equal(env.MARS_PKGLOG_DIR, paths.raw);
     if (posix) assert.ok(fs.lstatSync(path.join(paths.bin, "npm")).isSymbolicLink());
   } finally {
     resetDesktopInstallLog();
@@ -67,14 +67,14 @@ test("managed engines get the wrappers first on PATH (and only once the desktop 
 });
 
 test("the wrapper is transparent and a broken log never breaks the tool", { skip: !posix }, async () => {
-  const root = tmpdir("omnirush-pkglog-wrap-");
+  const root = tmpdir("mars-pkglog-wrap-");
   try {
     const paths = await il.prepareInstallLog({ stateDir: path.join(root, "state") });
     const real = path.join(root, "real");
     fs.mkdirSync(real);
     fs.writeFileSync(path.join(real, "npm"), "#!/bin/sh\nprintf 'args:'; for a in \"$@\"; do printf ' [%s]' \"$a\"; done; printf '\\n'; cat; echo err >&2; exit 5\n", { mode: 0o755 });
     await il.setInstallLogActive(paths.raw, true);
-    const env = { ...process.env, PATH: `${paths.bin}:${real}:/usr/bin:/bin`, OMNIRUSH_PKGLOG_DIR: paths.raw };
+    const env = { ...process.env, PATH: `${paths.bin}:${real}:/usr/bin:/bin`, MARS_PKGLOG_DIR: paths.raw };
     const run = spawnSync("npm", ["install", "a b", "$X"], { env, input: "in", encoding: "utf8" });
     assert.equal(run.status, 5);
     assert.equal(run.stdout, "args: [install] [a b] [$X]\nin");
@@ -90,7 +90,7 @@ test("the wrapper is transparent and a broken log never breaks the tool", { skip
 });
 
 test("a continued session numbers its turns on from the turns it had", { skip: !posix }, async () => {
-  const root = tmpdir("omnirush-pkglog-cont-");
+  const root = tmpdir("mars-pkglog-cont-");
   try {
     const paths = await il.prepareInstallLog({ stateDir: path.join(root, "state") });
     const events = [];
@@ -122,7 +122,7 @@ test("a continued session numbers its turns on from the turns it had", { skip: !
 });
 
 test("integration: an npm install the engine's shell runs becomes one context.install line with exact versions", { skip: !posix || !online, timeout: 180_000 }, async () => {
-  const root = tmpdir("omnirush-pkglog-npm-");
+  const root = tmpdir("mars-pkglog-npm-");
   try {
     const paths = await il.prepareInstallLog({ stateDir: path.join(root, "state") });
     const project = path.join(root, "proj");
@@ -161,7 +161,7 @@ test("integration: an npm install the engine's shell runs becomes one context.in
 });
 
 test("the uploader reads the switch from the host's capabilities, or asks the server itself with its own gateway token", async () => {
-  const root = tmpdir("omnirush-pkglog-gate-");
+  const root = tmpdir("mars-pkglog-gate-");
   try {
     const paths = await il.prepareInstallLog({ stateDir: path.join(root, "pk") });
     const asked = [];
@@ -169,11 +169,11 @@ test("the uploader reads the switch from the host's capabilities, or asks the se
       asked.push({ url: String(url), auth: init?.headers?.Authorization ?? null });
       return Response.json({ schema_versions: [1, 2, 3], canonical_trace: true, install_log: { enabled: true, sample_percent: 100 } });
     };
-    const viaToken = new uploader.SessionUploader({ stateDir: path.join(root, "a"), gatewayUrl: "http://127.0.0.1:9/omnirush/v1", accessToken: "tok-e2e", fetch: fetcher, installLog: { raw: paths.raw, bin: paths.bin }, context: { sections: { system_packages: false, services: false, setup: false, pm_config: false, shell_aliases: false, processes: false }, network: false } });
+    const viaToken = new uploader.SessionUploader({ stateDir: path.join(root, "a"), gatewayUrl: "http://127.0.0.1:9/mars/v1", accessToken: "tok-e2e", fetch: fetcher, installLog: { raw: paths.raw, bin: paths.bin }, context: { sections: { system_packages: false, services: false, setup: false, pm_config: false, shell_aliases: false, processes: false }, network: false } });
     viaToken.startSession("ses_gate_token_01", "ws", root);
     for (let i = 0; i < 50 && !fs.existsSync(path.join(paths.raw, "on")); i++) await new Promise((resolve) => setTimeout(resolve, 100));
     assert.equal(fs.existsSync(path.join(paths.raw, "on")), true);
-    assert.ok(asked.some((call) => call.url === "http://127.0.0.1:9/omnirush/collect/capabilities" && call.auth === "Bearer tok-e2e"), JSON.stringify(asked));
+    assert.ok(asked.some((call) => call.url === "http://127.0.0.1:9/mars/collect/capabilities" && call.auth === "Bearer tok-e2e"), JSON.stringify(asked));
     await il.setInstallLogActive(paths.raw, false);
     const off = new uploader.SessionUploader({ stateDir: path.join(root, "b"), upload: async () => new Response("{}", { status: 201 }), capabilities: async () => ({ schema_versions: [1, 2, 3], canonical_trace: true }), installLog: { raw: paths.raw, bin: paths.bin }, context: { sections: { system_packages: false, services: false, setup: false, pm_config: false, shell_aliases: false, processes: false }, network: false } });
     off.startSession("ses_gate_off_0001", "ws", root);

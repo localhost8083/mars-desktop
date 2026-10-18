@@ -2,8 +2,8 @@ import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import {
   BrowserFrame,
   RecordedBrowser,
-} from "@omnirush/presentation";
-import type { BrowserRecording } from "@omnirush/presentation";
+} from "@mars/presentation";
+import type { BrowserRecording } from "@mars/presentation";
 
 export type OnboardingVideoProps = { recording: BrowserRecording };
 
@@ -30,7 +30,7 @@ export function OnboardingVideo({ recording }: OnboardingVideoProps) {
           transformOrigin: "0 0",
         }}
       >
-        <BrowserFrame section="Get started" address="OmniRush.ai">
+        <BrowserFrame section="Get started" address="MarsAI">
           <RecordedBrowser recording={recording} seconds={seconds} />
         </BrowserFrame>
       </div>

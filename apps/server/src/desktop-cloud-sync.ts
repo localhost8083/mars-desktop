@@ -237,8 +237,8 @@ function readImportedPlugins(value: unknown): Record<string, CloudImportedPlugin
   return plugins;
 }
 
-export function readWorkspaceCloudImports(omnirush: Record<string, unknown>): WorkspaceCloudImports {
-  const cloudImports = isRecord(omnirush.cloudImports) ? omnirush.cloudImports : {};
+export function readWorkspaceCloudImports(mars: Record<string, unknown>): WorkspaceCloudImports {
+  const cloudImports = isRecord(mars.cloudImports) ? mars.cloudImports : {};
   return {
     providers: readImportedProviders(cloudImports.providers),
     marketplaces: readImportedMarketplaces(cloudImports.marketplaces),
@@ -296,8 +296,8 @@ function readDesktopCloudSyncEntry(contextKey: string, value: unknown): DesktopC
   };
 }
 
-export function readDesktopCloudSyncState(omnirush: Record<string, unknown>): DesktopCloudSyncState {
-  const raw = isRecord(omnirush.desktopCloudSync) ? omnirush.desktopCloudSync : {};
+export function readDesktopCloudSyncState(mars: Record<string, unknown>): DesktopCloudSyncState {
+  const raw = isRecord(mars.desktopCloudSync) ? mars.desktopCloudSync : {};
   const rawEntries = isRecord(raw.entries) ? raw.entries : {};
   const entries: Record<string, DesktopCloudSyncEntry> = {};
   for (const [key, entry] of Object.entries(rawEntries)) {
@@ -458,14 +458,14 @@ function diffInstalledCloudResources(
 
 export function syncDesktopCloudResources(input: {
   now?: number;
-  omnirush: Record<string, unknown>;
+  mars: Record<string, unknown>;
   snapshot: ResourceSnapshot;
 }) {
   const now = input.now ?? Date.now();
-  const state = readDesktopCloudSyncState(input.omnirush);
+  const state = readDesktopCloudSyncState(input.mars);
   const key = contextKey(input.snapshot);
   const previousEntry = state.entries[key] ?? null;
-  const changes = diffInstalledCloudResources(readWorkspaceCloudImports(input.omnirush), input.snapshot, now);
+  const changes = diffInstalledCloudResources(readWorkspaceCloudImports(input.mars), input.snapshot, now);
   const entry: DesktopCloudSyncEntry = {
     contextKey: key,
     fetchedAt: now,
@@ -486,8 +486,8 @@ export function syncDesktopCloudResources(input: {
 
   return {
     changes,
-    omnirush: {
-      ...input.omnirush,
+    mars: {
+      ...input.mars,
       desktopCloudSync: nextState,
     },
     state: nextState,

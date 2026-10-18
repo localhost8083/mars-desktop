@@ -88,7 +88,7 @@ app.kubernetes.io/component: {{ .component }}
 {{- end -}}
 
 {{- define "omnirush-ee.customCa.mountPath" -}}
-/etc/omnirush/custom-ca
+/etc/mars/custom-ca
 {{- end -}}
 
 {{- define "omnirush-ee.customCa.filePath" -}}

@@ -1,9 +1,9 @@
-# Deploy OmniRush.ai EE on AWS with EKS and Helm
+# Deploy MarsAI EE on AWS with EKS and Helm
 
 Status: self-host operator guide
 Related: `packaging/helm/omnirush-ee`, `packaging/helm/omnirush-ee/examples/values.aws-load-balancer.yaml`, `packaging/helm/omnirush-ee/examples/values.aws-load-balancer-http-smoke.yaml`
 
-This is the recommended AWS path for a first production-like OmniRush.ai EE
+This is the recommended AWS path for a first production-like MarsAI EE
 self-host install. Use Helm on Amazon EKS with Amazon RDS for MySQL. For the
 simplest customer deployment, use EKS Auto Mode and Kubernetes
 `LoadBalancer` Services so AWS provisions Network Load Balancers directly from
@@ -16,18 +16,18 @@ HTTP routing, WAF rules, or an existing ingress platform.
 - Den Web on port `3005`
 - optional inference service, disabled by default
 - one RDS MySQL database
-- one single-org OmniRush.ai deployment
+- one single-org MarsAI deployment
 - two public AWS Network Load Balancers by default: one for web and one for API
 
 AWS owns the EKS cluster, node lifecycle, VPC networking, load balancers, RDS,
-DNS, TLS certificates, IAM, and security groups. The OmniRush.ai Helm chart owns
-OmniRush.ai Deployments, Services, ConfigMaps, Secrets, health probes, and the
+DNS, TLS certificates, IAM, and security groups. The MarsAI Helm chart owns
+MarsAI Deployments, Services, ConfigMaps, Secrets, health probes, and the
 database migration Job.
 
 ## Use Helm or something else?
 
 Use Helm on EKS for AWS unless the customer explicitly cannot run Kubernetes.
-The OmniRush.ai EE release artifact is already a Helm chart, the service split maps
+The MarsAI EE release artifact is already a Helm chart, the service split maps
 cleanly to Kubernetes, and EKS Auto Mode removes most node and load balancer
 setup from the customer path. A VM or ECS guide can be useful later, but it
 would be a separate packaging surface to maintain. The practical gap found by
@@ -42,8 +42,8 @@ missing chart knobs for AWS service annotations.
 - Permission to create EKS, EC2/VPC, IAM, Elastic Load Balancing, RDS, Secrets
   Manager, Route 53, and ACM resources.
 - A real admin email address for the first owner account.
-- A domain you control, such as `omnirush.example.com` and
-  `api.omnirush.example.com`.
+- A domain you control, such as `mars.example.com` and
+  `api.mars.example.com`.
 
 Do not run production installs as the AWS root account. Use AWS SSO or an IAM
 role with only the permissions needed for the cluster, VPC/load balancer, RDS,
@@ -149,11 +149,11 @@ VPC and subnet commands vary by account, so the important requirements are:
 Example database URL:
 
 ```text
-mysql://omnirush:<password>@<rds-endpoint>:3306/omnirush_den?sslaccept=accept
+mysql://mars:<password>@<rds-endpoint>:3306/omnirush_den?sslaccept=accept
 ```
 
 Use `?sslaccept=accept` for the simple private-RDS smoke path. This keeps TLS on
-but does not require the RDS CA bundle to be mounted into the OmniRush.ai image.
+but does not require the RDS CA bundle to be mounted into the MarsAI image.
 Use strict certificate verification later, after you provide the RDS CA bundle,
 with a hardened value such as `sslmode=verify-ca` or `sslmode=verify-full`.
 
@@ -189,7 +189,7 @@ aws ec2 authorize-security-group-ingress \
   --source-group "$NODE_SG_ID"
 ```
 
-Before installing OmniRush.ai, verify network access from the cluster. One simple
+Before installing MarsAI, verify network access from the cluster. One simple
 way is to run a temporary MySQL client pod:
 
 ```bash
@@ -200,7 +200,7 @@ kubectl run mysql-client \
   --image=mysql:8 \
   -- mysql \
     --host="$RDS_ENDPOINT" \
-    --user=omnirush \
+    --user=mars \
     --password \
     --ssl-mode=REQUIRED \
     --execute "select 1"
@@ -239,10 +239,10 @@ To send transactional email, configure SMTP in the same values file:
 ```yaml
 secret:
   values:
-    emailFrom: "OmniRush.ai <no-reply@example.com>"
+    emailFrom: "MarsAI <no-reply@example.com>"
     smtpHost: "smtp.example.com"
     smtpPort: "587"
-    smtpUser: "omnirush@example.com"
+    smtpUser: "mars@example.com"
     smtpPass: "REPLACE_SMTP_PASSWORD"
     smtpSecure: "false"
 ```
@@ -254,7 +254,7 @@ add those keys to the existing Kubernetes Secret referenced by
 `SMTP_HOST`; leave `smtpHost` blank only when SMTP-backed transactional email
 should be disabled.
 
-Use a values file, not a long list of `--set` flags. Several OmniRush.ai values are
+Use a values file, not a long list of `--set` flags. Several MarsAI values are
 comma-separated strings, such as `config.public.corsOrigins`, and plain
 `--set` parsing commonly breaks them.
 
@@ -267,23 +267,23 @@ Before installing, render the chart and verify the migration Job will use your
 RDS URL:
 
 ```bash
-helm template omnirush-ee oci://ghcr.io/omnirush-ai/charts/omnirush-ee \
-  --version REPLACE_OMNIRUSH_VERSION \
+helm template omnirush-ee oci://ghcr.io/mars-ai/charts/omnirush-ee \
+  --version REPLACE_MARS_VERSION \
   --namespace omnirush-ee \
-  -f values.aws.yaml > /tmp/omnirush-rendered.yaml
+  -f values.aws.yaml > /tmp/mars-rendered.yaml
 
-grep -E 'DATABASE_URL|DEN_BASE_URL|DEN_WEB_PUBLIC_ORIGIN|EMAIL_FROM|SMTP_HOST|SMTP_PORT|SMTP_SECURE' /tmp/omnirush-rendered.yaml
+grep -E 'DATABASE_URL|DEN_BASE_URL|DEN_WEB_PUBLIC_ORIGIN|EMAIL_FROM|SMTP_HOST|SMTP_PORT|SMTP_SECURE' /tmp/mars-rendered.yaml
 ```
 
 Redact secrets before sharing rendered manifests or terminal output.
 
-## 4. Install OmniRush.ai
+## 4. Install MarsAI
 
 Published chart releases live in GHCR:
 
 ```bash
-helm upgrade --install omnirush-ee oci://ghcr.io/omnirush-ai/charts/omnirush-ee \
-  --version REPLACE_OMNIRUSH_VERSION \
+helm upgrade --install omnirush-ee oci://ghcr.io/mars-ai/charts/omnirush-ee \
+  --version REPLACE_MARS_VERSION \
   --namespace omnirush-ee \
   --create-namespace \
   -f values.aws.yaml
@@ -336,8 +336,8 @@ migrations:
 Then run Helm and inspect the normal Job logs:
 
 ```bash
-helm upgrade --install omnirush-ee oci://ghcr.io/omnirush-ai/charts/omnirush-ee \
-  --version REPLACE_OMNIRUSH_VERSION \
+helm upgrade --install omnirush-ee oci://ghcr.io/mars-ai/charts/omnirush-ee \
+  --version REPLACE_MARS_VERSION \
   --namespace omnirush-ee \
   --create-namespace \
   -f values.aws.yaml \
@@ -375,8 +375,8 @@ You should see external hostnames for:
 
 Create DNS records:
 
-- `omnirush.example.com` -> Den Web load balancer hostname.
-- `api.omnirush.example.com` -> Den API load balancer hostname.
+- `mars.example.com` -> Den Web load balancer hostname.
+- `api.mars.example.com` -> Den API load balancer hostname.
 
 The starter values terminate TLS on port `443` at each Network Load Balancer
 and forward clear HTTP to the Kubernetes service target port. Use an ACM
@@ -436,8 +436,8 @@ kubectl logs -n omnirush-ee deploy/omnirush-ee-den-web
 Check service readiness from your machine:
 
 ```bash
-curl -fsS https://api.omnirush.example.com/ready
-curl -fsS https://omnirush.example.com/api/ready
+curl -fsS https://api.mars.example.com/ready
+curl -fsS https://mars.example.com/api/ready
 ```
 
 For HTTP smoke tests, use the raw NLB hostnames and ports:
@@ -469,8 +469,8 @@ secret:
 For releases that include initial-administrator bootstrap, inject the
 release-documented one-time setup secret through the Kubernetes Secret referenced
 by `secret.existingSecret`. Do not store the code in the values file or a
-ConfigMap. Then open `https://omnirush.example.com/setup`, enter the configured
-owner email and one-time operator code, and create the first account. OmniRush.ai
+ConfigMap. Then open `https://mars.example.com/setup`, enter the configured
+owner email and one-time operator code, and create the first account. MarsAI
 creates the singleton organization, grants owner and configured platform-admin
 access, and signs the administrator in. Public signup remains disabled. After
 the first user exists, the setup code cannot bootstrap another account.
@@ -493,19 +493,19 @@ IdPs.
 Configure the IdP application with these callback URLs:
 
 ```text
-https://omnirush.example.com/api/auth/sso/callback/omnirush-sso-<org-id>
+https://mars.example.com/api/auth/sso/callback/mars-sso-<org-id>
 ```
 
-In OmniRush.ai, sign in as the owner, open the organization SSO settings, and enter
+In MarsAI, sign in as the owner, open the organization SSO settings, and enter
 the IdP issuer/client details. After saving, the organization sign-in path is:
 
 ```text
-https://omnirush.example.com/sso/<singleOrgSlug>
+https://mars.example.com/sso/<singleOrgSlug>
 ```
 
-For SAML, OmniRush.ai shows the generated ACS URL and metadata URL after the SAML
+For SAML, MarsAI shows the generated ACS URL and metadata URL after the SAML
 connection is registered. Use those values in the IdP rather than guessing.
-OmniRush.ai rejects unsigned or weak SAML responses, so configure the IdP to sign
+MarsAI rejects unsigned or weak SAML responses, so configure the IdP to sign
 assertions.
 
 After SSO is configured, root sign-in shows the SSO-only experience for the
@@ -525,7 +525,7 @@ single organization. Password sign-in for that organization is rejected.
 | Runtime is ready but migration failed | Helm hook did not complete | Check `kubectl get jobs` and the migration Job logs before testing web |
 | `ImagePullBackOff` from GHCR | Private image or missing pull token | Add `imagePullSecrets` |
 | Browser auth loops or CORS errors | Public origins do not match DNS/TLS | Set `webOrigin`, `apiOrigin`, `corsOrigins`, `betterAuthTrustedOrigins`, and `authCallbackUrl` to the final HTTPS domains |
-| SSO callback rejected | IdP callback URL does not match OmniRush.ai | Use the callback/ACS URL shown by OmniRush.ai for that org/provider |
+| SSO callback rejected | IdP callback URL does not match MarsAI | Use the callback/ACS URL shown by MarsAI for that org/provider |
 | SSO settings show Enterprise gating | `DEN_PLAN_GATING_ENABLED=true` or org is not entitled | Leave plan gating off for self-host smoke tests, or grant enterprise entitlement |
 
 ## 11. Cleanup

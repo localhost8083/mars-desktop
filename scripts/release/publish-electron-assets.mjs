@@ -20,7 +20,7 @@ if (!repo) {
 }
 
 const distRoot = resolve(distRootArg);
-const outputDir = resolve(process.env.RUNNER_TEMP || ".", "omnirush-electron-manifests");
+const outputDir = resolve(process.env.RUNNER_TEMP || ".", "mars-electron-manifests");
 mkdirSync(outputDir, { recursive: true });
 
 function walk(dir) {
@@ -40,7 +40,7 @@ function isUpdaterManifest(path) {
 
 function isReleaseAsset(path) {
   if (isUpdaterManifest(path)) return false;
-  if (!basename(path).startsWith("omnirush-")) return false;
+  if (!basename(path).startsWith("mars-")) return false;
   return /\.(AppImage|blockmap|dmg|exe|rpm|zip)$/i.test(path) || /\.tar\.gz$/i.test(path);
 }
 
@@ -170,10 +170,10 @@ function validateManifest(name, manifest) {
       : "public";
   const feedName = name.replace(/^(?:cloud|enterprise)(?=\.|-)/, "latest");
   const urls = manifest.files.map((file) => String(file.url || ""));
-  const expectedPrefix = distribution === "public" ? "omnirush-" : `omnirush-${distribution}-`;
+  const expectedPrefix = distribution === "public" ? "mars-" : `mars-${distribution}-`;
   if (
     urls.some((url) => !url.startsWith(expectedPrefix))
-    || (distribution === "public" && urls.some((url) => /^omnirush-(?:cloud|enterprise)-/.test(url)))
+    || (distribution === "public" && urls.some((url) => /^mars-(?:cloud|enterprise)-/.test(url)))
   ) {
     throw new Error(`${name} contains an artifact from a different desktop distribution.`);
   }

@@ -22,7 +22,7 @@ afterEach(async () => {
 });
 
 async function createRoot(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-transport-probe-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-transport-probe-"));
   roots.push(root);
   return root;
 }

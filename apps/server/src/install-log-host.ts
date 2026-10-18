@@ -3,7 +3,7 @@
  * (context/install-log.ts): written once at startup under the runtime state
  * folder; every managed engine then gets them first on its PATH (and the pip
  * hook on its PYTHONPATH), so only the shells the engine starts for tool calls
- * see them. OMNIRUSH_INSTALL_LOG=0 leaves them out. Whether anything is noted
+ * see them. MARS_INSTALL_LOG=0 leaves them out. Whether anything is noted
  * and sent is the server's call (capabilities `install_log`), read by the
  * session uploader.
  */

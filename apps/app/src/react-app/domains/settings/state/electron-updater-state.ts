@@ -35,13 +35,13 @@ export type SettingsUpdateStatus = {
   restarting?: boolean;
 } | null;
 
-type ElectronUpdaterBridge = NonNullable<Window["__OMNIRUSH_ELECTRON__"]>["updater"] & {
+type ElectronUpdaterBridge = NonNullable<Window["__MARS_ELECTRON__"]>["updater"] & {
   onDownloadProgress?: (callback: (data: { transferred: number; total: number; percent: number; bytesPerSecond: number }) => void) => (() => void);
 };
 
 declare global {
   interface Window {
-    __omnirushUpdaterEvalBridge?: ElectronUpdaterBridge;
+    __marsUpdaterEvalBridge?: ElectronUpdaterBridge;
   }
 }
 
@@ -207,10 +207,10 @@ function downloadPageUrl(): string {
 
 function electronUpdaterBridge(): ElectronUpdaterBridge | null {
   if (typeof window === "undefined") return null;
-  if (import.meta.env.DEV && window.__omnirushUpdaterEvalBridge) {
-    return window.__omnirushUpdaterEvalBridge;
+  if (import.meta.env.DEV && window.__marsUpdaterEvalBridge) {
+    return window.__marsUpdaterEvalBridge;
   }
-  return window.__OMNIRUSH_ELECTRON__?.updater ?? null;
+  return window.__MARS_ELECTRON__?.updater ?? null;
 }
 
 // Electron wraps every rejected ipcRenderer.invoke as
@@ -543,7 +543,7 @@ export function useElectronUpdaterState(options: UseElectronUpdaterStateOptions)
         if (!isCurrentRequest()) return;
       }
       // Den's release inventory only exists when a control plane is
-      // configured. omnirush.ai ships without one: the GitHub feed the shell
+      // configured. marsai.click ships without one: the GitHub feed the shell
       // reads is then the only authority, and no other host is contacted.
       if (manual && activeReleaseChannel === "stable" && isDenControlPlaneConfigured()) {
         const channelState = await bridge.getChannel?.();
@@ -551,7 +551,7 @@ export function useElectronUpdaterState(options: UseElectronUpdaterStateOptions)
         dispatchEnvState(capabilitiesFromBridge(channelState));
         const currentVersion = channelState?.currentVersion ?? appVersion;
         if (!currentVersion) {
-          throw new Error("Could not determine the installed omnirush.ai version.");
+          throw new Error("Could not determine the installed marsai.click version.");
         }
 
         const selection = await resolveFreshStableDesktopUpdate({
@@ -790,7 +790,7 @@ export function useElectronUpdaterState(options: UseElectronUpdaterStateOptions)
           // The app could not replace itself (the administrator prompt was
           // cancelled): this is the one place the download page opens, and
           // the message says so.
-          void window.__OMNIRUSH_ELECTRON__?.shell?.openExternal?.(downloadPageUrl());
+          void window.__MARS_ELECTRON__?.shell?.openExternal?.(downloadPageUrl());
           setUpdateStatus((current) => ({
             ...(current ?? {}),
             state: "error",

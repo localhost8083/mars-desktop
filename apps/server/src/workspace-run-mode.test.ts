@@ -12,15 +12,15 @@ import { readWorkspaceRunMode, runModeFromPermissionBlock, setWorkspaceRunMode, 
 const roots: string[] = [];
 const stops: Array<() => void | Promise<void>> = [];
 const savedEnv = {
-  OMNIRUSH_DATA_DIR: process.env.OMNIRUSH_DATA_DIR,
-  OMNIRUSH_TOKEN_STORE: process.env.OMNIRUSH_TOKEN_STORE,
-  OMNIRUSH_ENGINE_V2_PREVIEW: process.env.OMNIRUSH_ENGINE_V2_PREVIEW,
+  MARS_DATA_DIR: process.env.MARS_DATA_DIR,
+  MARS_TOKEN_STORE: process.env.MARS_TOKEN_STORE,
+  MARS_ENGINE_V2_PREVIEW: process.env.MARS_ENGINE_V2_PREVIEW,
 };
 const headers = { authorization: "Bearer owt_run_mode", "content-type": "application/json" };
-const hostHeaders = { "x-omnirush-host-token": "owt_run_mode_host", "content-type": "application/json" };
+const hostHeaders = { "x-mars-host-token": "owt_run_mode_host", "content-type": "application/json" };
 
 async function workspaceRoot(content?: string) {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-run-mode-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-run-mode-"));
   roots.push(root);
   if (content !== undefined) await writeFile(join(root, "opencode.json"), content);
   return root;
@@ -112,9 +112,9 @@ describe("workspace run mode file", () => {
 
 async function startModeServer(options: { readOnly?: boolean; approval?: ServerConfig["approval"]; engine?: boolean } = {}) {
   const root = await workspaceRoot('{"permission":{"edit":"deny"},"model":"local/model"}');
-  process.env.OMNIRUSH_DATA_DIR = join(root, "data");
-  process.env.OMNIRUSH_TOKEN_STORE = join(root, "tokens.json");
-  delete process.env.OMNIRUSH_ENGINE_V2_PREVIEW;
+  process.env.MARS_DATA_DIR = join(root, "data");
+  process.env.MARS_TOKEN_STORE = join(root, "tokens.json");
+  delete process.env.MARS_ENGINE_V2_PREVIEW;
   const engineState: { statuses: unknown; permissions: unknown[]; questions: unknown[]; statusCode: number; disposeCode: number; agentCode: number; disposals: number; probes: string[] } = {
     statuses: {}, permissions: [], questions: [], statusCode: 200, disposeCode: 200, agentCode: 200, disposals: 0, probes: [],
   };

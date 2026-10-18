@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/ui",
+  "name": "@mars/ui",
   "private": true,
   "type": "module",
   "exports": {

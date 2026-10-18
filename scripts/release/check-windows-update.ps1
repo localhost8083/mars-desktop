@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 
 function Get-Installs {
   Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue |
-    Where-Object { $_.DisplayName -match "omnirush" }
+    Where-Object { $_.DisplayName -match "mars" }
 }
 # electron-builder leaves InstallLocation empty in the uninstall entry; the
 # uninstaller sits in the install folder.
@@ -17,7 +17,7 @@ function Get-Folder($entry) {
 function Get-Shortcuts {
   $places = @("$env:APPDATA\Microsoft\Windows\Start Menu\Programs", [Environment]::GetFolderPath("Desktop"))
   Get-ChildItem $places -Filter *.lnk -Recurse -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -match "omnirush" } | ForEach-Object { $_.FullName }
+    Where-Object { $_.Name -match "mars" } | ForEach-Object { $_.FullName }
 }
 function Show-State($label) {
   Write-Host "== $label"
@@ -26,12 +26,12 @@ function Show-State($label) {
 }
 
 $manifestFile = Join-Path $env:RUNNER_TEMP "latest.yml"
-Invoke-WebRequest -UseBasicParsing "https://github.com/omnirush-ai/omnirush-gui/releases/latest/download/latest.yml" -OutFile $manifestFile
+Invoke-WebRequest -UseBasicParsing "https://github.com/mars-ai/mars-gui/releases/latest/download/latest.yml" -OutFile $manifestFile
 $manifest = Get-Content -Raw $manifestFile
 $latest = [regex]::Match($manifest, "(?m)^version:\s*(\S+)").Groups[1].Value
 if (-not $latest) { throw "no version in latest.yml" }
-$old = Join-Path $env:RUNNER_TEMP "omnirush-$latest.exe"
-Invoke-WebRequest -UseBasicParsing "https://github.com/omnirush-ai/omnirush-gui/releases/download/v$latest/omnirush-win-x64-$latest.exe" -OutFile $old
+$old = Join-Path $env:RUNNER_TEMP "mars-$latest.exe"
+Invoke-WebRequest -UseBasicParsing "https://github.com/mars-ai/mars-gui/releases/download/v$latest/mars-win-x64-$latest.exe" -OutFile $old
 Start-Process -Wait -FilePath $old -ArgumentList "/S"
 Show-State "installed v$latest"
 $before = @(Get-Installs)
@@ -39,7 +39,7 @@ if ($before.Count -ne 1) { throw "expected one install of v$latest" }
 $folder = Get-Folder $before[0]
 
 # A file in the app's data folder (keyed by the app id) must survive the update.
-$data = Join-Path $env:APPDATA "ai.omnirush.desktop"
+$data = Join-Path $env:APPDATA "ai.marsai.desktop"
 New-Item -ItemType Directory -Force $data | Out-Null
 Set-Content (Join-Path $data "update-check-marker.txt") "kept"
 
@@ -52,8 +52,8 @@ $exe = Get-ChildItem $folder -Filter *.exe | Where-Object { $_.Name -notmatch "^
 $exe | ForEach-Object { Write-Host "executable: $($_.Name) $($_.VersionInfo.ProductVersion)" }
 if (@($exe).Count -ne 1) { throw "expected one app executable in $folder" }
 $shortcuts = @(Get-Shortcuts)
-$stale = $shortcuts | Where-Object { (Split-Path $_ -Leaf) -cmatch "OmniRush\.ai" }
+$stale = $shortcuts | Where-Object { (Split-Path $_ -Leaf) -cmatch "Mars\.ai" }
 if ($stale) { throw "old shortcuts left behind: $stale" }
-if (-not ($shortcuts | Where-Object { (Split-Path $_ -Leaf) -eq "omnirush.lnk" })) { throw "no omnirush shortcut" }
+if (-not ($shortcuts | Where-Object { (Split-Path $_ -Leaf) -eq "mars.lnk" })) { throw "no mars shortcut" }
 if ((Get-Content (Join-Path $data "update-check-marker.txt")) -ne "kept") { throw "app data was lost" }
 Write-Host "update in place: one install in $folder, data kept, shortcuts renamed"

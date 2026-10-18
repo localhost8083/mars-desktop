@@ -3,7 +3,7 @@
 // packages/types/src/desktop-ipc.ts (shared with the Electron main process);
 // this module re-exports them as the app-side import path.
 
-import type { WorkspaceWire } from "@omnirush/types/workspace";
+import type { WorkspaceWire } from "@mars/types/workspace";
 
 export type {
   AppBuildInfo,
@@ -40,22 +40,22 @@ export type {
   OpencodeConfigFile,
   OpencodeExecutionEnvEntry,
   OpencodeExecutionSnapshot,
-  OmniRushDockerCleanupResult,
-  OmniRushServerInfo,
+  MarsDockerCleanupResult,
+  MarsServerInfo,
   UpdaterEnvironment,
   WorkspaceCreateInput,
   WorkspaceCreateRemoteInput,
   WorkspaceExportSummary,
   WorkspaceList,
-  WorkspaceOmniRushConfig,
+  WorkspaceMarsConfig,
   WorkspaceUpdateRemoteInput,
-} from "@omnirush/types/desktop-ipc";
+} from "@mars/types/desktop-ipc";
 
-// Canonical wire shape shared with omnirush-server and the desktop bridge.
+// Canonical wire shape shared with mars-server and the desktop bridge.
 // Single source of truth: packages/types/src/workspace.ts.
 export type WorkspaceInfo = WorkspaceWire;
 
 // Browser tab state mirrored across the desktop IPC bridge. The shape is owned
-// by @omnirush/browser-tabs (shared with the Electron main process); the
+// by @mars/browser-tabs (shared with the Electron main process); the
 // session panel store re-exports it from here.
-export type { BrowserPanelTab } from "@omnirush/browser-tabs";
+export type { BrowserPanelTab } from "@mars/browser-tabs";

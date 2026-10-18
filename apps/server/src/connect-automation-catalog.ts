@@ -7,7 +7,7 @@ import { readGlobalRuntimeMcpConfig, readRuntimeMcpConfig } from "./runtime-open
 import { externalFetch } from "./server-fetch.js";
 import type { ServerConfig } from "./types.js";
 
-const OMNIRUSH_CLOUD_MCP_NAME = "omnirush-cloud";
+const MARS_CLOUD_MCP_NAME = "mars-cloud";
 const AUTOMATION_INDEX_URI = "automation://index.json";
 // Automations change as they run, so this snapshot expires quickly. It still
 // spares one Den round trip per message in a burst of conversation.
@@ -43,16 +43,16 @@ const automationIndexSchema = z.object({
   }).passthrough()),
 }).passthrough();
 
-export type OmniRushAutomationIndex = z.infer<typeof automationIndexSchema>;
+export type MarsAutomationIndex = z.infer<typeof automationIndexSchema>;
 
-const catalogCache = new Map<string, { expiresAt: number; value: Promise<OmniRushAutomationIndex | null> }>();
+const catalogCache = new Map<string, { expiresAt: number; value: Promise<MarsAutomationIndex | null> }>();
 
-async function readIndex(cloud: Record<string, unknown>, fetcher: McpFetch): Promise<OmniRushAutomationIndex | null> {
+async function readIndex(cloud: Record<string, unknown>, fetcher: McpFetch): Promise<MarsAutomationIndex | null> {
   const text = await readMcpResourceText({
     config: cloud,
     uri: AUTOMATION_INDEX_URI,
     fetcher,
-    clientName: "omnirush-server-automation-catalog",
+    clientName: "mars-server-automation-catalog",
   });
   if (text === null) return null;
   const parsed = automationIndexSchema.safeParse(JSON.parse(text));
@@ -69,23 +69,23 @@ async function readIndexCached(cloud: Record<string, unknown>, fetcher: McpFetch
 }
 
 /**
- * Resolve the member's Automation index from the first working omnirush-cloud
+ * Resolve the member's Automation index from the first working mars-cloud
  * config, mirroring how the skill catalog picks its connection. Returns null
  * when no connection answers, which callers render as no guidance at all rather
  * than as "you have no Automations".
  */
-export async function readOmniRushAutomationCatalog(
+export async function readMarsAutomationCatalog(
   config: ServerConfig,
   fetcher: McpFetch = externalFetch,
-): Promise<OmniRushAutomationIndex | null> {
+): Promise<MarsAutomationIndex | null> {
   try {
     const candidates: Array<Record<string, unknown>> = [];
-    const globalCloud = await readGlobalRuntimeMcpConfig(config, OMNIRUSH_CLOUD_MCP_NAME);
+    const globalCloud = await readGlobalRuntimeMcpConfig(config, MARS_CLOUD_MCP_NAME);
     if (globalCloud) candidates.push(globalCloud);
     const serverCloud = await readConnectCloudMcp(config);
     if (serverCloud) candidates.push(serverCloud);
     for (const workspace of config.workspaces) {
-      const cloud = await readRuntimeMcpConfig(config, workspace.id, OMNIRUSH_CLOUD_MCP_NAME);
+      const cloud = await readRuntimeMcpConfig(config, workspace.id, MARS_CLOUD_MCP_NAME);
       if (cloud) candidates.push(cloud);
     }
     const seen = new Set<string>();
@@ -102,11 +102,11 @@ export async function readOmniRushAutomationCatalog(
   }
 }
 
-export function resetOmniRushAutomationCatalogCacheForTests(): void {
+export function resetMarsAutomationCatalogCacheForTests(): void {
   catalogCache.clear();
 }
 
-function scheduleText(schedule: OmniRushAutomationIndex["automations"][number]["schedule"]): string {
+function scheduleText(schedule: MarsAutomationIndex["automations"][number]["schedule"]): string {
   if (schedule.kind === "once") return `once at ${new Date(schedule.at).toISOString()} (${schedule.timezone})`;
   const time = `${String(schedule.hour).padStart(2, "0")}:${String(schedule.minute).padStart(2, "0")}`;
   if (schedule.kind === "daily") return `daily at ${time} ${schedule.timezone}`;
@@ -121,12 +121,12 @@ function scheduleText(schedule: OmniRushAutomationIndex["automations"][number]["
  * time-sensitive. The listing exists to know what is there and which id to
  * act on — not to be quoted as current truth.
  */
-export function renderOmniRushAutomationInstruction(index: OmniRushAutomationIndex | null): string {
+export function renderMarsAutomationInstruction(index: MarsAutomationIndex | null): string {
   if (!index) return "";
   if (index.automations.length === 0) {
     return [
       "This member owns no Automations. If they ask what Automations they have, say there are none.",
-      "If they describe recurring work, propose one with omnirush_execute id automation.propose.",
+      "If they describe recurring work, propose one with mars_execute id automation.propose.",
     ].join("\n");
   }
   // No fetched-at stamp and no run state: those values change every run (or

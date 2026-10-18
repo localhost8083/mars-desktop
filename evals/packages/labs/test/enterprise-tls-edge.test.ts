@@ -69,7 +69,7 @@ function manifest(rootPemPath: string): string {
 
 test("enterprise TLS privileged trust material is validated and staged", async (t) => {
   const edge = await startEnterpriseTlsReverseEdge({ upstream: "http://127.0.0.1:1" });
-  const dir = await mkdtemp(path.join(tmpdir(), "omnirush-enterprise-tls-validation-test-"));
+  const dir = await mkdtemp(path.join(tmpdir(), "mars-enterprise-tls-validation-test-"));
   const uid = typeof process.getuid === "function" ? process.getuid() : 0;
   try {
     await t.test("accepts an owned regular manifest and CA PEM", async () => {

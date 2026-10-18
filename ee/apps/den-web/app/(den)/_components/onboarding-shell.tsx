@@ -1,7 +1,7 @@
 "use client";
 
-import { DitheredOnboardingShell } from "@omnirush/ui/react";
-import type { DitheredOnboardingShellProps } from "@omnirush/ui/react";
+import { DitheredOnboardingShell } from "@mars/ui/react";
+import type { DitheredOnboardingShellProps } from "@mars/ui/react";
 import { Dithering } from "@paper-design/shaders-react";
 import { useSyncExternalStore, type ReactNode } from "react";
 import { useWebGlSupported } from "../_lib/use-webgl-supported";

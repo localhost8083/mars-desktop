@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { OmniRushServerClient, OmniRushWorkspaceBox, OmniRushWorkspaceBoxProgress } from "@/app/lib/omnirush-server";
+import type { MarsServerClient, MarsWorkspaceBox, MarsWorkspaceBoxProgress } from "@/app/lib/mars-server";
 
-export type LinuxSandboxClient = Pick<OmniRushServerClient, "getWorkspaceBox" | "setWorkspaceBox" | "setWorkspaceBoxBackend" | "resetWorkspaceBox" | "retryWorkspaceBox">;
+export type LinuxSandboxClient = Pick<MarsServerClient, "getWorkspaceBox" | "setWorkspaceBox" | "setWorkspaceBoxBackend" | "resetWorkspaceBox" | "retryWorkspaceBox">;
 
 export const LINUX_SANDBOX_HELP = "Commands run in a Linux container for this project. Your files stay in this folder; installs are kept per project.";
 
@@ -29,7 +29,7 @@ export type LinuxSandboxPending = "on" | "off" | "backend" | "reset" | "retry" |
 const RUNS_HERE = "Commands run on this computer for now.";
 const LOAD_FAILED = "The sandbox status could not be loaded.";
 
-function runtimeLabel(box: OmniRushWorkspaceBox): string | null {
+function runtimeLabel(box: MarsWorkspaceBox): string | null {
   const backend = box.backend;
   if (backend?.id) return [backend.label ?? backend.id, backend.version].filter(Boolean).join(" ");
   if (box.runtime?.ok && box.runtime.name) return [box.runtime.name, box.runtime.version].filter(Boolean).join(" ");
@@ -42,7 +42,7 @@ function megabytes(bytes: number): string {
 }
 
 /** The download bar: bytes when the server knows the layer sizes, else layers, else the image's rough size. */
-export function linuxSandboxProgress(progress: OmniRushWorkspaceBoxProgress | null | undefined): { value: number | null; label: string } {
+export function linuxSandboxProgress(progress: MarsWorkspaceBoxProgress | null | undefined): { value: number | null; label: string } {
   if (progress?.bytesTotal && progress.bytesDone !== null) {
     const value = Math.min(100, Math.round((progress.bytesDone / progress.bytesTotal) * 100));
     return { value, label: `${megabytes(progress.bytesDone)} of ${megabytes(progress.bytesTotal)} MB · ${value}%` };
@@ -61,7 +61,7 @@ function commandIn(reason: string | null | undefined): string | null {
 /** A short title for a reason the backend probe gave (with its command, when it names one). */
 function stepFor(reason: string, platform: string | undefined): LinuxSandboxNextStep | null {
   const command = commandIn(reason);
-  if (/sandbox enable/.test(reason)) return { title: "Allow the sandbox on this computer", detail: "Ubuntu blocks it until an admin allows it once. Run this in a terminal (OmniRush CLI), then check again.", command };
+  if (/sandbox enable/.test(reason)) return { title: "Allow the sandbox on this computer", detail: "Ubuntu blocks it until an admin allows it once. Run this in a terminal (Mars CLI), then check again.", command };
   if (/usermod -aG docker/.test(reason)) return { title: "Let this user run Docker", detail: "Run this in a terminal, log out and back in, then check again.", command };
   if (/wsl --install/.test(reason)) return { title: "Turn on WSL 2", detail: "Run this in PowerShell as administrator, restart the computer, then check again.", command: "wsl --install --no-distribution" };
   if (/wsl --update/.test(reason)) return { title: "Update WSL", detail: "Run this in PowerShell, then check again.", command };
@@ -82,7 +82,7 @@ function stepFor(reason: string, platform: string | undefined): LinuxSandboxNext
  * probe names (in the order they are tried), else the usual setup for this
  * computer's OS.
  */
-export function linuxSandboxNextStep(box: OmniRushWorkspaceBox): LinuxSandboxNextStep {
+export function linuxSandboxNextStep(box: MarsWorkspaceBox): LinuxSandboxNextStep {
   const platform = box.platform;
   const reasons = [...(box.backend?.alternatives ?? []).map((alt) => alt.reason), box.runtime?.reason ?? null].filter((reason): reason is string => Boolean(reason));
   for (const reason of reasons) {
@@ -96,14 +96,14 @@ export function linuxSandboxNextStep(box: OmniRushWorkspaceBox): LinuxSandboxNex
 }
 
 /** The status row: what the sandbox is doing now, or why it is not used and what to do. */
-export function linuxSandboxView(box: OmniRushWorkspaceBox, pending: LinuxSandboxPending = null): LinuxSandboxView {
+export function linuxSandboxView(box: MarsWorkspaceBox, pending: LinuxSandboxPending = null): LinuxSandboxView {
   const base = { progress: null, step: null, action: null, errorDetail: null };
   if (pending === "on") return { ...base, tone: "busy", title: "Turning on…", detail: RUNS_HERE.replace(" for now", " until the sandbox is ready") };
   if (pending === "off") return { ...base, tone: "busy", title: "Turning off…", detail: null };
   if (pending === "reset") return { ...base, tone: "busy", title: "Resetting the sandbox…", detail: "Removing its container and installs." };
   if (pending === "retry") return { ...base, tone: "busy", title: "Trying again…", detail: null };
   if (!box.on) {
-    if (box.source === "env") return { ...base, tone: "off", title: "Off for this app", detail: "Set by OMNIRUSH_BOX where the app is launched." };
+    if (box.source === "env") return { ...base, tone: "off", title: "Off for this app", detail: "Set by MARS_BOX where the app is launched." };
     if (box.hostBuilds?.native) return { ...base, tone: "attention", title: "Off for this project", detail: box.hostBuilds.notice };
     // A buildathon project: turned off here (less reproducible), or the event offers the sandbox.
     if (box.notice) return { ...base, tone: "attention", title: box.source === "project" ? "Off for this project" : "Off", detail: box.notice };
@@ -138,27 +138,27 @@ export function linuxSandboxView(box: OmniRushWorkspaceBox, pending: LinuxSandbo
 }
 
 /** The backend in use and how it was picked, for the Advanced section. */
-export function linuxSandboxBackendSummary(box: OmniRushWorkspaceBox): string {
+export function linuxSandboxBackendSummary(box: MarsWorkspaceBox): string {
   if (box.backendSetting.value === "native") return "Set to Off: commands run on this computer.";
   const using = runtimeLabel(box);
   if (!using) return "No backend works on this computer yet.";
-  if (box.backendSetting.source === "env") return `Using ${using} (set by OMNIRUSH_BOX_BACKEND).`;
+  if (box.backendSetting.source === "env") return `Using ${using} (set by MARS_BOX_BACKEND).`;
   return box.backendSetting.value === "auto" ? `Using ${using}, picked automatically.` : `Using ${using}.`;
 }
 
 /** The backend choices for the picker: "Automatic (recommended)" first. */
-export function linuxSandboxBackendChoices(box: OmniRushWorkspaceBox): Array<{ value: string; label: string }> {
+export function linuxSandboxBackendChoices(box: MarsWorkspaceBox): Array<{ value: string; label: string }> {
   return box.backendSetting.choices.map((choice) => ({ value: choice.id, label: choice.id === "auto" ? "Automatic (recommended)" : choice.label }));
 }
 
 /** States that change on their own: asked about again quickly while they last. */
-const MOVING = new Set<OmniRushWorkspaceBox["state"]>(["downloading", "starting"]);
+const MOVING = new Set<MarsWorkspaceBox["state"]>(["downloading", "starting"]);
 /** Poll every second while the sandbox moves, slower after a minute (a long download). */
 const FAST_POLL_MS = 1_000;
 const SLOW_POLL_MS = 3_000;
 const FAST_FOR_MS = 60_000;
 
-export function linuxSandboxMoving(box: OmniRushWorkspaceBox | null): boolean {
+export function linuxSandboxMoving(box: MarsWorkspaceBox | null): boolean {
   return Boolean(box?.on && MOVING.has(box.state));
 }
 
@@ -170,7 +170,7 @@ export type LinuxSandboxProblem = { message: string; retry: (() => void) | null 
  * once, before the server answers), the backend, Retry and Reset.
  */
 export function useLinuxSandbox(client: LinuxSandboxClient | null, workspaceId: string | null, { fresh: freshOnOpen = true }: { fresh?: boolean } = {}) {
-  const [box, setBox] = useState<OmniRushWorkspaceBox | null>(null);
+  const [box, setBox] = useState<MarsWorkspaceBox | null>(null);
   const [pending, setPending] = useState<LinuxSandboxPending>(null);
   const [problem, setProblem] = useState<LinuxSandboxProblem | null>(null);
   const [notice, setNotice] = useState("");
@@ -229,7 +229,7 @@ export function useLinuxSandbox(client: LinuxSandboxClient | null, workspaceId: 
   }, [freshOnOpen, load, pending]);
 
   /** One change at a time; an answer to an older request never overwrites a newer one. */
-  const change = useCallback(async (kind: Exclude<LinuxSandboxPending, null>, act: () => Promise<OmniRushWorkspaceBox | null>, failure: string, again: () => void) => {
+  const change = useCallback(async (kind: Exclude<LinuxSandboxPending, null>, act: () => Promise<MarsWorkspaceBox | null>, failure: string, again: () => void) => {
     if (!client || !workspaceId || pending) return;
     sequence.current += 1;
     const startedAt = sequence.current;

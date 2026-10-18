@@ -9,7 +9,7 @@ import { readEngineRegistry } from "./engine-registry.js";
 import * as managedOpencodeModule from "./managed-opencode.js";
 import { OPENCODE_V2_PERMISSIONS_MESSAGE, OpencodeConfigCompatError } from "./opencode-config-compat.js";
 import * as opencodeConfigCompatModule from "./opencode-config-compat.js";
-import { writeOmniRushRuntimeConfigFile } from "./omnirush-runtime-config.js";
+import { writeMarsRuntimeConfigFile } from "./mars-runtime-config.js";
 import { writeGlobalRuntimeOpencodeConfig, writeRuntimeOpencodeConfig } from "./runtime-opencode-config-store.js";
 import * as serverModule from "./server.js";
 import type { ServerConfig } from "./types.js";
@@ -21,11 +21,11 @@ const PROVIDER_ID = "lifecycle_anthropic";
 const PROVIDER = { id: "anthropic", name: "Anthropic", env: ["ANTHROPIC_API_KEY"] };
 const ENV_NAMES: string[] = [
   "HOME",
-  "OMNIRUSH_DEV_MODE",
-  "OMNIRUSH_RUNTIME_DB",
-  "OMNIRUSH_ENCRYPTION_KEY",
-  "OMNIRUSH_OPENCODE_BASE_URL",
-  "OMNIRUSH_LIFECYCLE_LOG",
+  "MARS_DEV_MODE",
+  "MARS_RUNTIME_DB",
+  "MARS_ENCRYPTION_KEY",
+  "MARS_OPENCODE_BASE_URL",
+  "MARS_LIFECYCLE_LOG",
   "OPENCODE_CONFIG_DIR",
   "OPENCODE_MODELS_URL",
 ];
@@ -53,10 +53,10 @@ async function writeFakeOpencodeBin(root: string): Promise<string> {
     "import { appendFileSync } from 'node:fs';",
     "const portIndex = process.argv.indexOf('--port');",
     "const requestedPort = Number(process.argv[portIndex + 1] ?? 0);",
-    "const logPath = process.env.OMNIRUSH_LIFECYCLE_LOG;",
+    "const logPath = process.env.MARS_LIFECYCLE_LOG;",
     "const append = (line) => { if (logPath) appendFileSync(logPath, `${line}\\n`); };",
-    "append(`vault-key:${process.env.OMNIRUSH_ENCRYPTION_KEY ? 'present' : 'absent'}`);",
-    "append(`server-url:${process.env.OMNIRUSH_SERVER_URL ?? ''}`);",
+    "append(`vault-key:${process.env.MARS_ENCRYPTION_KEY ? 'present' : 'absent'}`);",
+    "append(`server-url:${process.env.MARS_SERVER_URL ?? ''}`);",
     "const server = Bun.serve({",
     "  hostname: '127.0.0.1',",
     "  port: requestedPort,",
@@ -74,7 +74,7 @@ async function writeUnreadyOpencodeBin(root: string): Promise<string> {
   await writeFile(binPath, [
     "#!/usr/bin/env bun",
     "import { appendFileSync } from 'node:fs';",
-    "const logPath = process.env.OMNIRUSH_LIFECYCLE_LOG;",
+    "const logPath = process.env.MARS_LIFECYCLE_LOG;",
     "process.on('SIGTERM', () => { if (logPath) appendFileSync(logPath, 'SIGTERM\\n'); process.exit(0); });",
     "if (logPath) appendFileSync(logPath, 'READY\\n');",
     "setInterval(() => undefined, 1000);",
@@ -84,18 +84,18 @@ async function writeUnreadyOpencodeBin(root: string): Promise<string> {
 }
 
 async function createFixture(): Promise<Fixture> {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-embedded-lifecycle-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-embedded-lifecycle-"));
   const previousEnv = new Map(ENV_NAMES.map((name) => [name, process.env[name]]));
   const logPath = join(root, "managed-opencode.log");
   const opencodeBin = await writeFakeOpencodeBin(root);
   const handles: EmbeddedServerHandle[] = [];
 
   process.env.HOME = join(root, "home");
-  process.env.OMNIRUSH_DEV_MODE = "1";
-  process.env.OMNIRUSH_RUNTIME_DB = join(root, "runtime.sqlite");
-  process.env.OMNIRUSH_LIFECYCLE_LOG = logPath;
+  process.env.MARS_DEV_MODE = "1";
+  process.env.MARS_RUNTIME_DB = join(root, "runtime.sqlite");
+  process.env.MARS_LIFECYCLE_LOG = logPath;
   process.env.OPENCODE_MODELS_URL = "https://catalog.example.test/models";
-  delete process.env.OMNIRUSH_OPENCODE_BASE_URL;
+  delete process.env.MARS_OPENCODE_BASE_URL;
 
   return {
     root,
@@ -185,7 +185,7 @@ async function patchProviders(handle: EmbeddedServerHandle): Promise<Record<stri
     method: "PATCH",
     headers: {
       "content-type": "application/json",
-      "x-omnirush-host-token": HOST_TOKEN,
+      "x-mars-host-token": HOST_TOKEN,
     },
     body: JSON.stringify({ provider: { [PROVIDER_ID]: PROVIDER } }),
   });
@@ -249,13 +249,13 @@ describe("embedded server lifecycle", () => {
 
   test.serial("does not expose the vault encryption key to managed OpenCode", async () => {
     const fixture = await createFixture();
-    process.env.OMNIRUSH_ENCRYPTION_KEY = "server-only-vault-key";
+    process.env.MARS_ENCRYPTION_KEY = "server-only-vault-key";
     let managed: Awaited<ReturnType<typeof managedOpencodeModule.createManagedOpencodeServer>> | null = null;
     try {
       managed = await managedOpencodeModule.createManagedOpencodeServer({
         bin: fixture.opencodeBin,
         cwd: fixture.root,
-        env: { OMNIRUSH_LIFECYCLE_LOG: fixture.logPath },
+        env: { MARS_LIFECYCLE_LOG: fixture.logPath },
       });
       expect(await logLines(fixture.logPath)).toContain("vault-key:absent");
     } finally {
@@ -272,8 +272,8 @@ describe("embedded server lifecycle", () => {
         bin,
         cwd: fixture.root,
         timeoutMs: 500,
-        env: { OMNIRUSH_LIFECYCLE_LOG: fixture.logPath },
-      })).rejects.toThrow("Timeout waiting for OmniRush server");
+        env: { MARS_LIFECYCLE_LOG: fixture.logPath },
+      })).rejects.toThrow("Timeout waiting for Mars server");
       expect(await logLines(fixture.logPath)).toContain("READY");
       expect((await logLines(fixture.logPath)).filter((line) => line === "SIGTERM")).toHaveLength(1);
     } finally {
@@ -288,7 +288,7 @@ describe("embedded server lifecycle", () => {
       await serverA.stop();
 
       await mutateGlobalRuntime(serverA.config, "stopped-server");
-      const barrier = await writeOmniRushRuntimeConfigFile(serverA.config);
+      const barrier = await writeMarsRuntimeConfigFile(serverA.config);
 
       // The explicit barrier is the first writer only when the stopped
       // server's subscription did not enqueue a write ahead of it.
@@ -306,11 +306,11 @@ describe("embedded server lifecycle", () => {
       const serverB = await startManaged(fixture, "server-b");
 
       await mutateGlobalRuntime(serverA.config, "stale-server");
-      const afterStoppedServerMutation = await writeOmniRushRuntimeConfigFile(serverB.config);
+      const afterStoppedServerMutation = await writeMarsRuntimeConfigFile(serverB.config);
       expect(afterStoppedServerMutation.changed).toBe(false);
 
       await mutateGlobalRuntime(serverB.config, "active-server");
-      const afterActiveServerMutation = await writeOmniRushRuntimeConfigFile(serverB.config);
+      const afterActiveServerMutation = await writeMarsRuntimeConfigFile(serverB.config);
       expect(afterActiveServerMutation.changed).toBe(false);
     } finally {
       await fixture.restore();
@@ -499,7 +499,7 @@ describe("embedded server lifecycle", () => {
 
       const config = failedConfig;
       await mutateGlobalRuntime(config, "after-spawn-failure");
-      const barrier = await writeOmniRushRuntimeConfigFile(config);
+      const barrier = await writeMarsRuntimeConfigFile(config);
 
       expect(barrier.changed).toBe(true);
       expect(httpStopCalls).toBe(1);
@@ -562,7 +562,7 @@ describe("embedded server lifecycle", () => {
       expect(observed.errors).toEqual([managedError, httpError]);
 
       await mutateGlobalRuntime(handle.config, "after-shutdown-failure");
-      const barrier = await writeOmniRushRuntimeConfigFile(handle.config);
+      const barrier = await writeMarsRuntimeConfigFile(handle.config);
       expect(barrier.changed).toBe(true);
       expect(managedCloseCalls).toBe(1);
       expect(httpStopCalls).toBe(1);

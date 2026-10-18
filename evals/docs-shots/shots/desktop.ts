@@ -1,6 +1,6 @@
-import { browserScript } from "@omnirush/cdp";
-import { clickButton, denFetch, waitFor } from "@omnirush/behaviors";
-import { connect, debuggerUrlFor, evaluate, listTargets } from "@omnirush/cdp";
+import { browserScript } from "@mars/cdp";
+import { clickButton, denFetch, waitFor } from "@mars/behaviors";
+import { connect, debuggerUrlFor, evaluate, listTargets } from "@mars/cdp";
 import { provider } from "../ctx.ts";
 import { inPage } from "../inpage.ts";
 import { DOCS_APP, DOCS_MEMBER, DOCS_PROMPT_CARDS, org } from "../seed.ts";
@@ -17,7 +17,7 @@ const CHAT_PLUGIN_NAME = "Call Prep";
 const CHAT_SKILL_NAME = "call-prep";
 const CHAT_SKILL_DESCRIPTION = "Prepare a call brief whenever you ask to prep a call.";
 const CHAT_CLOSING_REPLY = "The call-prep skill is saved to your Library and ready to use.";
-const resourceUri = "ui://omnirush/skill-created/v1/view.html";
+const resourceUri = "ui://mars/skill-created/v1/view.html";
 const composerMessage = "Turn what we just did into a reusable skill for me";
 const ORGANIZATION_PROMPT_INTRO = "Try one of your organization's prompts:";
 
@@ -101,7 +101,7 @@ async function openEmptyTeamPromptSession(surface: DesktopShotSurface): Promise<
   const config = await denFetch(member, "/v1/me/desktop-config", {
     headers: {
       authorization: `Bearer ${member.token}`,
-      "x-omnirush-org-id": surface.organization.orgId,
+      "x-mars-org-id": surface.organization.orgId,
     },
   });
   const expectedPrompts = DOCS_PROMPT_CARDS.map((card) => card.prompt);
@@ -126,7 +126,7 @@ async function openEmptyTeamPromptSession(surface: DesktopShotSurface): Promise<
     const deadline = Date.now() + 60000;
     let last = null;
     while (Date.now() < deadline) {
-      last = await window.__omnirushControl.execute("session.create_task", null);
+      last = await window.__marsControl.execute("session.create_task", null);
       if (last?.ok === true) return last;
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
@@ -197,7 +197,7 @@ export const libraryCreateSkillModal = shot("library-create-skill-modal", {
   at: (surface) => `/workspace/${surface.workspaceId}/extensions/skills`,
   steps: [dismissOverlays, (surface) => clickButton(surface, "Add skill", { timeoutMs: 120_000 }), skillForm],
   expect: ["Create a skill", "Name", "Description", "Create skill"],
-  never: ["Sign in to OmniRush.ai Cloud"],
+  never: ["Sign in to MarsAI Cloud"],
   viewport: { width: 1440, height: 1000, deviceScaleFactor: 2 },
   out: "packages/docs/images/library-create-skill-modal.png",
 });
@@ -247,10 +247,10 @@ async function waitForMountedSkillCard(surface: DesktopShotSurface, timeoutMs: n
 
 async function createSkillFromChat(surface: DesktopShotSurface): Promise<void> {
   const reconciled = await inPage(surface, async (args) => {
-    const port = localStorage.getItem("omnirush.server.port");
-    const token = localStorage.getItem("omnirush.server.token");
+    const port = localStorage.getItem("mars.server.port");
+    const token = localStorage.getItem("mars.server.token");
     if (!port || !token) return "missing local server credentials";
-    const response = await fetch("http://127.0.0.1:" + port + "/workspace/" + encodeURIComponent(args.workspaceId) + "/mcp/omnirush-cloud/reconcile", {
+    const response = await fetch("http://127.0.0.1:" + port + "/workspace/" + encodeURIComponent(args.workspaceId) + "/mcp/mars-cloud/reconcile", {
       method: "POST",
       headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -284,7 +284,7 @@ async function createSkillFromChat(surface: DesktopShotSurface): Promise<void> {
     const deadline = Date.now() + 60000;
     let last = null;
     while (Date.now() < deadline) {
-      last = await window.__omnirushControl.execute("session.create_task", null);
+      last = await window.__marsControl.execute("session.create_task", null);
       if (last?.ok === true) return last;
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }

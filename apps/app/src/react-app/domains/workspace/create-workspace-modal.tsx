@@ -135,8 +135,8 @@ export function CreateWorkspaceModal(props: CreateWorkspaceModalProps) {
     if (!props.onConfirmRemote) return;
     await Promise.resolve(
       props.onConfirmRemote({
-        omnirushHostUrl: remoteUrl.trim(),
-        omnirushToken: remoteToken.trim() || null,
+        marsHostUrl: remoteUrl.trim(),
+        marsToken: remoteToken.trim() || null,
         directory: null,
         displayName: remoteDisplayName.trim() || null,
         closeModal: true,

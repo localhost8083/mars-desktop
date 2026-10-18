@@ -1,19 +1,19 @@
-import type { DesktopCommandName, DesktopCommandArgs, DesktopCommandResult } from "@omnirush/types/desktop-ipc";
-import type { OmniRushContextSnapshot } from "@omnirush/types/omnirush-context";
+import type { DesktopCommandName, DesktopCommandArgs, DesktopCommandResult } from "@mars/types/desktop-ipc";
+import type { MarsContextSnapshot } from "@mars/types/mars-context";
 
 /** Test-facing browser protocols. State is installed by the corresponding world before use. */
 declare global {
   interface Window {
-    __omnirushControl: {
+    __marsControl: {
       listActions(): { id: string; disabled: boolean; args?: unknown; [key: string]: unknown }[];
       execute(action: string, args?: unknown): Promise<{ ok: boolean; error?: string; result?: unknown; value?: unknown }>;
-      context(): OmniRushContextSnapshot;
+      context(): MarsContextSnapshot;
       snapshot(): { route: string; narration: string };
       setEnabled(enabled: boolean): void;
       command(request: { id: string; args?: unknown; [key: string]: unknown }): Promise<unknown>;
     };
     __reauthOriginalOpen?: typeof window.open;
-    __OMNIRUSH_ELECTRON__: {
+    __MARS_ELECTRON__: {
       shell: { relaunch(): Promise<void> };
       browserLogins: {
         testWitnessUrl(): Promise<string>;
@@ -35,7 +35,7 @@ declare global {
         setChannel(channel: "stable" | "alpha"): Promise<{ channel: "stable" | "alpha"; currentVersion: string }>;
       };
     };
-    __omnirush: {
+    __mars: {
       slice(name: "composer"): {
         snapshotQuery: {
           status: "pending" | "error" | "success";
@@ -58,11 +58,11 @@ declare global {
         sessionsByWorkspaceId: Record<string, { id: string; title?: string }[]>;
       };
     };
-    __omnirushRecoveryControl: { snapshot(): Promise<unknown>; select(id: string): Promise<unknown> };
-    __omnirushApplyDesktopConfig(config: { allowAlphaUpdates?: boolean; brandAppName?: string; brandLogoUrl?: string }): void;
-    __omnirushSetDesktopConfigRefreshResult(config: { allowAlphaUpdates?: boolean; brandAppName?: string; brandLogoUrl?: string }): void;
-    __omnirushReadDesktopVersionMetadataEval(): { minAppVersion: string; latestAppVersion: string; publishedDesktopVersions: string[] };
-    __omnirushUpdaterEvalBridge: {
+    __marsRecoveryControl: { snapshot(): Promise<unknown>; select(id: string): Promise<unknown> };
+    __marsApplyDesktopConfig(config: { allowAlphaUpdates?: boolean; brandAppName?: string; brandLogoUrl?: string }): void;
+    __marsSetDesktopConfigRefreshResult(config: { allowAlphaUpdates?: boolean; brandAppName?: string; brandLogoUrl?: string }): void;
+    __marsReadDesktopVersionMetadataEval(): { minAppVersion: string; latestAppVersion: string; publishedDesktopVersions: string[] };
+    __marsUpdaterEvalBridge: {
       getChannel(): Promise<{ channel: string; currentVersion: string }>;
       setChannel(channel: "stable" | "alpha"): Promise<{ channel: string; currentVersion: string }>;
       check(channel?: "stable" | "alpha"): Promise<unknown>;
@@ -71,8 +71,8 @@ declare global {
       onDownloadProgress(callback?: (progress: unknown) => void): () => void;
     };
     __backgroundUpdateWitness: { checks: number; downloads: number; installs: number; offset: number; finishDownload: (() => void) | null; intervalCheck: (() => void) | null };
-    __omnirushAlphaUpdateEligibilityEvalState: { checks: (string | undefined)[]; currentVersion: string; latestVersion: string };
-    __omnirushUpdaterEvalState: { checks: (string | undefined)[]; setChannels: string[]; stableStarted: boolean; finishStable: (() => void) | null };
+    __marsAlphaUpdateEligibilityEvalState: { checks: (string | undefined)[]; currentVersion: string; latestVersion: string };
+    __marsUpdaterEvalState: { checks: (string | undefined)[]; setChannels: string[]; stableStarted: boolean; finishStable: (() => void) | null };
     __issue3980NotificationProbe: { observer: MutationObserver; state: { rawSeen: boolean } };
     __libraryStability: { requests: string[]; denEvents: number; samples: { buttons: number; contentVisible: boolean }[]; sampler?: number };
     __libraryLifecycleReads: number;

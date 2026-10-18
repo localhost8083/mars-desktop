@@ -16,7 +16,7 @@ const docShots = [];
 const gaps = [];
 let title;
 let all = false;
-let reviewUrl = process.env.OMNIRUSH_REVIEW_URL;
+let reviewUrl = process.env.MARS_REVIEW_URL;
 let dryRun = false;
 let force = false;
 let shouldOpen = false;

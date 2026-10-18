@@ -26,7 +26,7 @@ import {
   remoteSessionCommandCompleteRequestSchema,
   remoteSessionCommandCompleteResponseSchema,
   updateAutomationSchema,
-} from "@omnirush/types/automations"
+} from "@mars/types/automations"
 import {
   jsonValidator,
   orgMemberRoute,

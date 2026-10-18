@@ -1,4 +1,4 @@
-import { EGRESS_DIAGNOSTIC_ID_HEADER } from "@omnirush/types/den/egress-diagnostics"
+import { EGRESS_DIAGNOSTIC_ID_HEADER } from "@mars/types/den/egress-diagnostics"
 import { diagnosticsConfig } from "./config"
 import { recordWireExchange } from "./history-store"
 import { createWireExchange } from "./wire"

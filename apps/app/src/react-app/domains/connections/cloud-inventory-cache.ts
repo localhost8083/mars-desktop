@@ -144,7 +144,7 @@ export function loadOrgMcpConnections(input: {
   return orgMcpConnectionsCache.load(input);
 }
 
-export const CLOUD_INVENTORY_CHANGED_EVENT = "omnirush-cloud-inventory-changed";
+export const CLOUD_INVENTORY_CHANGED_EVENT = "mars-cloud-inventory-changed";
 
 export function clearCloudInventoryCache() {
   connectCapabilitiesCache.clear();

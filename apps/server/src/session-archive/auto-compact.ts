@@ -2,7 +2,7 @@
  * Automatic compaction: a chat that has had `after_turns` prompts since its
  * last compaction is compacted by the engine (its own /summarize, the same
  * compaction a person gets from /compact) before the next prompt goes out.
- * The same file ships in omnirush-cli and omnirush-gui (PARITY.sha256).
+ * The same file ships in mars-cli and mars-gui (PARITY.sha256).
  *
  * The server decides: GET /collect/capabilities `auto_compact`
  * ({enabled, after_turns, min_context_tokens}). No block, or enabled false,

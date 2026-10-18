@@ -1,4 +1,4 @@
-import { applyRestrictedDesktopPolicy, normalizeDefaultDesktopPolicyValue } from "@omnirush/types/den/desktop-policies";
+import { applyRestrictedDesktopPolicy, normalizeDefaultDesktopPolicyValue } from "@mars/types/den/desktop-policies";
 import { parseDesktopPolicyList } from "../dashboard/_components/desktop-policy-data";
 import { getErrorMessage, requestJson } from "./den-flow";
 import { ORG_SCOPE_HEADER } from "./org-scope";

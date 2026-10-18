@@ -1,4 +1,4 @@
-import { createHeadlessThreadClient } from "@omnirush/headless-threads"
+import { createHeadlessThreadClient } from "@mars/headless-threads"
 
 const EMPTY_USAGE = { inputTokens: null, outputTokens: null, costMicros: null }
 const RUNNER_WORK_POLL_MS = 60_000
@@ -77,7 +77,7 @@ function createWorkspaceSessionClient(local, workspaceId, fetchImpl) {
     // resume an occurrence that its scheduler may already have settled or retried.
     fetch: (input, init) => {
       const headers = new Headers(init?.headers)
-      headers.set("x-omnirush-task-recovery", "off")
+      headers.set("x-mars-task-recovery", "off")
       return fetchImpl(input, { ...init, headers })
     },
     requestTimeoutMs: 0,
@@ -152,7 +152,7 @@ export function resolveAssignmentWorkspace(listed, pinnedWorkspaceId) {
   return workspace
 }
 
-/** Runs the assignment as a normal visible local OmniRush.ai thread. */
+/** Runs the assignment as a normal visible local MarsAI thread. */
 export async function executeDesktopAutomation(assignment, options) {
   const local = await options.getLocalRuntime()
   if (!local?.baseUrl || !local?.token) throw new Error("The desktop runtime is unavailable")
@@ -232,7 +232,7 @@ export async function executeDesktopAutomation(assignment, options) {
   }
 }
 
-/** Delivers a remote command as a normal visible local OmniRush.ai session. */
+/** Delivers a remote command as a normal visible local MarsAI session. */
 export async function executeDesktopRemoteSession(assignment, options) {
   const local = await options.getLocalRuntime()
   if (!local?.baseUrl || !local?.token) throw new Error("The desktop runtime is unavailable")

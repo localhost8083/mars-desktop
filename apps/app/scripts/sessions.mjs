@@ -24,9 +24,9 @@ try {
   const before = await client.session.list({ limit: 20 });
   assert.ok(Array.isArray(before));
 
-  const created = await client.session.create({ title: "OmniRush.ai test session" });
+  const created = await client.session.create({ title: "MarsAI test session" });
   assert.ok(typeof created.id === "string");
-  assert.equal(created.title, "OmniRush.ai test session");
+  assert.equal(created.title, "MarsAI test session");
 
   const after = await client.session.list({ limit: 20 });
   assert.ok(after.some((s) => s.id === created.id));

@@ -1,8 +1,8 @@
 import type {
-  OmniRushCloudMcpFailure,
-  OmniRushCloudMcpHealth,
-  OmniRushCloudMcpProviderModelContext,
-} from "../../../app/lib/omnirush-server";
+  MarsCloudMcpFailure,
+  MarsCloudMcpHealth,
+  MarsCloudMcpProviderModelContext,
+} from "../../../app/lib/mars-server";
 import type { CloudMcpUserState } from "./cloud-mcp-user-state";
 
 export const CLOUD_MCP_SUBMISSION_RETRY_DELAYS_MS = [1_000, 3_000];
@@ -11,12 +11,12 @@ export const CLOUD_MCP_AUTH_RESOLUTION_TIMEOUT_MS = 12_000;
 
 const REQUIRED_DIRECT_TOOL_IDS = ["search_capabilities", "execute_capability"];
 const REQUIRED_PROJECTED_TOOL_IDS = [
-  "omnirush-cloud_search_capabilities",
-  "omnirush-cloud_execute_capability",
+  "mars-cloud_search_capabilities",
+  "mars-cloud_execute_capability",
 ];
 
 export type CloudMcpSubmissionIssue = Pick<
-  OmniRushCloudMcpFailure,
+  MarsCloudMcpFailure,
   "code" | "stage" | "retryable" | "recommendedAction" | "message"
 >;
 
@@ -27,7 +27,7 @@ export type CloudMcpSubmissionGateContext = {
   serverBaseUrl: string;
   orgId: string | null;
   workspaceId: string;
-  providerModel?: OmniRushCloudMcpProviderModelContext;
+  providerModel?: MarsCloudMcpProviderModelContext;
   userState: CloudMcpUserState | null;
 };
 
@@ -41,13 +41,13 @@ export type CloudMcpSubmissionGateDecision =
     };
 
 export type CloudMcpSubmissionReadinessAssessment =
-  | { ready: true; health: OmniRushCloudMcpHealth }
-  | { ready: false; health: OmniRushCloudMcpHealth | null; issue: CloudMcpSubmissionIssue };
+  | { ready: true; health: MarsCloudMcpHealth }
+  | { ready: false; health: MarsCloudMcpHealth | null; issue: CloudMcpSubmissionIssue };
 
 export type CloudMcpSubmissionReadinessResult =
-  | { outcome: "ready"; health: OmniRushCloudMcpHealth; attempts: number }
-  | { outcome: "bypass"; health: OmniRushCloudMcpHealth; attempts: number; reason: "disabled" }
-  | { outcome: "failed"; health: OmniRushCloudMcpHealth | null; issue: CloudMcpSubmissionIssue; attempts: number };
+  | { outcome: "ready"; health: MarsCloudMcpHealth; attempts: number }
+  | { outcome: "bypass"; health: MarsCloudMcpHealth; attempts: number; reason: "disabled" }
+  | { outcome: "failed"; health: MarsCloudMcpHealth | null; issue: CloudMcpSubmissionIssue; attempts: number };
 
 export type CloudMcpSubmissionAttempt = {
   phase: "readiness" | "repair";
@@ -113,11 +113,11 @@ function genericSubmissionIssue(input?: {
     stage: input?.stage ?? "engine_delivery",
     retryable: input?.retryable ?? true,
     recommendedAction: input?.recommendedAction ?? "Retry, then open Settings → Connect if the problem continues.",
-    message: input?.message ?? "omnirush.ai could not verify connected service tools for the selected model.",
+    message: input?.message ?? "marsai.click could not verify connected service tools for the selected model.",
   };
 }
 
-function failureIssue(health: OmniRushCloudMcpHealth): CloudMcpSubmissionIssue {
+function failureIssue(health: MarsCloudMcpHealth): CloudMcpSubmissionIssue {
   const failure = health.firstFailure;
   if (!failure) return genericSubmissionIssue();
   return {
@@ -129,7 +129,7 @@ function failureIssue(health: OmniRushCloudMcpHealth): CloudMcpSubmissionIssue {
   };
 }
 
-function healthShowsExplicitDisable(health: OmniRushCloudMcpHealth): boolean {
+function healthShowsExplicitDisable(health: MarsCloudMcpHealth): boolean {
   const code = health.firstFailure?.code.trim().toLowerCase().replace(/[-.]/g, "_") ?? "";
   return health.desired.config?.enabled === false || code === "cloud_mcp_disabled" || code === "cloud_disabled";
 }
@@ -176,8 +176,8 @@ function authResolutionIssue(input?: { timedOut?: boolean }): CloudMcpSubmission
       ? "cloud_mcp_auth_resolution_timeout"
       : "cloud_mcp_auth_resolution_failed",
     message: input?.timedOut
-      ? "omnirush.ai timed out while restoring connected service access."
-      : "omnirush.ai could not finish restoring connected service access.",
+      ? "marsai.click timed out while restoring connected service access."
+      : "marsai.click could not finish restoring connected service access.",
     recommendedAction: "Retry or open Settings → Connect.",
   });
 }
@@ -215,8 +215,8 @@ export async function resolveCloudMcpSubmissionAuth(
  * experimental listing or be verified as tool-capable by its provider.
  */
 export function assessCloudMcpSubmissionReadiness(input: {
-  health: OmniRushCloudMcpHealth | null;
-  providerModel: OmniRushCloudMcpProviderModelContext;
+  health: MarsCloudMcpHealth | null;
+  providerModel: MarsCloudMcpProviderModelContext;
 }): CloudMcpSubmissionReadinessAssessment {
   const health = input.health;
   if (!health) {
@@ -237,7 +237,7 @@ export function assessCloudMcpSubmissionReadiness(input: {
       issue: genericSubmissionIssue({
         code: "cloud_mcp_direct_tools_unverified",
         stage: "tool_registration",
-        message: "omnirush.ai Cloud did not prove that search_capabilities and execute_capability are available.",
+        message: "marsai.click Cloud did not prove that search_capabilities and execute_capability are available.",
       }),
     };
   }
@@ -264,7 +264,7 @@ export function assessCloudMcpSubmissionReadiness(input: {
       issue: genericSubmissionIssue({
         code: "provider_tool_projection_unverified",
         stage: "provider_projection",
-        message: "omnirush.ai could not read tool capability information for the selected provider and model.",
+        message: "marsai.click could not read tool capability information for the selected provider and model.",
         recommendedAction: "Retry, or check Settings → Advanced → Agent access diagnostics if the problem continues.",
       }),
     };
@@ -284,7 +284,7 @@ export function assessCloudMcpSubmissionReadiness(input: {
           ? "The selected model was not found for this provider."
           : toolCallingUnavailable
             ? "The selected model does not support tool calling."
-            : "omnirush.ai could not confirm that the selected model supports tool calling.",
+            : "marsai.click could not confirm that the selected model supports tool calling.",
         recommendedAction: modelMissing
           ? "Choose a model available from this provider, or check Settings → Advanced → Agent access diagnostics."
           : "Choose a model with tool calling, or check Settings → Advanced → Agent access diagnostics.",
@@ -299,7 +299,7 @@ export function assessCloudMcpSubmissionReadiness(input: {
         code: "provider_tool_projection_unverified",
         stage: "provider_projection",
         retryable: false,
-        message: "omnirush.ai received an unsupported tool capability result for the selected provider and model.",
+        message: "marsai.click received an unsupported tool capability result for the selected provider and model.",
         recommendedAction: "Choose a model with tool calling, or check Settings → Advanced → Agent access diagnostics.",
       }),
     };
@@ -327,7 +327,7 @@ export function assessCloudMcpSubmissionReadiness(input: {
 function timeoutIssue(): CloudMcpSubmissionIssue {
   return genericSubmissionIssue({
     code: "cloud_mcp_submission_timeout",
-    message: "omnirush.ai timed out while preparing connected service tools.",
+    message: "marsai.click timed out while preparing connected service tools.",
   });
 }
 
@@ -353,15 +353,15 @@ function errorAssessment(error: unknown): CloudMcpSubmissionReadinessAssessment 
       ? timeoutIssue()
       : genericSubmissionIssue({
           code: "cloud_mcp_submission_check_failed",
-          message: "omnirush.ai could not check connected service tools before sending.",
+          message: "marsai.click could not check connected service tools before sending.",
         }),
   };
 }
 
 export async function ensureCloudMcpSubmissionReadiness(input: {
-  providerModel: OmniRushCloudMcpProviderModelContext;
-  check: () => Promise<OmniRushCloudMcpHealth | null>;
-  repair: () => Promise<OmniRushCloudMcpHealth | null>;
+  providerModel: MarsCloudMcpProviderModelContext;
+  check: () => Promise<MarsCloudMcpHealth | null>;
+  repair: () => Promise<MarsCloudMcpHealth | null>;
   retryDelaysMs?: number[];
   attemptTimeoutMs?: number;
   wait?: (delayMs: number) => Promise<void>;

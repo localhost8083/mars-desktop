@@ -115,14 +115,14 @@ function startMockOpencode() {
   return { server, requests };
 }
 
-async function startOmniRush(options?: { branch?: string }) {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), "omnirush-claude-plugin-"));
+async function startMars(options?: { branch?: string }) {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "mars-claude-plugin-"));
   roots.push(workspaceRoot);
-  setEnv("OMNIRUSH_RUNTIME_DB", join(workspaceRoot, "runtime.sqlite"));
+  setEnv("MARS_RUNTIME_DB", join(workspaceRoot, "runtime.sqlite"));
 
   const github = startMockGithub(options);
-  setEnv("OMNIRUSH_GITHUB_API_BASE", `http://127.0.0.1:${github.port}`);
-  setEnv("OMNIRUSH_GITHUB_RAW_BASE", `http://127.0.0.1:${github.port}`);
+  setEnv("MARS_GITHUB_API_BASE", `http://127.0.0.1:${github.port}`);
+  setEnv("MARS_GITHUB_RAW_BASE", `http://127.0.0.1:${github.port}`);
 
   const engine = startMockOpencode();
   const config: ServerConfig = {
@@ -205,11 +205,11 @@ describe("parseClaudePluginSource", () => {
 
 describe("claude plugin bundles", () => {
   test("dryRun returns the Will-install preview with warnings", async () => {
-    const omnirush = await startOmniRush();
+    const mars = await startMars();
 
-    const response = await fetch(`${omnirush.base}/workspace/ws_1/claude-plugins`, {
+    const response = await fetch(`${mars.base}/workspace/ws_1/claude-plugins`, {
       method: "POST",
-      headers: omnirush.headers,
+      headers: mars.headers,
       body: JSON.stringify({ url: "https://github.com/slackapi/slack-mcp-plugin", dryRun: true }),
     });
     expect(response.status).toBe(200);
@@ -224,15 +224,15 @@ describe("claude plugin bundles", () => {
     // local-helper uses ${CLAUDE_PLUGIN_ROOT} and must be skipped with a warning.
     expect(body.preview.warnings.some((warning) => warning.includes("local-helper"))).toBe(true);
     // Nothing installed on dryRun.
-    expect(existsSync(join(omnirush.workspaceRoot, ".opencode/skills/slack-plugin"))).toBe(false);
+    expect(existsSync(join(mars.workspaceRoot, ".opencode/skills/slack-plugin"))).toBe(false);
   });
 
   test("resolves branch names containing slashes in /tree/ URLs", async () => {
-    const omnirush = await startOmniRush({ branch: "release/v1" });
+    const mars = await startMars({ branch: "release/v1" });
 
-    const response = await fetch(`${omnirush.base}/workspace/ws_1/claude-plugins`, {
+    const response = await fetch(`${mars.base}/workspace/ws_1/claude-plugins`, {
       method: "POST",
-      headers: omnirush.headers,
+      headers: mars.headers,
       body: JSON.stringify({
         url: "https://github.com/slackapi/slack-mcp-plugin/tree/release/v1",
         dryRun: true,
@@ -247,11 +247,11 @@ describe("claude plugin bundles", () => {
   });
 
   test("installs skills, commands, and MCP servers; uninstall cleans up", async () => {
-    const omnirush = await startOmniRush();
+    const mars = await startMars();
 
-    const installResponse = await fetch(`${omnirush.base}/workspace/ws_1/claude-plugins`, {
+    const installResponse = await fetch(`${mars.base}/workspace/ws_1/claude-plugins`, {
       method: "POST",
-      headers: omnirush.headers,
+      headers: mars.headers,
       body: JSON.stringify({ url: "https://github.com/slackapi/slack-mcp-plugin" }),
     });
     expect(installResponse.status).toBe(200);
@@ -259,28 +259,28 @@ describe("claude plugin bundles", () => {
     expect(installBody.item.pluginId).toBe("github:slackapi/slack-mcp-plugin");
 
     // Skill and command land namespaced under .opencode/.
-    const skillPath = join(omnirush.workspaceRoot, ".opencode/skills/slack-plugin/slack-search/SKILL.md");
-    const commandPath = join(omnirush.workspaceRoot, ".opencode/commands/slack-plugin/standup.md");
+    const skillPath = join(mars.workspaceRoot, ".opencode/skills/slack-plugin/slack-search/SKILL.md");
+    const commandPath = join(mars.workspaceRoot, ".opencode/commands/slack-plugin/standup.md");
     expect(existsSync(skillPath)).toBe(true);
     expect(existsSync(commandPath)).toBe(true);
     expect(await readFile(skillPath, "utf8")).toContain("Search Slack messages effectively");
 
     // MCP registered in the runtime DB and pushed to the engine.
-    const listResponse = await fetch(`${omnirush.base}/workspace/ws_1/mcp`, { headers: omnirush.headers });
+    const listResponse = await fetch(`${mars.base}/workspace/ws_1/mcp`, { headers: mars.headers });
     const listBody = await listResponse.json() as { items: Array<{ name: string; source: string }> };
     const slackEntry = listBody.items.find((entry) => entry.name === "slack");
     expect(slackEntry?.source).toBe("config.remote");
-    expect(omnirush.engine.requests.some((entry) => entry.method === "POST" && entry.pathname === "/mcp")).toBe(true);
+    expect(mars.engine.requests.some((entry) => entry.method === "POST" && entry.pathname === "/mcp")).toBe(true);
 
     // Uninstall through the shared cloud-plugins route.
     const removeResponse = await fetch(
-      `${omnirush.base}/workspace/ws_1/cloud-plugins/${encodeURIComponent(installBody.item.pluginId)}`,
-      { method: "DELETE", headers: omnirush.headers },
+      `${mars.base}/workspace/ws_1/cloud-plugins/${encodeURIComponent(installBody.item.pluginId)}`,
+      { method: "DELETE", headers: mars.headers },
     );
     expect(removeResponse.status).toBe(200);
     expect(existsSync(skillPath)).toBe(false);
     expect(existsSync(commandPath)).toBe(false);
-    const afterRemove = await fetch(`${omnirush.base}/workspace/ws_1/mcp`, { headers: omnirush.headers });
+    const afterRemove = await fetch(`${mars.base}/workspace/ws_1/mcp`, { headers: mars.headers });
     const afterRemoveBody = await afterRemove.json() as { items: Array<{ name: string }> };
     expect(afterRemoveBody.items.some((entry) => entry.name === "slack")).toBe(false);
   });

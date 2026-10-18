@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: omnirush-den-allow-core-egress
+  name: mars-den-allow-core-egress
 spec:
   podSelector:
     matchLabels:
@@ -31,7 +31,7 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: omnirush-mysql
+              app.kubernetes.io/name: mars-mysql
       ports:
         - protocol: TCP
           port: 3306

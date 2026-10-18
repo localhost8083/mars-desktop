@@ -1,9 +1,9 @@
 ---
 title: "Evaluate with Docker Compose"
-description: "Run the OmniRush.ai control plane from published images without cloning or building the repository."
+description: "Run the MarsAI control plane from published images without cloning or building the repository."
 ---
 
-Use the pull-only Docker Compose stack to evaluate Den web, Den API, and organization management on one machine. The stack downloads published OmniRush.ai images and MySQL, runs database migrations, and starts the browser experience at `http://localhost:3005`.
+Use the pull-only Docker Compose stack to evaluate Den web, Den API, and organization management on one machine. The stack downloads published MarsAI images and MySQL, runs database migrations, and starts the browser experience at `http://localhost:3005`.
 
 <Warning>
   This stack is for evaluation only. Its HTTP ports bind to loopback, but it enables public signup by default, uses development credentials, keeps MySQL on one local Docker volume, and uses a stub worker provisioner. Do not change the port bindings to expose it on a network or use it for production data.
@@ -19,7 +19,7 @@ Install Docker Engine or Docker Desktop with Docker Compose v2. The machine must
 
    ```bash
    curl -fsSLo docker-compose.eval.yml \
-     https://raw.githubusercontent.com/omnirush-ai/omnirush-gui/9f8645ebc482c15ab99c0cf155aabaa411e1ca6a/packaging/docker/docker-compose.eval.yml
+     https://raw.githubusercontent.com/mars-ai/mars-gui/9f8645ebc482c15ab99c0cf155aabaa411e1ca6a/packaging/docker/docker-compose.eval.yml
    printf '%s  %s\n' \
      '69cc7f2666157b7697ebf69b31b0c83887dd99e796c7d956f9ccaab8fa8bf2fc' \
      'docker-compose.eval.yml' | shasum -a 256 --check
@@ -31,7 +31,7 @@ Install Docker Engine or Docker Desktop with Docker Compose v2. The machine must
 
    ```bash
    umask 077
-   printf 'OMNIRUSH_AUTH_SECRET=%s\nOMNIRUSH_DB_ENCRYPTION_KEY=%s\n' \
+   printf 'MARS_AUTH_SECRET=%s\nMARS_DB_ENCRYPTION_KEY=%s\n' \
      "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > .env
    docker compose -f docker-compose.eval.yml up -d --wait
    ```
@@ -46,12 +46,12 @@ Set variables in your shell before running `docker compose`, or save them in a `
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OMNIRUSH_WEB_PORT` | `3005` | Host port for Den web. |
-| `OMNIRUSH_API_PORT` | `8788` | Host port for Den API. |
-| `OMNIRUSH_AUTH_SECRET` | Required | Better Auth signing secret of at least 32 random characters. |
-| `OMNIRUSH_DB_ENCRYPTION_KEY` | Required | Key of at least 32 random characters used to encrypt selected database values. |
-| `OMNIRUSH_ORG_NAME` | `OmniRush.ai Evaluation` | Name of the single organization. |
-| `OMNIRUSH_ALLOW_SIGNUP` | `true` | Whether anyone who can reach the site can create an account. |
+| `MARS_WEB_PORT` | `3005` | Host port for Den web. |
+| `MARS_API_PORT` | `8788` | Host port for Den API. |
+| `MARS_AUTH_SECRET` | Required | Better Auth signing secret of at least 32 random characters. |
+| `MARS_DB_ENCRYPTION_KEY` | Required | Key of at least 32 random characters used to encrypt selected database values. |
+| `MARS_ORG_NAME` | `MarsAI Evaluation` | Name of the single organization. |
+| `MARS_ALLOW_SIGNUP` | `true` | Whether anyone who can reach the site can create an account. |
 
 The setup command writes unique secrets to `.env` so subsequent Compose commands reuse them. Keep this file private and do not commit it. To rotate the secrets, replace their values before recreating the services.
 
@@ -61,7 +61,7 @@ If you create `.env` separately, generate unique secrets with:
 
 ```bash
 umask 077
-printf 'OMNIRUSH_AUTH_SECRET=%s\nOMNIRUSH_DB_ENCRYPTION_KEY=%s\n' \
+printf 'MARS_AUTH_SECRET=%s\nMARS_DB_ENCRYPTION_KEY=%s\n' \
   "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > .env
 ```
 

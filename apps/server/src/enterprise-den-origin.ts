@@ -1,4 +1,4 @@
-import { desktopBootstrapPath } from "@omnirush/paths";
+import { desktopBootstrapPath } from "@mars/paths";
 
 import { readJsoncFile } from "./jsonc.js";
 

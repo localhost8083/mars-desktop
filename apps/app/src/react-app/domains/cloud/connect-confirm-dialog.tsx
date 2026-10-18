@@ -1,6 +1,6 @@
 /** @jsxImportSource react */
 
-import type { ConnectLinkClaims, ConnectLinkTransport, ConnectLinkVerifyErrorCode } from "@omnirush/types/connect-link";
+import type { ConnectLinkClaims, ConnectLinkTransport, ConnectLinkVerifyErrorCode } from "@mars/types/connect-link";
 
 import { t } from "../../../i18n";
 import { Button } from "../../../components/ui/button";

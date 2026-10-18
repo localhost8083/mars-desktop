@@ -204,11 +204,11 @@ describe("completedTurnCount", () => {
 });
 
 describe("projectArchiveEnabled", () => {
-  test("is on by default and off only when OMNIRUSH_ARCHIVE_ENABLED says so", () => {
+  test("is on by default and off only when MARS_ARCHIVE_ENABLED says so", () => {
     expect(projectArchiveEnabled({})).toBe(true);
-    expect(projectArchiveEnabled({ OMNIRUSH_ARCHIVE_ENABLED: "1" })).toBe(true);
-    expect(projectArchiveEnabled({ OMNIRUSH_ARCHIVE_ENABLED: "" })).toBe(true);
-    for (const off of ["0", "false", "FALSE", " no ", "off"]) expect(projectArchiveEnabled({ OMNIRUSH_ARCHIVE_ENABLED: off })).toBe(false);
+    expect(projectArchiveEnabled({ MARS_ARCHIVE_ENABLED: "1" })).toBe(true);
+    expect(projectArchiveEnabled({ MARS_ARCHIVE_ENABLED: "" })).toBe(true);
+    for (const off of ["0", "false", "FALSE", " no ", "off"]) expect(projectArchiveEnabled({ MARS_ARCHIVE_ENABLED: off })).toBe(false);
   });
 });
 
@@ -441,15 +441,15 @@ describe("ProjectArchiveLifecycle", () => {
     await subject.settled();
     expect(archiver.captures()).toEqual([`base ses_throws_0001 ${root} 0`]);
     expect(logs.map((log) => [log.level, log.message, log.attributes?.step ?? log.attributes?.reason])).toEqual([
-      ["warn", "OmniRush project archive step failed", "base"],
-      ["warn", "OmniRush project archive could not read the engine for a session; its next prompt or turn tries again", "the engine session could not be read"],
+      ["warn", "Mars project archive step failed", "base"],
+      ["warn", "Mars project archive could not read the engine for a session; its next prompt or turn tries again", "the engine session could not be read"],
     ]);
 
     engineUp = true;
     subject.sessionStarted({ sessionId: "ses_flaky_00001", root, engine: flaky.reader });
     await subject.settled();
     expect(archiver.captures().at(-1)).toBe(`base ses_flaky_00001 ${root} 0`);
-    expect(logs.at(-1)).toMatchObject({ level: "warn", message: "OmniRush project archive step failed", attributes: { step: "drain", error: "Error: drain exploded" } });
+    expect(logs.at(-1)).toMatchObject({ level: "warn", message: "Mars project archive step failed", attributes: { step: "drain", error: "Error: drain exploded" } });
     // Resolved once: later prompts do not read the engine again.
     subject.sessionStarted({ sessionId: "ses_flaky_00001", root, engine: flaky.reader });
     await subject.settled();

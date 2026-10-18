@@ -17,15 +17,15 @@ function normalizeIdentifier(value) {
   return trimmed || null;
 }
 
-export function resolveOmniRushSentryAppVersion({ app, packageMetadata }) {
+export function resolveMarsSentryAppVersion({ app, packageMetadata }) {
   const electronAppVersion = normalizeIdentifier(app?.getVersion?.());
   const packageVersion = normalizeIdentifier(packageMetadata?.version);
   if (app?.isPackaged) return electronAppVersion || packageVersion || "unknown";
   return packageVersion || electronAppVersion || "unknown";
 }
 
-export function resolveOmniRushSentryRelease({ appVersion, environmentRelease = process.env.SENTRY_RELEASE }) {
-  return normalizeIdentifier(environmentRelease) || `omnirush-desktop@${normalizeIdentifier(appVersion) || "unknown"}`;
+export function resolveMarsSentryRelease({ appVersion, environmentRelease = process.env.SENTRY_RELEASE }) {
+  return normalizeIdentifier(environmentRelease) || `mars-desktop@${normalizeIdentifier(appVersion) || "unknown"}`;
 }
 
 function parseBuildConfig(path) {
@@ -46,25 +46,25 @@ function parseBuildConfig(path) {
 
 function readBuildConfig(app) {
   if (app.isPackaged) {
-    return parseBuildConfig(resolve(process.resourcesPath, "omnirush-sentry.json"));
+    return parseBuildConfig(resolve(process.resourcesPath, "mars-sentry.json"));
   }
-  return parseBuildConfig(resolve(__dirname, "..", ".electron-runtime", "omnirush-sentry.json"));
+  return parseBuildConfig(resolve(__dirname, "..", ".electron-runtime", "mars-sentry.json"));
 }
 
-export async function initOmniRushSentry({ app, distribution, packageMetadata }) {
+export async function initMarsSentry({ app, distribution, packageMetadata }) {
   const buildConfig = readBuildConfig(app);
   const dsn = buildConfig.dsn;
-  if (!dsn || envFlagEnabled("OMNIRUSH_DESKTOP_SENTRY_DISABLED")) return false;
+  if (!dsn || envFlagEnabled("MARS_DESKTOP_SENTRY_DISABLED")) return false;
 
   sentry = await import("@sentry/electron/main");
-  const appVersion = resolveOmniRushSentryAppVersion({ app, packageMetadata });
-  const release = resolveOmniRushSentryRelease({ appVersion });
+  const appVersion = resolveMarsSentryAppVersion({ app, packageMetadata });
+  const release = resolveMarsSentryRelease({ appVersion });
   const sampleRate = buildConfig.tracesSampleRate;
 
   sentry.init({
     dsn,
     release,
-    environment: process.env.OMNIRUSH_DESKTOP_SENTRY_ENVIRONMENT?.trim() || (app.isPackaged ? "production" : "development"),
+    environment: process.env.MARS_DESKTOP_SENTRY_ENVIRONMENT?.trim() || (app.isPackaged ? "production" : "development"),
     sendDefaultPii: false,
     integrations: (defaultIntegrations) => defaultIntegrations.filter(
       (integration) => !["BrowserWindowSession", "ElectronMinidump", "MainProcessSession", "SentryMinidump"].includes(integration.name),
@@ -90,15 +90,15 @@ export async function initOmniRushSentry({ app, distribution, packageMetadata })
   });
 
   initialized = true;
-  globalThis.__omnirushDesktopTelemetry = {
+  globalThis.__marsDesktopTelemetry = {
     captureException,
-    clearSession: clearOmniRushSentrySession,
-    setSession: setOmniRushSentrySession,
+    clearSession: clearMarsSentrySession,
+    setSession: setMarsSentrySession,
   };
   return true;
 }
 
-export function setOmniRushSentrySession(input) {
+export function setMarsSentrySession(input) {
   const userId = normalizeIdentifier(input?.userId);
   const orgId = normalizeIdentifier(input?.orgId);
   if (!initialized || !sentry || !userId || !orgId) return false;
@@ -106,19 +106,19 @@ export function setOmniRushSentrySession(input) {
   telemetryActive = true;
   sentry.setUser({ id: userId });
   sentry.setTag("org_id", orgId);
-  sentry.setContext("omnirush_cloud", {
+  sentry.setContext("mars_cloud", {
     organization_id: orgId,
     user_id: userId,
   });
   return true;
 }
 
-export function clearOmniRushSentrySession() {
+export function clearMarsSentrySession() {
   telemetryActive = false;
   if (!initialized || !sentry) return false;
 
   sentry.setUser(null);
-  sentry.setContext("omnirush_cloud", null);
+  sentry.setContext("mars_cloud", null);
   return true;
 }
 

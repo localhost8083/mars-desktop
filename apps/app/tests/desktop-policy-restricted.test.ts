@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { MCP_QUICK_CONNECT, getMcpServerName, isBuiltInOmniRushExtension } from "../src/app/constants";
-import { createOmniRushServerClient } from "../src/app/lib/omnirush-server";
-import { createOmniRushServerStore } from "../src/react-app/domains/connections/omnirush-server-store";
+import { MCP_QUICK_CONNECT, getMcpServerName, isBuiltInMarsExtension } from "../src/app/constants";
+import { createMarsServerClient } from "../src/app/lib/mars-server";
+import { createMarsServerStore } from "../src/react-app/domains/connections/mars-server-store";
 import { createConnectionsStore } from "../src/react-app/domains/connections/store";
 import { createExtensionsStore } from "../src/react-app/domains/settings/state/extensions-store";
 
@@ -15,7 +15,7 @@ import {
   normalizeDesktopPolicyDocument,
   resolveDesktopPolicyDocumentWrite,
   resolveTeamAccessCapabilities,
-} from "@omnirush/types/den/desktop-policies";
+} from "@mars/types/den/desktop-policies";
 import {
   SETTINGS_TAB_WITHOUT_CONTROL,
   checkDesktopAppRestriction,
@@ -190,7 +190,7 @@ describe("desktop extension mutation boundaries", () => {
     const errors: string[] = [];
     const checkDesktopAppRestriction: DesktopAppRestrictionChecker = ({ restriction }) =>
       restriction === "allowBuiltInExtensions" ? builtInsBlocked : blocked;
-    const server = createOmniRushServerStore({
+    const server = createMarsServerStore({
       startupPreference: () => "server",
       documentVisible: () => true,
       developerMode: () => false,
@@ -207,7 +207,7 @@ describe("desktop extension mutation boundaries", () => {
       throw new Error("Mutation boundary reached");
     };
     const client = {
-      ...createOmniRushServerClient({ baseUrl: "http://127.0.0.1:1" }),
+      ...createMarsServerClient({ baseUrl: "http://127.0.0.1:1" }),
       addPlugin: recordWrite,
       removePlugin: recordWrite,
       upsertSkill: recordWrite,
@@ -219,7 +219,7 @@ describe("desktop extension mutation boundaries", () => {
       setMcpEnabled: recordWrite,
     };
     const getSnapshot: typeof server.getSnapshot = () => ({
-      ...server.getSnapshot(), omnirushServerStatus: "connected", omnirushServerClient: client,
+      ...server.getSnapshot(), marsServerStatus: "connected", marsServerClient: client,
     });
     const options = {
       checkDesktopAppRestriction,
@@ -228,7 +228,7 @@ describe("desktop extension mutation boundaries", () => {
       selectedWorkspaceId: () => "policy-workspace",
       selectedWorkspaceRoot: () => "/tmp/policy",
       workspaceType: (): "local" | "remote" => "remote",
-      omnirushServer: { ...server, getSnapshot },
+      marsServer: { ...server, getSnapshot },
       runtimeWorkspaceId: () => "policy-workspace",
     };
     const extensions = createExtensionsStore({
@@ -307,7 +307,7 @@ describe("desktop extension mutation boundaries", () => {
 
   test("built-in configuration obeys its own permission while custom installation is blocked", async () => {
     const f = fixture();
-    const builtIn = MCP_QUICK_CONNECT.find(isBuiltInOmniRushExtension);
+    const builtIn = MCP_QUICK_CONNECT.find(isBuiltInMarsExtension);
     if (!builtIn) throw new Error("Expected a built-in MCP in the catalog");
     f.restrict(true);
     await f.connections.setMcpEnabled(getMcpServerName(builtIn), true);

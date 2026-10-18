@@ -1,9 +1,9 @@
-import { browserScript } from "@omnirush/cdp";
+import { browserScript } from "@mars/cdp";
 import { readFile } from "node:fs/promises";
 import { join, posix } from "node:path";
-import { evalIn } from "@omnirush/behaviors";
-import { defaultDaytonaExec, electronProfilePaths, execInSandbox } from "@omnirush/hosts";
-import type { Surface } from "@omnirush/cdp";
+import { evalIn } from "@mars/behaviors";
+import { defaultDaytonaExec, electronProfilePaths, execInSandbox } from "@mars/hosts";
+import type { Surface } from "@mars/cdp";
 
 export interface DenClientState {
   authTokenPresent: boolean;
@@ -52,10 +52,10 @@ function errorCode(error: unknown): string | null {
 
 export async function readDenClientState(app: Surface): Promise<DenClientState> {
   const value = await evalIn(app, () => ((() => ({
-    authTokenPresent: Boolean((localStorage.getItem("omnirush.den.authToken") ?? "").trim()),
-    activeOrgId: (localStorage.getItem("omnirush.den.activeOrgId") ?? "").trim() || null,
-    activeOrgSlug: (localStorage.getItem("omnirush.den.activeOrgSlug") ?? "").trim() || null,
-    activeOrgName: (localStorage.getItem("omnirush.den.activeOrgName") ?? "").trim() || null,
+    authTokenPresent: Boolean((localStorage.getItem("mars.den.authToken") ?? "").trim()),
+    activeOrgId: (localStorage.getItem("mars.den.activeOrgId") ?? "").trim() || null,
+    activeOrgSlug: (localStorage.getItem("mars.den.activeOrgSlug") ?? "").trim() || null,
+    activeOrgName: (localStorage.getItem("mars.den.activeOrgName") ?? "").trim() || null,
   }))()));
   if (!isRecord(value)) throw new Error("The desktop returned an invalid Den client state.");
   return {
@@ -74,9 +74,9 @@ export async function readConnectState(app: Surface): Promise<ConnectState> {
     let baseUrl = "";
     let token = "";
     try {
-      const invokeDesktop = window.__OMNIRUSH_ELECTRON__ && window.__OMNIRUSH_ELECTRON__.invokeDesktop;
+      const invokeDesktop = window.__MARS_ELECTRON__ && window.__MARS_ELECTRON__.invokeDesktop;
       if (invokeDesktop) {
-        const info = await invokeDesktop("omnirushServerInfo");
+        const info = await invokeDesktop("marsServerInfo");
         if (info && info.running === true) {
           baseUrl = String(info.baseUrl ?? info.connectUrl ?? "").trim().replace(/\/+$/, "");
           token = String(info.ownerToken ?? info.clientToken ?? "").trim();
@@ -84,9 +84,9 @@ export async function readConnectState(app: Surface): Promise<ConnectState> {
       }
     } catch {}
     if (!baseUrl || !token) {
-      const port = (localStorage.getItem("omnirush.server.port") ?? "").trim();
+      const port = (localStorage.getItem("mars.server.port") ?? "").trim();
       baseUrl = port ? "http://127.0.0.1:" + port : baseUrl;
-      token = token || (localStorage.getItem("omnirush.server.token") ?? "").trim();
+      token = token || (localStorage.getItem("mars.server.token") ?? "").trim();
     }
     if (!baseUrl || !token) {
       return { ok: false, status: null, connectEnabled: null, raw: { error: "Local server credentials are unavailable." } };
@@ -142,9 +142,9 @@ export async function readCloudMcpHealth(
     let baseUrl = "";
     let token = "";
     try {
-      const invokeDesktop = window.__OMNIRUSH_ELECTRON__ && window.__OMNIRUSH_ELECTRON__.invokeDesktop;
+      const invokeDesktop = window.__MARS_ELECTRON__ && window.__MARS_ELECTRON__.invokeDesktop;
       if (invokeDesktop) {
-        const info = await invokeDesktop("omnirushServerInfo");
+        const info = await invokeDesktop("marsServerInfo");
         if (info && info.running === true) {
           baseUrl = String(info.baseUrl ?? info.connectUrl ?? "").trim().replace(/\/+$/, "");
           token = String(info.ownerToken ?? info.clientToken ?? "").trim();
@@ -152,16 +152,16 @@ export async function readCloudMcpHealth(
       }
     } catch {}
     if (!baseUrl || !token) {
-      const port = (localStorage.getItem("omnirush.server.port") ?? "").trim();
+      const port = (localStorage.getItem("mars.server.port") ?? "").trim();
       baseUrl = port ? "http://127.0.0.1:" + port : baseUrl;
-      token = token || (localStorage.getItem("omnirush.server.token") ?? "").trim();
+      token = token || (localStorage.getItem("mars.server.token") ?? "").trim();
     }
     if (!baseUrl || !token) {
       return { ok: false, raw: { error: "Local server credentials are unavailable." } };
     }
     try {
       const response = await fetch(
-        baseUrl + "/workspace/" + encodeURIComponent(workspaceId) + "/mcp/omnirush-cloud/health" + value,
+        baseUrl + "/workspace/" + encodeURIComponent(workspaceId) + "/mcp/mars-cloud/health" + value,
         { headers: { Authorization: "Bearer " + token } },
       );
       const text = await response.text();
@@ -210,15 +210,15 @@ export async function readConnectStateFile(
   }
   if (!app.handle.profileDir) throw new Error(`The ${app.handle.hostKind} app did not expose its profile directory.`);
   // The local server persists runtime state next to its config file
-  // (`omnirushConfigDir()`). The dev-mode desktop redirects that XDG config
-  // root under its Electron userData dir (`<userData>/omnirush-dev-data/xdg/config`),
+  // (`marsConfigDir()`). The dev-mode desktop redirects that XDG config
+  // root under its Electron userData dir (`<userData>/mars-dev-data/xdg/config`),
   // so probe the known layouts in order.
   const paths = electronProfilePaths(app.handle.profileDir);
   const pathJoin = app.handle.hostKind === "daytona" ? posix.join : join;
   const candidates = [
-    pathJoin(paths.userDataDir, "omnirush-dev-data", "xdg", "config", "omnirush", "connect-state.json"),
-    pathJoin(paths.configHome, "omnirush", "connect-state.json"),
-    pathJoin(paths.homeDir, ".config", "omnirush", "connect-state.json"),
+    pathJoin(paths.userDataDir, "mars-dev-data", "xdg", "config", "mars", "connect-state.json"),
+    pathJoin(paths.configHome, "mars", "connect-state.json"),
+    pathJoin(paths.homeDir, ".config", "mars", "connect-state.json"),
   ];
   let text: string | null = null;
   if (app.handle.hostKind === "daytona") {
@@ -235,8 +235,8 @@ export async function readConnectStateFile(
       if (!/^\/[A-Za-z0-9._/-]+$/.test(path)) {
         throw new Error(`Unsafe connect-state path ${JSON.stringify(path)}: only absolute paths containing letters, digits and . _ / - are allowed.`);
       }
-      const output = await exec(sandbox, `if [ -f "${path}" ]; then cat "${path}"; else echo __OMNIRUSH_TESTKIT_MISSING__; fi`);
-      if (output.trim() !== "__OMNIRUSH_TESTKIT_MISSING__") {
+      const output = await exec(sandbox, `if [ -f "${path}" ]; then cat "${path}"; else echo __MARS_TESTKIT_MISSING__; fi`);
+      if (output.trim() !== "__MARS_TESTKIT_MISSING__") {
         text = output;
         break;
       }

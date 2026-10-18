@@ -1,7 +1,7 @@
 import { and, asc, eq, gt, inArray, lte } from "@omnirush-ee/den-db/drizzle"
 import { RemoteSessionCommandTable } from "@omnirush-ee/den-db/schema/remote-session-commands"
 import { createDenTypeId, normalizeDenTypeId, type DenTypeId } from "@omnirush-ee/utils/typeid"
-import type { RemoteSessionCommandCompleteRequest } from "@omnirush/types/automations"
+import type { RemoteSessionCommandCompleteRequest } from "@mars/types/automations"
 import { db } from "../db.js"
 import { automationUpdateChangedRows } from "../automations/update-result.js"
 

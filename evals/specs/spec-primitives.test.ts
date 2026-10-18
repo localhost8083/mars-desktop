@@ -1,4 +1,4 @@
-import { browserScript } from "@omnirush/testkit";
+import { browserScript } from "@mars/testkit";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect } from "vitest";
@@ -7,7 +7,7 @@ import {
   renderPrMarkdown,
   spec,
   test,
-} from "@omnirush/testkit";
+} from "@mars/testkit";
 import type {
   Surface,
   StepRecord,
@@ -15,7 +15,7 @@ import type {
   TestOutcome,
   TraceEntry,
   User,
-} from "@omnirush/testkit";
+} from "@mars/testkit";
 
 const trace: TraceEntry[] = [];
 const steps: StepRecord[] = [];
@@ -211,7 +211,7 @@ let skippedWorldRuns = 0;
 const skippedWorldTest = spec.world(async () => {
   skippedWorldRuns += 1;
   return { app: fakeSurface };
-}, { needs: { optIn: ["OMNIRUSH_SPEC_PRIMITIVES_MISSING_OPT_IN"] } });
+}, { needs: { optIn: ["MARS_SPEC_PRIMITIVES_MISSING_OPT_IN"] } });
 
 skippedWorldTest("unmet needs skip before building the world", () => {
   throw new Error("body must not run");

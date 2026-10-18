@@ -70,7 +70,7 @@ function main() {
   const args = process.argv.slice(2);
   const version = (argValue(args, "--version") ?? "").trim().replace(/^v/, "");
   const mode = (argValue(args, "--mode") ?? "fresh").trim();
-  const repo = argValue(args, "--repo") ?? process.env.GITHUB_REPOSITORY ?? "omnirush-ai/omnirush-gui";
+  const repo = argValue(args, "--repo") ?? process.env.GITHUB_REPOSITORY ?? "mars-ai/mars-gui";
   const latestTag = argValue(args, "--latest-tag") ?? readLatestTag(repo);
   const latestVersion = latestTag ? stableVersionFromTag(latestTag) ?? latestTag : null;
   const decision = latestReleaseDecision({ version, latestVersion, mode });

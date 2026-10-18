@@ -11,7 +11,7 @@ function reconnectStatus(connectionId = "emc_knowledge", connectionName = "Knowl
   return {
     version: 1,
     kind: "connection_action",
-    source: "omnirush-cloud",
+    source: "mars-cloud",
     connectionId,
     connectionName,
     authType: "oauth",
@@ -20,7 +20,7 @@ function reconnectStatus(connectionId = "emc_knowledge", connectionName = "Knowl
     actor: "member",
     action: {
       type: "reconnect",
-      surface: "omnirush_your_connections",
+      surface: "mars_your_connections",
       retry: "search_capabilities",
       label: "Reconnect in Your Connections",
     },
@@ -34,15 +34,15 @@ const connectionPayload = {
   state: "needs_connection",
   actor: "member",
   message: "Connect your account to continue.",
-  action: { type: "connect", label: "Connect Knowledge Hub", surface: "omnirush_your_connections" },
+  action: { type: "connect", label: "Connect Knowledge Hub", surface: "mars_your_connections" },
 }
 
 describe("chat tool error attribution", () => {
   test("uses the same native action for search attachments and standalone status results", () => {
     for (const { toolName, payload } of [
-      { toolName: "omnirush-cloud_search_capabilities", payload: { connectionAction: connectionPayload } },
-      { toolName: "omnirush-cloud_execute_capability", payload: connectionPayload },
-      { toolName: "omnirush-cloud_connection_action", payload: connectionPayload },
+      { toolName: "mars-cloud_search_capabilities", payload: { connectionAction: connectionPayload } },
+      { toolName: "mars-cloud_execute_capability", payload: connectionPayload },
+      { toolName: "mars-cloud_connection_action", payload: connectionPayload },
     ]) {
       for (const result of [payload, JSON.stringify(payload)]) {
         expect(connectionCardPayloadFromChatToolResult(toolName, result, { intent: "connect" })).toEqual(connectionPayload)
@@ -56,11 +56,11 @@ describe("chat tool error attribution", () => {
   test("keeps connected and admin states native without offering member authorization", () => {
     const connected = { ...connectionPayload, state: "connected", actor: null, action: null }
     const admin = { ...connectionPayload, actor: "organization_admin", action: {
-      type: "update_credentials", label: "Ask an admin", surface: "omnirush_organization_connections",
+      type: "update_credentials", label: "Ask an admin", surface: "mars_organization_connections",
     } }
     for (const payload of [connected, admin]) {
-      expect(connectionCardPayloadFromChatToolResult("omnirush-cloud_execute_capability", payload)).toEqual(payload)
-      expect(reconnectActionFromChatToolResult("omnirush-cloud_execute_capability", payload)).toBeNull()
+      expect(connectionCardPayloadFromChatToolResult("mars-cloud_execute_capability", payload)).toEqual(payload)
+      expect(reconnectActionFromChatToolResult("mars-cloud_execute_capability", payload)).toBeNull()
     }
   })
 
@@ -69,21 +69,21 @@ describe("chat tool error attribution", () => {
       expect(connectionCardPayloadFromChatToolResult(tool, connectionPayload)).toBeNull()
       expect(reconnectActionFromChatToolResult(tool, connectionPayload)).toBeNull()
     }
-    expect(connectionCardPayloadFromChatToolResult("omnirush-cloud_execute_capability", { ...connectionPayload, schemaVersion: "2" })).toBeNull()
-    expect(connectionCardPayloadFromChatToolResult("omnirush-cloud_search_capabilities", { connectionAction: connectionPayload })).toBeNull()
+    expect(connectionCardPayloadFromChatToolResult("mars-cloud_execute_capability", { ...connectionPayload, schemaVersion: "2" })).toBeNull()
+    expect(connectionCardPayloadFromChatToolResult("mars-cloud_search_capabilities", { connectionAction: connectionPayload })).toBeNull()
     const matches = [connectionPayload, { ...connectionPayload, connectionId: "emc_second" }].map(connectionStatus => ({ connectionStatus }))
-    expect(connectionCardPayloadFromChatToolResult("omnirush-cloud_search_capabilities", { matches }, { intent: "connect" })).toBeNull()
+    expect(connectionCardPayloadFromChatToolResult("mars-cloud_search_capabilities", { matches }, { intent: "connect" })).toBeNull()
   })
 
-  test("identifies an omnirush.ai-created capability deadline", () => {
+  test("identifies an marsai.click-created capability deadline", () => {
     expect(attributeChatToolError("The capability call exceeded 180s. Retry once.")).toEqual({
-      label: "omnirush.ai timeout",
+      label: "marsai.click timeout",
       confidence: "Confirmed",
-      description: "omnirush.ai created this deadline. The external operation may still have completed, so verify its state before retrying.",
+      description: "marsai.click created this deadline. The external operation may still have completed, so verify its state before retrying.",
     })
   })
 
-  test("identifies a structured omnirush.ai lifecycle deadline", () => {
+  test("identifies a structured marsai.click lifecycle deadline", () => {
     expect(attributeChatToolError(JSON.stringify({
       error: "connection_failed",
       diagnostic: {
@@ -92,16 +92,16 @@ describe("chat tool error attribution", () => {
         phase: "MCP_TOOL_EXECUTION",
       },
     }))).toMatchObject({
-      label: "omnirush.ai timeout",
+      label: "marsai.click timeout",
       confidence: "Confirmed",
     })
   })
 
-  test("identifies an omnirush.ai block before send", () => {
+  test("identifies an marsai.click block before send", () => {
     expect(attributeChatToolError(JSON.stringify({
       diagnostic: { code: "MCP_URL_BLOCKED", category: "security_blocked" },
     }))).toMatchObject({
-      label: "Blocked by omnirush.ai",
+      label: "Blocked by marsai.click",
       confidence: "Confirmed",
     })
   })
@@ -172,7 +172,7 @@ describe("chat tool error attribution", () => {
       connectionStatus: reconnectStatus(),
     })
 
-    expect(reconnectActionFromChatToolResult("omnirush-cloud_execute_capability", errorText)).toEqual({
+    expect(reconnectActionFromChatToolResult("mars-cloud_execute_capability", errorText)).toEqual({
       connectionId: "emc_knowledge",
       connectionName: "Knowledge Hub",
       label: "Reconnect",
@@ -187,8 +187,8 @@ describe("chat tool error attribution", () => {
       }],
     })
 
-    expect(reconnectActionFromChatToolResult("omnirush-cloud_search_capabilities", output)).toBeNull()
-    expect(reconnectActionFromChatToolResult("omnirush-cloud_search_capabilities", output, { intent: "connect" })).toEqual({
+    expect(reconnectActionFromChatToolResult("mars-cloud_search_capabilities", output)).toBeNull()
+    expect(reconnectActionFromChatToolResult("mars-cloud_search_capabilities", output, { intent: "connect" })).toEqual({
       connectionId: "emc_knowledge",
       connectionName: "Knowledge Hub",
       label: "Reconnect",
@@ -203,7 +203,7 @@ describe("chat tool error attribution", () => {
       },
     })
 
-    expect(reconnectActionFromChatToolResult("omnirush-cloud_execute_capability", errorText)).toEqual({
+    expect(reconnectActionFromChatToolResult("mars-cloud_execute_capability", errorText)).toEqual({
       connectionId: "emc_knowledge",
       connectionName: "Knowledge Hub",
       label: "Reconnect",
@@ -221,19 +221,19 @@ describe("chat tool error attribution", () => {
         actor: "organization_admin",
         action: {
           type: "inspect_connection",
-          surface: "omnirush_organization_connections",
+          surface: "mars_organization_connections",
           retry: "search_capabilities",
         },
       },
     })
 
     expect(reconnectActionFromChatToolResult("malicious_execute_capability", reconnectPayload)).toBeNull()
-    expect(reconnectActionFromChatToolResult("omnirush-cloud_execute_capability", providerPayload)).toBeNull()
+    expect(reconnectActionFromChatToolResult("mars-cloud_execute_capability", providerPayload)).toBeNull()
   })
 
   test("supports first-time member OAuth but rejects mismatched states and credentials", () => {
-    const status = { ...reconnectStatus(), state: "needs_connection", action: { type: "connect", surface: "omnirush_your_connections", retry: "search_capabilities" } }
-    const action = (value: unknown) => reconnectActionFromChatToolResult("omnirush-cloud_search_capabilities", { matches: [{ connectionStatus: value }] }, { intent: "connect" })
+    const status = { ...reconnectStatus(), state: "needs_connection", action: { type: "connect", surface: "mars_your_connections", retry: "search_capabilities" } }
+    const action = (value: unknown) => reconnectActionFromChatToolResult("mars-cloud_search_capabilities", { matches: [{ connectionStatus: value }] }, { intent: "connect" })
     expect(action(status)).toEqual({ connectionId: "emc_knowledge", connectionName: "Knowledge Hub", label: "Connect" })
     expect(action({ ...status, authType: "apikey" })).toBeNull()
     expect(action({ ...status, credentialMode: "shared" })).toBeNull()
@@ -249,7 +249,7 @@ describe("chat tool error attribution", () => {
       })),
     }
 
-    expect(reconnectActionFromChatToolResult("omnirush-cloud_search_capabilities", output, { intent: "connect" })).toBeNull()
+    expect(reconnectActionFromChatToolResult("mars-cloud_search_capabilities", output, { intent: "connect" })).toBeNull()
   })
 
   test("rejects unversioned, shared, and admin-owned action shapes", () => {
@@ -261,12 +261,12 @@ describe("chat tool error attribution", () => {
       actor: "organization_admin",
       action: {
         type: "reconnect",
-        surface: "omnirush_organization_connections",
+        surface: "mars_organization_connections",
         retry: "search_capabilities",
       },
     }
 
-    expect(reconnectActionFromChatToolResult("omnirush-cloud_execute_capability", { connectionStatus: unversioned })).toBeNull()
-    expect(reconnectActionFromChatToolResult("omnirush-cloud_execute_capability", { connectionStatus: shared })).toBeNull()
+    expect(reconnectActionFromChatToolResult("mars-cloud_execute_capability", { connectionStatus: unversioned })).toBeNull()
+    expect(reconnectActionFromChatToolResult("mars-cloud_execute_capability", { connectionStatus: shared })).toBeNull()
   })
 })

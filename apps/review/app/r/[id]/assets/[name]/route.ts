@@ -1,4 +1,4 @@
-import { readReview, readReviewAsset } from "@omnirush/review/storage";
+import { readReview, readReviewAsset } from "@mars/review/storage";
 
 export async function GET(
   _request: Request,

@@ -2,7 +2,7 @@ import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 import { viteSingleFile } from "vite-plugin-singlefile"
 
-const app = (process.env.OMNIRUSH_MCP_APP ?? "skill-created").trim()
+const app = (process.env.MARS_MCP_APP ?? "skill-created").trim()
 
 export default defineConfig({
   plugins: [react(), viteSingleFile({ removeViteModuleLoader: true })],

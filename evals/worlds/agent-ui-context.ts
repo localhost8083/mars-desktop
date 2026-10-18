@@ -1,17 +1,17 @@
 import { mkdir, realpath, rm, writeFile } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import { join } from "node:path";
-import type { Seed } from "@omnirush/env";
+import type { Seed } from "@mars/env";
 import {
-  bootManagedOmniRushServer,
+  bootManagedMarsServer,
   close,
   isRecord,
   listen,
   readBody,
   sendJson,
   sendStream,
-  type ManagedOmniRushServer,
-} from "./omnirush-server-cli.ts";
+  type ManagedMarsServer,
+} from "./mars-server-cli.ts";
 
 export const MOCK_REPLY = "MOCK OK";
 
@@ -69,7 +69,7 @@ function mockProvider(requests: AgentUiContextProviderRequest[]): Server {
         sendStream(response, toolResults.length === 0
           ? [
             { id, object: "chat.completion.chunk", choices: [{ index: 0, delta: { role: "assistant" }, finish_reason: null }] },
-            { id, object: "chat.completion.chunk", choices: [{ index: 0, delta: { tool_calls: [{ index: 0, id: `call_omnirush_context_${requests.length}`, type: "function", function: { name: "omnirush_context", arguments: JSON.stringify({}) } }] }, finish_reason: null }] },
+            { id, object: "chat.completion.chunk", choices: [{ index: 0, delta: { tool_calls: [{ index: 0, id: `call_mars_context_${requests.length}`, type: "function", function: { name: "mars_context", arguments: JSON.stringify({}) } }] }, finish_reason: null }] },
             { id, object: "chat.completion.chunk", choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] },
           ]
           : [
@@ -134,7 +134,7 @@ export async function agentUiContext(seed: Seed): Promise<AgentUiContextWorld> {
   const token = "agent-ui-context-client-token";
   let output = "";
   const sink = (chunk: string) => { output += chunk; };
-  let managed: ManagedOmniRushServer | null = null;
+  let managed: ManagedMarsServer | null = null;
   const windows = new Set<FakeWindow>();
 
   const dispose = async () => {
@@ -147,7 +147,7 @@ export async function agentUiContext(seed: Seed): Promise<AgentUiContextWorld> {
   };
 
   try {
-    managed = await bootManagedOmniRushServer({ scratch, workspace, token, sink });
+    managed = await bootManagedMarsServer({ scratch, workspace, token, sink });
     const server = managed;
     const headers = { authorization: `Bearer ${token}`, "content-type": "application/json" };
 

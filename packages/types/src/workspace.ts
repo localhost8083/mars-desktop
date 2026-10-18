@@ -2,10 +2,10 @@
  * Shared wire contract for workspace records.
  *
  * Producers:
- * - omnirush-server (apps/server): `GET /workspaces` and friends — emits plain
+ * - mars-server (apps/server): `GET /workspaces` and friends — emits plain
  *   optionals (never null) plus the `opencode*` engine credential fields.
  * - desktop Electron IPC bridge (apps/desktop main.mjs): emits explicit nulls
- *   and the desktop-managed `omnirushClientToken`/`omnirushHostToken`.
+ *   and the desktop-managed `marsClientToken`/`marsHostToken`.
  *
  * Consumers (apps/app) must treat every optional field as possibly absent,
  * undefined, or null. Producer-side types assert assignability against this
@@ -14,7 +14,7 @@
  */
 export type WorkspaceKind = "local" | "remote";
 
-export type WorkspaceRemoteKind = "opencode" | "omnirush";
+export type WorkspaceRemoteKind = "opencode" | "mars";
 
 export type WorkspaceWire = {
   id: string;
@@ -26,22 +26,22 @@ export type WorkspaceWire = {
   baseUrl?: string | null;
   directory?: string | null;
   displayName?: string | null;
-  omnirushHostUrl?: string | null;
-  omnirushToken?: string | null;
+  marsHostUrl?: string | null;
+  marsToken?: string | null;
   /** Desktop IPC only: tokens for desktop-managed remote workspaces. */
-  omnirushClientToken?: string | null;
-  omnirushHostToken?: string | null;
-  omnirushWorkspaceId?: string | null;
-  omnirushWorkspaceName?: string | null;
+  marsClientToken?: string | null;
+  marsHostToken?: string | null;
+  marsWorkspaceId?: string | null;
+  marsWorkspaceName?: string | null;
   /**
    * Vocabulary differs per producer today ("docker" | "microsandbox" on the
-   * desktop, "none" | "docker" | "container" in omnirush-server), so the wire
+   * desktop, "none" | "docker" | "container" in mars-server), so the wire
    * stays a plain string until the backends converge.
    */
   sandboxBackend?: string | null;
   sandboxRunId?: string | null;
   sandboxContainerName?: string | null;
-  /** omnirush-server only: credentials for the proxied opencode engine. */
+  /** mars-server only: credentials for the proxied opencode engine. */
   opencodeUsername?: string | null;
   opencodePassword?: string | null;
   opencode?: {

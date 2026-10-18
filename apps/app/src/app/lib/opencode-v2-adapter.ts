@@ -67,7 +67,7 @@ type SessionUpdateParameters = SessionParameters & {
   time?: { archived?: number };
 };
 
-export const V2_SESSION_ARCHIVE_UNAVAILABLE = "Archiving and unarchiving are not available in the OmniRush v2 preview.";
+export const V2_SESSION_ARCHIVE_UNAVAILABLE = "Archiving and unarchiving are not available in the Mars v2 preview.";
 
 type PermissionReply = "once" | "always" | "reject";
 
@@ -316,7 +316,7 @@ function toolAttachments(
 
 function toolPartMetadata(tool: string): Pick<ToolPart, "metadata"> {
   // Adapter provenance stays separate from metadata returned by the tool.
-  return tool === "execute" ? { metadata: { omnirushV2CodeMode: true } } : {};
+  return tool === "execute" ? { metadata: { marsV2CodeMode: true } } : {};
 }
 
 function toolOutput(value: unknown, result?: unknown): string {
@@ -634,9 +634,9 @@ function errorMessage(value: unknown): string {
     if ("error" in value) return errorMessage(value.error);
   }
   try {
-    return JSON.stringify(value) || "OmniRush v2 execution failed.";
+    return JSON.stringify(value) || "Mars v2 execution failed.";
   } catch {
-    return "OmniRush v2 execution failed.";
+    return "Mars v2 execution failed.";
   }
 }
 
@@ -1254,7 +1254,7 @@ function createWebFetch(auth: { token?: string }): typeof globalThis.fetch {
 
 function createV2Fetch(auth: { token?: string }): typeof globalThis.fetch {
   return isDesktopRuntime()
-    ? createDesktopFetch({ mode: "omnirush", token: auth.token })
+    ? createDesktopFetch({ mode: "mars", token: auth.token })
     : createWebFetch(auth);
 }
 
@@ -1293,7 +1293,7 @@ function unsupportedResult<T>(baseUrl: string, operation: string, message?: stri
   return {
     error: { name: "UnsupportedInV2Preview", operation, ...(message ? { message } : {}) },
     request: new Request(`${baseUrl}/unsupported/${encodeURIComponent(operation)}`),
-    response: new Response(null, { status: 501, statusText: "Unsupported in OmniRush v2 preview" }),
+    response: new Response(null, { status: 501, statusText: "Unsupported in Mars v2 preview" }),
   };
 }
 
@@ -1318,7 +1318,7 @@ export function createClientV2(
 ): ReturnType<typeof createClient> {
   const baseUrl = opencode2BaseUrl.replace(/\/+$/, "");
   const fetchImpl = createV2Fetch(auth);
-  const compatibilityClient = createClient(baseUrl, directory, { mode: "omnirush", token: auth.token });
+  const compatibilityClient = createClient(baseUrl, directory, { mode: "mars", token: auth.token });
   const permissionSessionByRequestID = new Map<string, string>();
   const questionFormsByID = new Map<string, NonNullable<ReturnType<typeof mapV2Question>>>();
 
@@ -1592,7 +1592,7 @@ export function createClientV2(
       if (!modelResult.response.ok) return failedResult(modelResult);
       if (parameters.system !== undefined) {
         const instructions = await request("PUT",
-          `/api/session/${encodeURIComponent(parameters.sessionID)}/instructions/entries/omnirush-context`,
+          `/api/session/${encodeURIComponent(parameters.sessionID)}/instructions/entries/mars-context`,
           { value: parameters.system }, options?.signal);
         if (!instructions.response.ok) return failedResult(instructions);
       }

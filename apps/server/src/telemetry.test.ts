@@ -2,16 +2,16 @@ import { afterEach, describe, expect, test } from "bun:test";
 
 import { captureServerException } from "./telemetry.js";
 
-const originalTelemetry = globalThis.__omnirushDesktopTelemetry;
+const originalTelemetry = globalThis.__marsDesktopTelemetry;
 
 afterEach(() => {
-  globalThis.__omnirushDesktopTelemetry = originalTelemetry;
+  globalThis.__marsDesktopTelemetry = originalTelemetry;
 });
 
 describe("server telemetry", () => {
   test("drops request-owned cancellation while preserving unrelated fetch failures", () => {
     const captured: unknown[] = [];
-    globalThis.__omnirushDesktopTelemetry = {
+    globalThis.__marsDesktopTelemetry = {
       captureException(error) {
         captured.push(error);
         return true;

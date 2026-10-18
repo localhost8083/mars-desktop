@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { eventually, observeTranscript, readTranscriptMessages, spec } from "@omnirush/testkit";
+import { eventually, observeTranscript, readTranscriptMessages, spec } from "@mars/testkit";
 import { streamedMarkdown, streamedMarkdownMarker, streamedMarkdownReasoning, streamedToolHistory } from "../worlds/chat.ts";
 
 const test = spec.world(streamedMarkdown, { timeout: 420_000 });

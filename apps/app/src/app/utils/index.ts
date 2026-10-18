@@ -35,8 +35,8 @@ export function modelEquals(a: ModelRef, b: ModelRef) {
  * Used when the backend doesn't return a provider name.
  */
 export const FRIENDLY_PROVIDER_LABELS: Record<string, string> = {
-  omnirush: "omnirush.ai",
-  opencode: "OmniRush",
+  mars: "marsai.click",
+  opencode: "Mars",
   openai: "OpenAI",
   anthropic: "Anthropic",
   google: "Google",
@@ -61,7 +61,7 @@ export const FRIENDLY_MODEL_LABELS: [pattern: string, label: string][] = [
   ["gpt-6-astra", "GPT 6 Astra"],
   ["gpt-6.1-sol", "GPT 6.1 Sol"],
   ["gpt-6-sol", "GPT 6 Sol"],
-  // Meta Muse (omnirush.ai catalog models of the "Meta Muse" family).
+  // Meta Muse (marsai.click catalog models of the "Meta Muse" family).
   ["muse-spark-1.3", "Meta Muse Spark 1.3"],
   ["muse-spark-1.2", "Meta Muse Spark 1.2"],
   ["muse-spark-1.1", "Meta Muse Spark 1.1"],
@@ -89,6 +89,14 @@ export const FRIENDLY_MODEL_LABELS: [pattern: string, label: string][] = [
   // Anthropic
   ["claude-sonnet-4", "Claude Sonnet 4"],
   ["claude-opus-4", "Claude Opus 4"],
+  // marsai.click realtime catalog ids (exact match wins over the substring
+  // pass below, which would otherwise collapse 4-7/4-8 into "Claude Opus 4").
+  ["claude-opus-4-7", "Claude Opus 4.7"],
+  ["claude-opus-4-8", "Claude Opus 4.8"],
+  ["claude-opus-5", "Claude Opus 5"],
+  ["claude-opus-5-5", "Claude Opus 5.5"],
+  ["claude-sonnet-4-6", "Claude Sonnet 4.6"],
+  ["claude-sonnet-5", "Claude Sonnet 5"],
   ["claude-3.7-sonnet", "Claude 3.7 Sonnet"],
   ["claude-3.5-sonnet", "Claude 3.5 Sonnet"],
   ["claude-3.5-haiku", "Claude 3.5 Haiku"],
@@ -123,7 +131,7 @@ export const FRIENDLY_MODEL_LABELS: [pattern: string, label: string][] = [
 /**
  * Resolve a friendly display name for a model ID.
  * An exact FRIENDLY_MODEL_LABELS id comes first; then the name the engine
- * reports (for omnirush.ai models, the catalog's display_name), unless it is
+ * reports (for marsai.click models, the catalog's display_name), unless it is
  * just the raw id; then a substring match of the table (so
  * "gpt-4.1-2025-04-14" still hits "gpt-4.1"); then humanizeModelLabel, which
  * title-cases the raw ID. A catalog model the table does not know (a new
@@ -163,12 +171,12 @@ export function resolveModelProviderDisplayName(
 }
 
 /**
- * The picker group of an omnirush.ai catalog model outside the provider's own
+ * The picker group of an marsai.click catalog model outside the provider's own
  * line-up: the engine reports its catalog family (e.g. "Meta Muse"). Astra
  * and Sol carry none and stay under the provider's name.
  */
-export function resolveOmniRushModelGroup(providerID: string, family?: string | null): string | undefined {
-  if (providerID.trim().toLowerCase() !== "omnirush") return undefined;
+export function resolveMarsModelGroup(providerID: string, family?: string | null): string | undefined {
+  if (providerID.trim().toLowerCase() !== "mars") return undefined;
   return family?.trim() || undefined;
 }
 
@@ -263,9 +271,9 @@ export function isMacPlatform() {
   return /mac/i.test(platform) || /macintosh|mac os x/i.test(ua);
 }
 
-const STARTUP_PREF_KEY = "omnirush.startupPref";
-const LEGACY_PREF_KEY = "omnirush.modePref";
-const LEGACY_PREF_KEY_ALT = "omnirush_mode_pref";
+const STARTUP_PREF_KEY = "mars.startupPref";
+const LEGACY_PREF_KEY = "mars.modePref";
+const LEGACY_PREF_KEY_ALT = "mars_mode_pref";
 
 export function readStartupPreference(): "local" | "server" | null {
   if (typeof window === "undefined") return null;
@@ -451,7 +459,7 @@ export function addOpencodeCacheHint(message: string) {
   ];
 
   if (cacheSignals.some((signal) => lower.includes(signal)) && lower.includes("enoent")) {
-    return `${message}\n\nOmniRush cache looks corrupted. Use Repair cache in Settings to rebuild it.`;
+    return `${message}\n\nMars cache looks corrupted. Use Repair cache in Settings to rebuild it.`;
   }
 
   return message;
@@ -531,7 +539,7 @@ export function getWorkspaceTaskLoadErrorDisplay(workspace: WorkspaceInfo, error
   const normalized = raw.toLowerCase();
   const hasDockerHint = SANDBOX_DOCKER_OFFLINE_HINTS.some((hint) => normalized.includes(hint));
   const hasNetworkHint = SANDBOX_NETWORK_HINTS.some((hint) => normalized.includes(hint));
-  const host = `${workspace.baseUrl ?? ""} ${workspace.omnirushHostUrl ?? ""}`.toLowerCase();
+  const host = `${workspace.baseUrl ?? ""} ${workspace.marsHostUrl ?? ""}`.toLowerCase();
   const localHost = host.includes("localhost") || host.includes("127.0.0.1");
 
   if (!hasDockerHint && !(localHost && hasNetworkHint)) {
@@ -1055,8 +1063,8 @@ const ARTIFACT_OUTPUT_SKIP_TOOLS = new Set(["webfetch"]);
 
 // Patterns that indicate a path is a truncated system/absolute path rather than a workspace-relative path
 const TRUNCATED_SYSTEM_PATH_PATTERNS = [
-  /com\.[^/]+\.(omnirush|opencode)/i, // macOS app bundle identifiers
-  /\.omnirush\.dev\//i, // omnirush.ai dev paths
+  /com\.[^/]+\.(mars|opencode)/i, // macOS app bundle identifiers
+  /\.mars\.dev\//i, // marsai.click dev paths
   /Application Support\//i, // macOS Application Support
   /AppData[/\\]/i, // Windows AppData
   /\.local\/share\//i, // Linux XDG data

@@ -1,4 +1,4 @@
-import { callOmniRushCloudUploadAction } from "../../../../apps/server/src/extensions/cloud-uploads.ts";
+import { callMarsCloudUploadAction } from "../../../../apps/server/src/extensions/cloud-uploads.ts";
 import { listExperimentalExtensionActions } from "../../../../apps/server/src/extensions/index.ts";
 
 const input = JSON.parse(await Bun.stdin.text());
@@ -25,7 +25,7 @@ if (input.mode === "inspect") {
     logRequests: false,
   };
   try {
-    const result = await callOmniRushCloudUploadAction(
+    const result = await callMarsCloudUploadAction(
       config,
       input.action,
       input.args,

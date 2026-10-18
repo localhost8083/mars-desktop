@@ -1,10 +1,10 @@
 import { create } from "zustand";
 
-export const PERSISTED_UI_STATE_KEY = "omnirush:ui-state:v1";
+export const PERSISTED_UI_STATE_KEY = "mars:ui-state:v1";
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
-const LEGACY_WORKSPACE_LEFT_SIDEBAR_WIDTH_KEY = "omnirush.workspace-shell.left-width.v1";
-const LEGACY_WORKSPACE_RIGHT_SIDEBAR_EXPANDED_KEY = "omnirush.workspace-shell.right-expanded.v3";
-const LEGACY_WORKSPACE_RIGHT_SIDEBAR_WIDTH_KEY = "omnirush.workspace-shell.right-width.v1";
+const LEGACY_WORKSPACE_LEFT_SIDEBAR_WIDTH_KEY = "mars.workspace-shell.left-width.v1";
+const LEGACY_WORKSPACE_RIGHT_SIDEBAR_EXPANDED_KEY = "mars.workspace-shell.right-expanded.v3";
+const LEGACY_WORKSPACE_RIGHT_SIDEBAR_WIDTH_KEY = "mars.workspace-shell.right-width.v1";
 
 export const DEFAULT_WORKSPACE_LEFT_SIDEBAR_WIDTH = 260;
 export const MIN_WORKSPACE_LEFT_SIDEBAR_WIDTH = 220;
@@ -322,7 +322,7 @@ export function toggleWorkspaceRightSidebar(state: UiState): UiState {
 }
 
 function syncApplicationMenuVisible(visible: boolean): void {
-  void globalThis.window?.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("__setApplicationMenuVisible", visible);
+  void globalThis.window?.__MARS_ELECTRON__?.invokeDesktop?.("__setApplicationMenuVisible", visible);
 }
 
 type UiStateStore = UiState & {

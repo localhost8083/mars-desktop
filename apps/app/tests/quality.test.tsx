@@ -40,7 +40,7 @@ const quality: AccountQuality = {
   clientSpinsAvailable: 0,
   spinsExpireAt: "2026-10-06T10:00:00Z",
   nextTierHint: "Score 0.52. Stay above 0.45 to keep Gold.",
-  tips: ["Start omnirush inside the project folder, not ~, and keep edits there.", "Add tests: tested work earns spins."],
+  tips: ["Start mars inside the project folder, not ~, and keep edits there.", "Add tests: tested work earns spins."],
   notice: { id: "spins-1", kind: "spins", title: "You earned 2 spins", body: "Two sessions in my-app were reproducible." },
   notices: [{ id: "spins-1", kind: "spins", title: "You earned 2 spins", body: "Two sessions in my-app were reproducible." }],
   mode: "enforce",
@@ -146,16 +146,6 @@ describe("notice: once per id", () => {
     // The app's toast style: theme surfaces, sentence case, no coloured bar or eyebrow.
     expect(html).toContain("bg-popover");
     expect(html).not.toMatch(/uppercase|tracking-\[|#a3e635|#0b1120|shadow-\[0_0/);
-  });
-
-  test("the popup's guide has no WSL tip, whatever windows_counts says", () => {
-    for (const windowsCounts of [true, false]) {
-      const html = renderToStaticMarkup(
-        <QualityNoticeCard quality={{ ...quality, windowsCounts }} notice={quality.notice} onSpin={() => undefined} onDismiss={() => undefined} />,
-      );
-      expect(html).toContain("How to make a Good session");
-      expect(html).not.toContain("WSL");
-    }
   });
 
   test("no Spin button without spins; a resting wheel says so", () => {

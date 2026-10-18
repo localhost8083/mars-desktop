@@ -3,7 +3,7 @@ import {
   EGRESS_DIAGNOSTIC_RUN_HEADER,
   EGRESS_DIAGNOSTIC_SIGNATURE_HEADER,
   EGRESS_DIAGNOSTIC_STEP_HEADER,
-} from "@omnirush/types/den/egress-diagnostics"
+} from "@mars/types/den/egress-diagnostics"
 import type { DiagnosticsProfile, WireBody, WireExchange } from "./contracts"
 import { diagnosticsConfig } from "./config"
 import { verifyDiagnosticRunSignature } from "./run-correlation"

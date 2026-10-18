@@ -67,16 +67,16 @@ export function windowsBrandAppUserModelId(baseAppId, sourceUrl) {
 }
 
 export function windowsBrandShortcutFileName(appName) {
-  const safeName = String(appName ?? "OmniRush.ai")
+  const safeName = String(appName ?? "MarsAI")
     .replace(/[<>:"/\\|?*]/g, "-")
-    .trim() || "OmniRush.ai";
+    .trim() || "MarsAI";
   return `${safeName}.lnk`;
 }
 
 export function windowsInstalledShortcutFileName(appName) {
-  const safeName = String(appName ?? "OmniRush.ai")
+  const safeName = String(appName ?? "MarsAI")
     .replace(/[<>:"/\\|?*]/g, "-")
-    .trim() || "OmniRush.ai";
+    .trim() || "MarsAI";
   return `${safeName}.lnk`;
 }
 

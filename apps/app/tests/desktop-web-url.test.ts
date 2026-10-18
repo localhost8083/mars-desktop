@@ -15,6 +15,6 @@ describe("desktop external web URLs", () => {
   test("rejects custom protocols before Electron openExternal", () => {
     expect(() => assertDesktopWebUrl("javascript:alert(1)")).toThrow("not allowed");
     expect(() => assertDesktopWebUrl("file:///tmp/provider-controlled")).toThrow("not allowed");
-    expect(() => assertDesktopWebUrl("omnirush://provider-controlled")).toThrow("not allowed");
+    expect(() => assertDesktopWebUrl("mars://provider-controlled")).toThrow("not allowed");
   });
 });

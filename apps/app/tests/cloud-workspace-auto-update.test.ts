@@ -12,7 +12,7 @@ const eligible: AutoUpdateInput = {
   updating: false,
   requestFailed: false,
   hasActiveRun: false,
-  latestVersion: "omnirush-0.19.0",
+  latestVersion: "mars-0.19.0",
   lastAttemptedVersion: null,
 };
 
@@ -31,7 +31,7 @@ describe("cloud workspace auto-update", () => {
       { ...eligible, updating: true },
       { ...eligible, requestFailed: true },
       { ...eligible, hasActiveRun: true },
-      { ...eligible, lastAttemptedVersion: "omnirush-0.19.0" },
+      { ...eligible, lastAttemptedVersion: "mars-0.19.0" },
       { ...eligible, latestVersion: null },
     ];
 
@@ -43,12 +43,12 @@ describe("cloud workspace auto-update", () => {
   test("allows a new attempt when the target version changes", () => {
     expect(shouldAutoUpdateCloudWorkspace({
       ...eligible,
-      lastAttemptedVersion: "omnirush-0.19.0",
+      lastAttemptedVersion: "mars-0.19.0",
     })).toBe(false);
     expect(shouldAutoUpdateCloudWorkspace({
       ...eligible,
-      latestVersion: "omnirush-0.20.0",
-      lastAttemptedVersion: "omnirush-0.19.0",
+      latestVersion: "mars-0.20.0",
+      lastAttemptedVersion: "mars-0.19.0",
     })).toBe(true);
   });
 });

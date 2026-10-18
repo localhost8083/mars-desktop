@@ -1,5 +1,5 @@
-import { callFunctionOnSurface } from "@omnirush/cdp";
-import type { Surface } from "@omnirush/cdp";
+import { callFunctionOnSurface } from "@mars/cdp";
+import type { Surface } from "@mars/cdp";
 
 /** Record changes, including empty frames, without modifying the renderer's fetch or event handlers. */
 export async function observeText(surface: Surface, selector: string, options: { ignoreExistingMessages?: boolean } = {}) {

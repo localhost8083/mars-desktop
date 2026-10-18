@@ -48,7 +48,7 @@ export function isDevProcess(name: string, command = ""): boolean {
 /** The engine and app processes capture itself runs (their command lines carry loopback secrets). */
 function isOwnProcess(info: ProcessInfo, selfPid: number): boolean {
   if (info.pid === selfPid) return true;
-  return /\b(?:opencode|omnirush-engine|omnirush-server)\b.*\bserve\b/i.test(info.command);
+  return /\b(?:opencode|mars-engine|mars-server)\b.*\bserve\b/i.test(info.command);
 }
 
 /** A command line for the record: home as `~`, URL userinfo dropped, secrets scrubbed, at most 2000 chars. */
@@ -359,7 +359,7 @@ export type SnapshotOptions = ProcessTableOptions & {
   cwdOf?: (pids: number[]) => Promise<Map<number, string>>;
 };
 
-// --- an OmniRush box ------------------------------------------------------------------
+// --- an Mars box ------------------------------------------------------------------
 //
 // A session whose shell tool runs in its project's box (src/box) has its
 // processes and servers there, in their own PID namespace, out of this
@@ -373,13 +373,13 @@ const BOX_OWN = /^(?:boxd|boxrun|docker-init|tini|catatonit)$/;
 /** `args` only: the name is its program (parsePs). */
 const BOX_PS_ARGS = ["-eww", "-o", "pid=,ppid=,args="];
 /**
- * The table, then the processes OmniRush's own probes run (this one, the
- * toolchain's and env_turn's, all started with OMNIRUSH_LEDGER_OFF=1; read
+ * The table, then the processes Mars's own probes run (this one, the
+ * toolchain's and env_turn's, all started with MARS_LEDGER_OFF=1; read
  * before and after the table, so a probe as short as `gcc --version` that
  * ends meanwhile is still known), then each process's working folder. One
  * process per section (no fork per entry), and the script always exits 0.
  */
-const BOX_PROBES = "grep -las OMNIRUSH_LEDGER_OFF=1 /proc/[0-9]*/environ";
+const BOX_PROBES = "grep -las MARS_LEDGER_OFF=1 /proc/[0-9]*/environ";
 const BOX_TABLE = `b=$(${BOX_PROBES}); ps ${BOX_PS_ARGS.join(" ")}; echo "#probes"; echo "$b"; ${BOX_PROBES}; echo "#cwds"; find /proc/[0-9]* -maxdepth 1 -name cwd -printf '%h %l\\n' 2>/dev/null; true`;
 /**
  * Listening sockets (/proc/net/tcp, tcp6), then `/proc/<pid>/fd socket:[<inode>]`
@@ -389,7 +389,7 @@ const BOX_TABLE = `b=$(${BOX_PROBES}); ps ${BOX_PS_ARGS.join(" ")}; echo "#probe
  */
 const BOX_SOCKETS = 'cat /proc/net/tcp /proc/net/tcp6 2>/dev/null; echo "#owners"; if command -v find >/dev/null 2>&1; then find /proc/[0-9]*/fd -lname "socket:*" -printf "%h %l\\n" 2>/dev/null; else for f in /proc/[0-9]*/fd/*; do l=$(readlink "$f" 2>/dev/null) || continue; case "$l" in socket:*) p=${f#/proc/}; i=${l#socket:[}; echo "${p%%/*} ${i%]}";; esac; done; fi; true';
 
-/** `BOX_TABLE` output: the session's processes (the box's helper and OmniRush's probes left out), with their working folders. */
+/** `BOX_TABLE` output: the session's processes (the box's helper and Mars's probes left out), with their working folders. */
 export function parseBoxTable(text: string): ProcessInfo[] {
   const [table = "", probes = "", cwds = ""] = text.split(/^#(?:probes|cwds)$/m);
   const probing = new Set<number>();

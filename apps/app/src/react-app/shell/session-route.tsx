@@ -27,14 +27,14 @@ import { copySessionId } from "@/react-app/domains/session/sidebar/copy-session-
 import { useSessionManagementStore as sessionManagementStore } from "@/react-app/domains/session/sidebar/session-management-store";
 import { getSessionDescendantIds } from "@/react-app/domains/session/sidebar/utils";
 import {
-  buildOmniRushWorkspaceBaseUrl,
-  readOmniRushServerSettings,
-} from "@/app/lib/omnirush-server";
+  buildMarsWorkspaceBaseUrl,
+  readMarsServerSettings,
+} from "@/app/lib/mars-server";
 import {
   workspaceServerId,
   type ResolvedWorkspaceEndpoint,
 } from "@/app/lib/workspace-endpoint";
-import { buildOmniRushEnvRuntimeKey } from "@/app/lib/omnirush-env-runtime";
+import { buildMarsEnvRuntimeKey } from "@/app/lib/mars-env-runtime";
 import {
   getDesktopHomeDir,
   joinDesktopPath,
@@ -46,7 +46,7 @@ import {
   workspaceForget,
   workspaceSetRuntimeActive,
   workspaceSetSelected,
-  type OmniRushServerInfo,
+  type MarsServerInfo,
   type WorkspaceInfo,
   type WorkspaceList,
 } from "@/app/lib/desktop";
@@ -122,7 +122,7 @@ import { useCheckDesktopRestriction } from "@/react-app/domains/cloud/desktop-co
 import { useRestrictionNotice } from "@/react-app/domains/cloud/restriction-notice-provider";
 import { ReactSessionRuntime } from "@/react-app/domains/session/sync/runtime-sync";
 import { useSessionActivityStore } from "@/react-app/domains/session/status/session-activity-store";
-import { buildOmniRushSessionSystemContext } from "@/react-app/domains/session/sync/env-context";
+import { buildMarsSessionSystemContext } from "@/react-app/domains/session/sync/env-context";
 import {
   applySessionRevert,
   applySessionUnrevert,
@@ -180,9 +180,9 @@ import { RenameWorkspaceModal } from "@/react-app/domains/workspace/rename-works
 import { useRemoteWorkspaceConnectionEditor } from "@/react-app/domains/workspace/use-remote-workspace-connection-editor";
 import { useDenAuth } from "@/react-app/domains/cloud/den-auth-provider";
 import {
-  hasOmniRushModelsAvailable,
-  shouldShowOmniRushModelsSyncing,
-} from "@/react-app/domains/cloud/omnirush-models-promo";
+  hasMarsModelsAvailable,
+  shouldShowMarsModelsSyncing,
+} from "@/react-app/domains/cloud/mars-models-promo";
 import {
   diagnoseRemoteWorkspaceTaskLoadFailure,
   getRemoteWorkspaceConnectionKey,
@@ -222,7 +222,7 @@ import {
   snapshotComposerSessionState,
   useComposerStateStore,
 } from "@/react-app/domains/session/surface/composer-state-store";
-import { useControlAction, type OmniRushControlAction } from "./control/control-provider";
+import { useControlAction, type MarsControlAction } from "./control/control-provider";
 import { useReactRenderWatchdog } from "./react-render-watchdog";
 import { useBootOverlayVisible } from "./boot-state";
 
@@ -235,8 +235,8 @@ import {
 import { denSessionUpdatedEvent, denSettingsChangedEvent } from "@/app/lib/den-session-events";
 
 import { filterProviderList } from "@/app/utils/providers";
-import { ensureDesktopLocalOmniRushConnection } from "./desktop-local-omnirush";
-import { resolveOmniRushConnection } from "./omnirush-connection";
+import { ensureDesktopLocalMarsConnection } from "./desktop-local-mars";
+import { resolveMarsConnection } from "./mars-connection";
 import { useReloadCoordinator } from "./reload-coordinator";
 import { useShellConfig } from "./shell-config";
 import { useShellShortcuts } from "./use-shell-shortcuts";
@@ -267,6 +267,7 @@ import { WorkspaceProvider } from "./workspace-provider";
 import type { OpenTarget } from "@/react-app/domains/session/artifacts/open-target";
 import { SettingsSurface } from "./settings-route";
 import { writeStoredDefaultModel } from "@/react-app/kernel/model-config";
+import { isSupportedModelProvider } from "@/app/lib/provider-catalog";
 import {
   ensureProviderListQuery,
   getConnectedProviderItems,
@@ -322,7 +323,7 @@ function describeTaskCreateError(error: unknown) {
     lower.includes("internal_error") ||
     lower.includes("unexpected server error")
   ) {
-    return "omnirush.ai is unavailable for this workspace. Retry once it restarts, or restart omnirush.ai if the problem continues.";
+    return "marsai.click is unavailable for this workspace. Retry once it restarts, or restart marsai.click if the problem continues.";
   }
   return message;
 }
@@ -344,7 +345,7 @@ function taskCreateUnavailableToastId(workspaceId: string) {
 
 function focusPromptSoon() {
   if (typeof window === "undefined") return;
-  const focus = () => window.dispatchEvent(new Event("omnirush:focusPrompt"));
+  const focus = () => window.dispatchEvent(new Event("mars:focusPrompt"));
   [0, 80, 240, 600].forEach((delay) => window.setTimeout(focus, delay));
 }
 
@@ -457,12 +458,12 @@ export function SessionRoute() {
   const checkDesktopRestriction = useCheckDesktopRestriction();
   const restrictionNotice = useRestrictionNotice();
   const [activeOrganizationRole, setActiveOrganizationRole] = useState<DenOrgRole | null>(null);
-  const [omnirushServerHostInfoState, setOmniRushServerHostInfoState] = useState<OmniRushServerInfo | null>(null);
-  const [omnirushServerSettingsVersion, setOmniRushServerSettingsVersion] = useState(0);
+  const [marsServerHostInfoState, setMarsServerHostInfoState] = useState<MarsServerInfo | null>(null);
+  const [marsServerSettingsVersion, setMarsServerSettingsVersion] = useState(0);
 
   const [developerMode, setDeveloperMode] = useState(() => {
     if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("omnirush.developerMode") === "1";
+    return window.localStorage.getItem("mars.developerMode") === "1";
   });
   const {
     navigateToWorkspaceSession,
@@ -518,8 +519,8 @@ export function SessionRoute() {
   } = useWorkspaceRouteState({
     developerMode,
     workspaceRoute: appsRouteActive ? "apps" : automationsRouteActive ? "automations" : dashboardWorkspaceRoute ? "dashboard" : "session",
-    onServerSettingsChanged: () => setOmniRushServerSettingsVersion((value) => value + 1),
-    onHostInfo: setOmniRushServerHostInfoState,
+    onServerSettingsChanged: () => setMarsServerSettingsVersion((value) => value + 1),
+    onHostInfo: setMarsServerHostInfoState,
   });
   const routeNavigationRef = useRef({ locationKey: location.key, generation: 0 });
   if (routeNavigationRef.current.locationKey !== location.key) {
@@ -654,9 +655,9 @@ export function SessionRoute() {
   // options for whichever model is currently selected so the composer's
   // behavior pill actually shows its options (bug: was empty before).
 
-  const omnirushServerSettings = useMemo(
-    () => readOmniRushServerSettings(),
-    [omnirushServerSettingsVersion],
+  const marsServerSettings = useMemo(
+    () => readMarsServerSettings(),
+    [marsServerSettingsVersion],
   );
 
   const activeReloadBlockingSessions = useMemo(
@@ -694,9 +695,9 @@ export function SessionRoute() {
     [selectedInteractionSessionIds, selectedWorkspaceId, sessionsByWorkspaceId],
   );
   const remoteAccessRestart = useRemoteAccessRestart({
-    isEnabled: () => omnirushServerSettings.remoteAccessEnabled === true,
-    onHostInfo: setOmniRushServerHostInfoState,
-    onSettingsChanged: () => setOmniRushServerSettingsVersion((value) => value + 1),
+    isEnabled: () => marsServerSettings.remoteAccessEnabled === true,
+    onHostInfo: setMarsServerHostInfoState,
+    onSettingsChanged: () => setMarsServerSettingsVersion((value) => value + 1),
   });
 
   const { engineReloadVersion, routeEngineInfo, reloadWorkspaceEngineFromUi } = useEngineReload({
@@ -710,12 +711,12 @@ export function SessionRoute() {
   });
 
   const environmentRuntimeKey = useMemo(
-    () => buildOmniRushEnvRuntimeKey({
+    () => buildMarsEnvRuntimeKey({
       baseUrl: client?.baseUrl ?? null,
-      pid: omnirushServerHostInfoState?.pid ?? null,
-      port: omnirushServerHostInfoState?.port ?? null,
+      pid: marsServerHostInfoState?.pid ?? null,
+      port: marsServerHostInfoState?.port ?? null,
     }),
-    [client?.baseUrl, omnirushServerHostInfoState?.pid, omnirushServerHostInfoState?.port],
+    [client?.baseUrl, marsServerHostInfoState?.pid, marsServerHostInfoState?.port],
   );
 
   const handleApplyEnvironmentChanges = useCallback(async () => {
@@ -736,8 +737,8 @@ export function SessionRoute() {
 
   const shareWorkspaceState = useShareWorkspaceState({
     workspaces,
-    omnirushServerHostInfo: omnirushServerHostInfoState,
-    omnirushServerSettings,
+    marsServerHostInfo: marsServerHostInfoState,
+    marsServerSettings,
     engineInfo: routeEngineInfo,
     exportWorkspaceBusy: false,
     openLink: (url) => platform.openLink(url),
@@ -854,7 +855,7 @@ export function SessionRoute() {
     selectedWorkspaceEndpoint,
     selectedWorkspaceRoot,
     selectedWorkspaceId,
-    localServerHostToken: omnirushServerHostInfoState?.hostToken?.trim() ?? "",
+    localServerHostToken: marsServerHostInfoState?.hostToken?.trim() ?? "",
     setProviders,
     setProviderDefaults,
     setProviderConnectedIds,
@@ -900,18 +901,18 @@ export function SessionRoute() {
   const handleModelPickerOpen = useCallback(() => {
     void refreshCloudProviderSync("model_picker_open");
   }, [refreshCloudProviderSync]);
-  const omniRushModelsEntitled = useMemo(() => {
+  const marsModelsEntitled = useMemo(() => {
     if (!denAuth.isSignedIn) return false;
     const fromOrg = sessionProviderAuthSnapshot.cloudOrgProviders.some(
       (provider) =>
         [provider.providerId, provider.source].some(
-          (value) => value?.trim().toLowerCase() === "omnirush",
+          (value) => value?.trim().toLowerCase() === "mars",
         ),
     );
     const fromImport = Object.values(sessionProviderAuthSnapshot.importedCloudProviders ?? {}).some(
       (provider) =>
         [provider.providerId, provider.source, provider.sourceProviderId].some(
-          (value) => value?.trim().toLowerCase() === "omnirush",
+          (value) => value?.trim().toLowerCase() === "mars",
         ),
     );
     return fromOrg || fromImport;
@@ -952,13 +953,13 @@ export function SessionRoute() {
     providerListQuery.data,
     restrictToCloudProviders,
   ]);
-  const omniRushModelsAvailable = hasOmniRushModelsAvailable({
+  const marsModelsAvailable = hasMarsModelsAvailable({
     providerConnectedIds,
     providers,
   });
-  const omniRushModelsSyncing = shouldShowOmniRushModelsSyncing({
-    entitled: omniRushModelsEntitled,
-    available: omniRushModelsAvailable,
+  const marsModelsSyncing = shouldShowMarsModelsSyncing({
+    entitled: marsModelsEntitled,
+    available: marsModelsAvailable,
     workspaceReady: Boolean(selectedWorkspaceId && opencodeClient),
     reloadPending: sessionProviderAuthSnapshot.cloudProviderServerSync?.reloadPending === true,
   });
@@ -1013,6 +1014,27 @@ export function SessionRoute() {
   useEffect(() => {
     if (entitledOrgDefaultModel) writeStoredDefaultModel(entitledOrgDefaultModel);
   }, [entitledOrgDefaultModel]);
+  // Auto-heal the remembered global default against the live engine catalog.
+  // The availability gate judges cloud-managed selections against the org
+  // catalog (which stays pending on a local marsai.click account), so heal
+  // directly from the engine's connected provider list instead: when the
+  // gateway rolled its model list (e.g. builtin GPT models replaced by the
+  // account's real catalog), fall back to the engine's own default rather
+  // than parking the composer on "Model no longer available".
+  useEffect(() => {
+    const pref = local.prefs.defaultModel;
+    const data = providerListQuery.data;
+    if (!pref || pref.providerID.trim().toLowerCase() !== "mars" || !data) return;
+    if (!data.connected.some((connectedId) => connectedId.trim() === pref.providerID.trim())) return;
+    const provider = data.all.find((candidate) => candidate.id === pref.providerID);
+    if (!provider || Object.keys(provider.models ?? {}).length === 0) return;
+    if (provider.models[pref.modelID]) return;
+    const fallback = Object.entries(data.default ?? {}).find(
+      ([providerID, modelID]) => isSupportedModelProvider(providerID) && Boolean(modelID),
+    );
+    if (!fallback) return;
+    writeStoredDefaultModel({ providerID: fallback[0], modelID: fallback[1] });
+  }, [local.prefs.defaultModel, providerListQuery.data]);
   // Availability is resolved per effective model identity: the New Task
   // composer validates the global default while each conversation validates
   // its OWN remembered provider/model against the current workspace's
@@ -1038,7 +1060,7 @@ export function SessionRoute() {
       loading,
       signedIn: denAuth.isSignedIn,
       cloudProviderSyncReady,
-      omniRushModelsSyncing,
+      marsModelsSyncing,
       restrictToCloud: restrictToCloudProviders,
       checkRestriction: checkDesktopRestriction,
       cloudProviderList,
@@ -1053,7 +1075,7 @@ export function SessionRoute() {
     loading,
     modelAvailabilityGate,
     opencodeClient,
-    omniRushModelsSyncing,
+    marsModelsSyncing,
     providerListQuery.data,
     restrictToCloudProviders,
     selectedWorkspaceId,
@@ -1175,7 +1197,7 @@ export function SessionRoute() {
     const applyProviderState = (value: ProviderListResponse) => {
       if (cancelled) return;
       // When not signed in, filter out every cloud-managed provider key so
-      // stale org imports and the hosted `omnirush` catalog do not reappear.
+      // stale org imports and the hosted `mars` catalog do not reappear.
       const hasCloudAuth = !!readDenSettings().authToken?.trim();
       const all = hasCloudAuth
         ? ((value.all ?? []) as ProviderListItem[])
@@ -1302,7 +1324,7 @@ export function SessionRoute() {
     }
 
     // Note: do NOT include `client`, `workspaceId`, `sessionId`,
-    // `opencodeBaseUrl`, or `omnirushToken` here. SessionPage forwards those
+    // `opencodeBaseUrl`, or `marsToken` here. SessionPage forwards those
     // explicitly to SessionSurface from the per-workspace endpoint resolved
     // by `resolveWorkspaceEndpoint`. If we leak them in here, the spread of
     // `surfaceProps` in SessionPage overrides those correct values with the
@@ -1328,8 +1350,8 @@ export function SessionRoute() {
       resolveModelAvailability,
       organizationModelsEmpty,
       selectedModel: local.prefs.defaultModel ?? { providerID: "", modelID: "" },
-      omniRushModelsEntitled,
-      omniRushModelsSyncing,
+      marsModelsEntitled,
+      marsModelsSyncing,
       onRefreshOrganizationModels: refreshOrganizationModelAccess,
       onModelPickerOpenChange: (open: boolean) => {
         modelPicker.setCompactOpen(open);
@@ -1451,7 +1473,7 @@ export function SessionRoute() {
 
                 const parts = await draftToParts(draft, selectedWorkspaceRoot, targetSessionId, selectedWorkspaceEndpoint);
                 assertCurrent();
-                const system = await buildOmniRushSessionSystemContext(client, {
+                const system = await buildMarsSessionSystemContext(client, {
                   workspaceId: selectedWorkspaceId,
                   cacheKey: targetSessionId,
                   runtimeKey: environmentRuntimeKey,
@@ -1614,8 +1636,8 @@ export function SessionRoute() {
     modelVariantValue,
     navigate,
     providerCatalog,
-    omniRushModelsEntitled,
-    omniRushModelsSyncing,
+    marsModelsEntitled,
+    marsModelsSyncing,
     refreshCloudProviderSync,
     refreshOrganizationModelAccess,
     resolveModelAvailability,
@@ -1658,7 +1680,7 @@ export function SessionRoute() {
         workspaceType: paneEndpoint.workspaceType,
         runtimeWorkspaceId: endpoint.workspaceId,
         opencodeBaseUrl: endpoint.opencodeBaseUrl,
-        omnirushToken: endpoint.token,
+        marsToken: endpoint.token,
         client: endpoint.client,
         environmentClient: client,
         surface: surfaceProps,
@@ -1679,7 +1701,7 @@ export function SessionRoute() {
     const workspaceOpencodeClient = createEngineClient(
       endpoint.opencodeBaseUrl,
       workspaceRoot || undefined,
-      { token: endpoint.token, mode: "omnirush" },
+      { token: endpoint.token, mode: "mars" },
     );
     const scopedSurface = {
       ...surfaceProps,
@@ -1786,7 +1808,7 @@ export function SessionRoute() {
                 }
                 const parts = await draftToParts(draft, workspaceRoot, targetSessionId, endpoint);
                 assertCurrent();
-                const system = await buildOmniRushSessionSystemContext(endpoint.client, {
+                const system = await buildMarsSessionSystemContext(endpoint.client, {
                   workspaceId: workspace.id,
                   cacheKey: targetSessionId,
                   runtimeKey: workspace.workspaceType === "remote" ? null : environmentRuntimeKey,
@@ -1879,7 +1901,7 @@ export function SessionRoute() {
       workspaceType: paneEndpoint.workspaceType,
       runtimeWorkspaceId: endpoint.workspaceId,
       opencodeBaseUrl: endpoint.opencodeBaseUrl,
-      omnirushToken: endpoint.token,
+      marsToken: endpoint.token,
       client: endpoint.client,
       environmentClient: client,
       surface: scopedSurface,
@@ -1960,8 +1982,8 @@ export function SessionRoute() {
         }));
         modelPicker.setCompactOpen(false);
       },
-      omniRushModelsEntitled,
-      omniRushModelsSyncing,
+      marsModelsEntitled,
+      marsModelsSyncing,
       modelVariantLabel,
       modelVariant: modelVariantValue,
       modelBehaviorOptions,
@@ -2008,8 +2030,8 @@ export function SessionRoute() {
     modelVariantLabel,
     modelVariantValue,
     opencodeClient,
-    omniRushModelsEntitled,
-    omniRushModelsSyncing,
+    marsModelsEntitled,
+    marsModelsSyncing,
     organizationAssignedModelOptions,
     organizationModelsEmpty,
     refreshCloudProviderSync,
@@ -2065,7 +2087,7 @@ export function SessionRoute() {
     setRenameWorkspaceBusy(true);
     try {
       if (!client) {
-        toast.error("omnirush.ai server is unavailable. Reconnect the server before renaming workspaces.");
+        toast.error("marsai.click server is unavailable. Reconnect the server before renaming workspaces.");
         return;
       }
       await client.updateWorkspaceDisplayName(renameWorkspaceId, trimmed);
@@ -2114,13 +2136,64 @@ export function SessionRoute() {
         downloadWorkspaceJson(workspaceExportFilename(workspace), payload);
         return;
       }
-      throw new Error("omnirush.ai server is unavailable. Reconnect the server before exporting workspace config.");
+      throw new Error("marsai.click server is unavailable. Reconnect the server before exporting workspace config.");
     },
     [endpointForWorkspace, workspaces],
   );
 
+  const createDefaultHomeWorkspace = useCallback(async (): Promise<string | null> => {
+    if (!client || !isDesktopRuntime()) return null;
+    try {
+      const home = await getDesktopHomeDir();
+      const folder = await joinDesktopPath(home, "MarsAI");
+      const list = await client.createLocalWorkspace({ folderPath: folder, name: "MarsAI", preset: "starter" });
+      const createdId = resolveWorkspaceListSelectedId(list) || list.workspaces[list.workspaces.length - 1]?.id || "";
+      if (createdId) {
+        await workspaceSetSelected(createdId).catch(() => undefined);
+        await workspaceSetRuntimeActive(createdId).catch(() => undefined);
+        setLegacySelectedWorkspaceId(createdId);
+        writeActiveWorkspaceId(createdId);
+        const target = list.workspaces.find((workspace: WorkspaceInfo) => workspace.id === createdId) ?? null;
+        if (target) {
+          // The server starts engine-less with no workspaces; boot it now so
+          // the gateway provider (and its models) come up with the workspace.
+          await ensureDesktopLocalMarsConnection({
+            route: "session",
+            workspace: target,
+            allWorkspaces: list.workspaces,
+          }).catch(() => undefined);
+          await resolveMarsConnection().catch(() => undefined);
+        }
+      }
+      await refreshRouteState();
+      return createdId || null;
+    } catch (error) {
+      console.error("[session-route] default workspace create failed", error);
+      return null;
+    }
+  }, [client, refreshRouteState]);
+
+  // A workspace-less boot (e.g. the only workspace was deleted in an older
+  // build) leaves MarsAI engine-less with no models. Recreate the default
+  // home workspace once so access always survives.
+  const defaultWorkspaceBootstrapAttempted = useRef(false);
+  useEffect(() => {
+    if (defaultWorkspaceBootstrapAttempted.current) return;
+    if (!client || !isDesktopRuntime()) return;
+    // Wait for the first workspace refresh to settle so an in-flight list
+    // (still loading) is never mistaken for "no workspaces".
+    if (loading) return;
+    if (workspaces.length > 0) {
+      defaultWorkspaceBootstrapAttempted.current = true;
+      return;
+    }
+    defaultWorkspaceBootstrapAttempted.current = true;
+    void createDefaultHomeWorkspace();
+  }, [client, createDefaultHomeWorkspace, loading, workspaces.length]);
+
   const removeWorkspaceConfirmed = useCallback(
     async (workspaceId: string): Promise<void> => {
+      const wasLastWorkspace = workspaces.length <= 1;
       // Remove from both stores so the next refresh can't resurrect the row
       // from whichever list wins the merge.
       try {
@@ -2146,11 +2219,17 @@ export function SessionRoute() {
         writeActiveWorkspaceId(null);
         navigate(legacySessionRoute());
       }
+      // Deleting the only workspace leaves MarsAI unusable: no workspace means
+      // no engine and no gateway models. Recreate a default home workspace so
+      // access survives.
+      if (wasLastWorkspace) {
+        await createDefaultHomeWorkspace();
+      }
       forgetWorkspaceMemory(workspaceId);
       sessionManagementStore.getState().forgetWorkspace(workspaceId);
       await refreshRouteState();
     },
-    [client, navigate, refreshRouteState, selectedWorkspaceId],
+    [client, createDefaultHomeWorkspace, navigate, refreshRouteState, selectedWorkspaceId, workspaces],
   );
 
   const handleForgetWorkspace = useCallback(
@@ -2376,7 +2455,7 @@ export function SessionRoute() {
     return options.find((option) => option.value === next)?.label ?? next;
   }, [local, modelBehaviorOptions, modelVariantValue, providerCatalog, selectedSessionId]);
 
-  const cycleThinkingModeControlAction = useMemo<OmniRushControlAction>(() => ({
+  const cycleThinkingModeControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.model_variant.cycle",
     label: "Cycle thinking mode",
     description: "Advance the focused conversation to its next available thinking or reasoning effort.",
@@ -2411,7 +2490,7 @@ export function SessionRoute() {
     return resolveModelDisplayName(next.modelID, providerModel?.name);
   }, [local, modelVariantValue, providerCatalog, selectedSessionId]);
 
-  const cycleFavoriteModelControlAction = useMemo<OmniRushControlAction>(() => ({
+  const cycleFavoriteModelControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.favorite_model.cycle",
     label: "Cycle favorite model",
     description: "Switch the focused conversation to its next favorite model.",
@@ -2475,7 +2554,7 @@ export function SessionRoute() {
     selectedWorkspaceRoot,
     selectedSessionId,
     canCreateTask,
-    omnirushClient: client,
+    marsClient: client,
     opencodeClient,
     archiveDisabledReason,
     endpointForWorkspace,
@@ -2487,7 +2566,7 @@ export function SessionRoute() {
     forgetDeletedSession,
   });
 
-  const seedUnavailableModelControlAction = useMemo<OmniRushControlAction | null>(() => {
+  const seedUnavailableModelControlAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
     return {
       id: "eval.model_not_available.seed",
@@ -2497,7 +2576,7 @@ export function SessionRoute() {
       disabled: !opencodeClient,
       args: [{ name: "scope", type: "string", description: "default | both (default: both)" }],
       execute: async (args) => {
-        if (!opencodeClient) return { ok: false, error: "omnirush.ai client is not connected." };
+        if (!opencodeClient) return { ok: false, error: "marsai.click client is not connected." };
         const scope = (args && typeof args === "object" && Reflect.get(args, "scope") === "default")
           ? "default"
           : "both";
@@ -2556,7 +2635,7 @@ export function SessionRoute() {
   }, [checkDesktopRestriction, disabledProviderIds, local, modelPicker.setQuery, modelPicker.setRecentProviderIds, opencodeBaseUrl, opencodeClient, selectedSessionId, selectedWorkspaceId, selectedWorkspaceRoot]);
   useControlAction(seedUnavailableModelControlAction);
 
-  const seedActiveSessionSidebarControlAction = useMemo<OmniRushControlAction | null>(() => {
+  const seedActiveSessionSidebarControlAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
     return {
       id: "eval.session_sidebar.seed_active",
@@ -2575,7 +2654,7 @@ export function SessionRoute() {
   }, [selectedSessionId, selectedWorkspaceId]);
   useControlAction(seedActiveSessionSidebarControlAction);
 
-  const seedChildPermissionControlAction = useMemo<OmniRushControlAction | null>(() => {
+  const seedChildPermissionControlAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
     return {
       id: "eval.child_permission.seed",
@@ -2650,7 +2729,7 @@ export function SessionRoute() {
   }, [rememberPendingCreatedSession, selectedSessionId, selectedWorkspaceEndpoint?.workspaceId, selectedWorkspaceId, sessionsByWorkspaceId, setSessionsByWorkspaceId]);
   useControlAction(seedChildPermissionControlAction);
 
-  const commandPaletteControlAction = useMemo<OmniRushControlAction>(() => ({
+  const commandPaletteControlAction = useMemo<MarsControlAction>(() => ({
     id: "command_palette.open",
     label: "Open the command palette",
     description: "Open the in-app command palette so the next choice is visible.",
@@ -2660,7 +2739,7 @@ export function SessionRoute() {
   }), []);
   useControlAction(commandPaletteControlAction);
 
-  const addProviderControlAction = useMemo<OmniRushControlAction>(() => ({
+  const addProviderControlAction = useMemo<MarsControlAction>(() => ({
     id: "settings.provider.add",
     label: "Add a model provider",
     description: "Open the provider connection modal, optionally pre-filtered to a specific provider.",
@@ -2885,7 +2964,7 @@ export function SessionRoute() {
       setCommandPaletteOpen(false);
       setDeveloperMode((current) => {
         const next = !current;
-        try { window.localStorage.setItem("omnirush.developerMode", next ? "1" : "0"); } catch {}
+        try { window.localStorage.setItem("mars.developerMode", next ? "1" : "0"); } catch {}
         return next;
       });
     },
@@ -2909,9 +2988,9 @@ export function SessionRoute() {
     canReloadWorkspace: reloadCoordinator.canReloadWorkspaceEngine,
     clientConnected: canCreateTask,
     developerMode,
-    hostInfo: omnirushServerHostInfoState,
-    omnirushServerStatus: client ? "connected" : "disconnected",
-    omnirushServerUrl: baseUrl,
+    hostInfo: marsServerHostInfoState,
+    marsServerStatus: client ? "connected" : "disconnected",
+    marsServerUrl: baseUrl,
     runtimeWorkspaceId: selectedWorkspaceEndpoint?.workspaceId ?? null,
     focusedSession,
     selectedWorkspaceId,
@@ -2922,7 +3001,7 @@ export function SessionRoute() {
     client,
     developerMode,
     focusedSession,
-    omnirushServerHostInfoState,
+    marsServerHostInfoState,
     reloadCoordinator.canReloadWorkspaceEngine,
     selectedWorkspaceEndpoint?.workspaceId,
     selectedWorkspaceId,
@@ -2960,7 +3039,7 @@ export function SessionRoute() {
       try {
         const json = await buildCommandDiagnosticsBundle();
         const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-        downloadTextAsFile(`omnirush-diagnostics-${timestamp}.json`, json, "application/json");
+        downloadTextAsFile(`mars-diagnostics-${timestamp}.json`, json, "application/json");
         toast.success(t("session.diagnostics_exported"));
       } catch (error) {
         toast.error(t("session.diagnostics_failed"), { description: describeRouteError(error) });
@@ -3106,7 +3185,7 @@ export function SessionRoute() {
           .catch(() => null);
       }
       if (!list) {
-        throw new Error("omnirush.ai server is unavailable. Start or reconnect the server before creating a workspace.");
+        throw new Error("marsai.click server is unavailable. Start or reconnect the server before creating a workspace.");
       }
       const createdId = resolveWorkspaceListSelectedId(list) || list.workspaces[list.workspaces.length - 1]?.id || "";
       let targetWorkspaceId = createdId;
@@ -3115,21 +3194,21 @@ export function SessionRoute() {
         await workspaceSetSelected(createdId).catch(() => undefined);
         await workspaceSetRuntimeActive(createdId).catch(() => undefined);
       }
-      // First workspace on a fresh install: the omnirush.ai server was started
+      // First workspace on a fresh install: the marsai.click server was started
       // engine-less (it only spawns OpenCode at boot when a workspace already
       // exists), so sessions would hang forever. This boots the engine when
       // it isn't running, same as the old /welcome flow did.
       let sessionBaseUrl = baseUrl;
       let sessionToken = token;
       if (targetWorkspace && isDesktopRuntime()) {
-        await ensureDesktopLocalOmniRushConnection({
+        await ensureDesktopLocalMarsConnection({
           route: "session",
           workspace: targetWorkspace,
           allWorkspaces: list.workspaces,
         }).catch(() => undefined);
         // The engine boot can restart the server with fresh tokens; re-resolve
         // so the first-session creation below doesn't use stale credentials.
-        const fresh = await resolveOmniRushConnection().catch(() => null);
+        const fresh = await resolveMarsConnection().catch(() => null);
         if (fresh?.normalizedBaseUrl && fresh.resolvedToken) {
           sessionBaseUrl = fresh.normalizedBaseUrl;
           sessionToken = fresh.resolvedToken;
@@ -3148,9 +3227,9 @@ export function SessionRoute() {
         // its supplied prompt; ordinary creation lands on the New task state.
         const session = createdOnServer && sessionBaseUrl && sessionToken && (firstTaskPrompt || firstTaskAttachments.length > 0)
           ? await createClient(
-              `${(buildOmniRushWorkspaceBaseUrl(sessionBaseUrl, targetWorkspaceId) ?? sessionBaseUrl).replace(/\/+$/, "")}/opencode`,
+              `${(buildMarsWorkspaceBaseUrl(sessionBaseUrl, targetWorkspaceId) ?? sessionBaseUrl).replace(/\/+$/, "")}/opencode`,
               workspacePath || undefined,
-              { token: sessionToken, mode: "omnirush" },
+              { token: sessionToken, mode: "mars" },
             ).session.create({ directory: workspacePath || undefined })
               .then((result) => unwrap(result))
           : null;
@@ -3249,7 +3328,7 @@ export function SessionRoute() {
       handleOpenCreateWorkspace();
       throw new Error("Choose a workspace before sending this message.");
     }
-    const folder = await joinDesktopPath(home, "omnirush.ai").catch(() => "");
+    const folder = await joinDesktopPath(home, "marsai.click").catch(() => "");
     if (!folder) {
       handleOpenCreateWorkspace();
       throw new Error("Choose a workspace before sending this message.");
@@ -3257,7 +3336,7 @@ export function SessionRoute() {
     await handleCreateWorkspace("starter", folder, { firstTaskPrompt: prompt, firstTaskAttachments: attachments ?? [] });
   }, [handleCreateWorkspace, handleOpenCreateWorkspace]);
 
-  const createWorkspaceControlAction = useMemo<OmniRushControlAction>(() => ({
+  const createWorkspaceControlAction = useMemo<MarsControlAction>(() => ({
     id: "workspace.create",
     label: "Create a local workspace",
     description: "Create a workspace at the given folder path without showing the file picker dialog, optionally labeling its project for analytics.",
@@ -3282,7 +3361,7 @@ export function SessionRoute() {
   // Sessions created outside this window (server-side session.create, other
   // clients) never reach a non-selected workspace's cached list, so callers
   // that create them ask the sidebar to refetch that one workspace.
-  const reloadWorkspaceSessionsControlAction = useMemo<OmniRushControlAction>(() => ({
+  const reloadWorkspaceSessionsControlAction = useMemo<MarsControlAction>(() => ({
     id: "workspace.reload_sessions",
     label: "Reload a workspace's sessions",
     description: "Refetch the session list of one workspace so sessions created outside this window appear in the sidebar.",
@@ -3305,21 +3384,21 @@ export function SessionRoute() {
   useControlAction(reloadWorkspaceSessionsControlAction);
 
   const handleCreateRemoteWorkspace = useCallback(async (input: {
-    omnirushHostUrl?: string | null;
-    omnirushToken?: string | null;
+    marsHostUrl?: string | null;
+    marsToken?: string | null;
     directory?: string | null;
     displayName?: string | null;
   }) => {
-    const baseUrlValue = input.omnirushHostUrl?.trim() ?? "";
+    const baseUrlValue = input.marsHostUrl?.trim() ?? "";
     if (!baseUrlValue) return false;
     setCreateWorkspaceRemoteBusy(true);
     setCreateWorkspaceRemoteError(null);
     try {
-      const remoteType: "omnirush" = "omnirush";
+      const remoteType: "mars" = "mars";
       const payload = {
         baseUrl: baseUrlValue,
-        omnirushHostUrl: baseUrlValue,
-        omnirushToken: input.omnirushToken?.trim() || null,
+        marsHostUrl: baseUrlValue,
+        marsToken: input.marsToken?.trim() || null,
         displayName: input.displayName?.trim() || null,
         directory: input.directory?.trim() || null,
         remoteType,
@@ -3331,7 +3410,7 @@ export function SessionRoute() {
         list = await client.createRemoteWorkspace(payload).catch(() => null);
       }
       if (!list) {
-        throw new Error("omnirush.ai server is unavailable. Start or reconnect the server before connecting a remote workspace.");
+        throw new Error("marsai.click server is unavailable. Start or reconnect the server before connecting a remote workspace.");
       }
       const createdId = resolveWorkspaceListSelectedId(list) || list.workspaces[list.workspaces.length - 1]?.id || "";
       if (createdId) {
@@ -3362,7 +3441,7 @@ export function SessionRoute() {
     <WorkspaceProvider
       client={opencodeClient}
       opencodeBaseUrl={opencodeBaseUrl}
-      omnirushServerClient={selectedWorkspaceEndpoint?.client ?? null}
+      marsServerClient={selectedWorkspaceEndpoint?.client ?? null}
       workspaceId={selectedWorkspaceEndpoint?.workspaceId ?? ""}
       selectedWorkspaceRoot={selectedWorkspaceRoot}
     >
@@ -3376,7 +3455,7 @@ export function SessionRoute() {
         sessionId={selectedSessionId}
         activeSessionIds={activeSelectedWorkspaceSessionIds}
         opencodeBaseUrl={opencodeBaseUrl}
-        omnirushToken={selectedWorkspaceServerToken}
+        marsToken={selectedWorkspaceServerToken}
         onSessionCreated={handleRuntimeSessionCreated}
         onSessionUpdated={handleRuntimeSessionUpdated}
         onSessionDeleted={handleRuntimeSessionDeleted}
@@ -3398,10 +3477,10 @@ export function SessionRoute() {
       opencodeBaseUrl={opencodeBaseUrl}
       workspaces={workspaces}
       clientConnected={canCreateTask}
-      omnirushServerStatus={client ? "connected" : "disconnected"}
-      omnirushServerClient={selectedWorkspaceEndpoint?.client ?? client}
+      marsServerStatus={client ? "connected" : "disconnected"}
+      marsServerClient={selectedWorkspaceEndpoint?.client ?? client}
       environmentClient={client}
-      omnirushServerToken={selectedWorkspaceServerToken}
+      marsServerToken={selectedWorkspaceServerToken}
       developerMode={developerMode}
       headerStatus={
         canCreateTask || (activeComposerTargetsSession && !selectedWorkspaceError && activeComposerAvailability.status === "available")
@@ -3462,7 +3541,7 @@ export function SessionRoute() {
           workspaceId={selectedWorkspaceId}
           onClose={() => {
             try {
-              window.dispatchEvent(new CustomEvent("omnirush-close-right-pane"));
+              window.dispatchEvent(new CustomEvent("mars-close-right-pane"));
             } catch {
               // ignore
             }
@@ -3478,7 +3557,7 @@ export function SessionRoute() {
         <WorkspaceProvider
           client={opencodeClient}
           opencodeBaseUrl={opencodeBaseUrl}
-          omnirushServerClient={dashboardEndpoint?.client ?? null}
+          marsServerClient={dashboardEndpoint?.client ?? null}
           workspaceId={dashboardEndpoint?.workspaceId ?? ""}
           selectedWorkspaceRoot={selectedWorkspaceRoot}
         >
@@ -3684,7 +3763,7 @@ export function SessionRoute() {
               remoteAccess:
                 isDesktopRuntime() && shareWorkspaceState.shareWorkspace?.workspaceType === "local"
                   ? {
-                      enabled: omnirushServerSettings.remoteAccessEnabled === true,
+                      enabled: marsServerSettings.remoteAccessEnabled === true,
                       busy: remoteAccessRestart.busy,
                       error: remoteAccessRestart.error,
                       status: remoteAccessRestart.status,
@@ -3755,7 +3834,7 @@ export function SessionRoute() {
         // model surfaces in the composer where the person can act on it.
         reloadBusy: reloadCoordinator.reloadBusy,
         reloadError: reloadCoordinator.reloadError,
-        omniRushConnectState: sessionMcpMaintenance,
+        marsConnectState: sessionMcpMaintenance,
       }}
       notFoundMessage={gatedRouteNotFoundMessage}
       mainContentTakeover={
@@ -3767,6 +3846,14 @@ export function SessionRoute() {
         ) : cloudWorkspaceMainContentTakeover
       }
       mainContentTitle={extensionsMainOpen ? t("settings.tab_extensions") : undefined}
+      onCloseMainContent={
+        extensionsMainOpen && selectedWorkspaceId
+          ? () => {
+              const sessionId = selectedSessionId || readLastSessionFor(selectedWorkspaceId);
+              if (sessionId) navigateToWorkspaceSession(selectedWorkspaceId, sessionId);
+            }
+          : undefined
+      }
       extensionsActive={extensionsMainOpen}
       onAccessibleTargetsChange={setPaletteAccessibleTargets}
     />
@@ -3860,14 +3947,14 @@ export function SessionRoute() {
       accessibleTargets={paletteAccessibleTargets}
       onOpenAccessibleTarget={(target) => {
         try {
-          window.dispatchEvent(new CustomEvent("omnirush-open-accessible-target", { detail: target }));
+          window.dispatchEvent(new CustomEvent("mars-open-accessible-target", { detail: target }));
         } catch {
           // ignore event dispatch failures
         }
       }}
       onHideAccessibleTarget={(target) => {
         try {
-          window.dispatchEvent(new CustomEvent("omnirush-hide-accessible-target", { detail: target }));
+          window.dispatchEvent(new CustomEvent("mars-hide-accessible-target", { detail: target }));
         } catch {
           // ignore event dispatch failures
         }
@@ -3929,7 +4016,7 @@ export function SessionRoute() {
             : [...current, providerId];
           const result = await updateManagedDisabledProviders({
             opencodeClient,
-            omnirushClient: selectedWorkspaceEndpoint?.client ?? null,
+            marsClient: selectedWorkspaceEndpoint?.client ?? null,
             workspaceId: selectedWorkspaceEndpoint?.workspaceId ?? null,
             workspaceType: selectedWorkspace?.workspaceType ?? "local",
             disabledProviders: next,
@@ -3950,8 +4037,8 @@ export function SessionRoute() {
         handleOpenSettings("/settings/general");
       }}
       onClose={() => { modelPicker.setOpen(false); modelPicker.setRecentProviderIds(new Set()); setModelPickerSessionId(null); }}
-      omniRushModelsEntitled={omniRushModelsEntitled}
-      omniRushModelsSyncing={omniRushModelsSyncing}
+      marsModelsEntitled={marsModelsEntitled}
+      marsModelsSyncing={marsModelsSyncing}
       onRefreshOrganizationModels={refreshOrganizationModelAccess}
       restrictToCloud={restrictToCloudProviders}
     />

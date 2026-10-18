@@ -6,7 +6,7 @@ import { isDesktopRuntime } from "./runtime-env";
 
 const messageSchema = z.object({
   id: z.string(), sessionID: z.string(), parentID: z.string(), role: z.literal("assistant"),
-  providerID: z.literal("omnirush"), summary: z.boolean().optional(), finish: z.string().optional(),
+  providerID: z.literal("mars"), summary: z.boolean().optional(), finish: z.string().optional(),
   time: z.object({ created: z.number(), completed: z.number().optional() }),
   error: z.object({ name: z.string() }).optional(),
 });
@@ -46,7 +46,7 @@ async function request(ctx: NonNullable<ReturnType<typeof context>>, path: strin
   const url = `${ctx.base}/v1/inference/analytics/${path}`;
   const fetcher = isDesktopRuntime() ? desktopFetchViaMain : globalThis.fetch;
   return fetcher(url, { ...init, signal: AbortSignal.timeout(5_000), headers: {
-    "Content-Type": "application/json", Authorization: `Bearer ${ctx.token}`, "x-omnirush-org-id": ctx.orgId,
+    "Content-Type": "application/json", Authorization: `Bearer ${ctx.token}`, "x-mars-org-id": ctx.orgId,
   } });
 }
 
@@ -154,12 +154,12 @@ async function observe(workspaceId: string, event: { type: string; properties?: 
     const task = messages.get(`${workspaceId}:${part.messageID}`);
     if (!task || task.sessionId !== part.sessionID) return;
     const name = part.state.input.name;
-    const cloudSkill = part.tool === "omnirush-cloud_execute_capability" && name?.startsWith("plugin:");
+    const cloudSkill = part.tool === "mars-cloud_execute_capability" && name?.startsWith("plugin:");
     const skill = part.state.status === "completed" && (part.tool === "skill" || cloudSkill) ? name : undefined;
     enqueue({ id: part.id, callId: part.callID, type: skill ? "skill.loaded" : "tool.executed",
       timestamp: new Date(part.state.time.end).toISOString(), sessionId: task.sessionId, taskId: task.taskId,
       tool: part.tool, ...(skill ? { skill, skillVersion: part.state.metadata?.skillVersion } : {}),
-      mcp: part.tool.startsWith("omnirush-cloud_") ? "omnirush-cloud" : part.state.metadata?.mcp,
+      mcp: part.tool.startsWith("mars-cloud_") ? "mars-cloud" : part.state.metadata?.mcp,
       durationMs: Math.max(0, part.state.time.end - part.state.time.start), status: part.state.status === "completed" ? "completed" : "failed",
     });
   }

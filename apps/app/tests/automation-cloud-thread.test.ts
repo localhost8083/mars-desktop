@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { AutomationExecutionThread } from "@omnirush/types/automations"
+import type { AutomationExecutionThread } from "@mars/types/automations"
 import {
   automationExecutionThreadRoute,
   automationExecutionIdentity,
@@ -18,12 +18,12 @@ function desktopThread(engineKind: string): AutomationExecutionThread {
 }
 
 function cloudThread(): AutomationExecutionThread {
-  return { ...desktopThread("omnirush-cloud-agent-v1"), executionLocation: "cloud" }
+  return { ...desktopThread("mars-cloud-agent-v1"), executionLocation: "cloud" }
 }
 
 describe("Automation execution thread UI", () => {
   test("uses Den's persisted thread identity for receipt navigation", () => {
-    expect(automationExecutionThreadRoute(desktopThread("omnirush-desktop-runner-v1"))).toBe(
+    expect(automationExecutionThreadRoute(desktopThread("mars-desktop-runner-v1"))).toBe(
       "/automations?automation=aut_test&run=arun_test&thread=ath_test",
     )
   })
@@ -35,20 +35,20 @@ describe("Automation execution thread UI", () => {
     })
   })
 
-  test("labels a Web-created run as omnirush.ai Cloud on Desktop", () => {
+  test("labels a Web-created run as marsai.click Cloud on Desktop", () => {
     expect(automationExecutionIdentity(cloudThread())).toEqual({
       icon: "cloud",
-      label: "omnirush.ai Cloud",
+      label: "marsai.click Cloud",
     })
   })
 
   test("opens a linked Desktop run in its native local session", () => {
     expect(automationLocalSessionRoute({
-      ...desktopThread("omnirush-desktop-runner-v1"),
+      ...desktopThread("mars-desktop-runner-v1"),
       workspaceId: "ws with spaces",
       nativeThreadId: "ses/failed",
     })).toBe("/workspace/ws%20with%20spaces/session/ses%2Ffailed")
-    expect(automationLocalSessionRoute(desktopThread("omnirush-desktop-runner-v1"))).toBeNull()
+    expect(automationLocalSessionRoute(desktopThread("mars-desktop-runner-v1"))).toBeNull()
     expect(automationLocalSessionRoute({
       ...cloudThread(),
       workspaceId: "ws_cloud",

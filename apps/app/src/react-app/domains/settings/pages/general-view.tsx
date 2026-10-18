@@ -15,7 +15,7 @@ import {
   UserRoundCheck,
 } from "lucide-react";
 
-import type { KeepAwakeState, OmniRushAccountSignOutReason } from "@omnirush/types/desktop-ipc";
+import type { KeepAwakeState, MarsAccountSignOutReason } from "@mars/types/desktop-ipc";
 
 import { Switch } from "@/components/ui/switch";
 import { t } from "../../../../i18n";
@@ -23,12 +23,12 @@ import type { SettingsTab } from "../../../../app/types";
 import {
   keepAwakeSet,
   keepAwakeStatus,
-  omnirushAccountConnect,
-  omnirushAccountSignOut,
-  omnirushAccountStatus,
+  marsAccountConnectApiKey,
+  marsAccountSignOut,
+  marsAccountStatus,
 } from "../../../../app/lib/desktop";
-import type { OmniRushRuntimeApprovals } from "../../../../app/lib/omnirush-server";
-import { omnirushUsageSummary } from "../../../../app/lib/omnirush-usage";
+import type { MarsRuntimeApprovals } from "../../../../app/lib/mars-server";
+import { marsUsageSummary } from "../../../../app/lib/mars-usage";
 import { isElectronRuntime } from "../../../../app/utils";
 import {
   FULL_PERMISSIONS_HELP,
@@ -46,7 +46,7 @@ export type GeneralSettingsViewProps = {
   onNavigateTab: (tab: SettingsTab) => void;
   developerMode: boolean;
   /** Server client for the Approvals card; the card is hidden without one. */
-  omnirushClient?: ApprovalsClient | null;
+  marsClient?: ApprovalsClient | null;
   /** Global guides do not depend on workspace selection or history loading. */
   bestPracticesClient?: BestPracticesClient | null;
   /** Workspace whose engine is reloaded after the approval mode changes. */
@@ -60,7 +60,7 @@ export type GeneralSettingsViewProps = {
   buildDiagnosticsBundle?: () => Promise<string>;
 };
 
-type NativeAccountStatus = Awaited<ReturnType<typeof omnirushAccountStatus>>;
+type NativeAccountStatus = Awaited<ReturnType<typeof marsAccountStatus>>;
 
 type SettingsCardDefinition = { tab: SettingsTab; icon: typeof Sparkles } & (
   | { title: string; desc: string }
@@ -116,7 +116,7 @@ function SettingsCard(props: {
 export type AccountSignOutOutcome = {
   remoteRevoked: boolean;
   /** Absent when the desktop bridge predates the outcome reasons. */
-  reason?: OmniRushAccountSignOutReason;
+  reason?: MarsAccountSignOutReason;
 };
 
 /**
@@ -153,7 +153,7 @@ export function accountServerLine(account: Pick<NativeAccountStatus, "connected"
  * useApprovalMode, which the composer's "Full permissions" switch shares.
  */
 export function ApprovalsCard(props: {
-  approvals: OmniRushRuntimeApprovals | null;
+  approvals: MarsRuntimeApprovals | null;
   busy: boolean;
   status: string;
   onToggle: (enabled: boolean) => void;
@@ -232,7 +232,7 @@ export function KeepAwakeCard(props: {
   onToggle: (enabled: boolean) => void;
 }) {
   const hint = props.state?.forcedOff
-    ? "Off for this launch: OMNIRUSH_KEEP_AWAKE=0 is set."
+    ? "Off for this launch: MARS_KEEP_AWAKE=0 is set."
     : props.state && !props.state.available
       ? "Not available in this session (remote login or CI)."
       : null;
@@ -286,7 +286,9 @@ export function GeneralSettingsView(props: GeneralSettingsViewProps) {
   const [account, setAccount] = useState<NativeAccountStatus | null>(null);
   const [accountBusy, setAccountBusy] = useState(false);
   const [accountMessage, setAccountMessage] = useState("");
-  const approvalsClient = props.omnirushClient ?? null;
+  const [apiKeyOpen, setApiKeyOpen] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const approvalsClient = props.marsClient ?? null;
   const approvalMode = useApprovalMode(approvalsClient, props.runtimeWorkspaceId ?? null);
   const bestPracticesClient = props.bestPracticesClient ?? null;
   const bestPractices = useBestPractices(bestPracticesClient);
@@ -296,18 +298,20 @@ export function GeneralSettingsView(props: GeneralSettingsViewProps) {
 
   useEffect(() => {
     if (!isElectronRuntime()) return;
-    void omnirushAccountStatus().then(setAccount).catch(() => setAccount({ connected: false, gatewayConfigured: false }));
+    void marsAccountStatus().then(setAccount).catch(() => setAccount({ connected: false, gatewayConfigured: false }));
   }, []);
 
-  async function connectAccount() {
+  async function connectApiKey(key: string) {
     setAccountBusy(true);
-    setAccountMessage("Approve the device link in your browser…");
+    setAccountMessage("Checking the API key…");
     try {
-      await omnirushAccountConnect();
-      setAccount(await omnirushAccountStatus());
-      setAccountMessage("Account connected. omnirush.ai models are ready.");
+      await marsAccountConnectApiKey({ apiKey: key });
+      setAccount(await marsAccountStatus());
+      setApiKey("");
+      setApiKeyOpen(false);
+      setAccountMessage("API key connected. MarsAI models are ready.");
     } catch (error) {
-      setAccountMessage(error instanceof Error ? error.message : "The account could not be connected.");
+      setAccountMessage(error instanceof Error ? error.message : "The API key could not be connected.");
     } finally {
       setAccountBusy(false);
     }
@@ -319,8 +323,8 @@ export function GeneralSettingsView(props: GeneralSettingsViewProps) {
     // default server the next sign-in will use, not the one just left.
     const server = account?.gatewayHost ?? null;
     try {
-      const result = await omnirushAccountSignOut();
-      const next = await omnirushAccountStatus().catch(() => null);
+      const result = await marsAccountSignOut();
+      const next = await marsAccountStatus().catch(() => null);
       setAccount(next ?? { connected: false, gatewayConfigured: account?.gatewayConfigured ?? false });
       setAccountMessage(accountSignOutMessage(result, server));
     } catch (error) {
@@ -331,7 +335,7 @@ export function GeneralSettingsView(props: GeneralSettingsViewProps) {
   }
 
   const serverLine = account ? accountServerLine(account) : null;
-  const usage = account?.connected && account.usage ? omnirushUsageSummary(account.usage) : null;
+  const usage = account?.connected && account.usage ? marsUsageSummary(account.usage) : null;
 
   return (
     <div className="w-full max-w-3xl space-y-8">
@@ -360,14 +364,14 @@ export function GeneralSettingsView(props: GeneralSettingsViewProps) {
                 {accountMessage || (account.connected
                   ? usage
                     ? usage.line
-                    : "omnirush.ai models are ready on this Mac."
+                    : "marsai.click models are ready on this Mac."
                   : account.gatewayConfigured
                     ? account.reauthorizationRequired
                       ? account.keyringUnavailable
                         ? "Your system keyring is not available right now. Sign in again to continue."
                         : "Your session expired. Sign in again to continue."
                       : "Sign in in your browser, then return here."
-                    : "The omnirush.ai account service has not been configured for this build.")}
+                    : "The marsai.click account service has not been configured for this build.")}
               </div>
               {account.connected && account.credentialStorage === "file" ? (
                 <div className="mt-0.5 text-[11px] text-dls-secondary" data-testid="account-credential-storage">
@@ -387,12 +391,41 @@ export function GeneralSettingsView(props: GeneralSettingsViewProps) {
               <button type="button" disabled={accountBusy} onClick={() => void signOutAccount()} className="rounded-lg border border-dls-border px-3 py-2 text-[12px] text-dls-secondary hover:bg-dls-hover disabled:opacity-50">
                 Sign out
               </button>
-            ) : (
-              <button type="button" disabled={accountBusy || !account.gatewayConfigured} onClick={() => void connectAccount()} className="rounded-lg bg-dls-text px-3 py-2 text-[12px] font-medium text-dls-background disabled:opacity-50">
-                {accountBusy ? "Waiting…" : "Sign in"}
-              </button>
-            )}
+            ) : null}
           </div>
+          {!account.connected && account.gatewayConfigured ? (
+            <div className="rounded-2xl border border-dls-border bg-dls-surface p-4">
+              <div className="text-[12px] font-medium text-dls-text">Connect with an API key</div>
+              <div className="mt-0.5 text-[11px] text-dls-secondary">
+                Paste a MarsAI API key from marsai.click/app/keys. It starts with sk-mars-.
+              </div>
+              <form
+                className="mt-2 flex gap-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const key = apiKey.trim();
+                  if (key && !accountBusy) void connectApiKey(key);
+                }}
+              >
+                <input
+                  type="password"
+                  className="h-8 min-w-0 flex-1 rounded-md border border-dls-border bg-dls-background px-2 text-[12px] text-dls-text outline-none focus:border-ring"
+                  value={apiKey}
+                  onChange={(event) => setApiKey(event.target.value)}
+                  placeholder="sk-mars-…"
+                  autoComplete="off"
+                  data-testid="account-api-key-input"
+                />
+                <button
+                  type="submit"
+                  disabled={accountBusy || !apiKey.trim()}
+                  className="rounded-lg bg-dls-text px-3 py-1.5 text-[12px] font-medium text-dls-background disabled:opacity-50"
+                >
+                  Connect
+                </button>
+              </form>
+            </div>
+          ) : null}
         </div>
       )}
       {/* Workspace settings */}

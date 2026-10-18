@@ -1,8 +1,8 @@
-import type { WorkspaceWire } from "@omnirush/types/workspace";
+import type { WorkspaceWire } from "@mars/types/workspace";
 
 export type WorkspaceType = "local" | "remote";
 
-export type RemoteType = "opencode" | "omnirush";
+export type RemoteType = "opencode" | "mars";
 
 export type ApprovalMode = "manual" | "auto";
 
@@ -24,10 +24,10 @@ export interface WorkspaceConfig {
   baseUrl?: string;
   directory?: string;
   displayName?: string;
-  omnirushHostUrl?: string;
-  omnirushToken?: string;
-  omnirushWorkspaceId?: string;
-  omnirushWorkspaceName?: string;
+  marsHostUrl?: string;
+  marsToken?: string;
+  marsWorkspaceId?: string;
+  marsWorkspaceName?: string;
   sandboxBackend?: string;
   sandboxRunId?: string;
   sandboxContainerName?: string;
@@ -45,10 +45,10 @@ export interface WorkspaceInfo {
   baseUrl?: string;
   directory?: string;
   displayName?: string;
-  omnirushHostUrl?: string;
-  omnirushToken?: string;
-  omnirushWorkspaceId?: string;
-  omnirushWorkspaceName?: string;
+  marsHostUrl?: string;
+  marsToken?: string;
+  marsWorkspaceId?: string;
+  marsWorkspaceName?: string;
   sandboxBackend?: string;
   sandboxRunId?: string;
   sandboxContainerName?: string;
@@ -91,10 +91,16 @@ export type CaptureFileUpload = (url: string, init: {
   signal?: AbortSignal;
 }) => Promise<Response>;
 
-export type OmniRushGatewayCredentialBundle = {
+export type MarsGatewayCredentialBundle = {
   gatewayUrl: string;
   accessToken: string;
   refreshToken: string;
+  /**
+   * What the access token is: the account sign-in (`oauth`, access + refresh)
+   * or a user-entered MarsAI API key (`api_key`, nothing to renew). Missing
+   * means `oauth` (bundles persisted before the kind existed).
+   */
+  kind?: "oauth" | "api_key";
   /**
    * How many times the desktop account store has rotated this device session;
    * it never saves a bundle with a lower count over a higher one. Missing
@@ -104,7 +110,7 @@ export type OmniRushGatewayCredentialBundle = {
   rotation?: number;
 };
 
-export type OmniRushGatewayCredentials = OmniRushGatewayCredentialBundle & {
+export type MarsGatewayCredentials = MarsGatewayCredentialBundle & {
   invalidate?: () => Promise<void>;
   /**
    * The one owner of the device session's refresh token (the desktop account
@@ -116,14 +122,14 @@ export type OmniRushGatewayCredentials = OmniRushGatewayCredentialBundle & {
    * treats a superseded refresh token as a sign-in copied to another device,
    * so two holders must never both spend one.
    */
-  refresh?: (rejectedAccessToken: string) => Promise<OmniRushGatewayCredentialBundle | null>;
+  refresh?: (rejectedAccessToken: string) => Promise<MarsGatewayCredentialBundle | null>;
   /** The credentials as currently stored; null after a sign-out. */
-  latest?: () => Promise<OmniRushGatewayCredentialBundle | null>;
+  latest?: () => Promise<MarsGatewayCredentialBundle | null>;
   /** Connected account's profile (name and email for the git commit identity default); null when signed out or offline. */
   profile?: () => Promise<{ email: string | null; displayName: string | null } | null>;
   /**
    * Hears the gateway's mandatory-update signals: the
-   * `x-omnirush-update-required` header and 426 `update_required` refusals
+   * `x-mars-update-required` header and 426 `update_required` refusals
    * of model requests (the desktop shows its update banner or blocked view).
    */
   onUpdateSignal?: (signal: { kind: "header"; value: string } | { kind: "rejection"; message: string | null }) => void;
@@ -149,12 +155,12 @@ export interface ServerConfig {
   hostTokenSource: "cli" | "env" | "file" | "generated";
   logFormat: LogFormat;
   logRequests: boolean;
-  /** In-memory secure key custody supplied by an embedding host such as OmniRush.ai Desktop. */
+  /** In-memory secure key custody supplied by an embedding host such as MarsAI Desktop. */
   localManagedMcpVaultKey?: LocalManagedMcpVaultKeyProvider;
   /** Desktop-owned account credentials. They remain in the embedding process and are never serialized. */
-  omnirushGatewayCredentials?: OmniRushGatewayCredentials;
+  marsGatewayCredentials?: MarsGatewayCredentials;
   /** Ephemeral bearer accepted only by the loopback gateway broker. */
-  omnirushEngineToken?: string;
+  marsEngineToken?: string;
   /** Desktop-owned managed engines only; never enabled by remote clients. */
   resumeInterruptedTasks?: boolean;
   /** Version of the embedding desktop app (Electron app.getVersion()), reported in session uploader envelopes. */
@@ -172,7 +178,7 @@ export interface Capabilities {
   serverVersion: string;
   opencodeVersion: string;
   providerSync: true;
-  skills: { read: boolean; write: boolean; source: "omnirush" | "opencode" };
+  skills: { read: boolean; write: boolean; source: "mars" | "opencode" };
   plugins: { read: boolean; write: boolean };
   mcp: { read: boolean; write: boolean };
   commands: { read: boolean; write: boolean };

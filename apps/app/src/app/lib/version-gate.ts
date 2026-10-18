@@ -15,7 +15,7 @@ import type { ReleaseChannel } from "../types";
 
 declare global {
   interface Window {
-    __omnirushReadDesktopVersionMetadataEval?: () => DenAppVersionMetadata | Promise<DenAppVersionMetadata>;
+    __marsReadDesktopVersionMetadataEval?: () => DenAppVersionMetadata | Promise<DenAppVersionMetadata>;
   }
 }
 
@@ -230,8 +230,8 @@ async function readDenLatestAppVersion(): Promise<string | null> {
 }
 
 export async function readFreshDenAppVersionMetadata(): Promise<DenAppVersionMetadata> {
-  if (import.meta.env.DEV && typeof window !== "undefined" && window.__omnirushReadDesktopVersionMetadataEval) {
-    return window.__omnirushReadDesktopVersionMetadataEval();
+  if (import.meta.env.DEV && typeof window !== "undefined" && window.__marsReadDesktopVersionMetadataEval) {
+    return window.__marsReadDesktopVersionMetadataEval();
   }
   const settings = readDenSettings();
   const token = settings.authToken?.trim() ?? "";
@@ -342,7 +342,7 @@ export async function resolveAutomaticStableDesktopUpdate(input: {
  * this returns `false` — the caller must treat that as "do not surface
  * the update".
  *
- * Without a configured control plane (omnirush.ai ships none) there is no
+ * Without a configured control plane (marsai.click ships none) there is no
  * inventory to consult: the GitHub release feed the shell reads is the only
  * authority, so the update is supported and no other host is contacted.
  *

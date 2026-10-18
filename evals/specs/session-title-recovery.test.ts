@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { eventually, spec } from "@omnirush/testkit";
+import { eventually, spec } from "@mars/testkit";
 import { GENERATED_TITLE, PRIVATE_ERROR_MARKER, REPLY, titleRecovery } from "../worlds/title-recovery.ts";
 
 const test = spec.world(titleRecovery, { needs: { commands: ["bun"] }, timeout: 240_000 });

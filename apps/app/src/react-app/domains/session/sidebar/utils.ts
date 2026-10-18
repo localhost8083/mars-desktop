@@ -159,11 +159,11 @@ const EMPTY_ARRAY: string[] = [];
 
 export const workspaceLabel = (workspace: WorkspaceInfo) => {
   const label = workspace.displayName?.trim() ||
-    workspace.omnirushWorkspaceName?.trim() ||
+    workspace.marsWorkspaceName?.trim() ||
     workspace.name?.trim() ||
     workspace.path?.trim() ||
     t("workspace_list.workspace_fallback");
-  return /^(?:OmniRush\.ai Chat|omnirush\.ai)$/i.test(label) ? "omnirush.ai" : label;
+  return /^(?:Mars\.ai Chat|mars\.ai)$/i.test(label) ? "marsai.click" : label;
 };
 
 export const workspaceKindLabel = (workspace: WorkspaceInfo) =>

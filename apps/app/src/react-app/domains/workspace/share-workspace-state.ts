@@ -2,16 +2,16 @@
 import { useCallback, useEffect, useMemo, useReducer } from "react";
 
 import {
-  buildOmniRushWorkspaceBaseUrl,
-  createOmniRushServerClient,
-  parseOmniRushWorkspaceIdFromUrl,
-} from "../../../app/lib/omnirush-server";
+  buildMarsWorkspaceBaseUrl,
+  createMarsServerClient,
+  parseMarsWorkspaceIdFromUrl,
+} from "../../../app/lib/mars-server";
 import type {
   EngineInfo,
-  OmniRushServerInfo,
+  MarsServerInfo,
   WorkspaceInfo,
 } from "../../../app/lib/desktop";
-import type { OmniRushServerSettings } from "../../../app/lib/omnirush-server";
+import type { MarsServerSettings } from "../../../app/lib/mars-server";
 import { t } from "../../../i18n";
 import { isDesktopRuntime, normalizeDirectoryPath } from "../../../app/utils";
 
@@ -19,8 +19,8 @@ export type ShareWorkspaceState = ReturnType<typeof useShareWorkspaceState>;
 
 type UseShareWorkspaceStateOptions = {
   workspaces: WorkspaceInfo[];
-  omnirushServerHostInfo: OmniRushServerInfo | null;
-  omnirushServerSettings: OmniRushServerSettings;
+  marsServerHostInfo: MarsServerInfo | null;
+  marsServerSettings: MarsServerSettings;
   engineInfo: EngineInfo | null;
   exportWorkspaceBusy: boolean;
   openLink: (url: string) => void;
@@ -29,17 +29,17 @@ type UseShareWorkspaceStateOptions = {
 
 type ShareWorkspaceLocalState = {
   shareWorkspaceId: string | null;
-  shareLocalOmniRushWorkspaceId: string | null;
+  shareLocalMarsWorkspaceId: string | null;
 };
 
 type ShareWorkspaceLocalAction =
   | { type: "open"; workspaceId: string }
   | { type: "close" }
-  | { type: "localOmniRushWorkspace"; workspaceId: string | null };
+  | { type: "localMarsWorkspace"; workspaceId: string | null };
 
 const initialShareWorkspaceLocalState: ShareWorkspaceLocalState = {
   shareWorkspaceId: null,
-  shareLocalOmniRushWorkspaceId: null,
+  shareLocalMarsWorkspaceId: null,
 };
 
 function shareWorkspaceLocalReducer(
@@ -51,13 +51,13 @@ function shareWorkspaceLocalReducer(
       return { ...state, shareWorkspaceId: action.workspaceId };
     case "close":
       return { ...state, shareWorkspaceId: null };
-    case "localOmniRushWorkspace":
-      return { ...state, shareLocalOmniRushWorkspaceId: action.workspaceId };
+    case "localMarsWorkspace":
+      return { ...state, shareLocalMarsWorkspaceId: action.workspaceId };
   }
 }
 
 export function useShareWorkspaceState(options: UseShareWorkspaceStateOptions) {
-  const [{ shareWorkspaceId, shareLocalOmniRushWorkspaceId }, dispatchShareWorkspace] = useReducer(
+  const [{ shareWorkspaceId, shareLocalMarsWorkspaceId }, dispatchShareWorkspace] = useReducer(
     shareWorkspaceLocalReducer,
     initialShareWorkspaceLocalState,
   );
@@ -84,11 +84,11 @@ export function useShareWorkspaceState(options: UseShareWorkspaceStateOptions) {
     const workspace = shareWorkspace;
     if (!workspace) return "";
     if (workspace.workspaceType === "remote") {
-      if (workspace.remoteType === "omnirush") {
-        const hostUrl = workspace.omnirushHostUrl?.trim() || workspace.baseUrl?.trim() || "";
-        const mounted = buildOmniRushWorkspaceBaseUrl(
+      if (workspace.remoteType === "mars") {
+        const hostUrl = workspace.marsHostUrl?.trim() || workspace.baseUrl?.trim() || "";
+        const mounted = buildMarsWorkspaceBaseUrl(
           hostUrl,
-          workspace.omnirushWorkspaceId,
+          workspace.marsWorkspaceId,
         );
         return mounted || hostUrl;
       }
@@ -103,10 +103,10 @@ export function useShareWorkspaceState(options: UseShareWorkspaceStateOptions) {
 
   useEffect(() => {
     const workspace = shareWorkspace;
-    const baseUrl = options.omnirushServerHostInfo?.baseUrl?.trim() ?? "";
+    const baseUrl = options.marsServerHostInfo?.baseUrl?.trim() ?? "";
     const token =
-      options.omnirushServerHostInfo?.ownerToken?.trim() ||
-      options.omnirushServerHostInfo?.clientToken?.trim() ||
+      options.marsServerHostInfo?.ownerToken?.trim() ||
+      options.marsServerHostInfo?.clientToken?.trim() ||
       "";
     const workspacePath = workspace?.workspaceType === "local" ? (workspace.path?.trim() ?? "") : "";
 
@@ -117,16 +117,16 @@ export function useShareWorkspaceState(options: UseShareWorkspaceStateOptions) {
       !baseUrl ||
       !token
     ) {
-      dispatchShareWorkspace({ type: "localOmniRushWorkspace", workspaceId: null });
+      dispatchShareWorkspace({ type: "localMarsWorkspace", workspaceId: null });
       return;
     }
 
     let cancelled = false;
-    dispatchShareWorkspace({ type: "localOmniRushWorkspace", workspaceId: null });
+    dispatchShareWorkspace({ type: "localMarsWorkspace", workspaceId: null });
 
     void (async () => {
       try {
-        const client = createOmniRushServerClient({ baseUrl, token });
+        const client = createMarsServerClient({ baseUrl, token });
         const response = await client.listWorkspaces();
         if (cancelled) return;
         const items = Array.isArray(response.items) ? response.items : [];
@@ -134,10 +134,10 @@ export function useShareWorkspaceState(options: UseShareWorkspaceStateOptions) {
         const match = items.find(
           (entry) => normalizeDirectoryPath(entry.path) === targetPath,
         );
-        dispatchShareWorkspace({ type: "localOmniRushWorkspace", workspaceId: match?.id ?? null });
+        dispatchShareWorkspace({ type: "localMarsWorkspace", workspaceId: match?.id ?? null });
       } catch {
         if (!cancelled) {
-          dispatchShareWorkspace({ type: "localOmniRushWorkspace", workspaceId: null });
+          dispatchShareWorkspace({ type: "localMarsWorkspace", workspaceId: null });
         }
       }
     })();
@@ -145,7 +145,7 @@ export function useShareWorkspaceState(options: UseShareWorkspaceStateOptions) {
     return () => {
       cancelled = true;
     };
-  }, [options.omnirushServerHostInfo, shareWorkspace]);
+  }, [options.marsServerHostInfo, shareWorkspace]);
 
   const shareFields = useMemo(() => {
     const workspace = shareWorkspace;
@@ -160,22 +160,22 @@ export function useShareWorkspaceState(options: UseShareWorkspaceStateOptions) {
     }
 
     if (workspace.workspaceType !== "remote") {
-      if (options.omnirushServerHostInfo?.remoteAccessEnabled !== true) {
+      if (options.marsServerHostInfo?.remoteAccessEnabled !== true) {
         return [];
       }
       const hostUrl =
-        options.omnirushServerHostInfo?.connectUrl?.trim() ||
-        options.omnirushServerHostInfo?.lanUrl?.trim() ||
-        options.omnirushServerHostInfo?.mdnsUrl?.trim() ||
-        options.omnirushServerHostInfo?.baseUrl?.trim() ||
+        options.marsServerHostInfo?.connectUrl?.trim() ||
+        options.marsServerHostInfo?.lanUrl?.trim() ||
+        options.marsServerHostInfo?.mdnsUrl?.trim() ||
+        options.marsServerHostInfo?.baseUrl?.trim() ||
         "";
-      const mountedUrl = shareLocalOmniRushWorkspaceId
-        ? buildOmniRushWorkspaceBaseUrl(hostUrl, shareLocalOmniRushWorkspaceId)
+      const mountedUrl = shareLocalMarsWorkspaceId
+        ? buildMarsWorkspaceBaseUrl(hostUrl, shareLocalMarsWorkspaceId)
         : null;
       const url = mountedUrl || hostUrl;
-      const collaboratorToken = options.omnirushServerHostInfo?.clientToken?.trim() || "";
+      const collaboratorToken = options.marsServerHostInfo?.clientToken?.trim() || "";
       const ownerToken =
-        collaboratorToken || options.omnirushServerHostInfo?.ownerToken?.trim() || "";
+        collaboratorToken || options.marsServerHostInfo?.ownerToken?.trim() || "";
       return [
         {
           label: t("session.share_worker_url"),
@@ -210,14 +210,14 @@ export function useShareWorkspaceState(options: UseShareWorkspaceStateOptions) {
       ];
     }
 
-    if (workspace.remoteType === "omnirush") {
-      const hostUrl = workspace.omnirushHostUrl?.trim() || workspace.baseUrl?.trim() || "";
+    if (workspace.remoteType === "mars") {
+      const hostUrl = workspace.marsHostUrl?.trim() || workspace.baseUrl?.trim() || "";
       const url =
-        buildOmniRushWorkspaceBaseUrl(hostUrl, workspace.omnirushWorkspaceId) ||
+        buildMarsWorkspaceBaseUrl(hostUrl, workspace.marsWorkspaceId) ||
         hostUrl;
       const token =
-        workspace.omnirushToken?.trim() ||
-        options.omnirushServerSettings.token?.trim() ||
+        workspace.marsToken?.trim() ||
+        options.marsServerSettings.token?.trim() ||
         "";
       return [
         {
@@ -248,9 +248,9 @@ export function useShareWorkspaceState(options: UseShareWorkspaceStateOptions) {
       },
     ];
   }, [
-    options.omnirushServerHostInfo,
-    options.omnirushServerSettings,
-    shareLocalOmniRushWorkspaceId,
+    options.marsServerHostInfo,
+    options.marsServerSettings,
+    shareLocalMarsWorkspaceId,
     shareWorkspace,
   ]);
 
@@ -266,29 +266,29 @@ export function useShareWorkspaceState(options: UseShareWorkspaceStateOptions) {
   const shareServiceDisabledReason = useMemo(() => {
     const workspace = shareWorkspace;
     if (!workspace) return t("session.share_select_workspace");
-    if (workspace.workspaceType === "remote" && workspace.remoteType !== "omnirush") {
-      return t("session.share_omnirush_workers_only");
+    if (workspace.workspaceType === "remote" && workspace.remoteType !== "mars") {
+      return t("session.share_mars_workers_only");
     }
     if (workspace.workspaceType !== "remote") {
-      const baseUrl = options.omnirushServerHostInfo?.baseUrl?.trim() ?? "";
+      const baseUrl = options.marsServerHostInfo?.baseUrl?.trim() ?? "";
       const token =
-        options.omnirushServerHostInfo?.ownerToken?.trim() ||
-        options.omnirushServerHostInfo?.clientToken?.trim() ||
+        options.marsServerHostInfo?.ownerToken?.trim() ||
+        options.marsServerHostInfo?.clientToken?.trim() ||
         "";
       if (!baseUrl || !token) {
         return t("session.share_local_host_not_ready");
       }
     } else {
-      const hostUrl = workspace.omnirushHostUrl?.trim() || workspace.baseUrl?.trim() || "";
+      const hostUrl = workspace.marsHostUrl?.trim() || workspace.baseUrl?.trim() || "";
       const token =
-        workspace.omnirushToken?.trim() ||
-        options.omnirushServerSettings.token?.trim() ||
+        workspace.marsToken?.trim() ||
+        options.marsServerSettings.token?.trim() ||
         "";
       if (!hostUrl) return t("session.share_missing_host_url");
       if (!token) return t("session.share_missing_token");
     }
     return null;
-  }, [options.omnirushServerHostInfo, options.omnirushServerSettings, shareWorkspace]);
+  }, [options.marsServerHostInfo, options.marsServerSettings, shareWorkspace]);
 
   const exportDisabledReason = useMemo(() => {
     const workspace = shareWorkspace;

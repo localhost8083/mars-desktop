@@ -6,7 +6,7 @@ import {
   workflowDetailSchema,
   type GeneratedArtifactView,
   type WorkflowDetail,
-} from "@omnirush/types/workflows";
+} from "@mars/types/workflows";
 import { getErrorMessage, requestJson } from "../../_lib/den-flow";
 
 type WorkflowSummary = {

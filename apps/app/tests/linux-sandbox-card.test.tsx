@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import type { OmniRushWorkspaceBox } from "../src/app/lib/omnirush-server";
+import type { MarsWorkspaceBox } from "../src/app/lib/mars-server";
 import { LinuxSandboxCard, type LinuxSandboxCardProps } from "../src/react-app/domains/settings/linux-sandbox-card";
 import {
   LINUX_SANDBOX_HELP,
@@ -14,7 +14,7 @@ import {
 } from "../src/react-app/domains/settings/linux-sandbox";
 import { composerConfigureDestination } from "../src/react-app/domains/settings/library";
 
-function box(overrides: Partial<OmniRushWorkspaceBox> = {}): OmniRushWorkspaceBox {
+function box(overrides: Partial<MarsWorkspaceBox> = {}): MarsWorkspaceBox {
   return {
     mode: null,
     serverDefault: "off",
@@ -44,7 +44,7 @@ function box(overrides: Partial<OmniRushWorkspaceBox> = {}): OmniRushWorkspaceBo
 }
 
 const on = { mode: "on", on: true, source: "project" } as const;
-const noRuntime = (reason: string, platform: string, alternatives: Array<{ id: string; label: string; ok: boolean; reason: string | null }> = []): Partial<OmniRushWorkspaceBox> => ({
+const noRuntime = (reason: string, platform: string, alternatives: Array<{ id: string; label: string; ok: boolean; reason: string | null }> = []): Partial<MarsWorkspaceBox> => ({
   ...on,
   platform,
   state: "unavailable",
@@ -114,9 +114,9 @@ describe("Linux sandbox card", () => {
 
   test("starting and ready: the backend in plain words; ready is calm (no buttons in the row)", () => {
     expect(linuxSandboxView(box({ ...on, state: "starting" }))).toMatchObject({ tone: "busy", title: "Starting the sandbox…", detail: "Using Docker Desktop 27.1. This takes a few seconds.", action: null });
-    const ready = linuxSandboxView(box({ ...on, state: "ready", container: { name: "omnirush-box-abc", exists: true, running: true } }));
+    const ready = linuxSandboxView(box({ ...on, state: "ready", container: { name: "mars-box-abc", exists: true, running: true } }));
     expect(ready).toMatchObject({ tone: "ready", title: "Ready", detail: "Commands run in a Linux container (Docker Desktop 27.1).", action: null, step: null, errorDetail: null });
-    const markup = card({ box: box({ ...on, state: "ready", container: { name: "omnirush-box-abc", exists: true, running: true } }) });
+    const markup = card({ box: box({ ...on, state: "ready", container: { name: "mars-box-abc", exists: true, running: true } }) });
     expect(switchMarkup(markup)).toContain('aria-checked="true"');
     expect(markup).not.toContain("Try again");
   });
@@ -137,8 +137,8 @@ describe("Linux sandbox card", () => {
     expect(win).toMatchObject({ title: "Turn on WSL 2", command: "wsl --install --no-distribution" });
     const mac = linuxSandboxNextStep(box(noRuntime("no container runtime found (free: `brew install colima docker && colima start`; also OrbStack, Docker Desktop, Podman; Apple container only when chosen in Settings)", "darwin")));
     expect(mac).toMatchObject({ title: "Install a container app", command: "brew install colima docker && colima start" });
-    const ubuntu = linuxSandboxNextStep(box(noRuntime("bwrap: blocked", "linux", [{ id: "bwrap", label: "bubblewrap (no daemon)", ok: false, reason: "unprivileged user namespaces are blocked by AppArmor; one-time admin fix: `sudo omnirush sandbox enable` (OmniRush CLI)" }, { id: "docker", label: "Docker", ok: false, reason: "not found" }])));
-    expect(ubuntu).toMatchObject({ title: "Allow the sandbox on this computer", command: "sudo omnirush sandbox enable" });
+    const ubuntu = linuxSandboxNextStep(box(noRuntime("bwrap: blocked", "linux", [{ id: "bwrap", label: "bubblewrap (no daemon)", ok: false, reason: "unprivileged user namespaces are blocked by AppArmor; one-time admin fix: `sudo mars sandbox enable` (Mars CLI)" }, { id: "docker", label: "Docker", ok: false, reason: "not found" }])));
+    expect(ubuntu).toMatchObject({ title: "Allow the sandbox on this computer", command: "sudo mars sandbox enable" });
     expect(linuxSandboxNextStep(box(noRuntime("docker: x", "linux", [{ id: "docker", label: "Docker", ok: false, reason: "Docker refused this user (add it to the docker group: `sudo usermod -aG docker $USER`, then log in again), or use rootless Podman" }])))).toMatchObject({ title: "Let this user run Docker", command: "sudo usermod -aG docker $USER" });
     expect(linuxSandboxNextStep(box(noRuntime("podman: not found", "linux")))).toMatchObject({ title: "Install Podman or Docker", command: "sudo apt install podman" });
     expect(linuxSandboxNextStep(box(noRuntime("x", "win32", [{ id: "docker-desktop", label: "Docker Desktop", ok: false, reason: "Docker is installed but not running (start Docker Desktop, OrbStack or colima)" }])))).toMatchObject({ title: "Start your container app", command: null });
@@ -181,11 +181,11 @@ describe("Linux sandbox card", () => {
   test("forced by the environment: the switch is locked and says where", () => {
     const markup = card({ box: box({ source: "env" }) });
     expect(switchMarkup(markup)).toContain('aria-disabled="true"');
-    expect(markup).toContain("Set by OMNIRUSH_BOX where the app is launched.");
+    expect(markup).toContain("Set by MARS_BOX where the app is launched.");
   });
 
   test("Advanced: automatic (recommended) first, the backend in use, the others with why not, Reset behind a confirm", () => {
-    const value = box({ ...on, state: "ready", container: { name: "omnirush-box-abc", exists: true, running: true } });
+    const value = box({ ...on, state: "ready", container: { name: "mars-box-abc", exists: true, running: true } });
     expect(linuxSandboxBackendChoices(value)[0]).toEqual({ value: "auto", label: "Automatic (recommended)" });
     expect(linuxSandboxBackendSummary(value)).toBe("Using Docker Desktop 27.1, picked automatically.");
     expect(linuxSandboxBackendSummary(box({ backendSetting: { value: "native", source: "setting", choices: [] } }))).toBe("Set to Off: commands run on this computer.");

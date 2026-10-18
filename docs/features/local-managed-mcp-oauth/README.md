@@ -1,20 +1,20 @@
 # Local managed MCP OAuth
 
-OmniRush.ai desktop can own OAuth for a custom remote MCP and expose its tools to
+MarsAI desktop can own OAuth for a custom remote MCP and expose its tools to
 the bundled OpenCode engine through an authenticated loopback MCP gateway. This
 provides a compatibility path for providers whose OAuth flow works through
-OmniRush.ai's enterprise MCP client but not through OpenCode's direct MCP client.
+MarsAI's enterprise MCP client but not through OpenCode's direct MCP client.
 
 ## User flow
 
-1. In a local desktop workspace, add a remote MCP and expand **OmniRush.ai-managed
+1. In a local desktop workspace, add a remote MCP and expand **MarsAI-managed
    OAuth**.
 2. Optionally enter a pre-registered client ID, client secret, and scopes. If
    the provider supports dynamic client registration, those fields may remain
    empty.
-3. OmniRush.ai performs OAuth discovery, DCR when needed, PKCE authorization, the
+3. MarsAI performs OAuth discovery, DCR when needed, PKCE authorization, the
    loopback callback, token exchange, and an authenticated `tools/list` check.
-4. OpenCode receives a remote MCP entry pointing at the OmniRush.ai loopback
+4. OpenCode receives a remote MCP entry pointing at the MarsAI loopback
    gateway with `oauth: false`. It sees the provider tools but never receives
    the provider access token, refresh token, or OAuth client secret.
 
@@ -24,13 +24,13 @@ The managed path is opt-in per connection and is currently desktop-only.
 ## Persistence and lifecycle
 
 - Provider credentials, OAuth registrations, discovery state, and PKCE
-  transactions are encrypted with AES-256-GCM in OmniRush.ai's runtime storage.
-- OmniRush.ai Desktop keeps the encryption key behind the operating system's
+  transactions are encrypted with AES-256-GCM in MarsAI's runtime storage.
+- MarsAI Desktop keeps the encryption key behind the operating system's
   secure-storage service and persists only the protected key blob, separately
   from the encrypted vault. A standalone server must set
-  `OMNIRUSH_ENCRYPTION_KEY`; there is no plaintext key-file fallback.
+  `MARS_ENCRYPTION_KEY`; there is no plaintext key-file fallback.
 - The gateway bearer is scoped to a workspace and connection, generated from a
-  process-only secret, and rotated on every OmniRush.ai server restart.
+  process-only secret, and rotated on every MarsAI server restart.
 - Startup reconciliation rewrites managed runtime MCP entries with the current
   loopback port and bearer while keeping the encrypted provider credential.
 - Disconnect deletes the stored credential and disables the gateway entry.

@@ -3,7 +3,7 @@ import { useCallback, useRef } from "react";
 import { CodeView, EditProvider, type CreateEditor } from "@pierre/diffs/react";
 import { Editor } from "@pierre/diffs/edit";
 
-const OMNIRUSH_CODE_CSS = `
+const MARS_CODE_CSS = `
   :host {
     --diffs-font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --diffs-font-size: 12px;
@@ -57,7 +57,7 @@ export function ArtifactCodeView({ name, path, content, editable = false, onChan
             theme: { light: "github-light", dark: "github-dark" },
             disableFileHeader: true,
             overflow: "wrap",
-            unsafeCSS: OMNIRUSH_CODE_CSS,
+            unsafeCSS: MARS_CODE_CSS,
           }}
         />
       </EditProvider>

@@ -3,7 +3,7 @@ import {
   PaperMeshGradient,
   getSeededPaperGrainGradientConfig,
   getSeededPaperMeshGradientConfig,
-} from "@omnirush/ui/react"
+} from "@mars/ui/react"
 import { useMemo, useState } from "react"
 
 const sampleIds = [
@@ -26,11 +26,11 @@ export function App() {
 
       <section className="hero-card panel">
         <div className="hero-copy">
-          <span className="eyebrow">OmniRush.ai UI demo</span>
+          <span className="eyebrow">MarsAI UI demo</span>
           <h1>Seeded Paper gradients on their own dev surface</h1>
           <p>
             Type a TypeID-like string, inspect the deterministic values derived from it, and preview
-            the gradients that `@omnirush/ui/react` will render anywhere else in the repo.
+            the gradients that `@mars/ui/react` will render anywhere else in the repo.
           </p>
         </div>
 
@@ -114,9 +114,9 @@ export function App() {
         <div className="panel code-panel">
           <span className="eyebrow muted">Import paths</span>
           <div className="pill-stack">
-            <code className="import-pill">@omnirush/ui/react</code>
+            <code className="import-pill">@mars/ui/react</code>
           </div>
-          <pre>{`import { PaperMeshGradient, PaperGrainGradient } from "@omnirush/ui/react"
+          <pre>{`import { PaperMeshGradient, PaperGrainGradient } from "@mars/ui/react"
 
 <PaperMeshGradient seed="${normalizedSeed}" />
 <PaperGrainGradient seed="${normalizedSeed}" />`}</pre>
@@ -145,7 +145,7 @@ function GradientCard({
         {surface}
         <div className="surface-overlay" />
         <div className="surface-copy">
-          <span className="eyebrow on-dark">@omnirush/ui/react</span>
+          <span className="eyebrow on-dark">@mars/ui/react</span>
           <h2>{title}</h2>
           <p>{subtitle}</p>
         </div>

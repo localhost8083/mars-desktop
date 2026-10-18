@@ -1,14 +1,14 @@
 import { useMemo } from "react";
 
 import { toast } from "@/components/ui/sonner";
-import { useControlAction, type OmniRushControlAction } from "./control/control-provider";
+import { useControlAction, type MarsControlAction } from "./control/control-provider";
 
 export const AUTO_COMPACT_NOTICE = "Compacting the conversation to keep it fast…";
 export const AUTO_COMPACT_FAILED_NOTICE = "Could not compact the conversation. Continuing as is.";
 
 /** The local server's automatic compaction (session-archive/auto-compact.ts): a short notice while a chat compacts. */
 export function AutoCompactNotice() {
-  const action = useMemo<OmniRushControlAction>(() => ({
+  const action = useMemo<MarsControlAction>(() => ({
     id: "auto.compact.notice",
     label: "Automatic compaction notice",
     description: "Show that a chat is being compacted before its next prompt.",

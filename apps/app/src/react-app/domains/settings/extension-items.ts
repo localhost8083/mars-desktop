@@ -1,4 +1,4 @@
-import { getMcpServerName, isBuiltInOmniRushExtension, type McpDirectoryInfo } from "../../../app/constants";
+import { getMcpServerName, isBuiltInMarsExtension, type McpDirectoryInfo } from "../../../app/constants";
 import type { CloudImportedPlugin, CloudImportedPluginFile } from "../../../app/cloud/import-state";
 import type { PendingCloudPluginChange } from "../../../app/cloud/desktop-cloud-sync";
 import { evaluateEnablement, type EnablementContext } from "../../../app/enablement";
@@ -100,16 +100,16 @@ export type ExtensionItemBuildInput = {
 };
 
 const MCP_IMPORT_PATH_PREFIX = "opencode.jsonc#mcp.";
-const OMNIRUSH_PROVIDED_SKILL_NAMES = new Set([
+const MARS_PROVIDED_SKILL_NAMES = new Set([
   "workspace-guide",
   "skill-creator",
 ]);
 
-export function isOmniRushProvidedSkill(skill: Pick<SkillCard, "name" | "path">) {
+export function isMarsProvidedSkill(skill: Pick<SkillCard, "name" | "path">) {
   const normalizedName = skill.name.trim().toLowerCase();
   const normalizedPath = skill.path.replace(/\\/g, "/").toLowerCase();
   return normalizedPath.includes("/.opencode/skills/") &&
-    OMNIRUSH_PROVIDED_SKILL_NAMES.has(normalizedName);
+    MARS_PROVIDED_SKILL_NAMES.has(normalizedName);
 }
 
 export function isToggleControlledExtension(entry: McpDirectoryInfo) {
@@ -206,7 +206,7 @@ function childKeysForPlugin(plugin: CloudImportedPlugin) {
 }
 
 export function buildExtensionItems(input: ExtensionItemBuildInput) {
-  const builtInItems = input.quickConnect.filter(isBuiltInOmniRushExtension).map((entry): ExtensionItem => {
+  const builtInItems = input.quickConnect.filter(isBuiltInMarsExtension).map((entry): ExtensionItem => {
     const enablement = entry.extensionManifest?.enablement
       ? evaluateEnablement(entry.extensionManifest.enablement, input.enablementContext)
       : null;
@@ -315,7 +315,7 @@ export function buildExtensionItems(input: ExtensionItemBuildInput) {
   }
 
   const standaloneMcpEntries = input.quickConnect.filter((entry) => {
-    if (isBuiltInOmniRushExtension(entry)) return false;
+    if (isBuiltInMarsExtension(entry)) return false;
     const serverName = getMcpServerName(entry);
     if (groupedMcpServerNames.has(serverName)) return false;
     return input.mcpServers.some((server) => server.name === serverName);

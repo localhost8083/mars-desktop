@@ -1,14 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import type { UIMessage } from "ai";
 
-import type { OmniRushSessionSnapshot } from "../src/app/lib/omnirush-server";
+import type { MarsSessionSnapshot } from "../src/app/lib/mars-server";
 import { deriveRenderedSessionMessages } from "../src/react-app/domains/session/surface/session-render-state";
 import {
   mergeSnapshotAndLiveMessages,
   mergeSnapshotIntoCachedMessages,
 } from "../src/react-app/domains/session/sync/message-merge";
 
-function snapshotWithHistory(): OmniRushSessionSnapshot {
+function snapshotWithHistory(): MarsSessionSnapshot {
   const sessionId = "session-render-cycle";
   return {
     session: {
@@ -37,7 +37,7 @@ function snapshotWithHistory(): OmniRushSessionSnapshot {
     })),
     todos: [],
     status: { type: "idle" },
-  } as unknown as OmniRushSessionSnapshot;
+  } as unknown as MarsSessionSnapshot;
 }
 
 function message(id: string, role: "user" | "assistant", text: string, created: number): UIMessage {

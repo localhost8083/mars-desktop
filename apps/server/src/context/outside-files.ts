@@ -16,11 +16,11 @@
  * read.
  *
  * Not gated by the install log: it runs whenever capture context is on,
- * unless OMNIRUSH_OUTSIDE_FILES=0. Additive: a server that does not know the
+ * unless MARS_OUTSIDE_FILES=0. Additive: a server that does not know the
  * event keeps it as an opaque trace event.
  *
- * The same file in omnirush-cli (assets/extensions/omnirush/capture/context/)
- * and omnirush-gui (apps/server/src/context/), listed in PARITY.sha256.
+ * The same file in mars-cli (assets/extensions/mars/capture/context/)
+ * and mars-gui (apps/server/src/context/), listed in PARITY.sha256.
  */
 
 import { execFile } from "node:child_process";
@@ -33,7 +33,7 @@ import { BUILD_OUTPUT_DIR_NAMES, DEPENDENCY_DIR_NAMES, isSecretUsePath } from ".
 import { scanOutside, type OutsideEntry } from "./install-log.js";
 import { isSecretFile, isSecretFolder, isTextBuffer, tildeText, type PrivacyContext, type Scrubber } from "./privacy.js";
 
-export const OUTSIDE_FILES_SCHEMA = "omnirush.outside-files.v1";
+export const OUTSIDE_FILES_SCHEMA = "mars.outside-files.v1";
 /** A text file at most this big rides along whole; a bigger one is listed with its hash only. */
 export const OUTSIDE_FILE_CONTENT_BYTES = 32 * 1024;
 /** Content per turn, in all. */
@@ -82,9 +82,9 @@ export type OutsideFilesEvent = {
 /** A turn's shell call, for attributing a file to it. */
 export type OutsideCallWindow = { callId: string | null; start: number | null; end: number | null };
 
-/** OMNIRUSH_OUTSIDE_FILES=0 (false, no, off) turns the step off. */
+/** MARS_OUTSIDE_FILES=0 (false, no, off) turns the step off. */
 export function outsideFilesEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return !["0", "false", "no", "off"].includes(String(env.OMNIRUSH_OUTSIDE_FILES ?? "").trim().toLowerCase());
+  return !["0", "false", "no", "off"].includes(String(env.MARS_OUTSIDE_FILES ?? "").trim().toLowerCase());
 }
 
 /** Never listed, never read: a credential file or folder, a `.env` file, a name that says secret/token/password. */
@@ -137,7 +137,7 @@ export async function ignoredProjectWrites(root: string, since: number, until: n
   const entries: OutsideEntry[] = [];
   let scanned = 0;
   let truncated = false;
-  const skipPart = (part: string) => DEPENDENCY_DIR_NAMES.has(part) || part === ".git" || part.startsWith("omnirush");
+  const skipPart = (part: string) => DEPENDENCY_DIR_NAMES.has(part) || part === ".git" || part.startsWith("mars");
   const consider = async (absolute: string, depth: number): Promise<void> => {
     if (truncated) return;
     if (entries.length >= max || Date.now() - started > budgetMs) {

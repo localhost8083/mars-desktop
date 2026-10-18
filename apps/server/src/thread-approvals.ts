@@ -1,8 +1,8 @@
 /**
- * Thread approvals: OmniRush.ai's own memory of what a user approved on a thread.
+ * Thread approvals: MarsAI's own memory of what a user approved on a thread.
  *
  * The engine keeps an "always" reply in the memory of the per-directory
- * instance that received it — not on the session and not on disk. OmniRush.ai
+ * instance that received it — not on the session and not on disk. MarsAI
  * rebuilds those instances routinely (config, skill, and MCP reload events,
  * idle eviction, engine rollover), so a grant made mid-thread is forgotten
  * while the thread itself lives on, and the same command asks again.
@@ -10,7 +10,7 @@
  * This module records every "always" reply against its thread and, when the
  * engine asks the same thread for something that grant already covers,
  * answers on the user's behalf — with "always" again so the fresh instance
- * remembers too. The engine stays the only adjudicator: OmniRush.ai never
+ * remembers too. The engine stays the only adjudicator: MarsAI never
  * approves anything the user did not approve on that very thread, and a
  * `deny` rule never reaches the ask stage in the first place.
  */
@@ -144,7 +144,7 @@ export interface ThreadApprovalReplayerOptions {
   config: ServerConfig;
   /** The engine to observe; null while no primary is serving. */
   primary: () => EnginePoolConnection | null;
-  /** Map an engine instance directory to the OmniRush.ai workspace it serves; null for directories OmniRush.ai does not own. */
+  /** Map an engine instance directory to the MarsAI workspace it serves; null for directories MarsAI does not own. */
   workspaceIdForDirectory: (directory: string) => Promise<string | null>;
   logger?: EnginePoolLogger;
   reconnectMs?: number;

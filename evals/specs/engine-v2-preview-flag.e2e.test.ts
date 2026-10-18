@@ -1,16 +1,16 @@
-import { browserScript } from "@omnirush/testkit";
+import { browserScript } from "@mars/testkit";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createAndSelectWorkspace, evalIn, go, waitFor } from "@omnirush/behaviors";
-import { desktop } from "@omnirush/hosts";
-import { needs, test } from "@omnirush/testkit";
+import { createAndSelectWorkspace, evalIn, go, waitFor } from "@mars/behaviors";
+import { desktop } from "@mars/hosts";
+import { needs, test } from "@mars/testkit";
 import { expect } from "vitest";
 
-const enabled = process.env.OMNIRUSH_EVAL_E2E_TESTS === "1";
+const enabled = process.env.MARS_EVAL_E2E_TESTS === "1";
 const title = enabled
   ? "the OpenCode v2 engine preview flag controls a hot-mirroring parallel sidecar"
-  : "OpenCode v2 engine preview flag skipped — needs: set OMNIRUSH_EVAL_E2E_TESTS=1";
+  : "OpenCode v2 engine preview flag skipped — needs: set MARS_EVAL_E2E_TESTS=1";
 
 interface EngineV2PreviewStatus {
   enabled: boolean;
@@ -73,8 +73,8 @@ async function serverFetchJson(
   const requestBody = init.body === undefined ? undefined : JSON.stringify(init.body);
   if (init.body !== undefined && requestBody === undefined) throw new Error(`Could not serialize request body for ${path}`);
   const value = await evalIn(app, browserScript(async (path, value, inputValue, timeoutMs) => {
-    const port = (localStorage.getItem("omnirush.server.port") ?? "").trim();
-    const token = (localStorage.getItem("omnirush.server.token") ?? "").trim();
+    const port = (localStorage.getItem("mars.server.port") ?? "").trim();
+    const token = (localStorage.getItem("mars.server.token") ?? "").trim();
     if (!port || !token) return { specProbeError: "missing local server credentials" };
     const response = await fetch("http://127.0.0.1:" + port + path, {
       method: value,
@@ -153,11 +153,11 @@ const engineReadyExpression = () => {
 };
 
 test.skipIf(!enabled)(title, async ({ evidence, place }) => {
-  needs({ optIn: ["OMNIRUSH_EVAL_E2E_TESTS"] });
+  needs({ optIn: ["MARS_EVAL_E2E_TESTS"] });
 
-  const binPath = place.kind === "local" ? process.env.OMNIRUSH_EVAL_OPENCODE2_BIN?.trim() || undefined : undefined;
+  const binPath = place.kind === "local" ? process.env.MARS_EVAL_OPENCODE2_BIN?.trim() || undefined : undefined;
   const profileDir = place.kind === "local"
-    ? await mkdtemp(join(tmpdir(), "omnirush-engine-v2-preview-eval-"))
+    ? await mkdtemp(join(tmpdir(), "mars-engine-v2-preview-eval-"))
     : undefined;
   let app: Awaited<ReturnType<typeof desktop>> | undefined;
 
@@ -166,7 +166,7 @@ test.skipIf(!enabled)(title, async ({ evidence, place }) => {
       name: "engine-v2-preview-flag",
       host: place.host(),
       ...(profileDir === undefined ? {} : { profileDir }),
-      env: binPath === undefined ? {} : { OMNIRUSH_OPENCODE2_BIN: binPath },
+      env: binPath === undefined ? {} : { MARS_OPENCODE2_BIN: binPath },
     });
     let workspacePath: string;
     if (place.kind === "daytona") {
@@ -223,14 +223,14 @@ test.skipIf(!enabled)(title, async ({ evidence, place }) => {
       body: {
         opencode: {
           provider: {
-            "omnirush-witness-e2e": {
+            "mars-witness-e2e": {
               npm: "@ai-sdk/openai-compatible",
               name: "Witness E2E",
               options: { baseURL: "http://127.0.0.1:65533/v1", apiKey: "witness-key-e2e" },
               models: { "witness-model-e2e": { name: "Witness Model E2E" } },
             },
-            "omnirush-skip-e2e": { name: "Skip E2E", options: {} },
-            "omnirush-untrusted-api-e2e": {
+            "mars-skip-e2e": { name: "Skip E2E", options: {} },
+            "mars-untrusted-api-e2e": {
               npm: "@ai-sdk/openai", api: "http://127.0.0.1:65532/v1",
               options: { baseURL: null, apiKey: "rejected-endpoint-key" },
               models: { "rejected-model-e2e": { name: "Rejected Model" } },
@@ -243,7 +243,7 @@ test.skipIf(!enabled)(title, async ({ evidence, place }) => {
     const patchCompletedAt = Date.now();
     const mirroredStatus = await untilStatus(
       app,
-      (status) => status.mirroredProviderIds.includes("omnirush-witness-e2e"),
+      (status) => status.mirroredProviderIds.includes("mars-witness-e2e"),
       60_000,
       "the witness provider to be mirrored",
     );
@@ -256,10 +256,10 @@ test.skipIf(!enabled)(title, async ({ evidence, place }) => {
     );
     const catalogLatencyMs = Date.now() - patchCompletedAt;
     console.info(`[engine-v2-preview-flag] mirror latency after PATCH 200: ${mirrorLatencyMs}ms; catalog latency: ${catalogLatencyMs}ms`);
-    expect(mirroredStatus.skippedProviderIds).toContain("omnirush-skip-e2e");
-    expect(mirroredStatus.mirroredProviderIds).not.toContain("omnirush-skip-e2e");
-    expect(mirroredStatus.skippedProviderIds).toContain("omnirush-untrusted-api-e2e");
-    expect(mirroredStatus.mirroredProviderIds).not.toContain("omnirush-untrusted-api-e2e");
+    expect(mirroredStatus.skippedProviderIds).toContain("mars-skip-e2e");
+    expect(mirroredStatus.mirroredProviderIds).not.toContain("mars-skip-e2e");
+    expect(mirroredStatus.skippedProviderIds).toContain("mars-untrusted-api-e2e");
+    expect(mirroredStatus.mirroredProviderIds).not.toContain("mars-untrusted-api-e2e");
     expect(catalogStatus.catalogModelIds).not.toContain("rejected-model-e2e");
     evidence.recordAssertionEvidence("untrusted catalog API endpoints are rejected before credential delivery", "The native provider with baseURL: null, an internal catalog API URL, and a synthetic credential was reported skipped, never mirrored, and absent from the live model catalog.", true);
     expect(catalogStatus.pid).toBe(pid0);

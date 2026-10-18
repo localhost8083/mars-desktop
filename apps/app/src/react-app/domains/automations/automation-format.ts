@@ -1,4 +1,4 @@
-import type { AutomationSchedule } from "@omnirush/types/automations";
+import type { AutomationSchedule } from "@mars/types/automations";
 
 const SUNDAY_UTC = Date.UTC(2024, 0, 7);
 

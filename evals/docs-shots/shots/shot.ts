@@ -1,5 +1,5 @@
 import { setTimeout as delay } from "node:timers/promises";
-import type { Surface } from "@omnirush/cdp";
+import type { Surface } from "@mars/cdp";
 import type { Ctx, Provider } from "../ctx.ts";
 import { gate } from "../gate.ts";
 import type { Gate } from "../gate.ts";

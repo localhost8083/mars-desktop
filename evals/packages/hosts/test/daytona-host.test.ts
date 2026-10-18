@@ -157,20 +157,20 @@ test("defaultDaytonaExec handles stdin EPIPE when the child exits", async () => 
 
 test("Daytona previewUrl parses the first https URL and caches by port", async () => {
   const { exec, calls } = createFakeExec(() => "https://9825-preview.example.test/json/list");
-  const host = createDaytonaHost({ sandboxId: "omnirush-test-1", log: () => undefined, exec, repoRoot: "/repo" });
+  const host = createDaytonaHost({ sandboxId: "mars-test-1", log: () => undefined, exec, repoRoot: "/repo" });
 
   assert.equal(await host.previewUrl(9825), "https://9825-preview.example.test/json/list");
   assert.equal(await host.previewUrl(9825), "https://9825-preview.example.test/json/list");
 
   assert.equal(calls.filter((call) => call.args[0] === "preview-url").length, 1);
-  assert.deepEqual(calls[0]?.args, ["preview-url", "omnirush-test-1", "-p", "9825"]);
+  assert.deepEqual(calls[0]?.args, ["preview-url", "mars-test-1", "-p", "9825"]);
 });
 
 test("spawnElectron starts isolated Daytona Electron profiles and writes bootstrap over base64", async () => {
   const polled: string[] = [];
   const { exec, calls } = createFakeExec((port) => `https://cdp-${port}.example.test`);
   const host = createDaytonaHost({
-    sandboxId: "omnirush-test-electron",
+    sandboxId: "mars-test-electron",
     log: () => undefined,
     exec,
     repoRoot: "/repo",
@@ -183,8 +183,8 @@ test("spawnElectron starts isolated Daytona Electron profiles and writes bootstr
 
   assert.equal(first.meta?.cdpPort, "9825");
   assert.equal(second.meta?.cdpPort, "9830");
-  assert.match(first.profileDir ?? "", /\/workspace\/\.omnirush-daytona\/profiles\/owner-\d{17}$/);
-  assert.match(second.profileDir ?? "", /\/workspace\/\.omnirush-daytona\/profiles\/member-\d{17}$/);
+  assert.match(first.profileDir ?? "", /\/workspace\/\.mars-daytona\/profiles\/owner-\d{17}$/);
+  assert.match(second.profileDir ?? "", /\/workspace\/\.mars-daytona\/profiles\/member-\d{17}$/);
   assert.equal(first.meta?.profileOwner, "host");
   assert.equal(second.meta?.profileOwner, "host");
   assert.deepEqual(polled, ["https://cdp-9825.example.test/json/list", "https://cdp-9830.example.test/json/list"]);
@@ -194,38 +194,38 @@ test("spawnElectron starts isolated Daytona Electron profiles and writes bootstr
 
   const bootstrapCall = findCall(calls, "base64 -d");
   assert.equal(Buffer.from(base64AfterEcho(bootstrapCall), "base64").toString("utf8"), `${JSON.stringify(bootstrap, null, 2)}\n`);
-  assert(argsText(bootstrapCall).includes("/workspace/.omnirush-daytona/profiles/owner-"));
+  assert(argsText(bootstrapCall).includes("/workspace/.mars-daytona/profiles/owner-"));
   assert(argsText(bootstrapCall).includes("/bootstrap.json"));
 
   const startCalls = calls.filter((call) => argsText(call).includes("/workspace/.devcontainer/start-daytona-electron.sh"));
   assert.equal(startCalls.length, 2);
   const firstStart = argsText(startCalls[0]);
   const secondStart = argsText(startCalls[1]);
-  assert(firstStart.includes("omnirush-test-electron"));
-  assert(firstStart.includes("OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT="));
+  assert(firstStart.includes("mars-test-electron"));
+  assert(firstStart.includes("MARS_ELECTRON_REMOTE_DEBUG_PORT="));
   assert(firstStart.includes("9825"));
-  assert(firstStart.includes("OMNIRUSH_ELECTRON_USERDATA="));
-  assert(firstStart.includes("/workspace/.omnirush-daytona/profiles/owner-"));
+  assert(firstStart.includes("MARS_ELECTRON_USERDATA="));
+  assert(firstStart.includes("/workspace/.mars-daytona/profiles/owner-"));
   assert(firstStart.includes("/electron-userdata"));
-  assert(firstStart.includes("OMNIRUSH_DESKTOP_BOOTSTRAP_PATH="));
-  assert(firstStart.includes("/workspace/.omnirush-daytona/profiles/owner-"));
+  assert(firstStart.includes("MARS_DESKTOP_BOOTSTRAP_PATH="));
+  assert(firstStart.includes("/workspace/.mars-daytona/profiles/owner-"));
   assert(firstStart.includes("/bootstrap.json"));
   assert(firstStart.includes("DAYTONA_ELECTRON_LOG="));
   assert(/\/tmp\/electron-owner-\d+/.test(firstStart));
   assert(firstStart.includes("--detach"));
-  assert(secondStart.includes("OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT="));
+  assert(secondStart.includes("MARS_ELECTRON_REMOTE_DEBUG_PORT="));
   assert(secondStart.includes("9830"));
-  assert(secondStart.includes("OMNIRUSH_ELECTRON_USERDATA="));
-  assert(secondStart.includes("/workspace/.omnirush-daytona/profiles/member-"));
+  assert(secondStart.includes("MARS_ELECTRON_USERDATA="));
+  assert(secondStart.includes("/workspace/.mars-daytona/profiles/member-"));
   assert(secondStart.includes("/electron-userdata"));
 });
 
 test("spawnElectron maps the v2 eval lane before Daytona caller overrides", async () => {
-  const previous = process.env.OMNIRUSH_EVAL_ENGINE;
-  process.env.OMNIRUSH_EVAL_ENGINE = "v2";
+  const previous = process.env.MARS_EVAL_ENGINE;
+  process.env.MARS_EVAL_ENGINE = "v2";
   const { exec, calls } = createFakeExec((port) => `https://cdp-${port}.example.test`);
   const host = createDaytonaHost({
-    sandboxId: "omnirush-test-v2-lane",
+    sandboxId: "mars-test-v2-lane",
     log: () => undefined,
     exec,
     repoRoot: "/repo",
@@ -233,21 +233,21 @@ test("spawnElectron maps the v2 eval lane before Daytona caller overrides", asyn
   });
   try {
     await host.spawnElectron("v2-default");
-    await host.spawnElectron("v2-override", { env: { OMNIRUSH_ENGINE_V2_PREVIEW: "sidecar" } });
+    await host.spawnElectron("v2-override", { env: { MARS_ENGINE_V2_PREVIEW: "sidecar" } });
   } finally {
-    if (previous === undefined) delete process.env.OMNIRUSH_EVAL_ENGINE;
-    else process.env.OMNIRUSH_EVAL_ENGINE = previous;
+    if (previous === undefined) delete process.env.MARS_EVAL_ENGINE;
+    else process.env.MARS_EVAL_ENGINE = previous;
   }
 
   const starts = calls.filter((call) => argsText(call).includes("/workspace/.devcontainer/start-daytona-electron.sh"));
-  assert.match(argsText(starts[0] ?? { args: [] }), /OMNIRUSH_ENGINE_V2_PREVIEW=.*1/);
-  assert.match(argsText(starts[1] ?? { args: [] }), /OMNIRUSH_ENGINE_V2_PREVIEW=.*sidecar/);
+  assert.match(argsText(starts[0] ?? { args: [] }), /MARS_ENGINE_V2_PREVIEW=.*1/);
+  assert.match(argsText(starts[1] ?? { args: [] }), /MARS_ENGINE_V2_PREVIEW=.*sidecar/);
 });
 
 test("spawnElectron preserves a caller-owned Daytona profile while generated profiles are removed", async () => {
   const { exec, calls } = createFakeExec((port) => `https://cdp-${port}.example.test`);
   const host = createDaytonaHost({
-    sandboxId: "omnirush-test-profile-owner",
+    sandboxId: "mars-test-profile-owner",
     log: () => undefined,
     exec,
     repoRoot: "/repo",
@@ -276,7 +276,7 @@ test("spawnElectron preserves a caller-owned Daytona profile while generated pro
 test("spawnElectron skips reserved Daytona CDP ports", async () => {
   const { exec } = createFakeExec((port) => `https://cdp-${port}.example.test`);
   const host = createDaytonaHost({
-    sandboxId: "omnirush-test-electron-reserved",
+    sandboxId: "mars-test-electron-reserved",
     log: () => undefined,
     exec,
     repoRoot: "/repo",
@@ -293,7 +293,7 @@ test("spawnChrome launches Chromium with Daytona CDP flags and allocates a secon
   const polled: string[] = [];
   const { exec, calls } = createFakeExec((port) => `https://chrome-${port}.example.test`);
   const host = createDaytonaHost({
-    sandboxId: "omnirush-test-chrome",
+    sandboxId: "mars-test-chrome",
     log: () => undefined,
     exec,
     repoRoot: "/repo",
@@ -327,14 +327,14 @@ test("spawnChrome launches Chromium with Daytona CDP flags and allocates a secon
 
 test("disposeSurface uses self-match-safe pkill patterns in separate execs", async () => {
   const { exec, calls } = createFakeExec(() => "https://unused.example.test");
-  const host = createDaytonaHost({ sandboxId: "omnirush-test-dispose", log: () => undefined, exec, repoRoot: "/repo" });
+  const host = createDaytonaHost({ sandboxId: "mars-test-dispose", log: () => undefined, exec, repoRoot: "/repo" });
   const electronHandle: SurfaceHandle = {
     name: "desktop",
     kind: "electron",
     hostKind: "daytona",
     cdpUrl: "https://unused.example.test",
-    sandboxId: "omnirush-test-dispose",
-    profileDir: "/workspace/.omnirush-daytona/profiles/desktop",
+    sandboxId: "mars-test-dispose",
+    profileDir: "/workspace/.mars-daytona/profiles/desktop",
     meta: { cdpPort: "9825", log: "/tmp/electron-desktop.log" },
   };
   const chromeHandle: SurfaceHandle = {
@@ -342,7 +342,7 @@ test("disposeSurface uses self-match-safe pkill patterns in separate execs", asy
     kind: "chrome",
     hostKind: "daytona",
     cdpUrl: "https://unused.example.test",
-    sandboxId: "omnirush-test-dispose",
+    sandboxId: "mars-test-dispose",
     profileDir: "/tmp/daytona-chrome-browser",
     meta: { cdpPort: "9222", log: "/tmp/daytona-chrome-browser.log" },
   };
@@ -363,17 +363,17 @@ test("disposeSurface uses self-match-safe pkill patterns in separate execs", asy
   assert(!chromePkill.includes("--user-data-dir=/tmp/daytona-chrome-browser"));
 });
 
-test("Daytona host requires a sandbox option or OMNIRUSH_EVAL_DAYTONA_SANDBOX", async () => {
-  const previous = process.env.OMNIRUSH_EVAL_DAYTONA_SANDBOX;
-  delete process.env.OMNIRUSH_EVAL_DAYTONA_SANDBOX;
+test("Daytona host requires a sandbox option or MARS_EVAL_DAYTONA_SANDBOX", async () => {
+  const previous = process.env.MARS_EVAL_DAYTONA_SANDBOX;
+  delete process.env.MARS_EVAL_DAYTONA_SANDBOX;
   const { exec } = createFakeExec(() => "https://unused.example.test");
   const host = createDaytonaHost({ log: () => undefined, exec, repoRoot: "/repo" });
 
   try {
     await assert.rejects(host.previewUrl(9825), /create one with bash \.devcontainer\/test-on-daytona\.sh <ref> or pass sandboxId/);
   } finally {
-    if (previous === undefined) delete process.env.OMNIRUSH_EVAL_DAYTONA_SANDBOX;
-    else process.env.OMNIRUSH_EVAL_DAYTONA_SANDBOX = previous;
+    if (previous === undefined) delete process.env.MARS_EVAL_DAYTONA_SANDBOX;
+    else process.env.MARS_EVAL_DAYTONA_SANDBOX = previous;
   }
 });
 
@@ -389,7 +389,7 @@ test("enterprise TLS edge commands keep the full lifecycle in one Daytona sandbo
   for (const command of [commands.start, commands.probe, commands.requests, commands.installRoot, commands.removeRoot, commands.stop]) {
     assert.deepEqual(command.slice(0, 3), ["exec", "desktop-sandbox", "--"]);
   }
-  const runtimeRoot = "/tmp/omnirush-enterprise-tls-runtime";
+  const runtimeRoot = "/tmp/mars-enterprise-tls-runtime";
   const localSources = [
     fileURLToPath(new URL("../../../scripts/enterprise-tls-edge.mts", import.meta.url)),
     fileURLToPath(new URL("../../labs/src/egress.ts", import.meta.url)),
@@ -435,7 +435,7 @@ test("enterprise TLS edge commands keep the full lifecycle in one Daytona sandbo
     assert.ok(finalize?.includes(`test \"$actual_bytes\" -eq ${content.byteLength}`));
   }
   const start = commands.start[3] ?? "";
-  assert.match(start, /\/tmp\/omnirush-enterprise-tls-runtime\/evals\/scripts\/enterprise-tls-edge\.mts/);
+  assert.match(start, /\/tmp\/mars-enterprise-tls-runtime\/evals\/scripts\/enterprise-tls-edge\.mts/);
   assert.ok(!start.includes("/workspace/evals/scripts/enterprise-tls-edge.mts"));
   assert.ok(!start.includes("&;"));
   assert.ok(start.includes("</dev/null &\nattempt=0\nuntil /usr/bin/curl"));
@@ -492,14 +492,14 @@ test("enterprise TLS edge commands reject steering and port collisions", () => {
 
 test("startDen attaches to preset Den env without running daytona exec", async () => {
   const server = await startRuntimeConfigStub("single_org");
-  const previousApi = process.env.OMNIRUSH_EVAL_DEN_API_URL;
-  const previousWeb = process.env.OMNIRUSH_EVAL_DEN_WEB_URL;
+  const previousApi = process.env.MARS_EVAL_DEN_API_URL;
+  const previousWeb = process.env.MARS_EVAL_DEN_WEB_URL;
   const { exec, calls } = createFakeExec(() => "https://unused.example.test");
-  const host = createDaytonaHost({ sandboxId: "omnirush-test-den", log: () => undefined, exec, repoRoot: "/repo" });
+  const host = createDaytonaHost({ sandboxId: "mars-test-den", log: () => undefined, exec, repoRoot: "/repo" });
 
   try {
-    process.env.OMNIRUSH_EVAL_DEN_API_URL = "https://den-api.example.test";
-    process.env.OMNIRUSH_EVAL_DEN_WEB_URL = server.url;
+    process.env.MARS_EVAL_DEN_API_URL = "https://den-api.example.test";
+    process.env.MARS_EVAL_DEN_WEB_URL = server.url;
     const handle = await host.startDen();
 
     assert.equal(handle.webUrl, server.url);
@@ -508,10 +508,10 @@ test("startDen attaches to preset Den env without running daytona exec", async (
     assert.equal(handle.hostKind, "daytona");
     assert.equal(calls.length, 0);
   } finally {
-    if (previousApi === undefined) delete process.env.OMNIRUSH_EVAL_DEN_API_URL;
-    else process.env.OMNIRUSH_EVAL_DEN_API_URL = previousApi;
-    if (previousWeb === undefined) delete process.env.OMNIRUSH_EVAL_DEN_WEB_URL;
-    else process.env.OMNIRUSH_EVAL_DEN_WEB_URL = previousWeb;
+    if (previousApi === undefined) delete process.env.MARS_EVAL_DEN_API_URL;
+    else process.env.MARS_EVAL_DEN_API_URL = previousApi;
+    if (previousWeb === undefined) delete process.env.MARS_EVAL_DEN_WEB_URL;
+    else process.env.MARS_EVAL_DEN_WEB_URL = previousWeb;
     await server.close();
   }
 });

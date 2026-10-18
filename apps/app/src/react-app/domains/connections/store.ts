@@ -7,7 +7,7 @@ import { applyEdits, modify, parse, printParseErrorCode } from "jsonc-parser";
 import { t } from "../../../i18n";
 import {
   getMcpServerName,
-  isBuiltInOmniRushExtension,
+  isBuiltInMarsExtension,
   COMPUTER_USE_PAUSED,
   MCP_QUICK_CONNECT,
   type McpDirectoryInfo,
@@ -34,9 +34,9 @@ import {
   validateMcpServerName,
 } from "../../../app/mcp";
 import {
-  buildOmniRushWorkspaceBaseUrl,
-  type OmniRushServerClient,
-} from "../../../app/lib/omnirush-server";
+  buildMarsWorkspaceBaseUrl,
+  type MarsServerClient,
+} from "../../../app/lib/mars-server";
 import type {
   Client,
   McpServerEntry,
@@ -45,9 +45,9 @@ import type {
   ReloadTrigger,
 } from "../../../app/types";
 import { isDesktopRuntime, normalizeDirectoryPath, safeStringify } from "../../../app/utils";
-import { conflictsWithOmniRushConnect } from "./mcp-connection-boundary";
+import { conflictsWithMarsConnect } from "./mcp-connection-boundary";
 
-import type { OmniRushServerStore } from "./omnirush-server-store";
+import type { MarsServerStore } from "./mars-server-store";
 import { attemptSilentMcpReauth } from "./mcp-silent-reauth";
 import {
   createMcpStatusSynchronizer,
@@ -62,7 +62,7 @@ import {
   clearCloudMcpDisabledIntent,
   cloudMcpDisplaySummary,
   recordCloudMcpDisabledIntent,
-  runOmniRushCloudMcpReconciler,
+  runMarsCloudMcpReconciler,
   type CloudMcpOperationContext,
 } from "./cloud-mcp-reconciler";
 
@@ -73,14 +73,14 @@ type SetStateAction<T> = T | ((current: T) => T);
 // den-api): when the two were equal, the marker was stale the instant it
 // was written and every sync tick re-wrote the MCP config.
 const CLOUD_MCP_REFRESH_MARGIN_MS = 24 * 60 * 60 * 1000;
-const LOCAL_OMNIRUSH_SERVER_RECOVERY_TIMEOUT_MS = 30_000;
-const OMNIRUSH_UI_MCP_UNAVAILABLE = "UI control requires the omnirush.ai desktop app. Restart omnirush.ai or reinstall the app.";
-const COMPUTER_USE_HELPER_UNAVAILABLE = "Computer Use helper app is unavailable. Restart omnirush.ai or reinstall the app.";
+const LOCAL_MARS_SERVER_RECOVERY_TIMEOUT_MS = 30_000;
+const MARS_UI_MCP_UNAVAILABLE = "UI control requires the marsai.click desktop app. Restart marsai.click or reinstall the app.";
+const COMPUTER_USE_HELPER_UNAVAILABLE = "Computer Use helper app is unavailable. Restart marsai.click or reinstall the app.";
 const COMPUTER_USE_CONNECT_TIMEOUT_MS = 15_000;
 const COMPUTER_USE_RECONNECT_COOLDOWN_MS = 30_000;
-const MCP_DISABLED_BY_POLICY = "MCP servers are disabled in OmniRush.ai.";
+const MCP_DISABLED_BY_POLICY = "MCP servers are disabled in MarsAI.";
 
-async function withLocalOmniRushServerRecoveryTimeout<T>(
+async function withLocalMarsServerRecoveryTimeout<T>(
   task: Promise<T>,
   timeoutMs: number,
 ): Promise<T> {
@@ -153,10 +153,10 @@ export function createConnectionsStore(options: {
   selectedWorkspaceId: () => string;
   selectedWorkspaceRoot: () => string;
   workspaceType: () => "local" | "remote";
-  omnirushServer: OmniRushServerStore;
+  marsServer: MarsServerStore;
   runtimeWorkspaceId: () => string | null;
   ensureRuntimeWorkspaceId?: () => Promise<string | null | undefined>;
-  localOmniRushServerRecoveryTimeoutMs?: number;
+  localMarsServerRecoveryTimeoutMs?: number;
   setProjectDir?: (value: string) => void;
   developerMode: () => boolean;
   markReloadRequired?: (reason: ReloadReason, trigger?: ReloadTrigger) => void;
@@ -264,20 +264,20 @@ export function createConnectionsStore(options: {
     return `${workspaceType}:${workspaceId}:${root}:${runtimeWorkspaceId}`;
   };
 
-  const getOmniRushSnapshot = () => options.omnirushServer.getSnapshot();
+  const getMarsSnapshot = () => options.marsServer.getSnapshot();
 
   const mcpDisabledByPolicy = () => {
-    const current = getOmniRushSnapshot();
-    // A GUI without an OmniRush policy-bearing server must fail closed.
-    return current.omnirushServerStatus !== "connected"
-      || current.omnirushServerCapabilities?.mcp?.read !== true;
+    const current = getMarsSnapshot();
+    // A GUI without an Mars policy-bearing server must fail closed.
+    return current.marsServerStatus !== "connected"
+      || current.marsServerCapabilities?.mcp?.read !== true;
   };
 
-  const resolveOmniRushWorkspaceId = async () => {
+  const resolveMarsWorkspaceId = async () => {
     const current = options.runtimeWorkspaceId()?.trim();
     if (current) return current;
-    const omnirushSnapshot = getOmniRushSnapshot();
-    if (omnirushSnapshot.omnirushServerStatus !== "connected" || !omnirushSnapshot.omnirushServerClient) {
+    const marsSnapshot = getMarsSnapshot();
+    if (marsSnapshot.marsServerStatus !== "connected" || !marsSnapshot.marsServerClient) {
       return null;
     }
     const ensured = (await options.ensureRuntimeWorkspaceId?.())?.trim();
@@ -285,51 +285,51 @@ export function createConnectionsStore(options: {
     return options.workspaceType() === "local" ? options.selectedWorkspaceId().trim() || null : null;
   };
 
-  const resolveConfigOmniRushTarget = async (mode: "read" | "write") => {
-    const omnirushSnapshot = getOmniRushSnapshot();
-    const omnirushClient = omnirushSnapshot.omnirushServerClient;
-    const omnirushWorkspaceId = await resolveOmniRushWorkspaceId();
-    const hasOmniRushTarget =
-      omnirushSnapshot.omnirushServerStatus === "connected" &&
-      Boolean(omnirushClient && omnirushWorkspaceId);
-    const canUseOmniRushServer =
-      hasOmniRushTarget &&
-      omnirushSnapshot.omnirushServerCapabilities?.config?.[mode] !== false;
+  const resolveConfigMarsTarget = async (mode: "read" | "write") => {
+    const marsSnapshot = getMarsSnapshot();
+    const marsClient = marsSnapshot.marsServerClient;
+    const marsWorkspaceId = await resolveMarsWorkspaceId();
+    const hasMarsTarget =
+      marsSnapshot.marsServerStatus === "connected" &&
+      Boolean(marsClient && marsWorkspaceId);
+    const canUseMarsServer =
+      hasMarsTarget &&
+      marsSnapshot.marsServerCapabilities?.config?.[mode] !== false;
     return {
-      omnirushClient,
-      omnirushWorkspaceId,
-      hasOmniRushTarget,
-      canUseOmniRushServer,
+      marsClient,
+      marsWorkspaceId,
+      hasMarsTarget,
+      canUseMarsServer,
     };
   };
 
-  const resolveMcpOmniRushTarget = async (mode: "read" | "write") => {
-    let omnirushSnapshot = getOmniRushSnapshot();
-    let omnirushClient = omnirushSnapshot.omnirushServerClient;
-    let omnirushWorkspaceId = await resolveOmniRushWorkspaceId();
-    if ((!omnirushClient || !omnirushWorkspaceId || omnirushSnapshot.omnirushServerStatus !== "connected")
+  const resolveMcpMarsTarget = async (mode: "read" | "write") => {
+    let marsSnapshot = getMarsSnapshot();
+    let marsClient = marsSnapshot.marsServerClient;
+    let marsWorkspaceId = await resolveMarsWorkspaceId();
+    if ((!marsClient || !marsWorkspaceId || marsSnapshot.marsServerStatus !== "connected")
       && isDesktopRuntime()
       && options.workspaceType() === "local") {
-      omnirushClient = await withLocalOmniRushServerRecoveryTimeout(
-        options.omnirushServer.ensureLocalOmniRushServerClient(),
-        options.localOmniRushServerRecoveryTimeoutMs ?? LOCAL_OMNIRUSH_SERVER_RECOVERY_TIMEOUT_MS,
+      marsClient = await withLocalMarsServerRecoveryTimeout(
+        options.marsServer.ensureLocalMarsServerClient(),
+        options.localMarsServerRecoveryTimeoutMs ?? LOCAL_MARS_SERVER_RECOVERY_TIMEOUT_MS,
       );
-      omnirushSnapshot = getOmniRushSnapshot();
-      omnirushWorkspaceId = options.runtimeWorkspaceId()?.trim()
+      marsSnapshot = getMarsSnapshot();
+      marsWorkspaceId = options.runtimeWorkspaceId()?.trim()
         || (await options.ensureRuntimeWorkspaceId?.())?.trim()
         || options.selectedWorkspaceId().trim()
         || null;
     }
-    const hasOmniRushTarget =
-      Boolean(omnirushClient && omnirushWorkspaceId);
-    const canUseOmniRushServer =
-      hasOmniRushTarget &&
-      omnirushSnapshot.omnirushServerCapabilities?.mcp?.[mode] !== false;
+    const hasMarsTarget =
+      Boolean(marsClient && marsWorkspaceId);
+    const canUseMarsServer =
+      hasMarsTarget &&
+      marsSnapshot.marsServerCapabilities?.mcp?.[mode] !== false;
     return {
-      omnirushClient,
-      omnirushWorkspaceId,
-      hasOmniRushTarget,
-      canUseOmniRushServer,
+      marsClient,
+      marsWorkspaceId,
+      hasMarsTarget,
+      canUseMarsServer,
     };
   };
 
@@ -344,14 +344,14 @@ export function createConnectionsStore(options: {
 
   const readMcpConfigFile = async (scope: "project" | "global"): Promise<OpencodeConfigFile | null> => {
     const projectDir = options.projectDir().trim();
-    const { omnirushClient, omnirushWorkspaceId, hasOmniRushTarget, canUseOmniRushServer } =
-      await resolveConfigOmniRushTarget("read");
+    const { marsClient, marsWorkspaceId, hasMarsTarget, canUseMarsServer } =
+      await resolveConfigMarsTarget("read");
 
-    if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
-      return omnirushClient.readOpencodeConfigFile(omnirushWorkspaceId, scope);
+    if (canUseMarsServer && marsClient && marsWorkspaceId) {
+      return marsClient.readOpencodeConfigFile(marsWorkspaceId, scope);
     }
 
-    if (hasOmniRushTarget) {
+    if (hasMarsTarget) {
       return null;
     }
 
@@ -368,31 +368,31 @@ export function createConnectionsStore(options: {
       return activeClient;
     }
 
-    const omnirushSnapshot = getOmniRushSnapshot();
-    const omnirushBaseUrl = omnirushSnapshot.omnirushServerBaseUrl.trim();
-    const token = omnirushSnapshot.omnirushServerAuth.token?.trim();
-    if (!omnirushBaseUrl || !token) {
+    const marsSnapshot = getMarsSnapshot();
+    const marsBaseUrl = marsSnapshot.marsServerBaseUrl.trim();
+    const token = marsSnapshot.marsServerAuth.token?.trim();
+    if (!marsBaseUrl || !token) {
       return null;
     }
 
     const mountedBaseUrl =
-      buildOmniRushWorkspaceBaseUrl(omnirushBaseUrl, await resolveOmniRushWorkspaceId()) ?? omnirushBaseUrl;
+      buildMarsWorkspaceBaseUrl(marsBaseUrl, await resolveMarsWorkspaceId()) ?? marsBaseUrl;
     activeClient = createClient(`${mountedBaseUrl.replace(/\/+$/, "")}/opencode`, undefined, {
       token,
-      mode: "omnirush",
+      mode: "mars",
     });
     options.setClient(activeClient);
     return activeClient;
   };
 
-  const resolveWritableOmniRushTarget = async () => {
-    return resolveMcpOmniRushTarget("write");
+  const resolveWritableMarsTarget = async () => {
+    return resolveMcpMarsTarget("write");
   };
 
   const resolveCloudMcpOperationContext = async (fallbackUrl?: string | null): Promise<CloudMcpOperationContext | null> => {
     const settings = readDenSettings();
-    const workspaceId = await resolveOmniRushWorkspaceId();
-    const serverBaseUrl = getOmniRushSnapshot().omnirushServerClient?.baseUrl.trim() ?? "";
+    const workspaceId = await resolveMarsWorkspaceId();
+    const serverBaseUrl = getMarsSnapshot().marsServerClient?.baseUrl.trim() ?? "";
     const orgId = settings.activeOrgId?.trim() ?? "";
     if (!workspaceId || !serverBaseUrl || !orgId) return null;
     return {
@@ -426,29 +426,29 @@ export function createConnectionsStore(options: {
     return resolvedProjectDir;
   };
 
-  const listMcpFromOmniRushServer = async (projectDir: string) => {
-    const omnirushSnapshot = getOmniRushSnapshot();
-    const { omnirushClient, omnirushWorkspaceId, hasOmniRushTarget, canUseOmniRushServer } =
-      await resolveMcpOmniRushTarget("read");
-    const canTryOmniRushServer = canUseOmniRushServer;
+  const listMcpFromMarsServer = async (projectDir: string) => {
+    const marsSnapshot = getMarsSnapshot();
+    const { marsClient, marsWorkspaceId, hasMarsTarget, canUseMarsServer } =
+      await resolveMcpMarsTarget("read");
+    const canTryMarsServer = canUseMarsServer;
 
     recordPerfLog(options.developerMode(), "mcp.refresh", "server-path-check", {
       workspaceType: options.workspaceType(),
       projectDir: projectDir || null,
-      omnirushStatus: omnirushSnapshot.omnirushServerStatus,
-      hasOmniRushClient: Boolean(omnirushClient),
-      omnirushWorkspaceId: omnirushWorkspaceId ?? null,
-      canReadMcp: omnirushSnapshot.omnirushServerCapabilities?.mcp?.read ?? null,
-      canTryOmniRushServer,
+      marsStatus: marsSnapshot.marsServerStatus,
+      hasMarsClient: Boolean(marsClient),
+      marsWorkspaceId: marsWorkspaceId ?? null,
+      canReadMcp: marsSnapshot.marsServerCapabilities?.mcp?.read ?? null,
+      canTryMarsServer,
     });
 
-    if (hasOmniRushTarget && !canTryOmniRushServer) {
-      throw new Error("omnirush.ai server cannot read MCP config for this workspace.");
+    if (hasMarsTarget && !canTryMarsServer) {
+      throw new Error("marsai.click server cannot read MCP config for this workspace.");
     }
 
-    if (!canTryOmniRushServer || !omnirushClient || !omnirushWorkspaceId) return null;
+    if (!canTryMarsServer || !marsClient || !marsWorkspaceId) return null;
 
-    let response = await omnirushClient.listMcp(omnirushWorkspaceId);
+    let response = await marsClient.listMcp(marsWorkspaceId);
     // Upgrade the enabled bundled helper when a local workspace is opened.
     // Never enable a disabled entry, rewrite a custom command, or target a remote worker.
     if (isDesktopRuntime() && options.workspaceType() === "local") {
@@ -460,13 +460,13 @@ export function createConnectionsStore(options: {
         && ((command.length === 2 && command[1] === "mcp") || (command.length === 3 && command[1] === "relay"))) {
         const currentCommand = await resolveDesktopCommand("getComputerUseMcpCommand", COMPUTER_USE_HELPER_UNAVAILABLE);
         const bundled = currentCommand && (command[0] === currentCommand[0]
-          || command[0].endsWith("/omnirush.ai Computer Use.app/Contents/MacOS/ComputerUse"));
+          || command[0].endsWith("/marsai.click Computer Use.app/Contents/MacOS/ComputerUse"));
         if (bundled && JSON.stringify(command) !== JSON.stringify(currentCommand)) {
-          const writable = await resolveWritableOmniRushTarget();
-          if (writable.canUseOmniRushServer && writable.omnirushClient && writable.omnirushWorkspaceId === omnirushWorkspaceId
+          const writable = await resolveWritableMarsTarget();
+          if (writable.canUseMarsServer && writable.marsClient && writable.marsWorkspaceId === marsWorkspaceId
             && !mcpMutationDenied(true)) {
-            await writable.omnirushClient.addMcp(omnirushWorkspaceId, { name: "computer-use", config: { ...config, command: currentCommand } });
-            response = await omnirushClient.listMcp(omnirushWorkspaceId);
+            await writable.marsClient.addMcp(marsWorkspaceId, { name: "computer-use", config: { ...config, command: currentCommand } });
+            response = await marsClient.listMcp(marsWorkspaceId);
           }
         }
       }
@@ -484,7 +484,7 @@ export function createConnectionsStore(options: {
     // Read through the same workspace mount as configuration. The chat client
     // can still point at the previous/default workspace during restoration.
     try {
-      observedStatuses = await omnirushClient.getMcpStatus(omnirushWorkspaceId);
+      observedStatuses = await marsClient.getMcpStatus(marsWorkspaceId);
       nextStatuses = filterConfiguredStatuses(observedStatuses as McpStatusMap, next);
     } catch {
       nextStatuses = {};
@@ -521,11 +521,11 @@ export function createConnectionsStore(options: {
   };
 
   const resolveDesktopCommand = async (
-    commandName: "getComputerUseMcpCommand" | "getOmniRushUiMcpCommand",
+    commandName: "getComputerUseMcpCommand" | "getMarsUiMcpCommand",
     unavailableMessage: string,
   ) => {
     try {
-      const command = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.(commandName);
+      const command = await window.__MARS_ELECTRON__?.invokeDesktop?.(commandName);
       if (Array.isArray(command) && command.every((part) => typeof part === "string") && command.length > 0) {
         return command;
       }
@@ -537,42 +537,42 @@ export function createConnectionsStore(options: {
     return null;
   };
 
-  const isOmniRushUiMcpEntry = (entry: McpDirectoryInfo) =>
-    extensionResource(entry.extensionManifest, "mcp")?.localCommandRef === "omnirush.uiMcp"
-      || entry.serverName === "omnirush-ui";
+  const isMarsUiMcpEntry = (entry: McpDirectoryInfo) =>
+    extensionResource(entry.extensionManifest, "mcp")?.localCommandRef === "mars.uiMcp"
+      || entry.serverName === "mars-ui";
 
   const resolveLocalMcpCommand = async (entry: McpDirectoryInfo) => {
     const mcpResource = extensionResource(entry.extensionManifest, "mcp");
-    if (mcpResource?.localCommandRef === "omnirush.computerUseMcp") {
+    if (mcpResource?.localCommandRef === "mars.computerUseMcp") {
       const command = await resolveDesktopCommand("getComputerUseMcpCommand", COMPUTER_USE_HELPER_UNAVAILABLE);
       if (!command) throw new Error("Computer Use is unavailable on this desktop. Check its setup page.");
       return command;
     }
-    if (isOmniRushUiMcpEntry(entry)) {
-      const command = await resolveDesktopCommand("getOmniRushUiMcpCommand", OMNIRUSH_UI_MCP_UNAVAILABLE);
-      if (!command) throw new Error(OMNIRUSH_UI_MCP_UNAVAILABLE);
+    if (isMarsUiMcpEntry(entry)) {
+      const command = await resolveDesktopCommand("getMarsUiMcpCommand", MARS_UI_MCP_UNAVAILABLE);
+      if (!command) throw new Error(MARS_UI_MCP_UNAVAILABLE);
       return command;
     }
     return entry.command;
   };
 
   const resolveLocalMcpEnvironment = async (entry: McpDirectoryInfo) => {
-    if (extensionResource(entry.extensionManifest, "mcp")?.localCommandRef === "omnirush.computerUseMcp") {
-      const environment = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("getComputerUseMcpEnvironment");
+    if (extensionResource(entry.extensionManifest, "mcp")?.localCommandRef === "mars.computerUseMcp") {
+      const environment = await window.__MARS_ELECTRON__?.invokeDesktop?.("getComputerUseMcpEnvironment");
       if (!environment) throw new Error(COMPUTER_USE_HELPER_UNAVAILABLE);
       return environment;
     }
-    if (!isOmniRushUiMcpEntry(entry)) return undefined;
+    if (!isMarsUiMcpEntry(entry)) return undefined;
     // Required, not best-effort: packaged launches run the app's own binary and
     // need ELECTRON_RUN_AS_NODE=1 from this environment to act as Node.
     let environment: unknown;
     try {
-      environment = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("getOmniRushUiMcpEnvironment");
+      environment = await window.__MARS_ELECTRON__?.invokeDesktop?.("getMarsUiMcpEnvironment");
     } catch (error) {
-      throw error instanceof Error ? error : new Error(OMNIRUSH_UI_MCP_UNAVAILABLE);
+      throw error instanceof Error ? error : new Error(MARS_UI_MCP_UNAVAILABLE);
     }
     if (!environment || typeof environment !== "object" || Array.isArray(environment)) {
-      throw new Error(OMNIRUSH_UI_MCP_UNAVAILABLE);
+      throw new Error(MARS_UI_MCP_UNAVAILABLE);
     }
     return Object.fromEntries(
       Object.entries(environment).filter((item): item is [string, string] =>
@@ -630,7 +630,7 @@ export function createConnectionsStore(options: {
 
     try {
       if (isCurrentRefresh()) setStateField("mcpStatus", null);
-      const serverResult = await listMcpFromOmniRushServer(projectDir);
+      const serverResult = await listMcpFromMarsServer(projectDir);
       if (serverResult) {
         // Surface engine registration failures instead of leaving users
         // staring at an MCP that silently shows as disconnected.
@@ -664,9 +664,9 @@ export function createConnectionsStore(options: {
       recordPerfLog(options.developerMode(), "mcp.refresh", "server-path-error", {
         message: error instanceof Error ? error.message : String(error),
       });
-      const serverTarget = await resolveMcpOmniRushTarget("read").catch(() => null);
+      const serverTarget = await resolveMcpMarsTarget("read").catch(() => null);
       if (!isCurrentRefresh()) return;
-      if (isRemoteWorkspace || serverTarget?.hasOmniRushTarget) {
+      if (isRemoteWorkspace || serverTarget?.hasMarsTarget) {
         mutateState((current) => ({
           ...current,
           mcpServers: [],
@@ -681,7 +681,7 @@ export function createConnectionsStore(options: {
       if (!isCurrentRefresh()) return;
       mutateState((current) => ({
         ...current,
-        mcpStatus: "omnirush.ai server unavailable. MCP config is read-only.",
+        mcpStatus: "marsai.click server unavailable. MCP config is read-only.",
         mcpServers: [],
         mcpStatuses: {},
       }));
@@ -733,10 +733,10 @@ export function createConnectionsStore(options: {
         ...globalServers.filter((entry) => !projectNames.has(entry.name)),
         ...projectServers,
       ];
-      // Runtime-DB MCPs (source "config.remote") only exist on the omnirush.ai
+      // Runtime-DB MCPs (source "config.remote") only exist on the marsai.click
       // server. Keep the last-known entries instead of silently dropping them
       // while the server is briefly unreachable (startup race) — otherwise
-      // enabled MCPs like omnirush-ui render as "off".
+      // enabled MCPs like mars-ui render as "off".
       const fileNames = new Set(fileServers.map((entry) => entry.name));
       const runtimeServers = state.mcpServers.filter(
         (entry) => entry.source === "config.remote" && !fileNames.has(entry.name),
@@ -810,7 +810,7 @@ export function createConnectionsStore(options: {
 
   function builtInMcp(name: string) {
     return MCP_QUICK_CONNECT.find((entry) =>
-      isBuiltInOmniRushExtension(entry) && getMcpServerName(entry) === name,
+      isBuiltInMarsExtension(entry) && getMcpServerName(entry) === name,
     );
   }
 
@@ -823,15 +823,15 @@ export function createConnectionsStore(options: {
     if (builtIn) entry = builtIn;
     // Cloud repair uses the signed-in organization's reconciler below, not
     // caller-supplied MCP configuration. Existing service access stays usable.
-    if (entry.managedBy !== "omnirush-connect") {
+    if (entry.managedBy !== "mars-connect") {
       const error = mcpMutationDenied(Boolean(builtIn));
       if (error) return { ok: false, error };
     }
     const startedAt = perfNow();
-    const omnirushSnapshot = getOmniRushSnapshot();
+    const marsSnapshot = getMarsSnapshot();
     const isRemoteWorkspace =
       options.workspaceType() === "remote" ||
-      (!isDesktopRuntime() && omnirushSnapshot.omnirushServerStatus === "connected");
+      (!isDesktopRuntime() && marsSnapshot.marsServerStatus === "connected");
     const projectDir = options.projectDir().trim();
     const entryType = entry.type ?? "remote";
 
@@ -842,28 +842,28 @@ export function createConnectionsStore(options: {
       projectDir: projectDir || null,
     });
 
-    const { omnirushClient, omnirushWorkspaceId, hasOmniRushTarget, canUseOmniRushServer } =
-      await resolveWritableOmniRushTarget();
+    const { marsClient, marsWorkspaceId, hasMarsTarget, canUseMarsServer } =
+      await resolveWritableMarsTarget();
 
-    if (isRemoteWorkspace && !canUseOmniRushServer) {
-      const error = "omnirush.ai server unavailable. MCP config is read-only.";
+    if (isRemoteWorkspace && !canUseMarsServer) {
+      const error = "marsai.click server unavailable. MCP config is read-only.";
       setStateField("mcpStatus", error);
       finishPerf(options.developerMode(), "mcp.connect", "blocked", startedAt, {
-        reason: "omnirush-server-unavailable",
+        reason: "mars-server-unavailable",
       });
       return { ok: false, error };
     }
 
-    if (hasOmniRushTarget && !canUseOmniRushServer) {
-      const error = "omnirush.ai server MCP config is read-only.";
+    if (hasMarsTarget && !canUseMarsServer) {
+      const error = "marsai.click server MCP config is read-only.";
       setStateField("mcpStatus", error);
       finishPerf(options.developerMode(), "mcp.connect", "blocked", startedAt, {
-        reason: "omnirush-server-read-only",
+        reason: "mars-server-read-only",
       });
       return { ok: false, error };
     }
 
-    if (!canUseOmniRushServer && !isDesktopRuntime()) {
+    if (!canUseMarsServer && !isDesktopRuntime()) {
       const error = t("mcp.desktop_required");
       setStateField("mcpStatus", error);
       finishPerf(options.developerMode(), "mcp.connect", "blocked", startedAt, {
@@ -872,7 +872,7 @@ export function createConnectionsStore(options: {
       return { ok: false, error };
     }
 
-    if (!isRemoteWorkspace && !projectDir && !canUseOmniRushServer) {
+    if (!isRemoteWorkspace && !projectDir && !canUseMarsServer) {
       const error = t("mcp.pick_workspace_first");
       setStateField("mcpStatus", error);
       finishPerf(options.developerMode(), "mcp.connect", "blocked", startedAt, {
@@ -881,8 +881,8 @@ export function createConnectionsStore(options: {
       return { ok: false, error };
     }
 
-    const activeClient = canUseOmniRushServer ? options.client() ?? await ensureActiveClient().catch(() => null) : await ensureActiveClient();
-    if (!activeClient && !canUseOmniRushServer) {
+    const activeClient = canUseMarsServer ? options.client() ?? await ensureActiveClient().catch(() => null) : await ensureActiveClient();
+    if (!activeClient && !canUseMarsServer) {
       const error = t("mcp.connect_server_first");
       setStateField("mcpStatus", error);
       finishPerf(options.developerMode(), "mcp.connect", "blocked", startedAt, {
@@ -892,7 +892,7 @@ export function createConnectionsStore(options: {
     }
 
     const resolvedProjectDir = activeClient ? await resolveProjectDir(activeClient, projectDir) : projectDir;
-    if (!resolvedProjectDir && !canUseOmniRushServer) {
+    if (!resolvedProjectDir && !canUseMarsServer) {
       const error = t("mcp.pick_workspace_first");
       setStateField("mcpStatus", error);
       finishPerf(options.developerMode(), "mcp.connect", "blocked", startedAt, {
@@ -904,11 +904,11 @@ export function createConnectionsStore(options: {
     const slug = entry.id ?? getMcpServerName(entry);
     const action = snapshot.mcpServers.some((server) => server.name === slug) ? "updated" : "added";
 
-    if (conflictsWithOmniRushConnect(entry)) {
-      const error = t("mcp.name_reserved_omnirush_connect");
+    if (conflictsWithMarsConnect(entry)) {
+      const error = t("mcp.name_reserved_mars_connect");
       setStateField("mcpStatus", error);
       finishPerf(options.developerMode(), "mcp.connect", "blocked", startedAt, {
-        reason: "omnirush-connect-name-reserved",
+        reason: "mars-connect-name-reserved",
       });
       return { ok: false, error };
     }
@@ -916,21 +916,21 @@ export function createConnectionsStore(options: {
     try {
       mutateState((current) => ({ ...current, mcpStatus: null, mcpConnectingName: entry.name }));
 
-      if (entry.managedBy === "omnirush-connect") {
+      if (entry.managedBy === "mars-connect") {
         if (slug !== CLOUD_MCP_SERVER_NAME) {
-          throw new Error("omnirush.ai Connect MCP metadata is invalid.");
+          throw new Error("marsai.click Connect MCP metadata is invalid.");
         }
-        if (!canUseOmniRushServer || !omnirushClient || !omnirushWorkspaceId) {
-          throw new Error("omnirush.ai server is required to repair agent access to connected services.");
+        if (!canUseMarsServer || !marsClient || !marsWorkspaceId) {
+          throw new Error("marsai.click server is required to repair agent access to connected services.");
         }
         const context = await resolveCloudMcpOperationContext(null);
         if (!context) {
-          throw new Error("Sign in to omnirush.ai Cloud and choose an organization first.");
+          throw new Error("Sign in to marsai.click Cloud and choose an organization first.");
         }
         clearCloudMcpDisabledIntent(context);
-        const result = await runOmniRushCloudMcpReconciler({
+        const result = await runMarsCloudMcpReconciler({
           mode: "repair",
-          client: omnirushClient,
+          client: marsClient,
           context: { ...context, trigger: "desktop-explicit-connect" },
           mintToken: mintCloudControlMcpToken,
           force: true,
@@ -963,15 +963,15 @@ export function createConnectionsStore(options: {
 
       if (entry.managedOAuth) {
         if (isRemoteWorkspace || !isDesktopRuntime()) {
-          throw new Error("omnirush.ai-managed MCP OAuth is currently available for local desktop workspaces only.");
+          throw new Error("marsai.click-managed MCP OAuth is currently available for local desktop workspaces only.");
         }
         if (entryType !== "remote" || !entry.url) {
-          throw new Error("omnirush.ai-managed OAuth requires a remote MCP URL.");
+          throw new Error("marsai.click-managed OAuth requires a remote MCP URL.");
         }
-        if (!canUseOmniRushServer || !omnirushClient || !omnirushWorkspaceId) {
-          throw new Error("The local omnirush.ai server is required for managed MCP sign-in.");
+        if (!canUseMarsServer || !marsClient || !marsWorkspaceId) {
+          throw new Error("The local marsai.click server is required for managed MCP sign-in.");
         }
-        const result = await omnirushClient.addManagedMcp(omnirushWorkspaceId, {
+        const result = await marsClient.addManagedMcp(marsWorkspaceId, {
           name: slug,
           url: entry.url,
           oauth: {
@@ -982,8 +982,8 @@ export function createConnectionsStore(options: {
           },
         });
         const connected = await waitForManagedMcpAuthorization(
-          omnirushClient,
-          omnirushWorkspaceId,
+          marsClient,
+          marsWorkspaceId,
           slug,
           result,
         );
@@ -1006,9 +1006,9 @@ export function createConnectionsStore(options: {
       // Resolve dynamic URLs for built-in MCPs
       let resolvedUrl = entry.url;
       let resolvedHeaders: Record<string, string> | undefined;
-      if (!resolvedUrl && entry.serverName === "omnirush-ui") {
+      if (!resolvedUrl && entry.serverName === "mars-ui") {
         try {
-          const bridgeInfo = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("getUiControlBridgeInfo");
+          const bridgeInfo = await window.__MARS_ELECTRON__?.invokeDesktop?.("getUiControlBridgeInfo");
           if (bridgeInfo?.baseUrl) {
             resolvedUrl = `${bridgeInfo.baseUrl}/mcp`;
             if (bridgeInfo.token) {
@@ -1027,7 +1027,7 @@ export function createConnectionsStore(options: {
 
       if (entryType === "remote") {
         if (!resolvedUrl) {
-          throw new Error("Missing MCP URL. Is the omnirush.ai desktop app running?");
+          throw new Error("Missing MCP URL. Is the marsai.click desktop app running?");
         }
         mcpEntryConfig["url"] = resolvedUrl;
         if (resolvedHeaders) {
@@ -1057,8 +1057,8 @@ export function createConnectionsStore(options: {
         }
       }
 
-      if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
-        await omnirushClient.addMcp(omnirushWorkspaceId, {
+      if (canUseMarsServer && marsClient && marsWorkspaceId) {
+        await marsClient.addMcp(marsWorkspaceId, {
           name: slug,
           config: mcpEntryConfig,
         });
@@ -1102,12 +1102,12 @@ export function createConnectionsStore(options: {
         }
       }
 
-      if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
-        // The omnirush.ai server is the source of truth for workspace-scoped MCP
+      if (canUseMarsServer && marsClient && marsWorkspaceId) {
+        // The marsai.click server is the source of truth for workspace-scoped MCP
         // config in the React port. Avoid also calling the OpenCode SDK's MCP
         // hot-add endpoint here: when the SDK client is rooted at the aggregate
         // `/opencode` route it can resolve to an internal `local_*` workspace
-        // id that the omnirush.ai server does not expose, producing a confusing
+        // id that the marsai.click server does not expose, producing a confusing
         // `workspace_not_found` after the config write already succeeded.
       } else {
         if (!activeClient || !resolvedProjectDir) {
@@ -1204,8 +1204,8 @@ export function createConnectionsStore(options: {
 
   /**
    * Background reconciliation for the Den cloud MCP: when the desktop is
-   * signed in to omnirush.ai Cloud with an active org, keep the
-   * `omnirush-cloud` MCP entry configured with a fresh first-party token.
+   * signed in to marsai.click Cloud with an active org, keep the
+   * `mars-cloud` MCP entry configured with a fresh first-party token.
    * Quiet by design — a failed mint never opens the OAuth modal.
    *
    * `force` bypasses the freshness marker: used by the user-facing Refresh
@@ -1221,11 +1221,11 @@ export function createConnectionsStore(options: {
     const settings = readDenSettings();
     const orgId = settings.activeOrgId?.trim() ?? "";
     if (!orgId || !settings.authToken?.trim()) return "skipped";
-    const workspaceId = await resolveOmniRushWorkspaceId();
+    const workspaceId = await resolveMarsWorkspaceId();
     if (!workspaceId) return "skipped";
-    const omnirushClient = getOmniRushSnapshot().omnirushServerClient;
-    const serverBaseUrl = omnirushClient?.baseUrl.trim() ?? "";
-    if (!omnirushClient || !serverBaseUrl) return "skipped";
+    const marsClient = getMarsSnapshot().marsServerClient;
+    const serverBaseUrl = marsClient?.baseUrl.trim() ?? "";
+    if (!marsClient || !serverBaseUrl) return "skipped";
 
     const entry = MCP_QUICK_CONNECT.find((candidate) => candidate.serverName === CLOUD_MCP_SERVER_NAME);
     if (!entry) return "skipped";
@@ -1236,9 +1236,9 @@ export function createConnectionsStore(options: {
     const configuredEntry = snapshot.mcpServers.find((server) => server.name === CLOUD_MCP_SERVER_NAME);
     if (configuredEntry?.config.enabled === false) return "skipped";
 
-    const result = await runOmniRushCloudMcpReconciler({
+    const result = await runMarsCloudMcpReconciler({
       mode: "repair",
-      client: omnirushClient,
+      client: marsClient,
       context: {
         ...scope,
         denAuthToken: settings.authToken,
@@ -1260,7 +1260,7 @@ export function createConnectionsStore(options: {
   }
 
   async function waitForManagedMcpAuthorization(
-    omnirushClient: OmniRushServerClient,
+    marsClient: MarsServerClient,
     workspaceId: string,
     name: string,
     result: { status: "connected" } | { status: "needs_auth"; authorizeUrl: string },
@@ -1269,7 +1269,7 @@ export function createConnectionsStore(options: {
     await openDesktopUrl(assertDesktopWebUrl(result.authorizeUrl));
     for (let attempt = 0; attempt < 120; attempt += 1) {
       await new Promise((resolve) => setTimeout(resolve, 1_000));
-      const connection = await omnirushClient.getManagedMcp(workspaceId, name);
+      const connection = await marsClient.getManagedMcp(workspaceId, name);
       if (connection.status === "connected") return true;
       if (connection.status === "reconnect_required") {
         throw new Error(connection.lastError || "MCP sign-in needs to be restarted.");
@@ -1283,13 +1283,13 @@ export function createConnectionsStore(options: {
     if (mcpMutationDenied(Boolean(builtInMcp(entry.name)))) return;
     if (entry.managedOAuth) {
       try {
-        const { omnirushClient, omnirushWorkspaceId, canUseOmniRushServer } = await resolveWritableOmniRushTarget();
-        if (!canUseOmniRushServer || !omnirushClient || !omnirushWorkspaceId) {
-          throw new Error("The local omnirush.ai server is required for managed MCP sign-in.");
+        const { marsClient, marsWorkspaceId, canUseMarsServer } = await resolveWritableMarsTarget();
+        if (!canUseMarsServer || !marsClient || !marsWorkspaceId) {
+          throw new Error("The local marsai.click server is required for managed MCP sign-in.");
         }
         mutateState((current) => ({ ...current, mcpStatus: null, mcpConnectingName: entry.name }));
-        const result = await omnirushClient.connectManagedMcp(omnirushWorkspaceId, entry.name);
-        const connected = await waitForManagedMcpAuthorization(omnirushClient, omnirushWorkspaceId, entry.name, result);
+        const result = await marsClient.connectManagedMcp(marsWorkspaceId, entry.name);
+        const connected = await waitForManagedMcpAuthorization(marsClient, marsWorkspaceId, entry.name, result);
         await refreshMcpServers();
         if (connected) setStateField("mcpStatus", t("mcp.connected"));
       } catch (error) {
@@ -1326,38 +1326,38 @@ export function createConnectionsStore(options: {
 
   async function logoutMcpAuth(name: string) {
     if (mcpMutationDenied(Boolean(builtInMcp(name)))) return;
-    const omnirushSnapshot = getOmniRushSnapshot();
+    const marsSnapshot = getMarsSnapshot();
     const isRemoteWorkspace =
       options.workspaceType() === "remote" ||
-      (!isDesktopRuntime() && omnirushSnapshot.omnirushServerStatus === "connected");
+      (!isDesktopRuntime() && marsSnapshot.marsServerStatus === "connected");
     const projectDir = options.projectDir().trim();
 
-    const { omnirushClient, omnirushWorkspaceId, hasOmniRushTarget, canUseOmniRushServer } =
-      await resolveWritableOmniRushTarget();
+    const { marsClient, marsWorkspaceId, hasMarsTarget, canUseMarsServer } =
+      await resolveWritableMarsTarget();
 
-    if (isRemoteWorkspace && !canUseOmniRushServer) {
-      setStateField("mcpStatus", "omnirush.ai server unavailable. MCP auth is read-only.");
+    if (isRemoteWorkspace && !canUseMarsServer) {
+      setStateField("mcpStatus", "marsai.click server unavailable. MCP auth is read-only.");
       return;
     }
 
-    if (hasOmniRushTarget && !canUseOmniRushServer) {
-      setStateField("mcpStatus", "omnirush.ai server MCP auth is read-only.");
+    if (hasMarsTarget && !canUseMarsServer) {
+      setStateField("mcpStatus", "marsai.click server MCP auth is read-only.");
       return;
     }
 
-    if (!canUseOmniRushServer && !isDesktopRuntime()) {
+    if (!canUseMarsServer && !isDesktopRuntime()) {
       setStateField("mcpStatus", t("mcp.desktop_required"));
       return;
     }
 
-    const activeClient = canUseOmniRushServer ? options.client() : await ensureActiveClient();
-    if (!activeClient && !canUseOmniRushServer) {
+    const activeClient = canUseMarsServer ? options.client() : await ensureActiveClient();
+    if (!activeClient && !canUseMarsServer) {
       setStateField("mcpStatus", t("mcp.connect_server_first"));
       return;
     }
 
     const resolvedProjectDir = activeClient ? await resolveProjectDir(activeClient, projectDir) : projectDir;
-    if (!resolvedProjectDir && !canUseOmniRushServer) {
+    if (!resolvedProjectDir && !canUseMarsServer) {
       setStateField("mcpStatus", t("mcp.pick_workspace_first"));
       return;
     }
@@ -1366,8 +1366,8 @@ export function createConnectionsStore(options: {
     setStateField("mcpStatus", null);
 
     try {
-      if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
-        await omnirushClient.logoutMcpAuth(omnirushWorkspaceId, safeName);
+      if (canUseMarsServer && marsClient && marsWorkspaceId) {
+        await marsClient.logoutMcpAuth(marsWorkspaceId, safeName);
       } else {
         if (!activeClient || !resolvedProjectDir) {
           throw new Error(t("mcp.connect_server_first"));
@@ -1395,14 +1395,14 @@ export function createConnectionsStore(options: {
     try {
       setStateField("mcpStatus", null);
 
-      const { omnirushClient, omnirushWorkspaceId, hasOmniRushTarget, canUseOmniRushServer } =
-        await resolveWritableOmniRushTarget();
+      const { marsClient, marsWorkspaceId, hasMarsTarget, canUseMarsServer } =
+        await resolveWritableMarsTarget();
 
-      if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
-        await omnirushClient.removeMcp(omnirushWorkspaceId, name);
+      if (canUseMarsServer && marsClient && marsWorkspaceId) {
+        await marsClient.removeMcp(marsWorkspaceId, name);
       } else {
-        if (hasOmniRushTarget) {
-          setStateField("mcpStatus", "omnirush.ai server MCP config is read-only.");
+        if (hasMarsTarget) {
+          setStateField("mcpStatus", "marsai.click server MCP config is read-only.");
           return;
         }
         const projectDir = options.projectDir().trim();
@@ -1476,15 +1476,15 @@ export function createConnectionsStore(options: {
   async function setMcpEnabled(name: string, enabled: boolean) {
     if (mcpMutationDenied(Boolean(builtInMcp(name)))) return;
     try {
-      const { omnirushClient, omnirushWorkspaceId, canUseOmniRushServer } =
-        await resolveWritableOmniRushTarget();
+      const { marsClient, marsWorkspaceId, canUseMarsServer } =
+        await resolveWritableMarsTarget();
 
-      if (!canUseOmniRushServer || !omnirushClient || !omnirushWorkspaceId) {
+      if (!canUseMarsServer || !marsClient || !marsWorkspaceId) {
         setStateField("mcpStatus", t("mcp.toggle_requires_server"));
         return;
       }
 
-      await omnirushClient.setMcpEnabled(omnirushWorkspaceId, name, enabled);
+      await marsClient.setMcpEnabled(marsWorkspaceId, name, enabled);
       if (name === CLOUD_MCP_SERVER_NAME) {
         const context = await resolveCloudMcpOperationContext(null);
         if (enabled) {
@@ -1564,7 +1564,7 @@ export function createConnectionsStore(options: {
       return;
     }
 
-    if (!isDesktopRuntime() && getOmniRushSnapshot().omnirushServerStatus !== "connected") {
+    if (!isDesktopRuntime() && getMarsSnapshot().marsServerStatus !== "connected") {
       return;
     }
 

@@ -7,7 +7,7 @@
  * Consumer: apps/app/src/app/lib/desktop.ts — the `desktopBridge` Proxy and
  * its named exports derive per-command signatures from `DesktopCommandMap`.
  *
- * Every command sent over the `omnirush:desktop` channel has exactly one
+ * Every command sent over the `mars:desktop` channel has exactly one
  * entry here: `args` is the tuple the renderer passes, `result` what the
  * main process resolves. Results marked `unknown` are not yet modeled —
  * tighten them instead of widening call sites.
@@ -72,7 +72,7 @@ export type DesktopIntegrationIssue =
 export type DesktopIntegrationStatus = {
   supported: boolean;
   state: "unsupported" | "not_integrated" | "integrated" | "needs_repair" | "managed_externally";
-  ownership: "none" | "omnirush" | "external";
+  ownership: "none" | "mars" | "external";
   appImagePath: string | null;
   desktopEntryPath: string | null;
   handlerDesktopId: string | null;
@@ -86,7 +86,7 @@ export type DesktopIntegrationResult = {
 };
 
 /** One built-in server or engine restart, as recorded in runtime-restarts.jsonl. */
-export type OmniRushRuntimeRestartRecord = {
+export type MarsRuntimeRestartRecord = {
   at: string;
   kind: "server" | "engine";
   /** restarting, started, deferred, skipped, dropped, stopping, or restarted (engine watchdog). */
@@ -96,7 +96,7 @@ export type OmniRushRuntimeRestartRecord = {
   [key: string]: unknown;
 };
 
-export type OmniRushServerInfo = {
+export type MarsServerInfo = {
   running: boolean;
   /**
    * Monotonic per-start identity of the embedded server within this desktop
@@ -124,17 +124,17 @@ export type OmniRushServerInfo = {
   lastStdout: string | null;
   lastStderr: string | null;
   managedOpencodeExecution: OpencodeExecutionSnapshot | null;
-  /** Recent restarts, newest first (omnirushServerInfo only). */
-  restarts?: OmniRushRuntimeRestartRecord[];
+  /** Recent restarts, newest first (marsServerInfo only). */
+  restarts?: MarsRuntimeRestartRecord[];
   /** An automatic restart that waits until no session is running. */
   pendingRestart?: { action: string; reason: string; source: string; requestedAt: string } | null;
-  /** Set on an omnirushServerRestart answer that kept the running server. */
+  /** Set on an marsServerRestart answer that kept the running server. */
   restartDeferred?: boolean;
   restartSkipped?: boolean;
 };
 
 /** Outcome of the remote device-session revocation attempted during sign-out. */
-export type OmniRushAccountSignOutReason =
+export type MarsAccountSignOutReason =
   /** The account server accepted the revocation (2xx). */
   | "revoked"
   /** The account server no longer knows the device session (401/403, or a 404 naming the session). */
@@ -144,10 +144,10 @@ export type OmniRushAccountSignOutReason =
   /** The account server has no device sign-out route (404 route missing, 405, 501). */
   | "endpoint_missing";
 
-export type OmniRushAccountSignOutResult = {
+export type MarsAccountSignOutResult = {
   connected: false;
   remoteRevoked: boolean;
-  reason: OmniRushAccountSignOutReason;
+  reason: MarsAccountSignOutReason;
 };
 
 /**
@@ -158,7 +158,7 @@ export type OmniRushAccountSignOutResult = {
  * once either runs out; `limitScope` "week" means only the weekly cap binds.
  * The grant fields are optional: an older desktop bridge leaves them out.
  */
-export type OmniRushAccountUsage = {
+export type MarsAccountUsage = {
   tokenLimit: number;
   usedTokens: number;
   remainingTokens: number;
@@ -175,7 +175,7 @@ export type OmniRushAccountUsage = {
  * `client_update`, product "gui"). Required: update before `deadline`;
  * blocked: model requests are refused until the app is updated.
  */
-export type OmniRushClientUpdate = {
+export type MarsClientUpdate = {
   required: boolean;
   blocked: boolean;
   current: string | null;
@@ -188,10 +188,10 @@ export type OmniRushClientUpdate = {
 
 /**
  * What the app shows for a mandatory update, derived in the Electron main
- * process from `client_update`, the gateway's `x-omnirush-update-required`
+ * process from `client_update`, the gateway's `x-mars-update-required`
  * header and HTTP 426 `update_required` refusals.
  */
-export type OmniRushUpdateGateState = {
+export type MarsUpdateGateState = {
   status: "none" | "required" | "blocked";
   current: string;
   minimum: string | null;
@@ -201,14 +201,14 @@ export type OmniRushUpdateGateState = {
   source: "profile" | "header" | "rejection" | null;
 };
 
-export type OmniRushQualityTier = "new" | "standard" | "gold" | "coaching" | "limited";
+export type MarsQualityTier = "new" | "standard" | "gold" | "coaching" | "limited";
 
 /**
  * Quality rewards (/device/me `quality`). Absent or null: the feature is
  * off and the app shows nothing. `preview`: spins pay 0 tokens.
  */
-export type OmniRushAccountQuality = {
-  tier: OmniRushQualityTier;
+export type MarsAccountQuality = {
+  tier: MarsQualityTier;
   /** 0..1 */
   score: number;
   /** Below 1 while "limited" and the cut is in force. */
@@ -223,9 +223,9 @@ export type OmniRushAccountQuality = {
   nextTierHint: string | null;
   tips: string[];
   /** Shown once per `id`; the same as `notices[0]`. */
-  notice: OmniRushQualityNotice | null;
+  notice: MarsQualityNotice | null;
   /** Newest first, up to 5. */
-  notices: OmniRushQualityNotice[];
+  notices: MarsQualityNotice[];
   mode: "shadow" | "enforce";
   /** The daily budget is spent: only reproducible spins can be spun until tomorrow. */
   resting: boolean;
@@ -245,10 +245,10 @@ export type OmniRushAccountQuality = {
   windowsCounts: boolean;
 };
 
-export type OmniRushQualityNotice = { id: string; kind: string | null; title: string; body: string };
+export type MarsQualityNotice = { id: string; kind: string | null; title: string; body: string };
 
 /** One session in GET /me/quality: why it earned (or did not earn) spins. */
-export type OmniRushQualitySession = {
+export type MarsQualitySession = {
   sessionId: string;
   at: string | null;
   verdict: string | null;
@@ -268,14 +268,14 @@ export type OmniRushQualitySession = {
   work: { codeFiles: number; linesChanged: number; toolCalls: number; testRuns: number; floor: number; step: number } | null;
 };
 
-export type OmniRushQualityDetails = {
-  segments: OmniRushWheelSegment[];
+export type MarsQualityDetails = {
+  segments: MarsWheelSegment[];
   /** The richer wheel client-grade spins use. */
-  clientSegments: OmniRushWheelSegment[];
+  clientSegments: MarsWheelSegment[];
   expectedTokens: number | null;
   /** The top segment's prize. */
   jackpotTokens: number | null;
-  sessions: OmniRushQualitySession[];
+  sessions: MarsQualitySession[];
   /** `{code: label}` for the sessions' `fails`. */
   failLabels: Record<string, string>;
 };
@@ -285,25 +285,25 @@ export type OmniRushQualityDetails = {
  * Labels, hints and messages are server text, shown as given. Null from the
  * desktop: the app falls back to its own checklist.
  */
-/** Buildathon (GET /omnirush/me/buildathon), parsed by the main process; null unless enrolled. */
-export type OmniRushBuildathonTrack = { id: string; label: string };
-export type OmniRushBuildathonPhase = "upcoming" | "building" | "judging" | "results" | "closed";
-export type OmniRushBuildathonEvent = {
+/** Buildathon (GET /mars/me/buildathon), parsed by the main process; null unless enrolled. */
+export type MarsBuildathonTrack = { id: string; label: string };
+export type MarsBuildathonPhase = "upcoming" | "building" | "judging" | "results" | "closed";
+export type MarsBuildathonEvent = {
   id: string;
   name: string;
   startsAt: string | null;
   registrationEndsAt: string | null;
   deadlineAt: string;
   resultsAt: string | null;
-  phase: OmniRushBuildathonPhase | null;
+  phase: MarsBuildathonPhase | null;
   pageUrl: string | null;
   submitUrl: string | null;
   rules: string[];
-  tracks: OmniRushBuildathonTrack[];
+  tracks: MarsBuildathonTrack[];
   /** Largest first. */
   reminders: Array<{ beforeSeconds: number; text: string }>;
 };
-export type OmniRushBuildathonParticipant = {
+export type MarsBuildathonParticipant = {
   enrolledAt: string | null;
   tokensGranted: number;
   tokensUsed: number;
@@ -311,7 +311,7 @@ export type OmniRushBuildathonParticipant = {
   sessionsTagged: number;
   sessionsGood: number;
 };
-export type OmniRushBuildathonSubmission = {
+export type MarsBuildathonSubmission = {
   submissionId: string;
   submittedAt: string | null;
   updatedAt: string | null;
@@ -325,25 +325,25 @@ export type OmniRushBuildathonSubmission = {
   locked: boolean;
 };
 /** The event's reproducibility settings (defaults when the server sends none). */
-export type OmniRushBuildathonRepro = {
+export type MarsBuildathonRepro = {
   box: "on" | "offer" | "off";
   agentRules: string;
   checklist: Array<{ id: string; text: string }>;
 };
-export type OmniRushBuildathonCheck = { id: string; text: string; ok: boolean | null };
-export type OmniRushBuildathonStatus = {
+export type MarsBuildathonCheck = { id: string; text: string; ok: boolean | null };
+export type MarsBuildathonStatus = {
   enrolled: true;
   serverTime: string | null;
-  event: OmniRushBuildathonEvent;
-  participant: OmniRushBuildathonParticipant | null;
-  submission: OmniRushBuildathonSubmission | null;
-  repro: OmniRushBuildathonRepro;
+  event: MarsBuildathonEvent;
+  participant: MarsBuildathonParticipant | null;
+  submission: MarsBuildathonSubmission | null;
+  repro: MarsBuildathonRepro;
   /** The updates feed, newest first (at most 20). */
-  announcements: OmniRushBuildathonAnnouncement[];
+  announcements: MarsBuildathonAnnouncement[];
   /** The linked GitHub account (needed to submit); null when none is linked. */
   github: { login: string; linkedAt: string | null } | null;
 };
-export type OmniRushBuildathonAnnouncement = {
+export type MarsBuildathonAnnouncement = {
   id: string;
   title: string;
   /** Plain text; may contain URLs. */
@@ -353,7 +353,7 @@ export type OmniRushBuildathonAnnouncement = {
   publishedAt: string | null;
 };
 /** A non-participant's promo (GET /me/buildathon `enrolled: false` + `promo`). */
-export type OmniRushBuildathonPromo = {
+export type MarsBuildathonPromo = {
   /** The dismissal key: a new id shows the promo again. */
   id: string;
   title: string;
@@ -366,10 +366,10 @@ export type OmniRushBuildathonPromo = {
   join: boolean;
   joinUrl: string | null;
 };
-export type OmniRushBuildathonPromoStatus = { enrolled: false; serverTime: string | null; promo: OmniRushBuildathonPromo };
+export type MarsBuildathonPromoStatus = { enrolled: false; serverTime: string | null; promo: MarsBuildathonPromo };
 /** What the app reads from GET /me/buildathon: a participant, a promo, or nothing to show. */
-export type OmniRushBuildathonAnswer = OmniRushBuildathonStatus | OmniRushBuildathonPromoStatus | null;
-export type OmniRushBuildathonSession = {
+export type MarsBuildathonAnswer = MarsBuildathonStatus | MarsBuildathonPromoStatus | null;
+export type MarsBuildathonSession = {
   sessionId: string;
   title: string | null;
   project: string | null;
@@ -380,12 +380,12 @@ export type OmniRushBuildathonSession = {
   reasons: string[];
   tokens: number;
 };
-export type OmniRushBuildathonLinkResult =
-  | { ok: true; status: OmniRushBuildathonStatus }
+export type MarsBuildathonLinkResult =
+  | { ok: true; status: MarsBuildathonStatus }
   | { ok: false; error: string; closed?: boolean };
-export type OmniRushBuildathonTagResult = "tagged" | "refused" | "retry";
+export type MarsBuildathonTagResult = "tagged" | "refused" | "retry";
 
-export type OmniRushSessionStatus = {
+export type MarsSessionStatus = {
   sessionId: string;
   status: "on_track" | "at_risk" | "failing" | "unknown";
   reasons: { code: string; message: string }[];
@@ -428,7 +428,7 @@ export type OmniRushSessionStatus = {
   pollSeconds: number;
 };
 
-export type OmniRushQualitySpinRecord = {
+export type MarsQualitySpinRecord = {
   id: string;
   status: "ready" | "spun" | "expired" | "forfeit";
   reason: string | null;
@@ -445,23 +445,23 @@ export type OmniRushQualitySpinRecord = {
 
 /**
  * Keep this computer awake while the agent works (apps/desktop/electron/keep-awake.mjs).
- * `available`: false over SSH or in CI, where it never runs; `forcedOff`: OMNIRUSH_KEEP_AWAKE=0 for this launch.
+ * `available`: false over SSH or in CI, where it never runs; `forcedOff`: MARS_KEEP_AWAKE=0 for this launch.
  */
 export type KeepAwakeState = { enabled: boolean; active: boolean; available: boolean; forcedOff: boolean };
 
 /** GET /me/quality/spins: totals and the newest spins (up to 10). */
-export type OmniRushQualitySpinTotals = { spun: number; paidTokens: number; recent: OmniRushQualitySpinRecord[] };
+export type MarsQualitySpinTotals = { spun: number; paidTokens: number; recent: MarsQualitySpinRecord[] };
 
-export type OmniRushWheelSegment = { tokens: number; weight: number };
+export type MarsWheelSegment = { tokens: number; weight: number };
 
 /** A 200 from POST /me/quality/spin. The server picks `segmentIndex`; the app only animates to it. */
-export type OmniRushQualitySpin = {
+export type MarsQualitySpin = {
   /** Paid into the pot: 0 in preview or past the pot cap. */
   tokens: number;
   /** The segment the wheel landed on. */
   prizeTokens: number;
   segmentIndex: number;
-  segments: OmniRushWheelSegment[];
+  segments: MarsWheelSegment[];
   preview: boolean;
   capped: boolean;
   reproducible: boolean;
@@ -479,23 +479,25 @@ export type OmniRushQualitySpin = {
   clientGrade: boolean;
 };
 
-export type OmniRushQualitySpinRefusal = "no_spins" | "wheel_resting" | "quality_rewards_off";
+export type MarsQualitySpinRefusal = "no_spins" | "wheel_resting" | "quality_rewards_off";
 
-export type OmniRushQualitySpinOutcome =
-  | { ok: true; spin: OmniRushQualitySpin }
-  | { ok: false; reason: OmniRushQualitySpinRefusal | "signed_out" | "unreachable" | "failed"; status: number | null };
+export type MarsQualitySpinOutcome =
+  | { ok: true; spin: MarsQualitySpin }
+  | { ok: false; reason: MarsQualitySpinRefusal | "signed_out" | "unreachable" | "failed"; status: number | null };
 
-export type OmniRushAccountStatus = {
+export type MarsAccountStatus = {
   connected: boolean;
   gatewayConfigured: boolean;
   reauthorizationRequired?: boolean;
+  /** What the session is built on: the account sign-in or a pasted API key. Present while connected. */
+  credentialKind?: "oauth" | "api_key";
   email?: string | null;
   displayName?: string | null;
   accountStatus?: string | null;
-  usage?: OmniRushAccountUsage | null;
+  usage?: MarsAccountUsage | null;
   /** Gateway URL the connected account uses, or the configured default while signed out. */
   gatewayUrl?: string | null;
-  /** Display label for the account server, e.g. "omnirush.ai" or "localhost:8090 (local API)". */
+  /** Display label for the account server, e.g. "marsai.click" or "localhost:8090 (local API)". */
   gatewayHost?: string | null;
   /**
    * "file": Linux without a usable keyring, so the sign-in is kept in an
@@ -508,10 +510,10 @@ export type OmniRushAccountStatus = {
    * session the server ended (reauthorizationRequired alone).
    */
   keyringUnavailable?: boolean;
-  /** /device/me `client_update` for this app; absent from an older desktop bridge. */
-  clientUpdate?: OmniRushClientUpdate | null;
+  /** Account server `client_update` for this app; absent from an older desktop bridge. */
+  clientUpdate?: MarsClientUpdate | null;
   /** Quality rewards; null (or absent from an older bridge) while the feature is off. */
-  quality?: OmniRushAccountQuality | null;
+  quality?: MarsAccountQuality | null;
 };
 
 export type EngineDoctorResult = {
@@ -553,7 +555,7 @@ export type OpencodeCommandDraft = {
   subtask?: boolean;
 };
 
-export type WorkspaceOmniRushConfig = {
+export type WorkspaceMarsConfig = {
   version: number;
   workspace?: {
     name?: string | null;
@@ -571,7 +573,7 @@ export type AppBuildInfo = {
   version: string;
   gitSha?: string | null;
   buildEpoch?: string | null;
-  omnirushDevMode?: boolean;
+  marsDevMode?: boolean;
   os?: string | null;
   arch?: string | null;
 };
@@ -627,7 +629,7 @@ export type DesktopBootstrapConfig = {
   } | null;
 };
 
-export type OmniRushDockerCleanupResult = {
+export type MarsDockerCleanupResult = {
   candidates: string[];
   removed: string[];
   errors: string[];
@@ -763,15 +765,15 @@ export type WorkspaceCreateInput = {
 
 export type WorkspaceCreateRemoteInput = {
   baseUrl: string;
-  remoteType?: "omnirush" | "opencode" | null;
+  remoteType?: "mars" | "opencode" | null;
   directory?: string | null;
   displayName?: string | null;
-  omnirushHostUrl?: string | null;
-  omnirushToken?: string | null;
-  omnirushClientToken?: string | null;
-  omnirushHostToken?: string | null;
-  omnirushWorkspaceId?: string | null;
-  omnirushWorkspaceName?: string | null;
+  marsHostUrl?: string | null;
+  marsToken?: string | null;
+  marsClientToken?: string | null;
+  marsHostToken?: string | null;
+  marsWorkspaceId?: string | null;
+  marsWorkspaceName?: string | null;
   sandboxBackend?: string | null;
   sandboxRunId?: string | null;
   sandboxContainerName?: string | null;
@@ -824,12 +826,12 @@ export type DesktopCommandMap = {
     args: [input: { workspacePath: string; folderPath?: string; authorizedRoot?: string }];
     result: unknown;
   };
-  workspaceOmniRushRead: {
+  workspaceMarsRead: {
     args: [input: { workspacePath: string }];
-    result: WorkspaceOmniRushConfig;
+    result: WorkspaceMarsConfig;
   };
-  workspaceOmniRushWrite: {
-    args: [input: { workspacePath: string; config: WorkspaceOmniRushConfig }];
+  workspaceMarsWrite: {
+    args: [input: { workspacePath: string; config: WorkspaceMarsConfig }];
     result: unknown;
   };
   workspaceExportConfig: {
@@ -884,12 +886,12 @@ export type DesktopCommandMap = {
   };
   desktopIntegrationRemove: { args: []; result: DesktopIntegrationResult };
   getUiControlBridgeInfo: { args: []; result: UiControlBridgeInfo | null };
-  getOmniRushUiMcpCommand: { args: []; result: string[] };
+  getMarsUiMcpCommand: { args: []; result: string[] };
   getComputerUseMcpCommand: { args: []; result: string[] };
   getComputerUseMcpEnvironment: { args: []; result: Record<string, string> };
   getComputerUseState: { args: []; result: unknown };
   computerUseAction: { args: [value: { connectionId: string; id: string; action: string; windowId?: number }]; result: void };
-  getOmniRushUiMcpEnvironment: { args: []; result: Record<string, string> };
+  getMarsUiMcpEnvironment: { args: []; result: Record<string, string> };
 
   // Computer use
   checkComputerUsePermissions: { args: []; result: ComputerUsePermissions };
@@ -915,51 +917,55 @@ export type DesktopCommandMap = {
     args: [rawUrl: string];
     result: { ok: true; config: DesktopBootstrapConfig } | ConnectLinkVerifyFailure;
   };
-  nukeOmniRushAndOpencodeConfigPreview: { args: [options?: NukeOptions]; result: NukeManifestPreview };
-  nukeOmniRushAndOpencodeConfigAndExit: { args: [options?: NukeOptions]; result: NukeReceipt };
+  nukeMarsAndOpencodeConfigPreview: { args: [options?: NukeOptions]; result: NukeManifestPreview };
+  nukeMarsAndOpencodeConfigAndExit: { args: [options?: NukeOptions]; result: NukeReceipt };
 
   // Sandbox
-  sandboxCleanupOmniRushContainers: { args: []; result: OmniRushDockerCleanupResult };
+  sandboxCleanupMarsContainers: { args: []; result: MarsDockerCleanupResult };
 
-  // OmniRush.ai server sidecar
-  omnirushServerInfo: { args: []; result: OmniRushServerInfo };
-  omnirushAccountStatus: {
+  // MarsAI server sidecar
+  marsServerInfo: { args: []; result: MarsServerInfo };
+  marsAccountStatus: {
     args: [options?: { sessionId?: string | null }];
-    result: OmniRushAccountStatus;
+    result: MarsAccountStatus;
   };
-  omnirushQualityDetails: { args: []; result: OmniRushQualityDetails | null };
-  omnirushQualitySpins: { args: []; result: OmniRushQualitySpinTotals | null };
+  marsQualityDetails: { args: []; result: MarsQualityDetails | null };
+  marsQualitySpins: { args: []; result: MarsQualitySpinTotals | null };
   keepAwakeStatus: { args: []; result: KeepAwakeState };
   keepAwakeSet: { args: [enabled: boolean]; result: KeepAwakeState };
-  omnirushSessionStatus: { args: [input: { sessionId: string }]; result: OmniRushSessionStatus | null };
-  omnirushQualitySpin: {
+  marsSessionStatus: { args: [input: { sessionId: string }]; result: MarsSessionStatus | null };
+  marsQualitySpin: {
     args: [input: { idempotencyKey: string }];
-    result: OmniRushQualitySpinOutcome;
+    result: MarsQualitySpinOutcome;
   };
-  omnirushBuildathon: { args: []; result: OmniRushBuildathonAnswer };
-  omnirushBuildathonJoin: { args: []; result: OmniRushBuildathonLinkResult };
-  omnirushBuildathonSessions: { args: []; result: OmniRushBuildathonSession[] | null };
-  omnirushBuildathonLink: { args: [input: { code: string }]; result: OmniRushBuildathonLinkResult };
-  omnirushBuildathonChecklist: {
+  marsBuildathon: { args: []; result: MarsBuildathonAnswer };
+  marsBuildathonJoin: { args: []; result: MarsBuildathonLinkResult };
+  marsBuildathonSessions: { args: []; result: MarsBuildathonSession[] | null };
+  marsBuildathonLink: { args: [input: { code: string }]; result: MarsBuildathonLinkResult };
+  marsBuildathonChecklist: {
     args: [input: { path: string; checklist: Array<{ id: string; text: string }> }];
-    result: OmniRushBuildathonCheck[] | null;
+    result: MarsBuildathonCheck[] | null;
   };
-  omnirushBuildathonTagSession: {
+  marsBuildathonTagSession: {
     args: [input: { sessionId: string; track: string; project?: string | null }];
-    result: OmniRushBuildathonTagResult;
+    result: MarsBuildathonTagResult;
   };
-  omnirushAccountConnect: {
+  marsAccountConnect: {
     args: [options?: { gatewayUrl?: string; deviceName?: string }];
-    result: { connected: true; userCode: string };
+    result: { connected: true; userCode: string; kind: "oauth" };
   };
-  omnirushAccountSignOut: { args: []; result: OmniRushAccountSignOutResult };
+  marsAccountConnectApiKey: {
+    args: [options?: { gatewayUrl?: string; apiKey?: string }];
+    result: { connected: true; kind: "api_key" };
+  };
+  marsAccountSignOut: { args: []; result: MarsAccountSignOutResult };
   automationRunnerConfigure: {
     args: [configuration: { baseUrl: string; token: string; runnerId: string } | null];
     result: { connected: boolean };
   };
-  omnirushServerRestart: {
+  marsServerRestart: {
     args: [options?: Record<string, unknown>];
-    result: OmniRushServerInfo;
+    result: MarsServerInfo;
   };
 
   // Dialogs
@@ -1015,7 +1021,7 @@ export type DesktopCommandMap = {
    * the renderer's localStorage cleanup is mode-scoped. Follow-up: decide
    * whether "onboarding" should preserve desktop workspace state.
    */
-  resetOmniRushState: { args: [mode?: "onboarding" | "all"]; result: unknown };
+  resetMarsState: { args: [mode?: "onboarding" | "all"]; result: unknown };
   resetOpencodeCache: { args: []; result: CacheResetResult };
   opencodeMcpAuth: { args: [action: string, name: string]; result: ExecResult };
   setWindowDecorations: { args: [decorated: boolean]; result: unknown };

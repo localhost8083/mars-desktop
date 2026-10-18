@@ -1,13 +1,13 @@
-// Ported from the CLI (omnirush-cli src/box/backends/wsl.js + wsl.json,
+// Ported from the CLI (mars-cli src/box/backends/wsl.js + wsl.json,
 // feat/local-box-backends); keep the two in step. Desktop differences: types;
 // wsl.json is a copy of the CLI's; the download (the distro, the helpers,
 // the image) runs in the app's own process (pullCommand null: there is no
-// `omnirush sandbox pull` to start detached).
+// `mars sandbox pull` to start detached).
 //
-// Windows: OmniRush's own WSL 2 distro as the box backend, so no Docker
-// Desktop is needed. The distro ("OmniRushBox") is a small pinned root
+// Windows: Mars's own WSL 2 distro as the box backend, so no Docker
+// Desktop is needed. The distro ("MarsBox") is a small pinned root
 // filesystem built FROM the same Debian base as the box images, with boxrun
-// and boxd in /opt/omnirush and a wsl.conf that keeps Windows out (no
+// and boxd in /opt/mars and a wsl.conf that keeps Windows out (no
 // Windows PATH, no interop: the 2.2.x "npm is the Windows npm" failure). It
 // is imported per user with `wsl --import` (no admin once WSL is on). Each
 // project's box runs inside it exactly like the Linux bubblewrap backend
@@ -18,7 +18,7 @@
 // --foreground` keeper is this process's child (its stdin open). boxd
 // listens on the distro's loopback; WSL forwards it to Windows' 127.0.0.1
 // (NAT mode's localhost forwarding, or mirrored networking). With
-// OMNIRUSH_BOX_WSL_LISTEN=any it listens on every address and the distro's
+// MARS_BOX_WSL_LISTEN=any it listens on every address and the distro's
 // own address is the second way in.
 //
 // WSL that is not enabled is never installed from here (`wsl --install`
@@ -45,9 +45,9 @@ import type { BoxDriver, OpenContext, Opened, PresentImage, SpawnLike } from "./
 type Env = NodeJS.ProcessEnv;
 type WslRuntime = Pick<BoxRuntime, "bin" | "distro" | "arch" | "installed">;
 
-export const DEFAULT_DISTRO = "OmniRushBox";
-export const STORE = "/var/lib/omnirush/store";
-export const BOXES = "/var/lib/omnirush/boxes";
+export const DEFAULT_DISTRO = "MarsBox";
+export const STORE = "/var/lib/mars/store";
+export const BOXES = "/var/lib/mars/boxes";
 export const ENABLE_HINT = "WSL 2 is not enabled on this Windows. One time, in an administrator terminal: `wsl --install --no-distribution`, then restart Windows";
 
 export type WslAsset = { url: string | null; sha256: string | null; bytes?: number | null };
@@ -58,7 +58,7 @@ export function loadWslPins(): WslPins {
 }
 
 export function distroName(env: Env = process.env): string {
-  return String(env.OMNIRUSH_BOX_WSL_DISTRO || "").trim() || DEFAULT_DISTRO;
+  return String(env.MARS_BOX_WSL_DISTRO || "").trim() || DEFAULT_DISTRO;
 }
 
 /** wsl.exe, when Windows has it (System32). */
@@ -121,8 +121,8 @@ function assetFor(pins: WslPins | null, arch: string): WslAsset | null {
 
 export async function probeWslDistro({ env = process.env, platform = process.platform, run = runCommand, exists = existsSync, timeoutMs = 15_000, arch = process.arch, pins }: { env?: Env; platform?: NodeJS.Platform; run?: RunCommand; exists?: (file: string) => boolean; timeoutMs?: number; arch?: string; pins?: WslPins | null } = {}): Promise<RuntimeResult> {
   const base = { name: "wsl", backend: "wsl" };
-  if (platform !== "win32") return { ...base, ok: false, reason: "the OmniRush WSL distro is for Windows" };
-  if (env.OMNIRUSH_BOX_WSL === "0") return { ...base, ok: false, reason: "turned off (OMNIRUSH_BOX_WSL=0)" };
+  if (platform !== "win32") return { ...base, ok: false, reason: "the Mars WSL distro is for Windows" };
+  if (env.MARS_BOX_WSL === "0") return { ...base, ok: false, reason: "turned off (MARS_BOX_WSL=0)" };
   const bin = wslExe({ env, exists });
   if (!bin) return { ...base, ok: false, reason: ENABLE_HINT };
   const status = await wslCall(bin, ["--status"], { run, env, timeoutMs });
@@ -138,12 +138,12 @@ export async function probeWslDistro({ env = process.env, platform = process.pla
   const distro = distroName(env);
   const mine = rows.find((row) => row.name.toLowerCase() === distro.toLowerCase());
   if (mine && mine.version === "1") return { ...base, ok: false, bin, reason: `the ${distro} distro runs as WSL 1 (\`wsl --set-version ${distro} 2\`)` };
-  if (!mine && !String(env.OMNIRUSH_BOX_WSL_ROOTFS || "").trim() && !assetFor(pins === undefined ? loadWslPins() : pins, arch)) {
-    return { ...base, ok: false, bin, reason: "the OmniRush WSL image is not published yet (OMNIRUSH_BOX_WSL_ROOTFS=<built tar> to use one)" };
+  if (!mine && !String(env.MARS_BOX_WSL_ROOTFS || "").trim() && !assetFor(pins === undefined ? loadWslPins() : pins, arch)) {
+    return { ...base, ok: false, bin, reason: "the Mars WSL image is not published yet (MARS_BOX_WSL_ROOTFS=<built tar> to use one)" };
   }
   const ver = await wslCall(bin, ["--version"], { run, env, timeoutMs });
   const version = (/(\d+\.\d+\.\d+(?:\.\d+)?)/.exec(ver.code === 0 ? ver.stdout : "") ?? [])[1] ?? "";
-  return { ...base, ok: true, bin, distro, installed: Boolean(mine), state: mine?.state ?? null, version, flavor: "omnirush-distro", os: "linux", arch: GOARCH[arch] || "amd64", rootless: false, vm: true };
+  return { ...base, ok: true, bin, distro, installed: Boolean(mine), state: mine?.state ?? null, version, flavor: "mars-distro", os: "linux", arch: GOARCH[arch] || "amd64", rootless: false, vm: true };
 }
 
 // --- the distro ----------------------------------------------------------------------
@@ -151,7 +151,7 @@ export async function probeWslDistro({ env = process.env, platform = process.pla
 /** Where the distro's disk lives (per user, no admin). */
 export function installDir(env: Env = process.env, distro = DEFAULT_DISTRO): string {
   const local = env.LOCALAPPDATA || path.win32.join(env.USERPROFILE || "C:\\Users\\Default", "AppData", "Local");
-  return path.win32.join(local, "OmniRush", "wsl", distro);
+  return path.win32.join(local, "Mars", "wsl", distro);
 }
 
 /** sha256 of a file. */
@@ -167,7 +167,7 @@ export async function download(url: string, dest: string, sha256: string | null,
   if (!/^https:\/\//.test(url)) throw new Error("download: https only");
   mkdirSync(path.dirname(dest), { recursive: true });
   const tmp = `${dest}.${process.pid}.part`;
-  const res = await fetcher(url, { headers: { "user-agent": "omnirush" }, redirect: "follow" });
+  const res = await fetcher(url, { headers: { "user-agent": "mars" }, redirect: "follow" });
   if (res.status !== 200 || !res.body) {
     await res.body?.cancel().catch(() => undefined);
     throw new Error(`download: HTTP ${res.status}`);
@@ -185,15 +185,15 @@ export async function download(url: string, dest: string, sha256: string | null,
   return dest;
 }
 
-/** The pinned root filesystem tarball: OMNIRUSH_BOX_WSL_ROOTFS (a local file), else the pinned release asset. */
+/** The pinned root filesystem tarball: MARS_BOX_WSL_ROOTFS (a local file), else the pinned release asset. */
 export async function rootfsTarball({ env = process.env, home, arch = process.arch, pins = loadWslPins(), fetchFile = download }: { env?: Env; home: string; arch?: string; pins?: WslPins; fetchFile?: typeof download }): Promise<string> {
-  const asked = String(env.OMNIRUSH_BOX_WSL_ROOTFS || "").trim();
+  const asked = String(env.MARS_BOX_WSL_ROOTFS || "").trim();
   if (asked) {
-    if (!existsSync(asked)) throw new Error(`OMNIRUSH_BOX_WSL_ROOTFS: ${asked} is missing`);
+    if (!existsSync(asked)) throw new Error(`MARS_BOX_WSL_ROOTFS: ${asked} is missing`);
     return asked;
   }
   const asset = assetFor(pins, arch);
-  if (!asset?.url || !asset.sha256) throw new Error("the OmniRush WSL image is not published yet (set OMNIRUSH_BOX_WSL_ROOTFS to a built one)");
+  if (!asset?.url || !asset.sha256) throw new Error("the Mars WSL image is not published yet (set MARS_BOX_WSL_ROOTFS to a built one)");
   const dest = path.join(home, "wsl", "cache", `${asset.sha256}.tar.gz`);
   if (existsSync(dest) && (await sha256File(dest)) === asset.sha256) return dest;
   return fetchFile(asset.url, dest, asset.sha256);
@@ -219,20 +219,20 @@ function helperStamp(files: string[]): string {
   return files.map((f) => { try { const s = statSync(f); return `${s.size}-${Math.floor(s.mtimeMs)}`; } catch { return "0"; } }).join("_");
 }
 
-/** Copy boxrun and boxd into /opt/omnirush when this install's differ (cheap: one stamp file). */
+/** Copy boxrun and boxd into /opt/mars when this install's differ (cheap: one stamp file). */
 export async function syncHelpers(runtime: WslRuntime, { env = process.env, run = runCommand }: { env?: Env; run?: RunCommand } = {}): Promise<{ ok: true } | { ok: false; error: string }> {
   const goarch = runtime.arch || "amd64";
   const boxrun = helperPath("boxrun", { goos: "linux", goarch, env });
   const boxd = helperPath("boxd", { goos: "linux", goarch, env });
   if (!boxrun || !boxd) return { ok: false, error: "the sandbox helpers (linux boxrun, boxd) are missing from this install" };
   const stamp = helperStamp([boxrun, boxd]);
-  const script = 'set -e; [ "$(cat /opt/omnirush/helpers.stamp 2>/dev/null)" = "$3" ] && exit 0; mkdir -p /opt/omnirush; install -m 0755 "$1" /opt/omnirush/boxrun.new; install -m 0755 "$2" /opt/omnirush/boxd.new; mv /opt/omnirush/boxrun.new /opt/omnirush/boxrun; mv /opt/omnirush/boxd.new /opt/omnirush/boxd; echo "$3" > /opt/omnirush/helpers.stamp';
+  const script = 'set -e; [ "$(cat /opt/mars/helpers.stamp 2>/dev/null)" = "$3" ] && exit 0; mkdir -p /opt/mars; install -m 0755 "$1" /opt/mars/boxrun.new; install -m 0755 "$2" /opt/mars/boxd.new; mv /opt/mars/boxrun.new /opt/mars/boxrun; mv /opt/mars/boxd.new /opt/mars/boxd; echo "$3" > /opt/mars/helpers.stamp';
   const res = await wslCall(runtime.bin, inDistro(runtime, ["/bin/sh", "-c", script, "sh", wslPath(boxrun), wslPath(boxd), stamp]), { run, env, timeoutMs: 120_000 });
   return res.code === 0 ? { ok: true } : { ok: false, error: `could not update the helpers in WSL: ${firstLine(res.stderr) || res.code}` };
 }
 
 async function boxrun(runtime: WslRuntime, args: string[], { run = runCommand, env = process.env, timeoutMs = 60_000 }: { run?: RunCommand; env?: Env; timeoutMs?: number } = {}) {
-  const res = await wslCall(runtime.bin, inDistro(runtime, ["/opt/omnirush/boxrun", ...args]), { run, env, timeoutMs });
+  const res = await wslCall(runtime.bin, inDistro(runtime, ["/opt/mars/boxrun", ...args]), { run, env, timeoutMs });
   return { res, out: parseOut(res.stdout) };
 }
 
@@ -277,7 +277,7 @@ export function startKeeper(runtime: WslRuntime, args: string[], { env = process
   return new Promise((resolve) => {
     let child: ChildProcess;
     try {
-      child = spawnImpl(runtime.bin, inDistro(runtime, ["/opt/omnirush/boxrun", ...args, "--foreground"]), { env: { ...env, WSL_UTF8: "1" }, stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+      child = spawnImpl(runtime.bin, inDistro(runtime, ["/opt/mars/boxrun", ...args, "--foreground"]), { env: { ...env, WSL_UTF8: "1" }, stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
     } catch (error) {
       resolve({ ok: false, error: error instanceof Error ? error.message : String(error) });
       return;
@@ -328,7 +328,7 @@ async function open(ctx: OpenContext): Promise<Opened> {
   }
   let present = await imagePresent(runtime, image, { run, env });
   if (!present && !meta) {
-    if (!mayPull) return { ok: false, error: runtime.installed ? "the sandbox image is not downloaded yet" : "the OmniRush WSL distro is not set up yet" };
+    if (!mayPull) return { ok: false, error: runtime.installed ? "the sandbox image is not downloaded yet" : "the Mars WSL distro is not set up yet" };
     onPulling();
     const pulled = await pull(runtime, image, { run, env, home, log });
     if (!pulled.ok) return { ok: false, error: `could not set up the sandbox: ${pulled.error}` };
@@ -347,10 +347,10 @@ async function open(ctx: OpenContext): Promise<Opened> {
     created = { ref: image.ref, pull: image.pull, digest: meta.digest, id: present.config || present.id, stack: image.stack };
     log("info", "box created", { key, image: image.pull, stack: image.stack, backend: "wsl" });
   }
-  const listenAny = String(env.OMNIRUSH_BOX_WSL_LISTEN || "").toLowerCase() === "any";
-  const idle = Number(env.OMNIRUSH_BOX_IDLE_MIN) > 0 ? Number(env.OMNIRUSH_BOX_IDLE_MIN) : IDLE_MINUTES;
+  const listenAny = String(env.MARS_BOX_WSL_LISTEN || "").toLowerCase() === "any";
+  const idle = Number(env.MARS_BOX_IDLE_MIN) > 0 ? Number(env.MARS_BOX_IDLE_MIN) : IDLE_MINUTES;
   const args = upArgs({
-    box: boxPath(key), store: STORE, image: meta.image, boxd: "/opt/omnirush/boxd", portFile: `${wslPath(runFolder)}/boxd.port`,
+    box: boxPath(key), store: STORE, image: meta.image, boxd: "/opt/mars/boxd", portFile: `${wslPath(runFolder)}/boxd.port`,
     root, croot, runFolder, shims, pkglog, token: meta.token, idleMinutes: idle, listen: listenAny ? "0.0.0.0:0" : "127.0.0.1:0",
     platform: "win32", mapPath: wslPath,
   });
@@ -364,7 +364,7 @@ async function open(ctx: OpenContext): Promise<Opened> {
     const addr = String(ip.stdout).split(/\s+/).find((a) => /^\d+\.\d+\.\d+\.\d+$/.test(a));
     if (addr) alternates.push({ host: addr, port, token: meta.token });
   }
-  const mounts = [croot, "/run/omnirush", ...(shims ? ["/opt/omnirush/pkglog-src"] : []), ...(pkglog ? [containerRoot(pkglog.root, "win32")] : [])];
+  const mounts = [croot, "/run/mars", ...(shims ? ["/opt/mars/pkglog-src"] : []), ...(pkglog ? [containerRoot(pkglog.root, "win32")] : [])];
   if (!kept.out.reused) writeJson(file, { ...meta, mounts, started_at: new Date().toISOString() });
   keepers.set(key, { child: kept.child, endpoint, alternates });
   return { ok: true, created, endpoint, alternates, uid: 0, gid: 0, containerId: `wsl_${key}_${meta.instance}`, imageId: meta.config || meta.image, mounts: kept.out.reused ? (meta.mounts ?? mounts) : mounts };
@@ -416,7 +416,7 @@ export const wslDriver: BoxDriver = {
     return num(out?.upper_bytes);
   },
   shellCommand(runtime, { key, croot }) {
-    return { bin: runtime.bin, args: inDistro(runtime, ["/opt/omnirush/boxrun", "enter", "--box", boxPath(key), "--wd", croot, "--", "/bin/bash", "-l"]) };
+    return { bin: runtime.bin, args: inDistro(runtime, ["/opt/mars/boxrun", "enter", "--box", boxPath(key), "--wd", croot, "--", "/bin/bash", "-l"]) };
   },
   execCommand: (_runtime, { key, home }) => boxshExec({ key, home, platform: "win32" }),
 };

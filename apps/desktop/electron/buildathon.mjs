@@ -10,7 +10,7 @@
 import { parseChecklist } from "./buildathon-checklist.mjs";
 
 /** The server's default rules, word for word (the CLI and the server embed the same). */
-export const DEFAULT_AGENT_RULES = "This project is part of the OmniRush Buildathon and must rebuild from scratch on a clean Linux machine. Keep every file the project needs inside this folder and use git, committing after each working step. Pin the runtime version (.nvmrc / .python-version / go.mod toolchain / rust-toolchain.toml) and always keep a lockfile; install dependencies only into the project (no global installs, no sudo outside the Dockerfile). Maintain a Dockerfile that installs every system package and dependency and can build and run the project, a single test command (e.g. `make test`) that works offline, and a README with exact setup, run, test and deploy steps. Never hard-code absolute paths from this machine or put secrets in files (use .env.example). After each change, run the tests.";
+export const DEFAULT_AGENT_RULES = "This project is part of the Mars Buildathon and must rebuild from scratch on a clean Linux machine. Keep every file the project needs inside this folder and use git, committing after each working step. Pin the runtime version (.nvmrc / .python-version / go.mod toolchain / rust-toolchain.toml) and always keep a lockfile; install dependencies only into the project (no global installs, no sudo outside the Dockerfile). Maintain a Dockerfile that installs every system package and dependency and can build and run the project, a single test command (e.g. `make test`) that works offline, and a README with exact setup, run, test and deploy steps. Never hard-code absolute paths from this machine or put secrets in files (use .env.example). After each change, run the tests.";
 
 export const BUILDATHON_TRACKS = /** @type {const} */ ([
   { id: "agents", label: "Agents & Automation" },
@@ -22,11 +22,11 @@ export const BUILDATHON_TRACKS = /** @type {const} */ ([
 ]);
 export const BUILDATHON_PHASES = /** @type {const} */ (["upcoming", "building", "judging", "results", "closed"]);
 const SESSION_STATES = ["good", "pending", "incomplete"];
-/** @typedef {import("@omnirush/types/desktop-ipc").OmniRushBuildathonStatus} BuildathonStatus */
-/** @typedef {import("@omnirush/types/desktop-ipc").OmniRushBuildathonEvent} BuildathonEvent */
-/** @typedef {import("@omnirush/types/desktop-ipc").OmniRushBuildathonParticipant} BuildathonParticipant */
-/** @typedef {import("@omnirush/types/desktop-ipc").OmniRushBuildathonSubmission} BuildathonSubmission */
-/** @typedef {import("@omnirush/types/desktop-ipc").OmniRushBuildathonSession} BuildathonSession */
+/** @typedef {import("@mars/types/desktop-ipc").MarsBuildathonStatus} BuildathonStatus */
+/** @typedef {import("@mars/types/desktop-ipc").MarsBuildathonEvent} BuildathonEvent */
+/** @typedef {import("@mars/types/desktop-ipc").MarsBuildathonParticipant} BuildathonParticipant */
+/** @typedef {import("@mars/types/desktop-ipc").MarsBuildathonSubmission} BuildathonSubmission */
+/** @typedef {import("@mars/types/desktop-ipc").MarsBuildathonSession} BuildathonSession */
 const TRACK_ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
 /** Link codes look like `FB-7KQ2-M9`; anything short and plain is passed on for the server to judge. */
 const LINK_CODE = /^[A-Za-z0-9][A-Za-z0-9-]{2,39}$/;
@@ -160,7 +160,7 @@ const REPRO_BOX = ["on", "offer", "off"];
 /**
  * The `repro` block (contract "Reproducibility mode"); a missing or partial
  * one falls back to the defaults: box on, the default rules and checklist.
- * @returns {import("@omnirush/types/desktop-ipc").OmniRushBuildathonRepro}
+ * @returns {import("@mars/types/desktop-ipc").MarsBuildathonRepro}
  */
 export function parseBuildathonRepro(value) {
   const block = value && typeof value === "object" && !Array.isArray(value) ? value : {};
@@ -184,7 +184,7 @@ function clip(value, max) {
  * The `promo` block of a non-participant's answer (contract "Promo for
  * non-participants"). Null when absent or unusable: no id, no title, or no
  * way to act on it (neither in-app joining nor an https page).
- * @returns {import("@omnirush/types/desktop-ipc").OmniRushBuildathonPromo | null}
+ * @returns {import("@mars/types/desktop-ipc").MarsBuildathonPromo | null}
  */
 export function parseBuildathonPromo(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -210,7 +210,7 @@ export function parseBuildathonPromo(value) {
 /**
  * The participants' updates feed: newest first, at most 20, each with an id
  * and a title or a body.
- * @returns {import("@omnirush/types/desktop-ipc").OmniRushBuildathonAnnouncement[]}
+ * @returns {import("@mars/types/desktop-ipc").MarsBuildathonAnnouncement[]}
  */
 export function parseBuildathonAnnouncements(value) {
   if (!Array.isArray(value)) return [];
@@ -271,7 +271,7 @@ export function parseBuildathonGithub(value) {
  * GET /me/buildathon as the app reads it: the participant's status, a
  * non-participant's promo (`enrolled: false` with a usable `promo`), or null
  * (nothing to show).
- * @returns {import("@omnirush/types/desktop-ipc").OmniRushBuildathonAnswer}
+ * @returns {import("@mars/types/desktop-ipc").MarsBuildathonAnswer}
  */
 export function parseBuildathonAnswer(value) {
   const status = parseBuildathonStatus(value);
@@ -283,10 +283,10 @@ export function parseBuildathonAnswer(value) {
 
 const JOIN_ERRORS = {
   join_closed: "Joining is closed right now.",
-  github_required: "Link your GitHub account on omnirush.ai to join.",
+  github_required: "Link your GitHub account on marsai.click to join.",
   github_too_new: "GitHub account must be at least 3 days old.",
   github_inactive: "Your GitHub account needs some public activity.",
-  github_in_use: "That GitHub account is already linked to another OmniRush account.",
+  github_in_use: "That GitHub account is already linked to another Mars account.",
   already_enrolled: "This account is already enrolled.",
   not_available: "Joining is not available right now.",
 };

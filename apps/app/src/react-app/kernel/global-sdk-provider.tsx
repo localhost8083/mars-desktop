@@ -62,10 +62,10 @@ const GlobalSDKContext = createContext<GlobalSDKContextValue | undefined>(
   undefined,
 );
 
-function readOmniRushToken(): string {
+function readMarsToken(): string {
   if (typeof window === "undefined") return "";
   try {
-    return (window.localStorage.getItem("omnirush.server.token") ?? "").trim();
+    return (window.localStorage.getItem("mars.server.token") ?? "").trim();
   } catch {
     return "";
   }
@@ -121,7 +121,7 @@ export function GlobalSDKProvider({ children }: GlobalSDKProviderProps) {
   }
   const emitter = emitterRef.current;
 
-  const token = readOmniRushToken();
+  const token = readMarsToken();
   const headers =
     token && server.url.includes("/opencode")
       ? { Authorization: `Bearer ${token}` }

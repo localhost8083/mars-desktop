@@ -1,6 +1,6 @@
 FROM node:22-bookworm-slim
 
-ARG OMNIRUSH_SERVER_VERSION=0.18.4
+ARG MARS_SERVER_VERSION=0.18.4
 ARG OPENCODE_VERSION=1.17.11
 ARG OPENCODE_DOWNLOAD_URL=
 
@@ -13,7 +13,7 @@ RUN apt-get update \
     unzip \
   && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g "omnirush-server@${OMNIRUSH_SERVER_VERSION}"
+RUN npm install -g "mars-server@${MARS_SERVER_VERSION}"
 
 RUN set -eux; \
   arch="$(dpkg --print-architecture)"; \
@@ -36,21 +36,21 @@ RUN set -eux; \
 
 # Persistent directories (mount volumes here on PaaS/SSH).
 # The data path deliberately keeps its historical name: existing deployments
-# have volumes mounted at /data/omnirush-orchestrator, and renaming it here
+# have volumes mounted at /data/mars-orchestrator, and renaming it here
 # would silently orphan their state. The orchestrator CLI itself is gone; this
 # is only a directory name kept for compatibility.
-ENV OMNIRUSH_DATA_DIR=/data/omnirush-orchestrator
-ENV OMNIRUSH_SIDECAR_DIR=/data/sidecars
+ENV MARS_DATA_DIR=/data/mars-orchestrator
+ENV MARS_SIDECAR_DIR=/data/sidecars
 
 # The workspace is mounted from the host/volume.
-ENV OMNIRUSH_WORKSPACE=/workspace
+ENV MARS_WORKSPACE=/workspace
 
-# OmniRush.ai host contract surface.
+# MarsAI host contract surface.
 EXPOSE 8787
 
 VOLUME ["/workspace", "/data"]
 
 # Defaults:
-# - OmniRush.ai server is published intentionally via --host 0.0.0.0
-# - OpenCode is managed by omnirush-server and stays internal
-CMD ["/bin/sh", "-lc", "plugin_dir=\"$(npm root -g)/omnirush-server/dist/opencode-plugins\"; test -d \"$plugin_dir\"; export OMNIRUSH_MANAGE_OPENCODE=1 OMNIRUSH_OPENCODE_BIN=/usr/local/bin/opencode OMNIRUSH_EXTENSIONS_PLUGIN_DIR=\"$plugin_dir\"; exec omnirush-server --workspace \"${OMNIRUSH_WORKSPACE:-/workspace}\" --host 0.0.0.0 --port \"${OMNIRUSH_PORT:-8787}\" --cors \"${OMNIRUSH_CORS_ORIGINS:-*}\" --approval \"${OMNIRUSH_APPROVAL_MODE:-manual}\""]
+# - MarsAI server is published intentionally via --host 0.0.0.0
+# - OpenCode is managed by mars-server and stays internal
+CMD ["/bin/sh", "-lc", "plugin_dir=\"$(npm root -g)/mars-server/dist/opencode-plugins\"; test -d \"$plugin_dir\"; export MARS_MANAGE_OPENCODE=1 MARS_OPENCODE_BIN=/usr/local/bin/opencode MARS_EXTENSIONS_PLUGIN_DIR=\"$plugin_dir\"; exec mars-server --workspace \"${MARS_WORKSPACE:-/workspace}\" --host 0.0.0.0 --port \"${MARS_PORT:-8787}\" --cors \"${MARS_CORS_ORIGINS:-*}\" --approval \"${MARS_APPROVAL_MODE:-manual}\""]

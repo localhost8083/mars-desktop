@@ -1,4 +1,4 @@
-# OmniRush box: Rust (rustup, stable, minimal profile). FROM the base image.
+# Mars box: Rust (rustup, stable, minimal profile). FROM the base image.
 ARG BASE=ghcr.io/omnirush-ai/box-base:2026.10.1
 FROM ${BASE}
 ARG TARGETARCH
@@ -14,4 +14,4 @@ RUN set -eux; \
     /tmp/rustup-init -y --no-modify-path --profile minimal --default-toolchain "${RUST_TOOLCHAIN}" --component clippy,rustfmt; \
     rm /tmp/rustup-init; rm -rf /usr/local/rustup/downloads /usr/local/rustup/tmp; chmod -R a+rwX /usr/local/cargo /usr/local/rustup; \
     cargo --version; rustc --version
-LABEL ai.omnirush.box.stack="rust"
+LABEL ai.mars.box.stack="rust"

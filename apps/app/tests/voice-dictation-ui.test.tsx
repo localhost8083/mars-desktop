@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 import { act, useRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { OmniRushVoiceStatus } from "../src/app/lib/omnirush-server";
+import type { MarsVoiceStatus } from "../src/app/lib/mars-server";
 import type { LexicalPromptEditorHandle } from "../src/react-app/domains/session/surface/composer/editor";
 import type { VoiceClient } from "../src/react-app/domains/voice/use-voice-dictation";
 import { defaultHotkey, formatHotkey, hotkeyDown, hotkeyFromEvent, hotkeyUp, parseHotkey } from "../src/react-app/domains/voice/hotkey";
@@ -66,7 +66,7 @@ describe("dictation in the composer", () => {
   let root: Root;
   let container: HTMLDivElement;
   let queryClient: QueryClient;
-  let status: OmniRushVoiceStatus;
+  let status: MarsVoiceStatus;
   let uploads: FormData[];
   let answers: (index: number) => Response;
   let sent: string[];
@@ -115,7 +115,7 @@ describe("dictation in the composer", () => {
     }));
     const fetchStub = async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      if (!url.endsWith("/omnirush/voice/transcribe")) return new Response("{}", { status: 404 });
+      if (!url.endsWith("/mars/voice/transcribe")) return new Response("{}", { status: 404 });
       const form = await new Request(url, init).formData();
       uploads.push(form);
       await new Promise((resolve) => setTimeout(resolve, 30));
@@ -166,20 +166,20 @@ describe("dictation in the composer", () => {
     testClient = {
       baseUrl: "http://127.0.0.1:1",
       getVoiceStatus: async () => status,
-      voiceTranscriptionEndpoint: () => ({ url: "http://127.0.0.1:1/omnirush/voice/transcribe", headers: { Authorization: "Bearer t" } }),
+      voiceTranscriptionEndpoint: () => ({ url: "http://127.0.0.1:1/mars/voice/transcribe", headers: { Authorization: "Bearer t" } }),
     };
     return testClient;
   }
 
   async function mount(initial = "Fix the") {
-    status = { signedIn: true, available: true, reason: null, repo: "omnirush-gui", branch: "feat/voice-mode" };
+    status = { signedIn: true, available: true, reason: null, repo: "mars-gui", branch: "feat/voice-mode" };
     uploads = [];
     sent = [];
     answers = (index) => Response.json({ text: ["oh auth middleware", "in auth dot ts"][index] ?? "" });
     micStarts.length = 0;
     micAudio = concat(tone(1_200), quiet(800), tone(1_200), quiet(3_000));
     window.localStorage.clear();
-    delete (window as { __OMNIRUSH_ELECTRON__?: unknown }).__OMNIRUSH_ELECTRON__;
+    delete (window as { __MARS_ELECTRON__?: unknown }).__MARS_ELECTRON__;
     queryClient = new QueryClient();
     container = document.createElement("div");
     document.body.append(container);
@@ -238,7 +238,7 @@ describe("dictation in the composer", () => {
     expect(draft()).toBe("Fix the OAuth middleware in auth.ts");
     expect(container.querySelector("[data-voice-interim]")).toBeNull();
     expect(uploads).toHaveLength(2);
-    expect(uploads[0]!.get("prompt_terms")).toContain("omnirush-gui");
+    expect(uploads[0]!.get("prompt_terms")).toContain("mars-gui");
     expect(sent).toEqual([]);
     await unmount();
   });
@@ -307,7 +307,7 @@ describe("dictation in the composer", () => {
 
   test("microphone permission denied by the OS shows the settings card and never opens the mic", async () => {
     await mount();
-    Object.defineProperty(window, "__OMNIRUSH_ELECTRON__", {
+    Object.defineProperty(window, "__MARS_ELECTRON__", {
       configurable: true,
       value: { system: { getMicrophoneStatus: async () => ({ platform: "darwin", status: "denied" }) } },
     });

@@ -15,7 +15,7 @@ const hasZstd = typeof zlib.zstdDecompressSync === "function";
 const sha = (data) => createHash("sha256").update(data).digest("hex");
 
 function project(files) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omnirush-excl-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mars-excl-"));
   for (const [name, content] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(root, name)), { recursive: true });
     fs.writeFileSync(path.join(root, name), content);
@@ -65,7 +65,7 @@ test("ExcludedFiles: sizes and digests filled in, privacy never hashed, the firs
 });
 
 async function snapshots(root, options = {}) {
-  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "omnirush-excl-state-"));
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "mars-excl-state-"));
   const envelopes = [];
   const workspaceSync = new uploader.SessionUploader({
     stateDir,

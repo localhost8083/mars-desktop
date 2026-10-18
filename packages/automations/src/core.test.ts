@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { automationScheduleSchema } from "@omnirush/types/automations"
+import { automationScheduleSchema } from "@mars/types/automations"
 import { automationOccurrenceIdentity, automationRevisionDigest } from "./contracts.js"
 import { nextAutomationOccurrence, recoverableAutomationOccurrence } from "./schedule.js"
 import { assertAutomationTransition, canTransitionAutomation, isTerminalAutomationRunStatus } from "./state.js"

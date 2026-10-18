@@ -31,8 +31,8 @@ describe("workspace endpoint resolution", () => {
       preset: "minimal",
       workspaceType: "remote",
       baseUrl: "https://worker.example.test",
-      omnirushToken: "remote-token",
-      omnirushWorkspaceId: "server-workspace-b",
+      marsToken: "remote-token",
+      marsWorkspaceId: "server-workspace-b",
     }, {
       baseUrl: "http://127.0.0.1:4096",
       token: "local-token",

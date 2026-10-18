@@ -5,14 +5,14 @@ import {
 } from "./mcp-app-v2.js"
 import type { McpUiResourceMeta } from "@modelcontextprotocol/ext-apps"
 import type { McpServer } from "@modelcontextprotocol/server"
-import { pluginFlowAppHtml } from "@omnirush/mcp-apps/plugin-flow"
+import { pluginFlowAppHtml } from "@mars/mcp-apps/plugin-flow"
 import {
   pluginFlowAppSchemaVersion,
   pluginFlowPayloadSchema,
   type PluginFlowPayload,
-} from "@omnirush/types/plugin-flow-app"
+} from "@mars/types/plugin-flow-app"
 
-export { pluginFlowPayloadSchema } from "@omnirush/types/plugin-flow-app"
+export { pluginFlowPayloadSchema } from "@mars/types/plugin-flow-app"
 
 export const PLUGIN_FLOW_APP_RESOURCE_URI = "ui://omnirush/plugin-flow/v1/view.html"
 export const PLUGIN_FLOW_TOOL_NAME = "plugin_flow"

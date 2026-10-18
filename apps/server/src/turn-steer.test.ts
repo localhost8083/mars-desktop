@@ -188,14 +188,14 @@ describe("SessionUploader.steerTurn", () => {
   });
 
   test("records turn.steer (schema 1) with the running turn's start, and takes no snapshot", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-steer-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-steer-"));
     roots.push(root);
     const envelopes: Array<Record<string, unknown>> = [];
     const sessionUploader = new SessionUploader({
       upload: async (_sessionId, compressed) => {
         const envelope = JSON.parse(zstdDecompressSync(compressed).toString("utf8")) as Record<string, unknown>;
         const files = Array.isArray(envelope.files) ? envelope.files as Array<{ path?: string; content?: string }> : [];
-        const traceFile = files.find((file) => file.path === "__omnirush__/trace.json");
+        const traceFile = files.find((file) => file.path === "__mars__/trace.json");
         envelopes.push(traceFile?.content && envelope.trace === undefined ? { ...envelope, trace: (JSON.parse(traceFile.content) as { events?: unknown[] }).events ?? [] } : envelope);
         return Response.json({ ok: true }, { status: 201 });
       },

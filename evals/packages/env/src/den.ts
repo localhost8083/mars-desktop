@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { allocateFreePorts } from "@omnirush/cdp";
+import { allocateFreePorts } from "@mars/cdp";
 import {
   defaultDaytonaExec,
   deleteSandboxes,
@@ -14,13 +14,13 @@ import {
   killLocalPid,
   provisionDenSandbox,
   startMockOnSandbox,
-} from "@omnirush/hosts";
-import { denFetch, ensureMemberSession, freshSession, signIn } from "@omnirush/behaviors";
-import { progress, trackResource } from "@omnirush/world";
+} from "@mars/hosts";
+import { denFetch, ensureMemberSession, freshSession, signIn } from "@mars/behaviors";
+import { progress, trackResource } from "@mars/world";
 import { createConnection } from "mysql2/promise";
 import type { ExecuteValues } from "mysql2";
 import type { ChildProcess } from "node:child_process";
-import type { DenRef, DenSession } from "@omnirush/behaviors";
+import type { DenRef, DenSession } from "@mars/behaviors";
 import type { DbHandle, Place } from "./place.ts";
 import { ephemeralDatabaseName, localMysqlIsRunning, localRedisIsRunning } from "./place.ts";
 import type { BootedMock, MockBoot, MockHandle } from "./mock.ts";
@@ -78,7 +78,7 @@ export interface Den extends AsyncDisposable {
    * Raw den-api HTTP log text (JSON lines carrying http_route/timestamp).
    * Daytona lane: reads /tmp/den-api.log inside the server sandbox; local
    * lane: reads the spawned den-api service log. Attached Dens
-   * (OMNIRUSH_EVAL_DEN_API_URL / reuse) throw — their den-api log lives with
+   * (MARS_EVAL_DEN_API_URL / reuse) throw — their den-api log lives with
    * whoever runs that server. Parsing belongs to the caller.
    */
   apiLog(): Promise<string>;
@@ -137,15 +137,15 @@ function auth(session: DenSession): Record<string, string> {
 
 export function personDefaults(key: string, person: PersonShape | undefined, runId: string): Required<PersonShape> {
   return {
-    email: person?.email?.trim() || `${key}+${runId}@omnirush.test`,
+    email: person?.email?.trim() || `${key}+${runId}@mars.test`,
     name: person?.name?.trim() || key.replace(/(^|[-_ ])\w/g, (part) => part.toUpperCase()),
-    password: person?.password || "OmniRushEval123!",
+    password: person?.password || "MarsEval123!",
   };
 }
 
 function defaultLocalOrg(runId: string): OrgShape {
   return {
-    name: `OmniRush.ai Eval ${runId}`,
+    name: `MarsAI Eval ${runId}`,
     admin: personDefaults("admin", undefined, runId),
     members: { jordan: personDefaults("jordan", { name: "Jordan Eval" }, runId) },
   };
@@ -153,9 +153,9 @@ function defaultLocalOrg(runId: string): OrgShape {
 
 export function defaultReuseAdmin(): Required<PersonShape> {
   return {
-    email: process.env.OMNIRUSH_EVAL_DEMO_EMAIL?.trim() || "alex@acme.test",
+    email: process.env.MARS_EVAL_DEMO_EMAIL?.trim() || "alex@acme.test",
     name: "Alex Eval",
-    password: process.env.OMNIRUSH_EVAL_DEMO_PASSWORD || "OmniRushDemo123!",
+    password: process.env.MARS_EVAL_DEMO_PASSWORD || "MarsDemo123!",
   };
 }
 
@@ -207,7 +207,7 @@ function spawnService(
   logPath: string,
 ): SpawnedService {
   const logFd = openSync(logPath, "a");
-  const prepared = process.env.OMNIRUSH_EVAL_DEN_RUNTIME_PREPARED === "1";
+  const prepared = process.env.MARS_EVAL_DEN_RUNTIME_PREPARED === "1";
   const args = prepared
     ? label === "den-api"
       ? ["--filter", "@omnirush-ee/den-api", "exec", "tsx", "src/main.ts"]
@@ -259,7 +259,7 @@ async function waitForAuthProbe(ref: DenRef, service: SpawnedService): Promise<v
       const response = await fetch(url, {
         method: "POST",
         headers: { "content-type": "application/json", origin: ref.webUrl },
-        body: JSON.stringify({ email: `probe-${Date.now()}@omnirush.test`, password: "not-a-real-password" }),
+        body: JSON.stringify({ email: `probe-${Date.now()}@mars.test`, password: "not-a-real-password" }),
         signal: AbortSignal.timeout(5_000),
       });
       if (response.status !== 403 && response.status < 500) return;
@@ -274,7 +274,7 @@ async function waitForAuthProbe(ref: DenRef, service: SpawnedService): Promise<v
 
 async function runDbPush(databaseUrl: string): Promise<void> {
   try {
-    const commands = process.env.OMNIRUSH_EVAL_DEN_RUNTIME_PREPARED === "1"
+    const commands = process.env.MARS_EVAL_DEN_RUNTIME_PREPARED === "1"
       ? [
           ["--filter", "@omnirush-ee/den-db", "exec", "node", "--import", "tsx", "./node_modules/drizzle-kit/bin.cjs", "push", "--config", "drizzle.config.ts"],
           ["--filter", "@omnirush-ee/den-db", "exec", "node", "--import", "tsx", "scripts/ensure-schema-repairs.ts"],
@@ -329,7 +329,7 @@ async function runDemoOrgSeed(databaseUrl: string, webPort: number, logPath: str
           // Single-org mode (the unset default) refuses email signup, which the
           // seed's owner bootstrap needs; the demo world is a multi-org Den.
           DEN_ORG_MODE: "multi_org",
-          OMNIRUSH_DEV_MODE: "1",
+          MARS_DEV_MODE: "1",
         },
         encoding: "utf8",
         maxBuffer: 64 * 1024 * 1024,
@@ -473,7 +473,7 @@ async function provisionOrganization(
     ? await signIn(ref, { email: adminPerson.email, password: adminPerson.password })
     : await createOrSignInAccount(ref, adminPerson, options.databaseUrl);
   const createdOrgId = options.createOrg
-    ? await createOrganization(admin, shape.name?.trim() || `OmniRush.ai Eval ${runId}`)
+    ? await createOrganization(admin, shape.name?.trim() || `MarsAI Eval ${runId}`)
     : null;
   const members: Record<string, DenSession> = {};
   for (const [key, memberShape] of Object.entries(shape.members ?? {})) {
@@ -495,7 +495,7 @@ async function provisionReusedMembers(
       email: person.email,
       password: person.password,
       name: person.name,
-      markVerifiedCmd: process.env.OMNIRUSH_EVAL_MARK_VERIFIED_CMD?.trim(),
+      markVerifiedCmd: process.env.MARS_EVAL_MARK_VERIFIED_CMD?.trim(),
     });
   }
   return members;
@@ -559,17 +559,17 @@ async function bootDaytonaMocks(
 async function stopMocks(handles: Record<string, MockHandle>): Promise<void> {
   for (const [name, handle] of Object.entries(handles)) {
     await handle.stop().catch((error: unknown) => {
-      console.error(`[omnirush/testkit] mock ${name} cleanup failed: ${messageText(error)}`);
+      console.error(`[mars/testkit] mock ${name} cleanup failed: ${messageText(error)}`);
     });
   }
 }
 
 async function stopServices(services: SpawnedService[]): Promise<void> {
   for (const service of services) {
-    await killLocalPid(service.pid, { log: (line) => console.error(`[omnirush/testkit] ${line}`) })
-      .catch((error: unknown) => console.error(`[omnirush/testkit] ${service.label} cleanup failed: ${messageText(error)}`));
+    await killLocalPid(service.pid, { log: (line) => console.error(`[mars/testkit] ${line}`) })
+      .catch((error: unknown) => console.error(`[mars/testkit] ${service.label} cleanup failed: ${messageText(error)}`));
     await freePort(service.port)
-      .catch((error: unknown) => console.error(`[omnirush/testkit] ${service.label} port cleanup failed: ${messageText(error)}`));
+      .catch((error: unknown) => console.error(`[mars/testkit] ${service.label} port cleanup failed: ${messageText(error)}`));
   }
 }
 
@@ -596,10 +596,10 @@ function reusedRef(options: ServerOptions): DenRef | null {
     const webUrl = options.reuse.webUrl?.trim() || apiUrl.replace("127.0.0.1", "localhost");
     return { apiUrl, webUrl: cleanUrl(webUrl) };
   }
-  const apiUrl = process.env.OMNIRUSH_EVAL_DEN_API_URL?.trim();
+  const apiUrl = process.env.MARS_EVAL_DEN_API_URL?.trim();
   if (!apiUrl) return null;
   const cleanApi = cleanUrl(apiUrl);
-  const webUrl = process.env.OMNIRUSH_EVAL_DEN_WEB_URL?.trim()
+  const webUrl = process.env.MARS_EVAL_DEN_WEB_URL?.trim()
     || cleanApi.replace("127.0.0.1", "localhost");
   return { apiUrl: cleanApi, webUrl: cleanUrl(webUrl) };
 }
@@ -638,7 +638,7 @@ export async function server(options: ServerOptions): Promise<Den> {
         mocks: bootedMocks.handles,
         async apiLog(): Promise<string> {
           throw new Error(
-            "den.apiLog() is not available for attached Dens (OMNIRUSH_EVAL_DEN_API_URL / reuse): the den-api log lives with the process that started that server.",
+            "den.apiLog() is not available for attached Dens (MARS_EVAL_DEN_API_URL / reuse): the den-api log lives with the process that started that server.",
           );
         },
         async [Symbol.asyncDispose](): Promise<void> {
@@ -646,7 +646,7 @@ export async function server(options: ServerOptions): Promise<Den> {
           disposed = true;
           if (organization.createdOrgId) {
             await deleteCreatedOrganization(organization.admin, organization.createdOrgId).catch((error: unknown) => {
-              console.error(`[omnirush/testkit] reused Den org cleanup failed: ${messageText(error)}`);
+              console.error(`[mars/testkit] reused Den org cleanup failed: ${messageText(error)}`);
             });
           }
           await stopMocks(bootedMocks.handles);
@@ -663,7 +663,7 @@ export async function server(options: ServerOptions): Promise<Den> {
       throw new Error('Den seedProfile "demo-org" is local-only and cannot seed a Daytona Den.');
     }
     if (!daytonaAvailable()) {
-      throw new SkipError("Daytona CLI is unavailable; install and authenticate daytona, then set OMNIRUSH_EVAL_DAYTONA=1");
+      throw new SkipError("Daytona CLI is unavailable; install and authenticate daytona, then set MARS_EVAL_DAYTONA=1");
     }
     const base = options.place.denBase();
     if (base.kind !== "daytona") throw new Error("Daytona place returned a local Den base.");
@@ -673,9 +673,9 @@ export async function server(options: ServerOptions): Promise<Den> {
     const needsOwnDen = Object.keys(denEnv).length > 0;
     // A prewarmed Den is already running with its own env, so a test that
     // needs Den env gets a dedicated sandbox rather than a silently wrong Den.
-    const preparedSandbox = needsOwnDen ? undefined : process.env.OMNIRUSH_EVAL_DAYTONA_DEN_SANDBOX?.trim();
-    if (needsOwnDen && process.env.OMNIRUSH_EVAL_DAYTONA_DEN_SANDBOX?.trim()) {
-      console.error(`[omnirush/testkit] server({ env: ${Object.keys(denEnv).join(", ")} }) provisions its own Den sandbox instead of the prewarmed one.`);
+    const preparedSandbox = needsOwnDen ? undefined : process.env.MARS_EVAL_DAYTONA_DEN_SANDBOX?.trim();
+    if (needsOwnDen && process.env.MARS_EVAL_DAYTONA_DEN_SANDBOX?.trim()) {
+      console.error(`[mars/testkit] server({ env: ${Object.keys(denEnv).join(", ")} }) provisions its own Den sandbox instead of the prewarmed one.`);
     }
     const orgShape = options.org ?? {};
     const isolatePreparedTest = Boolean(preparedSandbox && options.provision !== false);
@@ -685,7 +685,7 @@ export async function server(options: ServerOptions): Promise<Den> {
       reuse: preparedSandbox,
       bootstrapAdminEmail: bootstrapAdmin.email,
       env: denEnv,
-      log: (line) => console.error(`[omnirush/testkit] ${line}`),
+      log: (line) => console.error(`[mars/testkit] ${line}`),
     });
     let bootedMocks: { handles: Record<string, MockHandle>; env: Record<string, string> } = { handles: {}, env: {} };
     try {
@@ -735,18 +735,18 @@ export async function server(options: ServerOptions): Promise<Den> {
           disposed = true;
           if (organization.createdOrgId) {
             await deleteCreatedOrganization(organization.admin, organization.createdOrgId).catch((error: unknown) => {
-              console.error(`[omnirush/testkit] Daytona Den org cleanup failed: ${messageText(error)}`);
+              console.error(`[mars/testkit] Daytona Den org cleanup failed: ${messageText(error)}`);
             });
           }
           if (platformAdminGrant) {
             await revokePreparedPlatformAdmin(platformAdminGrant).catch((error: unknown) => {
-              console.error(`[omnirush/testkit] Daytona platform-admin cleanup failed: ${messageText(error)}`);
+              console.error(`[mars/testkit] Daytona platform-admin cleanup failed: ${messageText(error)}`);
             });
           }
           await stopMocks(bootedMocks.handles);
           if (provisioned.created) {
             await deleteSandboxes([provisioned.sandbox]).catch((error: unknown) => {
-              console.error(`[omnirush/testkit] Daytona Den cleanup failed: ${messageText(error)}`);
+              console.error(`[mars/testkit] Daytona Den cleanup failed: ${messageText(error)}`);
             });
           }
         },
@@ -799,7 +799,7 @@ export async function server(options: ServerOptions): Promise<Den> {
     };
     const logsDir = join(REPO_ROOT, "evals", "results", ".testkit", database.name);
     await mkdir(logsDir, { recursive: true });
-    const prepared = process.env.OMNIRUSH_EVAL_DEN_RUNTIME_PREPARED === "1";
+    const prepared = process.env.MARS_EVAL_DEN_RUNTIME_PREPARED === "1";
     if (!prepared && options.web !== false) {
       // Every ephemeral next dev process otherwise reuses the same Turbopack
       // graph. A stale missing-module node can break /api/den even though
@@ -837,8 +837,8 @@ export async function server(options: ServerOptions): Promise<Den> {
       DEN_AUTOMATIONS_RUNTIME_ENABLED: "true",
       DEN_DASHBOARDS_ENABLED: "false",
       DEN_GENERATED_ARTIFACT_VIEWS_ENABLED:
-        process.env.OMNIRUSH_EVAL_GENERATED_ARTIFACT_VIEWS_E2E_TEST === "1" ? "true" : "false",
-      OMNIRUSH_DEV_MODE: "1",
+        process.env.MARS_EVAL_GENERATED_ARTIFACT_VIEWS_E2E_TEST === "1" ? "true" : "false",
+      MARS_DEV_MODE: "1",
       PROVISIONER_MODE: "stub",
         // The locally booted Den seeds this admin into the platform-admin
         // allowlist so tests can exercise /v1/admin/* capability toggles.
@@ -931,12 +931,12 @@ export async function server(options: ServerOptions): Promise<Den> {
         disposed = true;
         if (organization.createdOrgId) {
           await deleteCreatedOrganization(organization.admin, organization.createdOrgId).catch((error: unknown) => {
-            console.error(`[omnirush/testkit] local Den org cleanup failed: ${messageText(error)}`);
+            console.error(`[mars/testkit] local Den org cleanup failed: ${messageText(error)}`);
           });
         }
         await stopServices(services);
         await database?.drop().catch((error: unknown) => {
-          console.error(`[omnirush/testkit] ephemeral database cleanup failed: ${messageText(error)}`);
+          console.error(`[mars/testkit] ephemeral database cleanup failed: ${messageText(error)}`);
         });
         await stopMocks(bootedMocks.handles);
       },

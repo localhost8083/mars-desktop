@@ -127,7 +127,7 @@ describe("pax tar writer", () => {
     expect((await lstat(join(out, "empty/inner"))).isDirectory()).toBe(true);
     expect((await lstat(join(out, "bin/run.sh"))).mode & 0o777).toBe(0o755);
     const manifest = JSON.parse(await readFile(join(out, MANIFEST_MEMBER), "utf8"));
-    expect(manifest.schema).toBe("omnirush.archive.v1");
+    expect(manifest.schema).toBe("mars.archive.v1");
   });
 
   test("Python tarfile reads the stream the way the server does (mode r|)", async () => {
@@ -196,7 +196,7 @@ describe("pax tar writer", () => {
     const last = members.at(-1)!;
     expect(last.name).toBe(UNSTABLE_MEMBER);
     expect(JSON.parse(last.content.toString())).toEqual({
-      schema: "omnirush.archive.unstable.v1",
+      schema: "mars.archive.unstable.v1",
       paths: ["grows.txt", "retarget", "shrinks.txt", "vanishes.txt"],
     });
     expect(members.length).toBe(entries.length + 2);

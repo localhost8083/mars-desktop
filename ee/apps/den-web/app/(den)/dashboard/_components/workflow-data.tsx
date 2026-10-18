@@ -6,7 +6,7 @@ import {
   workflowDetailSchema,
   workflowTestResultSchema,
   type WorkflowCapability,
-} from "@omnirush/types/workflows";
+} from "@mars/types/workflows";
 import { getErrorMessage, requestJson } from "../../_lib/den-flow";
 
 export type WorkflowDraft = {

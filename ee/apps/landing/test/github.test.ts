@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { getGithubData } from "../lib/github";
 import { automaticDownloadHref } from "../lib/automatic-download";
-import type { DetectedPlatform } from "@omnirush/ui/react";
+import type { DetectedPlatform } from "@mars/ui/react";
 
 type GithubFixtureAsset = {
   name: string;

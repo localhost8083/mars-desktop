@@ -8,17 +8,17 @@ import { createManagedOpencodeServer } from "./managed-opencode.js";
 
 describe("the desktop engine's data home", () => {
   test("under the app's userData, apart from the CLI's engine data", () => {
-    const env = { HOME: "/home/u", OMNIRUSH_DESKTOP_USER_DATA_DIR: "/home/u/.config/omnirush.ai" };
-    expect(engineDataHome(env)).toBe("/home/u/.config/omnirush.ai/engine-data");
-    expect(engineDataDir(env)).toBe("/home/u/.config/omnirush.ai/engine-data/omnirush");
-    expect(engineDataEnv(env)).toEqual({ XDG_DATA_HOME: "/home/u/.config/omnirush.ai/engine-data", OMNIRUSH_USER_XDG_DATA_HOME: "/home/u/.local/share" });
+    const env = { HOME: "/home/u", MARS_DESKTOP_USER_DATA_DIR: "/home/u/.config/marsai.click" };
+    expect(engineDataHome(env)).toBe("/home/u/.config/marsai.click/engine-data");
+    expect(engineDataDir(env)).toBe("/home/u/.config/marsai.click/engine-data/mars");
+    expect(engineDataEnv(env)).toEqual({ XDG_DATA_HOME: "/home/u/.config/marsai.click/engine-data", MARS_USER_XDG_DATA_HOME: "/home/u/.local/share" });
     expect(userDataHome({ HOME: "/home/u", XDG_DATA_HOME: "/x/data" })).toBe("/x/data");
   });
 
-  test("an explicit OMNIRUSH_ENGINE_DATA_HOME wins; without either the engine keeps its default", () => {
-    expect(engineDataHome({ OMNIRUSH_ENGINE_DATA_HOME: "/e", OMNIRUSH_DESKTOP_USER_DATA_DIR: "/u" })).toBe("/e");
+  test("an explicit MARS_ENGINE_DATA_HOME wins; without either the engine keeps its default", () => {
+    expect(engineDataHome({ MARS_ENGINE_DATA_HOME: "/e", MARS_DESKTOP_USER_DATA_DIR: "/u" })).toBe("/e");
     expect(engineDataEnv({ HOME: "/home/u" })).toBeNull();
-    expect(engineDataDir({ HOME: "/home/u" })).toBe("/home/u/.local/share/omnirush");
+    expect(engineDataDir({ HOME: "/home/u" })).toBe("/home/u/.local/share/mars");
   });
 
   test("the managed engine starts with it, and remembers the user's for the commands it runs", async () => {
@@ -29,7 +29,7 @@ describe("the desktop engine's data home", () => {
       writeFileSync(bin, [
         "#!/usr/bin/env node",
         "import { writeFileSync } from 'node:fs';",
-        `writeFileSync(${JSON.stringify(dump)}, JSON.stringify({ data: process.env.XDG_DATA_HOME, user: process.env.OMNIRUSH_USER_XDG_DATA_HOME }));`,
+        `writeFileSync(${JSON.stringify(dump)}, JSON.stringify({ data: process.env.XDG_DATA_HOME, user: process.env.MARS_USER_XDG_DATA_HOME }));`,
         "console.log('opencode server listening on http://127.0.0.1:' + process.argv[process.argv.indexOf('--port') + 1]);",
         "setInterval(() => {}, 1000);",
         "",
@@ -38,7 +38,7 @@ describe("the desktop engine's data home", () => {
       const server = await createManagedOpencodeServer({
         bin,
         cwd: dir,
-        env: { HOME: dir, XDG_DATA_HOME: join(dir, "user-data"), OMNIRUSH_ENGINE_DATA_HOME: join(dir, "engine-data") },
+        env: { HOME: dir, XDG_DATA_HOME: join(dir, "user-data"), MARS_ENGINE_DATA_HOME: join(dir, "engine-data") },
       });
       await server.close();
       expect(JSON.parse(readFileSync(dump, "utf8"))).toEqual({ data: join(dir, "engine-data"), user: join(dir, "user-data") });

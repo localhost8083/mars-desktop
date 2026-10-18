@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "bun:test";
-import type { WorkflowGraph } from "@omnirush/types/workflows";
+import type { WorkflowGraph } from "@mars/types/workflows";
 import { WorkflowFlowDiagram } from "../app/(den)/dashboard/_components/workflow-flow-diagram";
 
 const graph: WorkflowGraph = {

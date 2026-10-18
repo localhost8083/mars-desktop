@@ -9,9 +9,9 @@ test("resolves the user env store from the effective desktop profile", () => {
   assert.equal(
     resolveUserEnvFilePath({
       HOME: "/Users/example",
-      XDG_CONFIG_HOME: "/tmp/omnirush-dev-profile/config",
+      XDG_CONFIG_HOME: "/tmp/mars-dev-profile/config",
     }),
-    path.join("/tmp/omnirush-dev-profile/config", "omnirush", "env.json"),
+    path.join("/tmp/mars-dev-profile/config", "mars", "env.json"),
   );
 });
 
@@ -72,7 +72,7 @@ test("refreshes an injected user env key when its stored value changes", () => {
 
 test("dev child env reconciliation preserves an inherited OPENCODE_DB override", () => {
   const inheritedEnv = {
-    OMNIRUSH_DEV_MODE: "1",
+    MARS_DEV_MODE: "1",
     OPENCODE_DB: "/tmp/installed-production/opencode.db",
   };
   const processEnv = { ...inheritedEnv };

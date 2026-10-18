@@ -3,7 +3,7 @@
  * starts (the desktop's port of the CLI's src/engine-store-repair.js).
  *
  * The engine keeps every session in one SQLite file
- * (`<engine data>/omnirush/opencode.db`, engine-data-home.ts) and stores parts
+ * (`<engine data>/mars/opencode.db`, engine-data-home.ts) and stores parts
  * of each row as JSON text (session.model, session.permission, message.data,
  * part.data, ...). It reads those columns into fixed shapes while it reads the
  * rows, so ONE value that does not parse, or parses to the wrong shape, fails
@@ -78,7 +78,7 @@ const DATA_TABLES = ["message", "part"] as const;
 const RECHECK_ROWS = 5_000;
 const MARKER = "engine-store-check.json";
 
-/** The engine's session store: OPENCODE_DB when set, else `<engine data>/omnirush/opencode.db`. Null for an in-memory store. */
+/** The engine's session store: OPENCODE_DB when set, else `<engine data>/mars/opencode.db`. Null for an in-memory store. */
 export function engineStorePath(env: NodeJS.ProcessEnv): string | null {
   const asked = String(env.OPENCODE_DB ?? "").trim();
   if (asked === ":memory:") return null;

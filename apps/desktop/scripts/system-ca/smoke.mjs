@@ -17,7 +17,7 @@ import { pathToFileURL } from "node:url";
 
 import { app, net, session } from "electron";
 
-const target = process.env.SMOKE_URL || "https://omnirush.ai/";
+const target = process.env.SMOKE_URL || "https://marsai.click/";
 const electronDir = path.resolve(process.env.SMOKE_ELECTRON_DIR || path.join(import.meta.dirname, "..", "..", "electron"));
 const out = process.env.SMOKE_OUT || path.join(process.cwd(), "system-ca-smoke.json");
 const rootPem = process.env.SMOKE_ROOT_PEM && existsSync(process.env.SMOKE_ROOT_PEM)
@@ -46,7 +46,7 @@ function fingerprint(pem) {
 }
 
 app.whenReady().then(async () => {
-  const userDataDir = mkdtempSync(path.join(os.tmpdir(), "omnirush-system-ca-smoke-"));
+  const userDataDir = mkdtempSync(path.join(os.tmpdir(), "mars-system-ca-smoke-"));
   const rootPrint = rootPem ? fingerprint(rootPem) : null;
   try {
     // Node's fetch with the bundled roots only: the reported failure.

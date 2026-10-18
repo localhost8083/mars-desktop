@@ -1,17 +1,17 @@
-import { browserScript } from "@omnirush/testkit";
+import { browserScript } from "@mars/testkit";
 import { fileURLToPath } from "node:url";
 import { expect } from "vitest";
-import { createAndSelectWorkspace, evalIn, waitFor } from "@omnirush/behaviors";
-import { app, needs, server, test } from "@omnirush/testkit";
+import { createAndSelectWorkspace, evalIn, waitFor } from "@mars/behaviors";
+import { app, needs, server, test } from "@mars/testkit";
 
 const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
-const enabled = process.env.OMNIRUSH_EVAL_E2E_TESTS === "1";
+const enabled = process.env.MARS_EVAL_E2E_TESTS === "1";
 const title = enabled
   ? "signed-in Library stays rendered without provider refresh storms"
-  : "signed-in Library stability skipped — needs: set OMNIRUSH_EVAL_E2E_TESTS=1";
+  : "signed-in Library stability skipped — needs: set MARS_EVAL_E2E_TESTS=1";
 
 test.skipIf(!enabled)(title, { timeout: 10 * 60_000 }, async ({ evidence, place }) => {
-  needs({ optIn: ["OMNIRUSH_EVAL_E2E_TESTS"] });
+  needs({ optIn: ["MARS_EVAL_E2E_TESTS"] });
   await using den = await server({
     place,
     org: {
@@ -35,7 +35,7 @@ test.skipIf(!enabled)(title, { timeout: 10 * 60_000 }, async ({ evidence, place 
       window.__libraryStability.requests.push(String(target));
       return originalFetch.apply(this, args);
     };
-    window.addEventListener("omnirush-den-settings-changed", () => {
+    window.addEventListener("mars-den-settings-changed", () => {
       window.__libraryStability.denEvents += 1;
     });
     location.hash = value;
@@ -55,7 +55,7 @@ test.skipIf(!enabled)(title, { timeout: 10 * 60_000 }, async ({ evidence, place 
   await waitFor(
     desktopApp,
     () => (document.body.innerText.includes("READY TO USE")
-      && document.body.innerText.includes("OmniRush.ai Browser")),
+      && document.body.innerText.includes("MarsAI Browser")),
     { timeoutMs: 120_000, label: "signed-in Library inventory" },
   );
 
@@ -68,7 +68,7 @@ test.skipIf(!enabled)(title, { timeout: 10 * 60_000 }, async ({ evidence, place 
       window.__libraryStability.samples.push({
         buttons: document.querySelectorAll("button").length,
         contentVisible: document.body.innerText.includes("READY TO USE")
-          && document.body.innerText.includes("OmniRush.ai Browser"),
+          && document.body.innerText.includes("MarsAI Browser"),
       });
     }, 50);
     return true;

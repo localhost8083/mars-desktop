@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect } from "vitest";
-import { liveOpenAiEnabled } from "@omnirush/behaviors";
-import { observeTranscript, readTranscriptMessages, spec } from "@omnirush/testkit";
+import { liveOpenAiEnabled } from "@mars/behaviors";
+import { observeTranscript, readTranscriptMessages, spec } from "@mars/testkit";
 import { skillLifecycle } from "../worlds/chat.ts";
 
 const test = spec.world(skillLifecycle, {
@@ -66,8 +66,8 @@ test("workspace skills change during an ongoing conversation", async ({ world, u
     expect((await agent.desktopApi(`${skillRoute}/${world.skillName}`, { method: "DELETE" })).status).toBe(200);
   };
 
-  await step("the conversation knows OmniRush.ai and cannot invent a skill result", async () => {
-    expect(await ask(null)).toMatch(/OmniRush.ai/i);
+  await step("the conversation knows MarsAI and cannot invent a skill result", async () => {
+    expect(await ask(null)).toMatch(/MarsAI/i);
   });
   await step("installing a matching skill makes its unseen instructions usable on the next turn", async () => {
     const code = randomUUID();

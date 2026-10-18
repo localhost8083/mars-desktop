@@ -27,9 +27,9 @@ describe("composer connection inventory", () => {
       ],
       mcpServers: [
         {
-          id: "omnirush-connect:plugin:gmail",
+          id: "mars-connect:plugin:gmail",
           name: "Gmail plugin MCP",
-          origin: "omnirush-connect",
+          origin: "mars-connect",
           orgMcpConnectionId: "emc_gmail",
           config: { type: "remote", url: "https://mcp.example.test" },
         },
@@ -41,7 +41,7 @@ describe("composer connection inventory", () => {
         },
       ],
       mcpStatuses: {
-        "omnirush-connect:plugin:gmail": { status: "needs_auth" },
+        "mars-connect:plugin:gmail": { status: "needs_auth" },
       },
     });
 
@@ -54,7 +54,7 @@ describe("composer connection inventory", () => {
     const server = {
       id: "org-mcp:emc_gmail",
       name: "Gmail",
-      origin: "omnirush-connect" as const,
+      origin: "mars-connect" as const,
       orgMcpConnectionId: "emc_gmail",
       config: { type: "remote" as const, url: connection.url },
     };

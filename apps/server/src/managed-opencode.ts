@@ -2,7 +2,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { realpathSync } from "node:fs";
 import net from "node:net";
 import { randomUUID } from "node:crypto";
-import { globalOpencodeConfigDir } from "@omnirush/paths";
+import { globalOpencodeConfigDir } from "@mars/paths";
 import { engineDataEnv } from "./engine-data-home.js";
 import { repairEngineStoreBeforeStart } from "./engine-store-repair.js";
 import { engineInstallLogEnv } from "./install-log-host.js";
@@ -24,7 +24,7 @@ export type ManagedProcessCloseOptions = {
 };
 
 /**
- * The engine reads OMNIRUSH_PLUGINS_NO_DEPS (one file per line): when every
+ * The engine reads MARS_PLUGINS_NO_DEPS (one file per line): when every
  * configured plugin is one of these files, it does not wait for its config
  * folders' npm installs before serving a project. Each file is named as given
  * and as its real path, since the engine compares resolved real paths.
@@ -42,7 +42,7 @@ export function pluginsNoDepsEnv(
       // A plugin that is not on disk is never loaded; its name is enough.
     }
   }
-  return names.size ? { OMNIRUSH_PLUGINS_NO_DEPS: [...names].join("\n") } : {};
+  return names.size ? { MARS_PLUGINS_NO_DEPS: [...names].join("\n") } : {};
 }
 
 /**
@@ -54,7 +54,7 @@ export function engineStartTimeoutMs(
   env: Record<string, string | undefined> = process.env,
   platform: NodeJS.Platform = process.platform,
 ): number {
-  const asked = Number(env.OMNIRUSH_ENGINE_START_TIMEOUT_MS);
+  const asked = Number(env.MARS_ENGINE_START_TIMEOUT_MS);
   if (Number.isFinite(asked) && asked > 0) return asked;
   return platform === "win32" ? 60_000 : 15_000;
 }
@@ -138,7 +138,7 @@ export function createManagedProcessClose(
       // process that is already gone (seen on Windows): ask the OS.
       const exists = options.processExists ?? (() => pidExists(child.pid));
       if (exists()) {
-        throw new Error("Managed OmniRush process did not exit after SIGKILL");
+        throw new Error("Managed Mars process did not exit after SIGKILL");
       }
     })();
     return closePromise;
@@ -191,7 +191,7 @@ class ManagedOpencodeExitError extends Error {
   readonly exitCode: number | null;
 
   constructor(exitCode: number | null, output: string) {
-    super(`OmniRush server exited with code ${exitCode}${output.trim() ? `\n${output}` : ""}`);
+    super(`Mars server exited with code ${exitCode}${output.trim() ? `\n${output}` : ""}`);
     this.exitCode = exitCode;
   }
 }
@@ -217,8 +217,8 @@ async function startManagedOpencodeServer(
   // @npmcli/config reads npm_config_* settings from the environment.
   // The question tool is the engine's way to ask the user; the app answers it.
   const engineEnvDefaults: Record<string, string> = { npm_config_audit: "false", OPENCODE_ENABLE_QUESTION_TOOL: "1" };
-  // OmniRush.ai's engine build keeps its own global config in
-  // ~/.config/omnirush; the app's global skills, agents and config live in
+  // MarsAI's engine build keeps its own global config in
+  // ~/.config/mars; the app's global skills, agents and config live in
   // the opencode global config directory, so the engine reads that one too.
   const baseEnv = { ...process.env, ...options.env };
   if (!baseEnv.OPENCODE_CONFIG_DIR?.trim()) engineEnvDefaults.OPENCODE_CONFIG_DIR = globalOpencodeConfigDir({ env: baseEnv });
@@ -235,8 +235,8 @@ async function startManagedOpencodeServer(
     OPENCODE_SERVER_PASSWORD: password,
   };
   // The managed engine needs its own provider environment, but never the key
-  // that decrypts OmniRush.ai-owned OAuth credentials.
-  delete env.OMNIRUSH_ENCRYPTION_KEY;
+  // that decrypts MarsAI-owned OAuth credentials.
+  delete env.MARS_ENCRYPTION_KEY;
   // OPENCODE_PURE disables managed config/plugin loading in OpenCode 1.x;
   // inheriting it would bypass the engine-side MCP fence.
   delete env.OPENCODE_PURE;
@@ -271,7 +271,7 @@ async function startManagedOpencodeServer(
   try {
     url = await new Promise<string>((resolve, reject) => {
       const timeoutMs = options.timeoutMs ?? engineStartTimeoutMs(env);
-      const timeout = setTimeout(() => reject(new Error(`Timeout waiting for OmniRush server after ${timeoutMs}ms`)), timeoutMs);
+      const timeout = setTimeout(() => reject(new Error(`Timeout waiting for Mars server after ${timeoutMs}ms`)), timeoutMs);
       let output = "";
       const done = (value: string) => {
         clearTimeout(timeout);
@@ -286,7 +286,7 @@ async function startManagedOpencodeServer(
         for (const line of output.split("\n")) {
           if (!/^(?:opencode )?server listening\b/.test(line)) continue;
           const match = line.match(/on\s+(https?:\/\/[^\s]+)/);
-          if (!match?.[1]) return fail(new Error(`Failed to parse OmniRush server URL from: ${line}`));
+          if (!match?.[1]) return fail(new Error(`Failed to parse Mars server URL from: ${line}`));
           done(match[1]);
         }
       });

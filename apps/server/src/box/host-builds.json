@@ -26,9 +26,9 @@
   "binary_extensions": [".exe", ".dll", ".dylib", ".node", ".so", ".pyd"],
   "notices": {
     "cli": {
-      "native": "This folder has {label} builds ({things}) that won't run in the Linux sandbox, so this chat runs on {machine}. `omnirush sandbox on` to use the sandbox here anyway.",
-      "explicit": "This chat runs in a Linux sandbox, but this folder has {label} builds ({things}) that won't run there; rebuilding them inside replaces them with Linux builds that won't run on {machine} (`omnirush --no-sandbox` runs it on {machine}).",
-      "box": "This chat runs in a Linux sandbox (this folder mounted, installs kept per folder); `omnirush --no-sandbox` or `omnirush sandbox off` runs it on {machine}."
+      "native": "This folder has {label} builds ({things}) that won't run in the Linux sandbox, so this chat runs on {machine}. `mars sandbox on` to use the sandbox here anyway.",
+      "explicit": "This chat runs in a Linux sandbox, but this folder has {label} builds ({things}) that won't run there; rebuilding them inside replaces them with Linux builds that won't run on {machine} (`mars --no-sandbox` runs it on {machine}).",
+      "box": "This chat runs in a Linux sandbox (this folder mounted, installs kept per folder); `mars --no-sandbox` or `mars sandbox off` runs it on {machine}."
     },
     "desktop": {
       "native": "This folder has {label} builds ({things}) that won't run in the Linux sandbox, so its chats run on {machine}. Turn the sandbox on for this project to use it anyway.",

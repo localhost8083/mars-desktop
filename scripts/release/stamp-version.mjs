@@ -3,7 +3,7 @@
  * Stamps a release version into the workspace package.json files at build
  * time. The repo permanently commits the "0.0.0-dev" placeholder; the release
  * and alpha workflows call this right before building so electron-builder,
- * the Vite renderer bundle, and the omnirush-server npm package all carry the
+ * the Vite renderer bundle, and the mars-server npm package all carry the
  * version derived from the git tag. Nothing here is ever committed.
  *
  * Usage: node scripts/release/stamp-version.mjs --version X.Y.Z[-prerelease+build]

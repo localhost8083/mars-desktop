@@ -1,4 +1,4 @@
-// Ported from the CLI (omnirush-cli src/box/backends/apple.js,
+// Ported from the CLI (mars-cli src/box/backends/apple.js,
 // feat/local-box-backends); keep the two in step. Desktop differences: types;
 // the container-name prefix (containerName's env); boxd missing from the
 // sidecars is a reason.
@@ -42,7 +42,7 @@ export const SUPPORTED = { min: "1.0.0", below: "2.0.0", tested: "1.5.0" };
 const BIN_DIRS = ["/usr/local/bin", "/opt/homebrew/bin"];
 
 export function findAppleBin({ env = process.env, exists = existsSync }: { env?: Env; exists?: (file: string) => boolean } = {}): string | null {
-  const asked = String(env.OMNIRUSH_BOX_APPLE_BIN || "").trim();
+  const asked = String(env.MARS_BOX_APPLE_BIN || "").trim();
   if (asked) return exists(asked) ? asked : null;
   const dirs = [...String(env.PATH || "").split(":").filter(Boolean), ...BIN_DIRS];
   for (const dir of dirs) {
@@ -118,7 +118,7 @@ export async function probeApple({ env = process.env, platform = process.platfor
   const status = await run(bin, ["system", "status"], { env, timeoutMs });
   const said = `${status.stdout}\n${status.stderr}`;
   if (status.code !== 0 || /not running|not registered|unavailable/i.test(said) || versions.server === null) {
-    return { ...base, ok: false, bin, version, reason: "Apple container is installed but not running (OmniRush never starts it; `container system start` is known to hang on macOS 27)" };
+    return { ...base, ok: false, bin, version, reason: "Apple container is installed but not running (Mars never starts it; `container system start` is known to hang on macOS 27)" };
   }
   return { ...base, ok: true, bin, version, os: "linux", arch: "arm64", flavor: "apple-container", rootless: true, vm: true };
 }
@@ -180,8 +180,8 @@ async function inspectBox(runtime: BoxRuntime, name: string, run: RunCommand): P
 
 /** VM size for a box: what the user asked, else half the Mac (2–8 CPUs, 2–8 GiB; Apple's default 1 GiB is too small for installs). */
 export function appleResources({ env = process.env, cpus = os.cpus().length, memory = os.totalmem() }: { env?: Env; cpus?: number; memory?: number } = {}): string[] {
-  const askedCpus = Number(env.OMNIRUSH_BOX_CPUS);
-  const askedMem = String(env.OMNIRUSH_BOX_MEMORY || "").trim();
+  const askedCpus = Number(env.MARS_BOX_CPUS);
+  const askedMem = String(env.MARS_BOX_MEMORY || "").trim();
   const c = askedCpus > 0 ? askedCpus : Math.max(2, Math.min(8, Math.floor(cpus / 2)));
   const m = askedMem || `${Math.max(2, Math.min(8, Math.floor(memory / 2 / 1024 ** 3)))}G`;
   return ["--cpus", String(c), "--memory", m];
@@ -193,7 +193,7 @@ export function createAppleArgs({ name, key, root, croot, image, runFolder, shim
     "--label", `${LABEL}=1`, "--label", `${LABEL}.key=${key}`, "--label", `${LABEL}.root=${root}`, "--label", `${LABEL}.version=1`, "--label", `${LABEL}.port=${port}`,
     "--mount", `type=bind,source=${root},target=${croot}`,
     "--mount", `type=bind,source=${runFolder},target=${RUN_DIR}`,
-    "--mount", `type=bind,source=${path.join(runFolder, "bin")},target=/opt/omnirush/bin,readonly`,
+    "--mount", `type=bind,source=${path.join(runFolder, "bin")},target=/opt/mars/bin,readonly`,
     ...(shims ? ["--mount", `type=bind,source=${shims},target=${SHIMS_DIR}-src,readonly`] : []),
     ...(pkglog ? ["--mount", `type=bind,source=${pkglog.root},target=${containerRoot(pkglog.root, "darwin")}`] : []),
     "-p", `127.0.0.1:${port}:${BOX_PORT}`,
@@ -202,12 +202,12 @@ export function createAppleArgs({ name, key, root, croot, image, runFolder, shim
     "--workdir", croot,
     ...appleResources({ env }),
     "--init",
-    "--entrypoint", "/opt/omnirush/bin/boxd",
+    "--entrypoint", "/opt/mars/bin/boxd",
     image,
   ];
 }
 
-/** Copy boxd into the run folder's bin/ (mounted read-only at /opt/omnirush/bin). */
+/** Copy boxd into the run folder's bin/ (mounted read-only at /opt/mars/bin). */
 function placeBoxd(runFolder: string, env: Env): string | null {
   const source = helperPath("boxd", { goos: "linux", goarch: "arm64", env });
   if (!source) return "the sandbox helper boxd (linux-arm64) is missing from this install";
@@ -309,7 +309,7 @@ export const appleDriver: BoxDriver = {
     const parsed = parseJson(res.stdout);
     for (const entry of Array.isArray(parsed) ? parsed.map(record) : []) {
       const ref = String(entry.reference ?? entry.name ?? "");
-      if (!ref || !/(^|\/)omnirush-ai\/box-[a-z]+:/.test(ref) || current.has(ref) || used.has(ref)) continue;
+      if (!ref || !/(^|\/)mars-ai\/box-[a-z]+:/.test(ref) || current.has(ref) || used.has(ref)) continue;
       const del = await run(runtime.bin, ["image", "delete", ref], { timeoutMs: 60_000 });
       if (del.code === 0) removed.push({ kind: "image", name: ref, reason: "not current" });
     }

@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import type { OmniRushServerClient } from "@/app/lib/omnirush-server";
-import type { LocalModelRef, LocalRouteCategory, LocalRouteDecision, LocalRoutingSettings, LocalWorkflow, LocalWorkflowInput, LocalWorkflowRun, LocalWorkflowsSnapshot, LocalWorkflowStep } from "@omnirush/types/local-workflows";
+import type { MarsServerClient } from "@/app/lib/mars-server";
+import type { LocalModelRef, LocalRouteCategory, LocalRouteDecision, LocalRoutingSettings, LocalWorkflow, LocalWorkflowInput, LocalWorkflowRun, LocalWorkflowsSnapshot, LocalWorkflowStep } from "@mars/types/local-workflows";
 import { ModelSelect } from "./model-select";
 
 type Tab = "routing" | "workflows" | "runs";
@@ -23,7 +23,7 @@ const emptyWorkflow = (): LocalWorkflowInput => ({ name: "", description: "", en
 function errorMessage(error: unknown) { return error instanceof Error ? error.message : "Something went wrong. Please try again."; }
 function formatTime(value: number | null) { return value ? new Date(value).toLocaleString() : "Not yet"; }
 
-export function LocalWorkflowsPanel(props: { open: boolean; onClose: () => void; client: OmniRushServerClient | null | undefined; workspaceId: string; onOpenSession?: (workspaceId: string, sessionId: string) => void }) {
+export function LocalWorkflowsPanel(props: { open: boolean; onClose: () => void; client: MarsServerClient | null | undefined; workspaceId: string; onOpenSession?: (workspaceId: string, sessionId: string) => void }) {
   const [tab, setTab] = React.useState<Tab>("routing");
   const [snapshot, setSnapshot] = React.useState<LocalWorkflowsSnapshot | null>(null);
   const [loading, setLoading] = React.useState(false);
@@ -117,7 +117,7 @@ export function LocalWorkflowsPanel(props: { open: boolean; onClose: () => void;
   return <Dialog open={props.open} onOpenChange={(open) => { if (!open) props.onClose(); }}>
     <DialogContent data-testid="local-workflows-panel" className="max-h-[min(90dvh,760px)] w-[calc(100%-2rem)] overflow-y-auto lg:max-w-4xl">
       <DialogHeader><DialogTitle className="flex items-center gap-2"><Clock3 className="size-5" />Workflows &amp; model routing</DialogTitle><DialogDescription>Local orchestration for this workspace. Routing applies when workflows run; chat model selection stays explicit.</DialogDescription></DialogHeader>
-      {!props.client ? <div className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">Connect this workspace to omnirush.ai Server to manage workflows.</div> : null}
+      {!props.client ? <div className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">Connect this workspace to marsai.click Server to manage workflows.</div> : null}
       {error ? <div role="alert" className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</div> : null}
       {notice ? <div role="status" className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300">{notice}</div> : null}
       <div className="flex gap-1 rounded-xl bg-muted p-1" role="tablist" aria-label="Workflow tools">{tabs.map(({ value, label }) => <button key={value} type="button" role="tab" id={`local-workflows-tab-${value}`} aria-controls={`local-workflows-content-${value}`} aria-selected={tab === value} className={cn("flex-1 rounded-lg px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", tab === value && "bg-background shadow-sm")} onClick={() => setTab(value)}>{label}</button>)}</div>

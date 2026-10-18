@@ -16,7 +16,7 @@ x509_extensions = v3_ca
 prompt = no
 
 [dn]
-CN = OmniRush.ai Test Chain Root
+CN = MarsAI Test Chain Root
 
 [v3_ca]
 basicConstraints = critical,CA:TRUE,pathlen:1
@@ -30,7 +30,7 @@ distinguished_name = dn
 prompt = no
 
 [dn]
-CN = OmniRush.ai Test Chain Intermediate
+CN = MarsAI Test Chain Intermediate
 EOF
 
 cat > intermediate.ext <<'EOF'

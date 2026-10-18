@@ -6,7 +6,7 @@
  * Listeners (e.g. the global NewProvidersListener) should use this to
  * surface a notification-center entry.
  */
-export const newProvidersEvent = "omnirush-new-providers-available";
+export const newProvidersEvent = "mars-new-providers-available";
 
 export type NewProviderInfo = {
   id: string;
@@ -32,7 +32,7 @@ export function dispatchNewProviders(detail: NewProvidersEventDetail): void {
   );
 }
 
-const SEEN_KEY = "omnirush.seenProviderIds";
+const SEEN_KEY = "mars.seenProviderIds";
 
 export function readSeenProviderIds(): Set<string> {
   try {

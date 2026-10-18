@@ -93,7 +93,7 @@ async function startCdpServer(stalledConnections: number): Promise<{
       response.end(JSON.stringify([{
         id: TARGET_ID,
         type: "page",
-        title: "OmniRush.ai",
+        title: "MarsAI",
         url: "http://127.0.0.1/app",
         webSocketDebuggerUrl: `ws://127.0.0.1:${port}/devtools/page/${TARGET_ID}`,
       }]));

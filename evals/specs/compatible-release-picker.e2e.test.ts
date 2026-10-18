@@ -1,10 +1,10 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { compatibleReleaseWorld } from "../worlds/first-run.ts";
 
 const test = spec.world(compatibleReleaseWorld);
-const currentArtifact = "https://releases.omnirush.test/v2.4.0/OmniRush.ai-darwin-arm64.dmg";
-const previousArtifact = "https://releases.omnirush.test/v2.3.1/OmniRush.ai-darwin-arm64.dmg";
+const currentArtifact = "https://releases.mars.test/v2.4.0/MarsAI-darwin-arm64.dmg";
+const previousArtifact = "https://releases.mars.test/v2.3.1/MarsAI-darwin-arm64.dmg";
 
 function stringField(value: unknown, key: string): string | null {
   if (typeof value !== "object" || value === null) return null;
@@ -38,7 +38,7 @@ test("recovery offers only recent stable releases with exact compatible artifact
   ]);
   await seed.evalIn(
     world.app,
-    () => (Promise.all([window.__omnirushRecoveryControl.select("2.3.0"), window.__omnirushRecoveryControl.select("9.9.9")])),
+    () => (Promise.all([window.__marsRecoveryControl.select("2.3.0"), window.__marsRecoveryControl.select("9.9.9")])),
     { awaitPromise: true },
   );
   const afterInvalid = await world.snapshot();
@@ -54,7 +54,7 @@ test("recovery offers only recent stable releases with exact compatible artifact
   );
   expect(opened).toEqual([previousArtifact]);
   expect(opened).not.toContain(currentArtifact);
-  expect(opened).not.toContain("https://incompatible.invalid/OmniRush.ai.AppImage");
-  expect(opened).not.toContain("https://wrong-flavor.invalid/OmniRush.ai.dmg");
-  expect(opened).not.toContain("https://prerelease.invalid/OmniRush.ai.dmg");
+  expect(opened).not.toContain("https://incompatible.invalid/MarsAI.AppImage");
+  expect(opened).not.toContain("https://wrong-flavor.invalid/MarsAI.dmg");
+  expect(opened).not.toContain("https://prerelease.invalid/MarsAI.dmg");
 });

@@ -1,4 +1,4 @@
-import { browserScript } from "@omnirush/cdp";
+import { browserScript } from "@mars/cdp";
 import type { Probe } from "./spec/types.ts";
 
 /** Observe rendered transcript text across frames, including gaps between eventual assertions. */

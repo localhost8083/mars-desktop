@@ -1,6 +1,6 @@
 /** @jsxImportSource react */
 import * as React from "react";
-import { desktopPolicyDefinitions } from "@omnirush/types/den/desktop-policies";
+import { desktopPolicyDefinitions } from "@mars/types/den/desktop-policies";
 import { ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router";
 
@@ -182,7 +182,7 @@ function DenSignedOutPanel({
 
 const permissionLabels = {
   allowCustomProviders: "Add AI providers",
-  allowZenModel: "Use OmniRush models",
+  allowZenModel: "Use Mars models",
   allowMultipleWorkspaces: "Create more workspaces",
   allowControlSettings: "Change app settings",
   allowManageExtensions: "Add tools, skills & MCP servers",

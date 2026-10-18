@@ -2,10 +2,10 @@ export const PUBLIC_DESKTOP_DISTRIBUTION = Object.freeze({
   flavor: "public",
   // The Electron app name. It names the keychain item that holds the sign-in,
   // so it stays as shipped; people see displayName.
-  appName: "omnirush.ai",
-  displayName: "omnirush",
-  appIdentifier: "ai.omnirush.desktop",
-  protocolScheme: "omnirush",
+  appName: "marsai.click",
+  displayName: "mars",
+  appIdentifier: "ai.marsai.desktop",
+  protocolScheme: "mars",
   requireSignin: false,
   requireActivation: false,
   // GitHub releases publish stable manifests only, so the public build has no
@@ -16,10 +16,10 @@ export const PUBLIC_DESKTOP_DISTRIBUTION = Object.freeze({
 
 export const CLOUD_DESKTOP_DISTRIBUTION = Object.freeze({
   flavor: "cloud",
-  appName: "omnirush.ai Cloud",
-  displayName: "omnirush.ai Cloud",
-  appIdentifier: "ai.omnirush.desktop",
-  protocolScheme: "omnirush",
+  appName: "marsai.click Cloud",
+  displayName: "marsai.click Cloud",
+  appIdentifier: "ai.marsai.desktop",
+  protocolScheme: "mars",
   requireSignin: true,
   requireActivation: false,
   alphaUpdateFeedUrl: null,
@@ -27,10 +27,10 @@ export const CLOUD_DESKTOP_DISTRIBUTION = Object.freeze({
 
 export const ENTERPRISE_DESKTOP_DISTRIBUTION = Object.freeze({
   flavor: "enterprise",
-  appName: "omnirush.ai Enterprise",
-  displayName: "omnirush.ai Enterprise",
-  appIdentifier: "ai.omnirush.desktop",
-  protocolScheme: "omnirush",
+  appName: "marsai.click Enterprise",
+  displayName: "marsai.click Enterprise",
+  appIdentifier: "ai.marsai.desktop",
+  protocolScheme: "mars",
   requireSignin: true,
   requireActivation: true,
   alphaUpdateFeedUrl: null,

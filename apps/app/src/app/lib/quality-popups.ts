@@ -14,9 +14,9 @@
 import type { AccountQuality, QualityNotice } from "./quality";
 import { NOTICE_SEEN_STORAGE_KEY, NUDGE_SEEN_STORAGE_KEY, isCoachingNotice, latestNotice, readPref, writePref } from "./quality";
 
-export const SEEN_NOTICES_STORAGE_KEY = "omnirush.quality.seenNoticeIds.v2";
-export const SEEN_NUDGES_STORAGE_KEY = "omnirush.quality.seenNudgeIds.v2";
-export const COACHING_DAY_STORAGE_KEY = "omnirush.quality.coachingShownDay.v1";
+export const SEEN_NOTICES_STORAGE_KEY = "mars.quality.seenNoticeIds.v2";
+export const SEEN_NUDGES_STORAGE_KEY = "mars.quality.seenNudgeIds.v2";
+export const COACHING_DAY_STORAGE_KEY = "mars.quality.coachingShownDay.v1";
 const MAX_SEEN_IDS = 100;
 
 type KeyValueStore = Pick<Storage, "getItem" | "setItem">;

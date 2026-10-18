@@ -5,17 +5,17 @@ import { join, resolve } from "node:path";
 
 import { createManagedOpencodeServer, type ManagedOpencodeServer } from "./managed-opencode.js";
 import {
-  omnirushAnthropicToolSchemaPluginPath,
-  omnirushMcpPolicyPluginPath,
-  omnirushTitleRecoveryPluginPath,
-} from "./omnirush-extensions-plugin-path.js";
+  marsAnthropicToolSchemaPluginPath,
+  marsMcpPolicyPluginPath,
+  marsTitleRecoveryPluginPath,
+} from "./mars-extensions-plugin-path.js";
 
 /**
- * OmniRush plugins that patch the global fetch the engine sends model
+ * Mars plugins that patch the global fetch the engine sends model
  * requests through, on the real engine (the bundled sidecar, started as the
  * app starts it, the plugins listed in its config) against a mock provider:
  *
- *   - title recovery: the private x-omnirush-title-attempt header never
+ *   - title recovery: the private x-mars-title-attempt header never
  *     reaches the provider, and a rejected optional title parameter
  *     (`reasoning_effort`, `temperature`, `top_p`) is retried without it, so the session
  *     still gets its title;
@@ -36,7 +36,7 @@ function findSidecar(): string | null {
 const enginePath = findSidecar();
 const describeMaybe = enginePath ? describe : describe.skip;
 
-const HEADER = "x-omnirush-title-attempt";
+const HEADER = "x-mars-title-attempt";
 /** Optional title-request parameters the mock refuses (title recovery retries without them). */
 const OPTIONAL_TITLE_PARAMETERS = ["reasoning_effort", "temperature", "top_p"];
 const TITLE = "Recovered title from the mock";
@@ -54,7 +54,7 @@ function chatJson(content: string): Response {
   return Response.json({ id: "c", object: "chat.completion", created: 1, model: "m", choices: [{ index: 0, message: { role: "assistant", content }, finish_reason: "stop" }], usage: { prompt_tokens: 5, completion_tokens: 2, total_tokens: 7 } });
 }
 
-describeMaybe("OmniRush fetch plugins on the bundled engine (mock provider)", () => {
+describeMaybe("Mars fetch plugins on the bundled engine (mock provider)", () => {
   let engine: ManagedOpencodeServer;
   let provider: ReturnType<typeof Bun.serve>;
   let work = "";
@@ -95,7 +95,7 @@ describeMaybe("OmniRush fetch plugins on the bundled engine (mock provider)", ()
       async fetch(request) {
         const url = new URL(request.url);
         const body = request.method === "POST" ? ((await request.json().catch(() => ({}))) as Record<string, any>) : {};
-        // The OmniRush server endpoints the plugins call (policy allows everything here).
+        // The Mars server endpoints the plugins call (policy allows everything here).
         if (url.pathname.startsWith("/managed-policy")) return Response.json({ allowed: true, approvalMode: "full" });
         if (!url.pathname.startsWith("/v1/")) return Response.json({});
         seen.push({ path: url.pathname, headers: Object.fromEntries(request.headers), body });
@@ -142,9 +142,9 @@ rl.on("line", (line) => {
       },
       mcp: { anyof: { type: "local", command: ["node", mcpScript], enabled: true } },
       plugin: [
-        omnirushTitleRecoveryPluginPath(),
-        omnirushAnthropicToolSchemaPluginPath(),
-        omnirushMcpPolicyPluginPath(),
+        marsTitleRecoveryPluginPath(),
+        marsAnthropicToolSchemaPluginPath(),
+        marsMcpPolicyPluginPath(),
       ],
     }));
     engine = await createManagedOpencodeServer({
@@ -153,9 +153,9 @@ rl.on("line", (line) => {
       env: {
         OPENCODE_CONFIG: configPath,
         OPENCODE_DISABLE_MODELS_FETCH: "1",
-        OMNIRUSH_SERVER_URL: base,
-        OMNIRUSH_POLICY_TOKEN: "policy",
-        OMNIRUSH_SERVER_TOKEN: "server",
+        MARS_SERVER_URL: base,
+        MARS_POLICY_TOKEN: "policy",
+        MARS_SERVER_TOKEN: "server",
         HOME: join(data, "home"),
         OPENCODE_TEST_HOME: join(data, "home"),
         XDG_DATA_HOME: join(data, "xdg-data"),

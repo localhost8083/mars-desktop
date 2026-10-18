@@ -18,9 +18,9 @@
 // and the "organization selection pending" state the routing and auth layers
 // consult between token exchange and the user's explicit choice.
 
-const DESKTOP_SIGN_IN_STARTED_AT_KEY = "omnirush.den.desktopSignInStartedAt";
-const ORG_SELECTION_PENDING_KEY = "omnirush.den.orgSelectionPendingAt";
-const ORG_SELECTION_SUGGESTION_KEY = "omnirush.den.orgSelectionSuggestion";
+const DESKTOP_SIGN_IN_STARTED_AT_KEY = "mars.den.desktopSignInStartedAt";
+const ORG_SELECTION_PENDING_KEY = "mars.den.orgSelectionPendingAt";
+const ORG_SELECTION_SUGGESTION_KEY = "mars.den.orgSelectionSuggestion";
 
 /** Comfortably outlives the 5-minute handoff grant plus the browser round
  * trip, without leaving a stale marker that reclassifies a much later,

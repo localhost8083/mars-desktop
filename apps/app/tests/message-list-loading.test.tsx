@@ -94,7 +94,7 @@ describe("message-list loading feedback", () => {
 const task: TaskToolPart = {
   type: "dynamic-tool", toolName: "task", toolCallId: "delegation", state: "input-available",
   input: { description: "Review project notes", prompt: "PRIVATE TASK PROMPT", subagent_type: "general" },
-  callProviderMetadata: { omnirush: { childSessionId: "child" } },
+  callProviderMetadata: { mars: { childSessionId: "child" } },
 };
 const delegated: UIMessage = { id: "assistant", role: "assistant", parts: [task] };
 const followup: UIMessage = { id: "followup", role: "user", parts: [{ type: "text", text: "What is the update?" }] };

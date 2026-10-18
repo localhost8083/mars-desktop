@@ -1,4 +1,4 @@
-import type { AutomationRunStatus, AutomationState } from "@omnirush/types/automations"
+import type { AutomationRunStatus, AutomationState } from "@mars/types/automations"
 
 const transitions: Readonly<Record<AutomationState, readonly AutomationState[]>> = {
   active: ["inactive", "needs_attention", "archived"],

@@ -38,7 +38,7 @@ test("fault proxy script exposes authenticated controls and preserves local faul
   });
   const upstreamPort = await listen(upstream);
   const proxyPort = await freePort();
-  const directory = await mkdtemp(join(tmpdir(), "omnirush-fault-proxy-"));
+  const directory = await mkdtemp(join(tmpdir(), "mars-fault-proxy-"));
   const scriptPath = join(directory, "proxy.mjs");
   await writeFile(scriptPath, FAULT_PROXY_SCRIPT);
   const issuer = "https://fault-proxy.example.test";
@@ -54,7 +54,7 @@ test("fault proxy script exposes authenticated controls and preserves local faul
     stdio: "ignore",
   });
   const url = `http://127.0.0.1:${proxyPort}`;
-  const auth = { "x-omnirush-fault-token": token };
+  const auth = { "x-mars-fault-token": token };
   const post = (path: string, body?: unknown): Promise<Response> => fetch(`${url}${path}`, {
     method: "POST",
     headers: body === undefined ? auth : { ...auth, "content-type": "application/json" },
@@ -66,7 +66,7 @@ test("fault proxy script exposes authenticated controls and preserves local faul
     let health: Response | undefined;
     while (Date.now() < deadline) {
       try {
-        health = await fetch(`${url}/__omnirush_faults/health`);
+        health = await fetch(`${url}/__mars_faults/health`);
         if (health.ok) break;
       } catch {
         await new Promise((resolve) => setTimeout(resolve, 25));
@@ -74,9 +74,9 @@ test("fault proxy script exposes authenticated controls and preserves local faul
     }
     assert(health?.ok, "fault proxy health did not become ready");
     assert.deepEqual(await health.json(), { ok: true, issuer });
-    assert.equal((await fetch(`${url}/__omnirush_faults/requests`)).status, 401);
-    assert.equal((await fetch(`${url}/__omnirush_faults/clear`, { method: "POST" })).status, 401);
-    assert.equal((await post("/__omnirush_faults/rules", {
+    assert.equal((await fetch(`${url}/__mars_faults/requests`)).status, 401);
+    assert.equal((await fetch(`${url}/__mars_faults/clear`, { method: "POST" })).status, 401);
+    assert.equal((await post("/__mars_faults/rules", {
       kind: "status",
       pathPrefix: "/flaky",
       statusCode: 429,
@@ -88,7 +88,7 @@ test("fault proxy script exposes authenticated controls and preserves local faul
     assert.equal((await fetch(`${url}/flaky/two`)).status, 429);
     assert.equal((await fetch(`${url}/flaky/three`)).status, 200);
 
-    assert.equal((await post("/__omnirush_faults/rules", {
+    assert.equal((await post("/__mars_faults/rules", {
       kind: "latency",
       pathPrefix: "/slow",
       delayMs: 30,
@@ -97,16 +97,16 @@ test("fault proxy script exposes authenticated controls and preserves local faul
     assert.equal((await fetch(`${url}/slow`)).status, 200);
     assert(Date.now() - startedAt >= 20);
 
-    assert.equal((await post("/__omnirush_faults/rules", {
+    assert.equal((await post("/__mars_faults/rules", {
       kind: "status",
       pathPrefix: "/cleared",
       statusCode: 500,
       times: 3,
     })).status, 204);
-    assert.equal((await post("/__omnirush_faults/clear")).status, 204);
+    assert.equal((await post("/__mars_faults/clear")).status, 204);
     assert.equal((await fetch(`${url}/cleared`)).status, 200);
 
-    const logResponse = await fetch(`${url}/__omnirush_faults/requests`, { headers: auth });
+    const logResponse = await fetch(`${url}/__mars_faults/requests`, { headers: auth });
     assert.equal(logResponse.status, 200);
     const log: unknown = await logResponse.json();
     assert.deepEqual(

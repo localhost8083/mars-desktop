@@ -1,6 +1,6 @@
-import { browserScript } from "@omnirush/cdp";
-import { dumpScreenState, readActiveWorkspaceId } from "@omnirush/cdp";
-import type { Surface } from "@omnirush/cdp";
+import { browserScript } from "@mars/cdp";
+import { dumpScreenState, readActiveWorkspaceId } from "@mars/cdp";
+import type { Surface } from "@mars/cdp";
 import type { DenRef, DenSession } from "./den.ts";
 import { createDesktopHandoffGrant } from "./den.ts";
 import { clickButton, control, currentHash, evalIn, go, waitFor, waitForText, waitUntilInteractive } from "./desktop.ts";
@@ -15,7 +15,7 @@ function messageText(error: unknown): string {
 async function waitForDenState(
   app: Surface,
   den: DenRef,
-  expression: import("@omnirush/cdp").BrowserEvaluation,
+  expression: import("@mars/cdp").BrowserEvaluation,
   options: { timeoutMs: number; label: string },
 ): Promise<void> {
   try {
@@ -38,7 +38,7 @@ export interface SelectedWorkspaceFacts {
 }
 
 export async function signInDesktopAs(app: Surface, den: DenRef, member: DenSession): Promise<void> {
-  await waitFor(app, () => (Boolean(window.__omnirushControl?.listActions?.().some((action) => action.id === 'auth.exchange-grant'))), {
+  await waitFor(app, () => (Boolean(window.__marsControl?.listActions?.().some((action) => action.id === 'auth.exchange-grant'))), {
     timeoutMs: 60_000,
     label: "auth.exchange-grant action registered",
   });
@@ -48,11 +48,11 @@ export async function signInDesktopAs(app: Surface, den: DenRef, member: DenSess
   } catch (error) {
     if (!messageText(error).includes("Already acting: auth.exchange-grant")) throw error;
   }
-  await waitForDenState(app, den, () => (Boolean((localStorage.getItem('omnirush.den.authToken') ?? '').trim())), {
+  await waitForDenState(app, den, () => (Boolean((localStorage.getItem('mars.den.authToken') ?? '').trim())), {
     timeoutMs: 45_000,
     label: "persisted den auth token",
   });
-  await waitForDenState(app, den, () => (Boolean((localStorage.getItem('omnirush.den.activeOrgId') ?? '').trim())), {
+  await waitForDenState(app, den, () => (Boolean((localStorage.getItem('mars.den.activeOrgId') ?? '').trim())), {
     timeoutMs: 60_000,
     label: "active org resolved",
   });
@@ -71,7 +71,7 @@ async function completeOrganizationOnboarding(app: Surface): Promise<void> {
       const labels = [...document.querySelectorAll("button")]
         .filter((button) => !button.disabled)
         .map((button) => (button.textContent ?? "").trim());
-      return ["Continue with organization", "Continue to workspace", "Continue without OmniRush.ai Models", "Continue"]
+      return ["Continue with organization", "Continue to workspace", "Continue without MarsAI Models", "Continue"]
         .find((candidate) => labels.includes(candidate)) ?? "";
     });
     if (typeof label === "string" && label) {
@@ -124,13 +124,13 @@ export async function createAndSelectWorkspace(
   if (route.includes("/welcome")) {
     const workspace = await createLocalWorkspaceViaUi(app, input);
     await clickButton(app, "Skip and use the free model", { timeoutMs: 90_000 });
-    await waitForText(app, "How did you hear about OmniRush.ai?", { timeoutMs: 90_000 });
+    await waitForText(app, "How did you hear about MarsAI?", { timeoutMs: 90_000 });
     await clickButton(app, "Skip", { timeoutMs: 15_000 });
     // Only now is the workspace actually selected: resolving before the
     // onboarding steps finish reads an id the app has not adopted yet.
     workspaceId = workspace.id;
     if (!workspaceId) {
-      await waitFor(app, () => (Boolean(localStorage.getItem("omnirush.react.activeWorkspace"))
+      await waitFor(app, () => (Boolean(localStorage.getItem("mars.react.activeWorkspace"))
         || /\/workspace\/[^/?#]+/.test(window.location.hash)), {
         timeoutMs: 180_000,
         label: "workspace selected after onboarding",
@@ -141,7 +141,7 @@ export async function createAndSelectWorkspace(
     if (route.includes("/onboarding")) await completeOrganizationOnboarding(app);
     workspaceId = await resolveWorkspaceId(app);
     if (!workspaceId || input.create) {
-      await waitFor(app, () => (window.__omnirushControl.listActions()
+      await waitFor(app, () => (window.__marsControl.listActions()
         .some((action) => action.id === "workspace.create" && !action.disabled)), {
         timeoutMs: 60_000,
         label: "workspace.create enabled",
@@ -152,7 +152,7 @@ export async function createAndSelectWorkspace(
       // The app does not always put a new workspace in the hash, so wait for its
       // own active-workspace state to settle instead of matching a route shape.
       await waitFor(app, browserScript((workspaceId) => {
-        const selected = localStorage.getItem("omnirush.react.activeWorkspace")
+        const selected = localStorage.getItem("mars.react.activeWorkspace")
           || window.location.hash.match(/\/workspace\/([^/?#]+)/)?.[1];
         return Boolean(selected) && selected !== workspaceId;
       }, [workspaceId]), {

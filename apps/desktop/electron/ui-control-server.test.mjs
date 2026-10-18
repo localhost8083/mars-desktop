@@ -19,15 +19,15 @@ test("UI control commands never activate the desktop window implicitly", async (
 });
 
 test("UI control failures are logged locally without exposing exception details", async () => {
-  const userData = await mkdtemp(path.join(os.tmpdir(), "omnirush-ui-control-"));
+  const userData = await mkdtemp(path.join(os.tmpdir(), "mars-ui-control-"));
   const failure = new Error("private renderer failure");
   const logged = [];
   const originalConsoleError = console.error;
   console.error = (...args) => logged.push(args);
   const server = createUiControlServer({
     app: { getPath: () => userData },
-    appName: "OmniRush.ai",
-    appIdentifier: "ai.omnirush.desktop",
+    appName: "MarsAI",
+    appIdentifier: "ai.marsai.desktop",
     getWindow: async () => { throw failure; },
     browserTask: async () => { throw new Error("private website content"); },
     listWebMcpTools: () => ({ ok: false, error: "The built-in browser is not ready." }),
@@ -36,14 +36,14 @@ test("UI control failures are logged locally without exposing exception details"
 
   try {
     await server.start();
-    const discovery = JSON.parse(await readFile(path.join(userData, "omnirush-ui-control.json"), "utf8"));
+    const discovery = JSON.parse(await readFile(path.join(userData, "mars-ui-control.json"), "utf8"));
     const response = await fetch(`${discovery.baseUrl}/snapshot`, {
       headers: { Authorization: `Bearer ${discovery.token}` },
     });
     const payload = await response.json();
 
     assert.equal(response.status, 500);
-    assert.deepEqual(payload, { ok: false, error: "OmniRush.ai UI control request failed." });
+    assert.deepEqual(payload, { ok: false, error: "MarsAI UI control request failed." });
     assert.equal(logged[0]?.[0], "[ui-control] request failed");
     assert.equal(logged[0]?.[1], failure);
     assert.doesNotMatch(JSON.stringify(payload), /private renderer failure/);

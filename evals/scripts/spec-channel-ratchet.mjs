@@ -12,7 +12,7 @@ function occurrences(source, pattern) {
 }
 
 export function countRawEscapes(source) {
-  const behaviorImports = [...source.matchAll(/import\s*\{([^}]*)\}\s*from\s*["']@omnirush\/behaviors["']/g)];
+  const behaviorImports = [...source.matchAll(/import\s*\{([^}]*)\}\s*from\s*["']@mars\/behaviors["']/g)];
   const importsBehaviorsEvalIn = behaviorImports.some((match) => /(?:^|,)\s*evalIn(?:\s+as\s+\w+)?\s*(?:,|$)/.test(match[1]));
   return (importsBehaviorsEvalIn ? occurrences(source, /(?<!\.)\bevalIn\s*\(/g) : 0)
     + occurrences(source, /\bdenFetch\s*\(/g)

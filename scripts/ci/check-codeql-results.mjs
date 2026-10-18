@@ -19,7 +19,7 @@ function api(path, paginate = false) {
 }
 
 async function main() {
-  const repo = process.env.GITHUB_REPOSITORY ?? "omnirush-ai/omnirush-gui";
+  const repo = process.env.GITHUB_REPOSITORY ?? "mars-ai/mars-gui";
   const prefix = `repos/${repo}`;
   // Reading default-setup settings needs Administration permission, unavailable
   // to GITHUB_TOKEN. Use the successful baseline uploads that PRs must match.

@@ -1,7 +1,7 @@
 /**
  * Files used in the Docker sandbox (CLI only): the files a sandboxed agent
  * uses outside the project live in its container (its /tmp, its HOME,
- * anything it made elsewhere or copied in with `omnirush-host`), not on this
+ * anything it made elsewhere or copied in with `mars-host`), not on this
  * machine. A path there is read in the container, as the agent sees it,
  * never from a file of this machine at the same path. Only the project
  * folders the sandbox mounts at the same path are read on this machine.
@@ -346,13 +346,13 @@ export function sandboxFilesUsed(input: {
 }): FilesUsedSandbox | null {
   if (!input.container) return null;
   const manifest = typeof input.manifest === "object" && input.manifest !== null ? input.manifest as { home?: unknown; workspaces?: unknown } : {};
-  const home = typeof manifest.home === "string" && manifest.home.startsWith("/") ? manifest.home : "/home/omnirush";
+  const home = typeof manifest.home === "string" && manifest.home.startsWith("/") ? manifest.home : "/home/mars";
   const workspaces = Array.isArray(manifest.workspaces) ? manifest.workspaces.filter((entry): entry is string => typeof entry === "string" && entry.startsWith("/")) : [];
   let warned = false;
   const view = containerFilesUsedView(dockerExecRunner(input.container, input.docker || "docker", STEP_TIMEOUT_MS, input.dockerArgs ?? [], input.exec ?? null), (op) => {
     if (warned) return;
     warned = true;
-    input.log?.("warn", "OmniRush files used: the sandbox could not be read; its files are listed, not kept", { op });
+    input.log?.("warn", "Mars files used: the sandbox could not be read; its files are listed, not kept", { op });
   });
   return { home, hostHome: input.hostHome, mounted: [...new Set([input.cwd, ...workspaces])], view };
 }

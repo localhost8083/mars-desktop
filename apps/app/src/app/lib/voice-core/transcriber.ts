@@ -3,7 +3,7 @@ import { VoiceError, type TranscribeRequest, type TranscribeResult, type Transcr
 type FetchLike = (input: string, init: RequestInit) => Promise<Response>;
 
 export type RemoteTranscriberOptions = {
-  /** POST target: the backend's /omnirush/v1/audio/transcriptions, or a local broker route in front of it. */
+  /** POST target: the backend's /mars/v1/audio/transcriptions, or a local broker route in front of it. */
   url: string;
   /** Called per request, so a rotated bearer is picked up. */
   headers?: () => Record<string, string> | Promise<Record<string, string>>;
@@ -49,8 +49,8 @@ function errorMessage(body: unknown): string | null {
  * it resets); without them the general copy stands.
  */
 export function voiceErrorFromResponse(status: number, code: string | null, retryAfter: number | null, message: string | null = null): VoiceError {
-  if (status === 401 || code === "omnirush_account_required") {
-    return new VoiceError("signed_out", "Sign in to omnirush.ai to use voice.", { status });
+  if (status === 401 || code === "mars_account_required") {
+    return new VoiceError("signed_out", "Sign in to marsai.click to use voice.", { status });
   }
   if (code === "voice_unavailable" || code === "voice_disabled" || status === 404) {
     return new VoiceError("unavailable", "Voice input is not available on this account yet.", { status });
@@ -89,7 +89,7 @@ export function voiceErrorFromResponse(status: number, code: string | null, retr
 export function multipartBody(wav: Uint8Array, filename: string, fields: ReadonlyArray<[string, string]>): { body: Uint8Array<ArrayBuffer>; contentType: string } {
   const random = new Uint8Array(12);
   globalThis.crypto.getRandomValues(random);
-  const boundary = `----omnirush-voice-${Array.from(random, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+  const boundary = `----mars-voice-${Array.from(random, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
   const encoder = new TextEncoder();
   const head = encoder.encode(
     fields.map(([name, value]) => `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value.replace(/[\r\n]+/g, " ")}\r\n`).join("")

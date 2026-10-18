@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 
 import type { DenMcpToken } from "../src/app/lib/den";
-import type { OmniRushCloudMcpFailure, OmniRushCloudMcpHealth, OmniRushCloudMcpReconcilePayload } from "../src/app/lib/omnirush-server";
+import type { MarsCloudMcpFailure, MarsCloudMcpHealth, MarsCloudMcpReconcilePayload } from "../src/app/lib/mars-server";
 import {
   __setCloudMcpUserStateStorageForTest,
   getCloudMcpScopeKey,
@@ -9,26 +9,26 @@ import {
   writeCloudMcpSyncMarker,
 } from "../src/react-app/domains/connections/cloud-mcp-user-state";
 import {
-  buildOmniRushCloudMcpReconcilePayload,
+  buildMarsCloudMcpReconcilePayload,
   cloudMcpDisplaySummary,
   cloudMcpFailureStageLabel,
   isCloudMcpAuthTokenFailure,
   isCloudMcpAuthTokenFailureCode,
-  runOmniRushCloudMcpEngineRefresh,
-  runOmniRushCloudMcpReconciler,
+  runMarsCloudMcpEngineRefresh,
+  runMarsCloudMcpReconciler,
 } from "../src/react-app/domains/connections/cloud-mcp-reconciler";
 
 const NOW = Date.parse("2026-07-09T12:00:00.000Z");
 const scope = {
-  denBaseUrl: "https://app.omnirush.test",
-  serverBaseUrl: "https://worker.omnirush.test",
+  denBaseUrl: "https://app.mars.test",
+  serverBaseUrl: "https://worker.mars.test",
   orgId: "org_1",
   workspaceId: "ws_1",
 };
 const context = {
   ...scope,
   denAuthToken: "den-session-token",
-  providerModel: { provider: "omnirush", model: "gpt-5" },
+  providerModel: { provider: "mars", model: "gpt-5" },
 };
 const token: DenMcpToken = {
   token: "owt_mcp_secret_token",
@@ -37,7 +37,7 @@ const token: DenMcpToken = {
   appHostExpiresAt: new Date(NOW + 7 * 24 * 60 * 60 * 1000).toISOString(),
   organizationId: "org_1",
   scopes: ["mcp:read", "mcp:write"],
-  resource: "https://api.omnirush.test/mcp",
+  resource: "https://api.mars.test/mcp",
 };
 
 function installStorageStub() {
@@ -49,7 +49,7 @@ function installStorageStub() {
   });
 }
 
-function failure(code: string): OmniRushCloudMcpFailure {
+function failure(code: string): MarsCloudMcpFailure {
   return {
     code,
     stage: "engine_status",
@@ -59,7 +59,7 @@ function failure(code: string): OmniRushCloudMcpFailure {
   };
 }
 
-function health(input: { usable: boolean; failure?: OmniRushCloudMcpFailure | null; projectionChecked?: boolean }): OmniRushCloudMcpHealth {
+function health(input: { usable: boolean; failure?: MarsCloudMcpFailure | null; projectionChecked?: boolean }): MarsCloudMcpHealth {
   const usable = input.usable;
   const projectionChecked = input.projectionChecked ?? usable;
   return {
@@ -71,7 +71,7 @@ function health(input: { usable: boolean; failure?: OmniRushCloudMcpFailure | nu
     workspace: { id: scope.workspaceId, type: "local", directory: "/workspace", path: "/workspace" },
     desired: {
       present: true,
-      name: "omnirush-cloud",
+      name: "mars-cloud",
       revision: "rev_desired",
       config: null,
       token: { present: true, metadata: { expiresAt: token.expiresAt, scopes: "mcp:read mcp:write" } },
@@ -86,9 +86,9 @@ function health(input: { usable: boolean; failure?: OmniRushCloudMcpFailure | nu
     },
     engine: { status: usable ? "connected" : "failed" },
     tools: {
-      expected: ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
-      present: usable ? ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"] : [],
-      missing: usable ? [] : ["omnirush-cloud_search_capabilities"],
+      expected: ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
+      present: usable ? ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"] : [],
+      missing: usable ? [] : ["mars-cloud_search_capabilities"],
       direct: {
         checked: true,
         source: "mcp_tools_list",
@@ -98,33 +98,33 @@ function health(input: { usable: boolean; failure?: OmniRushCloudMcpFailure | nu
       },
       providerProjection: {
         checked: projectionChecked,
-        provider: "omnirush",
+        provider: "mars",
         model: "gpt-5",
         source: "experimental_tool",
-        present: usable ? ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"] : [],
-        missing: usable ? [] : ["omnirush-cloud_execute_capability"],
+        present: usable ? ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"] : [],
+        missing: usable ? [] : ["mars-cloud_execute_capability"],
       },
     },
-    pluginCanaries: { expected: ["omnirush_docs_search"], present: usable ? ["omnirush_docs_search"] : [], missing: usable ? [] : ["omnirush_docs_search"] },
+    pluginCanaries: { expected: ["mars_docs_search"], present: usable ? ["mars_docs_search"] : [], missing: usable ? [] : ["mars_docs_search"] },
     compatibility: {
-      omnirush: { serverVersion: "test", app: null },
+      mars: { serverVersion: "test", app: null },
       opencode: { expectedVersion: "1.17.11", actualVersion: "1.17.11", probe: "ok" },
       pluginFileHashes: [],
       supportedFeatures: { dynamicMcp: true, directoryScoping: true, toolIds: true, providerToolProjection: projectionChecked, pluginCanaries: true },
       experimentalToolIds: {
         checked: true,
-        expected: ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
-        present: usable ? ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"] : [],
-        missing: usable ? [] : ["omnirush-cloud_execute_capability"],
+        expected: ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
+        present: usable ? ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"] : [],
+        missing: usable ? [] : ["mars-cloud_execute_capability"],
         includesMcpTools: usable,
       },
       experimentalProviderTools: {
         checked: projectionChecked,
-        provider: "omnirush",
+        provider: "mars",
         model: "gpt-5",
-        expected: ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
-        present: usable ? ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"] : [],
-        missing: usable ? [] : ["omnirush-cloud_execute_capability"],
+        expected: ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
+        present: usable ? ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"] : [],
+        missing: usable ? [] : ["mars-cloud_execute_capability"],
         includesMcpTools: projectionChecked ? usable : null,
       },
     },
@@ -134,26 +134,26 @@ function health(input: { usable: boolean; failure?: OmniRushCloudMcpFailure | nu
   };
 }
 
-describe("omnirush.ai Cloud MCP reconciler", () => {
+describe("marsai.click Cloud MCP reconciler", () => {
   beforeEach(() => installStorageStub());
 
   test("uses the minted web proxy resource instead of a stale direct API fallback", () => {
-    const payload = buildOmniRushCloudMcpReconcilePayload({
+    const payload = buildMarsCloudMcpReconcilePayload({
       context: {
         ...context,
-        fallbackUrl: "https://api.omnirush.test/mcp/agent",
+        fallbackUrl: "https://api.mars.test/mcp/agent",
       },
       token: {
         ...token,
-        resource: "https://app.omnirush.test/api/den/mcp",
+        resource: "https://app.mars.test/api/den/mcp",
       },
     });
 
-    expect(payload?.config.url).toBe("https://app.omnirush.test/api/den/mcp/agent");
+    expect(payload?.config.url).toBe("https://app.mars.test/api/den/mcp/agent");
   });
 
   test("keeps central search and execute working against an older Den without opening the App host", () => {
-    const payload = buildOmniRushCloudMcpReconcilePayload({
+    const payload = buildMarsCloudMcpReconcilePayload({
       context,
       token: {
         token: token.token,
@@ -184,15 +184,15 @@ describe("omnirush.ai Cloud MCP reconciler", () => {
     let getCount = 0;
     let mintCount = 0;
     let postCount = 0;
-    const result = await runOmniRushCloudMcpReconciler({
+    const result = await runMarsCloudMcpReconciler({
       mode: "health",
       client: {
         baseUrl: scope.serverBaseUrl,
-        getOmniRushCloudMcpHealth: async () => {
+        getMarsCloudMcpHealth: async () => {
           getCount += 1;
           return health({ usable: true });
         },
-        reconcileOmniRushCloudMcp: async () => {
+        reconcileMarsCloudMcp: async () => {
           postCount += 1;
           return health({ usable: true });
         },
@@ -216,7 +216,7 @@ describe("omnirush.ai Cloud MCP reconciler", () => {
     const probeOptionsSeen: Array<{ probe?: boolean } | undefined> = [];
     const client = {
       baseUrl: scope.serverBaseUrl,
-      getOmniRushCloudMcpHealth: async (
+      getMarsCloudMcpHealth: async (
         _workspaceId: string,
         _providerModel?: unknown,
         options?: { probe?: boolean },
@@ -224,10 +224,10 @@ describe("omnirush.ai Cloud MCP reconciler", () => {
         probeOptionsSeen.push(options);
         return health({ usable: true });
       },
-      reconcileOmniRushCloudMcp: async () => health({ usable: true }),
+      reconcileMarsCloudMcp: async () => health({ usable: true }),
     };
 
-    await runOmniRushCloudMcpReconciler({
+    await runMarsCloudMcpReconciler({
       mode: "health",
       client,
       context,
@@ -235,7 +235,7 @@ describe("omnirush.ai Cloud MCP reconciler", () => {
       refreshMarginMs: 24 * 60 * 60 * 1000,
       probe: true,
     });
-    await runOmniRushCloudMcpReconciler({
+    await runMarsCloudMcpReconciler({
       mode: "health",
       client,
       context,
@@ -259,12 +259,12 @@ describe("omnirush.ai Cloud MCP reconciler", () => {
         { step: "reapply", ok: true, latencyMs: 480 },
       ],
     };
-    const result = await runOmniRushCloudMcpEngineRefresh({
+    const result = await runMarsCloudMcpEngineRefresh({
       client: {
         baseUrl: scope.serverBaseUrl,
-        getOmniRushCloudMcpHealth: async () => refreshedHealth,
-        reconcileOmniRushCloudMcp: async () => refreshedHealth,
-        refreshOmniRushCloudMcpEngine: async (workspaceId, payload) => {
+        getMarsCloudMcpHealth: async () => refreshedHealth,
+        reconcileMarsCloudMcp: async () => refreshedHealth,
+        refreshMarsCloudMcpEngine: async (workspaceId, payload) => {
           calls.push({ workspaceId, payload });
           return { refresh, health: refreshedHealth };
         },
@@ -277,16 +277,16 @@ describe("omnirush.ai Cloud MCP reconciler", () => {
     expect(calls).toEqual([
       {
         workspaceId: scope.workspaceId,
-        payload: { provider: "omnirush", model: "gpt-5", trigger: "desktop-engine-refresh" },
+        payload: { provider: "mars", model: "gpt-5", trigger: "desktop-engine-refresh" },
       },
     ]);
 
-    const failed = await runOmniRushCloudMcpEngineRefresh({
+    const failed = await runMarsCloudMcpEngineRefresh({
       client: {
         baseUrl: scope.serverBaseUrl,
-        getOmniRushCloudMcpHealth: async () => refreshedHealth,
-        reconcileOmniRushCloudMcp: async () => refreshedHealth,
-        refreshOmniRushCloudMcpEngine: async () => ({
+        getMarsCloudMcpHealth: async () => refreshedHealth,
+        reconcileMarsCloudMcp: async () => refreshedHealth,
+        refreshMarsCloudMcpEngine: async () => ({
           refresh: { ...refresh, steps: [{ step: "engine_disconnect", ok: false, latencyMs: 3 }, { step: "reapply", ok: false, latencyMs: 9 }] },
           health: health({ usable: false }),
         }),
@@ -295,11 +295,11 @@ describe("omnirush.ai Cloud MCP reconciler", () => {
     });
     expect(failed.status).toBe("failed");
 
-    const skipped = await runOmniRushCloudMcpEngineRefresh({
+    const skipped = await runMarsCloudMcpEngineRefresh({
       client: {
         baseUrl: scope.serverBaseUrl,
-        getOmniRushCloudMcpHealth: async () => refreshedHealth,
-        reconcileOmniRushCloudMcp: async () => refreshedHealth,
+        getMarsCloudMcpHealth: async () => refreshedHealth,
+        reconcileMarsCloudMcp: async () => refreshedHealth,
       },
       context,
     });
@@ -310,16 +310,16 @@ describe("omnirush.ai Cloud MCP reconciler", () => {
   test("writes marker only when returned health is usable", async () => {
     const client = {
       baseUrl: scope.serverBaseUrl,
-      getOmniRushCloudMcpHealth: async () => health({ usable: false, failure: failure("cloud_status_missing") }),
-      reconcileOmniRushCloudMcp: async () => health({ usable: false, failure: failure("cloud_status_missing") }),
+      getMarsCloudMcpHealth: async () => health({ usable: false, failure: failure("cloud_status_missing") }),
+      reconcileMarsCloudMcp: async () => health({ usable: false, failure: failure("cloud_status_missing") }),
     };
 
-    await runOmniRushCloudMcpReconciler({ mode: "repair", client, context, mintToken: async () => token, force: true, refreshMarginMs: 1 });
+    await runMarsCloudMcpReconciler({ mode: "repair", client, context, mintToken: async () => token, force: true, refreshMarginMs: 1 });
     expect(readCloudMcpSyncMarker(scope)).toBeNull();
 
-    await runOmniRushCloudMcpReconciler({
+    await runMarsCloudMcpReconciler({
       mode: "repair",
-      client: { ...client, reconcileOmniRushCloudMcp: async () => health({ usable: true }) },
+      client: { ...client, reconcileMarsCloudMcp: async () => health({ usable: true }) },
       context,
       mintToken: async () => token,
       force: true,
@@ -330,16 +330,16 @@ describe("omnirush.ai Cloud MCP reconciler", () => {
 
   test("auth failures remint exactly once", async () => {
     let mintCount = 0;
-    const posts: OmniRushCloudMcpReconcilePayload[] = [];
-    const result = await runOmniRushCloudMcpReconciler({
+    const posts: MarsCloudMcpReconcilePayload[] = [];
+    const result = await runMarsCloudMcpReconciler({
       mode: "repair",
       client: {
         baseUrl: scope.serverBaseUrl,
-        getOmniRushCloudMcpHealth: async () => health({ usable: false }),
-        reconcileOmniRushCloudMcp: async (_workspaceId, payload) => {
+        getMarsCloudMcpHealth: async () => health({ usable: false }),
+        reconcileMarsCloudMcp: async (_workspaceId, payload) => {
           posts.push(payload);
           return posts.length === 1
-            ? health({ usable: false, failure: failure("omnirush_cloud_token_expired") })
+            ? health({ usable: false, failure: failure("mars_cloud_token_expired") })
             : health({ usable: true });
         },
       },
@@ -358,19 +358,19 @@ describe("omnirush.ai Cloud MCP reconciler", () => {
   });
 
   test("membership and scope failures do not retry", async () => {
-    for (const code of ["omnirush_cloud_membership_required", "omnirush_cloud_scope_missing", "omnirush_cloud_resource_forbidden"]) {
+    for (const code of ["mars_cloud_membership_required", "mars_cloud_scope_missing", "mars_cloud_resource_forbidden"]) {
       expect(isCloudMcpAuthTokenFailureCode(code)).toBe(false);
     }
     let mintCount = 0;
     let postCount = 0;
-    await runOmniRushCloudMcpReconciler({
+    await runMarsCloudMcpReconciler({
       mode: "repair",
       client: {
         baseUrl: scope.serverBaseUrl,
-        getOmniRushCloudMcpHealth: async () => health({ usable: false }),
-        reconcileOmniRushCloudMcp: async () => {
+        getMarsCloudMcpHealth: async () => health({ usable: false }),
+        reconcileMarsCloudMcp: async () => {
           postCount += 1;
-          return health({ usable: false, failure: failure("omnirush_cloud_membership_required") });
+          return health({ usable: false, failure: failure("mars_cloud_membership_required") });
         },
       },
       context,
@@ -392,30 +392,30 @@ describe("omnirush.ai Cloud MCP reconciler", () => {
     // and the remint retry never fired for ~7 days.
     expect(isCloudMcpAuthTokenFailureCode("invalid_mcp_token")).toBe(true);
     expect(isCloudMcpAuthTokenFailureCode("missing_mcp_token")).toBe(true);
-    expect(isCloudMcpAuthTokenFailureCode("omnirush_cloud_token_expired")).toBe(true);
+    expect(isCloudMcpAuthTokenFailureCode("mars_cloud_token_expired")).toBe(true);
     expect(isCloudMcpAuthTokenFailureCode("invalid_token")).toBe(true);
     // Exclusions still hold.
-    expect(isCloudMcpAuthTokenFailureCode("omnirush_cloud_client_registration_required")).toBe(false);
+    expect(isCloudMcpAuthTokenFailureCode("mars_cloud_client_registration_required")).toBe(false);
     expect(isCloudMcpAuthTokenFailureCode("membership_not_found")).toBe(false);
     expect(isCloudMcpAuthTokenFailureCode(null)).toBe(false);
   });
 
   test("auth aliases trigger the remint retry when the primary code is unrecognized", async () => {
-    expect(isCloudMcpAuthTokenFailure({ code: "cloud_connection_failed", aliases: ["omnirush_cloud_token_expired"] })).toBe(true);
+    expect(isCloudMcpAuthTokenFailure({ code: "cloud_connection_failed", aliases: ["mars_cloud_token_expired"] })).toBe(true);
     expect(isCloudMcpAuthTokenFailure({ code: "cloud_connection_failed", aliases: ["cloud_tools_missing"] })).toBe(false);
     expect(isCloudMcpAuthTokenFailure(null)).toBe(false);
 
     let mintCount = 0;
-    const posts: OmniRushCloudMcpReconcilePayload[] = [];
-    const result = await runOmniRushCloudMcpReconciler({
+    const posts: MarsCloudMcpReconcilePayload[] = [];
+    const result = await runMarsCloudMcpReconciler({
       mode: "repair",
       client: {
         baseUrl: scope.serverBaseUrl,
-        getOmniRushCloudMcpHealth: async () => health({ usable: false }),
-        reconcileOmniRushCloudMcp: async (_workspaceId, payload) => {
+        getMarsCloudMcpHealth: async () => health({ usable: false }),
+        reconcileMarsCloudMcp: async (_workspaceId, payload) => {
           posts.push(payload);
           return posts.length === 1
-            ? health({ usable: false, failure: { ...failure("invalid_mcp_token"), aliases: ["omnirush_cloud_token_expired"] } })
+            ? health({ usable: false, failure: { ...failure("invalid_mcp_token"), aliases: ["mars_cloud_token_expired"] } })
             : health({ usable: true });
         },
       },
@@ -453,7 +453,7 @@ describe("omnirush.ai Cloud MCP reconciler", () => {
     const canonicalProjectionFailure = {
       ...failure("provider_tool_projection_missing"),
       stage: "provider_projection" as const,
-      recommendedAction: "Choose a model that can use omnirush.ai Cloud tools",
+      recommendedAction: "Choose a model that can use marsai.click Cloud tools",
     };
     expect(cloudMcpFailureStageLabel({
       signedIn: true,
@@ -468,7 +468,7 @@ describe("omnirush.ai Cloud MCP reconciler", () => {
     })).toMatchObject({
       statusLabel: "Degraded",
       stageLabel: "Current model can’t use Cloud tools",
-      recommendedAction: "Choose a model that can use omnirush.ai Cloud tools.",
+      recommendedAction: "Choose a model that can use marsai.click Cloud tools.",
     });
 
     const summary = cloudMcpDisplaySummary({
@@ -486,7 +486,7 @@ describe("omnirush.ai Cloud MCP reconciler", () => {
       ...health({ usable: false, failure: { ...failure("cloud_mcp_missing"), stage: "desired_config" } }),
       desired: {
         present: false,
-        name: "omnirush-cloud",
+        name: "mars-cloud",
         revision: null,
         config: null,
         token: { present: false, metadata: {} },

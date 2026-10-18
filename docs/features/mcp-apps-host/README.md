@@ -1,15 +1,15 @@
 # MCP Apps inline host
 
-OmniRush.ai Desktop can render the standard MCP Apps UI attached to a completed
+MarsAI Desktop can render the standard MCP Apps UI attached to a completed
 MCP tool call. The normal text result remains visible and usable if the view is
 absent, unsupported, or fails to initialize.
 
 ## Runtime flow
 
 1. OpenCode calls the configured MCP tool once.
-2. OmniRush.ai's bundled engine plugin preserves that call's standard `content`,
+2. MarsAI's bundled engine plugin preserves that call's standard `content`,
    `structuredContent`, and result `_meta` fields in the completed tool part.
-3. The desktop asks its local OmniRush.ai server to find the original projected
+3. The desktop asks its local MarsAI server to find the original projected
    tool on the configured MCP server.
 4. The server advertises the `io.modelcontextprotocol/ui` extension, reads the
    tool's `_meta.ui.resourceUri`, and resolves the `ui://` resource through
@@ -45,7 +45,7 @@ data. MCP tools that return only standard text content can still attach a view.
 
 The resource resolver currently supports configured remote Streamable HTTP MCP
 servers, with SSE fallback for legacy remote servers. It does not yet resolve
-resources directly from command/stdio MCP entries. OmniRush.ai-managed OAuth
+resources directly from command/stdio MCP entries. MarsAI-managed OAuth
 connections also require a follow-up adapter so resource discovery can reuse
 their encrypted server-side credential path; ordinary remote connections with
 configured server-side headers work today.

@@ -1,16 +1,16 @@
-import type { AutomationExecutionThread } from "@omnirush/types/automations"
+import type { AutomationExecutionThread } from "@mars/types/automations"
 import { workspaceSessionRoute } from "@/react-app/shell/workspace-routes"
 
 export type AutomationExecutionIdentity = {
   icon: "desktop" | "cloud"
-  label: "Desktop" | "omnirush.ai Cloud"
+  label: "Desktop" | "marsai.click Cloud"
 }
 
 export function automationExecutionIdentity(
   thread: Pick<AutomationExecutionThread, "executionLocation">,
 ): AutomationExecutionIdentity {
   return thread.executionLocation === "cloud"
-    ? { icon: "cloud", label: "omnirush.ai Cloud" }
+    ? { icon: "cloud", label: "marsai.click Cloud" }
     : { icon: "desktop", label: "Desktop" }
 }
 

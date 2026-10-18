@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { openXlsxWorkbook, writeXlsxWorkbook } from "@omnirush/workbook";
+import { openXlsxWorkbook, writeXlsxWorkbook } from "@mars/workbook";
 
 import { parseSpreadsheet, serializeSpreadsheet } from "../src/react-app/domains/session/artifacts/artifact-spreadsheet-model";
 

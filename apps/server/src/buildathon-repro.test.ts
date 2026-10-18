@@ -23,17 +23,17 @@ import {
   reproStateFromBody,
   writeReproState,
 } from "./buildathon-repro.js";
-import { OmniRushBuildathon } from "./opencode-plugins/omnirush-buildathon.js";
+import { MarsBuildathon } from "./opencode-plugins/mars-buildathon.js";
 
 const MACHO = Buffer.from([0xcf, 0xfa, 0xed, 0xfe, 0x0c, 0x00, 0x00, 0x01, 0, 0, 0, 0, 2, 0, 0, 0]);
-const savedBoxHome = process.env.OMNIRUSH_BOX_HOME;
+const savedBoxHome = process.env.MARS_BOX_HOME;
 
 afterEach(() => {
-  if (savedBoxHome === undefined) delete process.env.OMNIRUSH_BOX_HOME;
-  else process.env.OMNIRUSH_BOX_HOME = savedBoxHome;
+  if (savedBoxHome === undefined) delete process.env.MARS_BOX_HOME;
+  else process.env.MARS_BOX_HOME = savedBoxHome;
 });
 
-function tmp(prefix = "omnirush-bt-"): string {
+function tmp(prefix = "mars-bt-"): string {
   return mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
@@ -86,17 +86,17 @@ describe("buildathon repro: state", () => {
 describe("buildathon repro: the engine plugin", () => {
   test("adds the rules to a listed project's system prompt once; other folders are left alone", async () => {
     const home = tmp("boxhome-");
-    process.env.OMNIRUSH_BOX_HOME = home;
+    process.env.MARS_BOX_HOME = home;
     const project = tmp();
     await listProjects(home, [project]);
-    const hooks = await OmniRushBuildathon({ directory: project });
+    const hooks = await MarsBuildathon({ directory: project });
     const output = { system: ["You are the agent."] };
     await hooks["experimental.chat.system.transform"]({}, output);
     await hooks["experimental.chat.system.transform"]({}, output);
     expect(output.system).toEqual(["You are the agent.", `${AGENT_RULES_HEADING}\n\n${DEFAULT_AGENT_RULES}`]);
 
     const other = { system: ["You are the agent."] };
-    await (await OmniRushBuildathon({ directory: tmp() }))["experimental.chat.system.transform"]({}, other);
+    await (await MarsBuildathon({ directory: tmp() }))["experimental.chat.system.transform"]({}, other);
     expect(other.system).toEqual(["You are the agent."]);
   });
 });
@@ -106,7 +106,7 @@ describe("buildathon repro: the box", () => {
     expect(resolveMode({ env: {}, project: null, server: "off", buildathon: "on" })).toEqual({ on: true, source: "buildathon", offer: false });
     expect(resolveMode({ env: {}, project: null, server: "offer", buildathon: "on" })).toEqual({ on: true, source: "buildathon", offer: false });
     expect(resolveMode({ env: {}, project: "off", server: "on", buildathon: "on" })).toEqual({ on: false, source: "project", offer: false, lessRepro: true });
-    expect(resolveMode({ env: { OMNIRUSH_BOX: "0" }, project: null, server: "on", buildathon: "on" })).toEqual({ on: false, source: "env", offer: false, lessRepro: true });
+    expect(resolveMode({ env: { MARS_BOX: "0" }, project: null, server: "on", buildathon: "on" })).toEqual({ on: false, source: "env", offer: false, lessRepro: true });
     expect(resolveMode({ env: {}, project: null, server: "off", buildathon: "offer" })).toEqual({ on: false, source: "buildathon", offer: true });
     expect(resolveMode({ env: {}, project: null, server: "on", buildathon: "offer" })).toEqual({ on: true, source: "server", offer: false });
     expect(resolveMode({ env: {}, project: null, server: "off", buildathon: "off" })).toEqual({ on: false, source: "default", offer: false });
@@ -123,8 +123,8 @@ describe("buildathon repro: the box", () => {
         settings.set(id, { mode: update.mode === undefined ? current.mode : update.mode, offered: update.offered ?? current.offered });
       },
       workspaces: () => [workspace],
-      pluginPath: () => "/plugins/omnirush-box.js",
-      env: { OMNIRUSH_BOX_HOME: home, PATH: "", OMNIRUSH_BOX_RUNTIME: "/nonexistent/docker" },
+      pluginPath: () => "/plugins/mars-box.js",
+      env: { MARS_BOX_HOME: home, PATH: "", MARS_BOX_RUNTIME: "/nonexistent/docker" },
       platform,
     });
   }

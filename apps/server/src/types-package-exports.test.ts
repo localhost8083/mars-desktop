@@ -14,7 +14,7 @@ import { resolve } from "node:path";
  *   produces before packaging (v1.0.1 shipped with `default` -> src and the
  *   engine never started).
  */
-describe("@omnirush/types package exports", () => {
+describe("@mars/types package exports", () => {
   const manifest = JSON.parse(
     readFileSync(resolve(import.meta.dir, "../../../packages/types/package.json"), "utf8"),
   ) as { exports: Record<string, Record<string, string> | string> };

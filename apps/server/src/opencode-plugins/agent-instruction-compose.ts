@@ -1,5 +1,5 @@
 /**
- * Kent-style instruction primitives for OmniRush.ai system-prompt composition.
+ * Kent-style instruction primitives for MarsAI system-prompt composition.
  *
  * create  — build one named section
  * combine — merge sections in order, one id wins (first non-empty)
@@ -82,7 +82,7 @@ export function composeAgentInstructions(...groups: AgentInstructionSectionGroup
  * OpenCode sends every entry of `system` as its own `role: "system"` message.
  * Several chat templates behind OpenAI-compatible endpoints reject any system
  * message after the first ("System message must be at the beginning."), so
- * OmniRush.ai folds its instructions into the existing entry instead of pushing a
+ * MarsAI folds its instructions into the existing entry instead of pushing a
  * second one. The engine alone sends a single system message; this keeps that
  * shape intact. Sections are separated by a blank line so each heading starts
  * its own paragraph instead of trailing the previous sentence.

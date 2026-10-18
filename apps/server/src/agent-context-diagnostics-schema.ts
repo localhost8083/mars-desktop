@@ -4,7 +4,7 @@ import type {
   AgentContextDiagnosticCheckId,
   AgentContextDiagnosticsReport,
   AgentContextDiagnosticsRequest,
-} from "@omnirush/types/agent-context-diagnostics";
+} from "@mars/types/agent-context-diagnostics";
 
 // Keep runtime validation local: Electron imports the compiled server with Node,
 // while the shared types workspace intentionally exports source for app builds.
@@ -42,14 +42,14 @@ const diagnosticEvidenceKindSchema = z.enum([
   "unavailable",
 ]);
 const diagnosticOwnerSchema = z.enum([
-  "omnirush-client",
-  "omnirush-server",
+  "mars-client",
+  "mars-server",
   "opencode-engine",
   "network-admin",
   "organization-admin",
   "member",
   "member-and-organization-admin",
-  "omnirush-support",
+  "mars-support",
 ]);
 
 const forbiddenDiagnosticTextPattern = /[\u0000-\u001f\u007f-\u009f\p{Default_Ignorable_Code_Point}]/u;
@@ -397,7 +397,7 @@ const promptEvidenceSchema = z.object({
 const agentEvidenceSchema = z.object({
   evidenceSource: z.enum(["effective-engine", "configured-intent"]),
   defaultAgent: safeTextSchema.max(160).nullable(),
-  configuredOmniRushAgent: z.object({
+  configuredMarsAgent: z.object({
     state: z.enum(["present", "missing", "configured-disabled"]),
     mode: z.enum(["subagent", "primary", "all"]).nullable(),
     prompt: promptEvidenceSchema,
@@ -454,7 +454,7 @@ export const agentContextDiagnosticsReportSchema = z.object({
     id: safeTextSchema.min(1).max(160),
     name: safeTextSchema.min(1).max(240),
     type: z.enum(["local", "remote"]),
-    remoteType: z.enum(["opencode", "omnirush"]).nullable(),
+    remoteType: z.enum(["opencode", "mars"]).nullable(),
     engineConfigured: z.boolean(),
   }).strict(),
   checks: z.array(agentContextDiagnosticCheckRuntimeSchema).length(AGENT_CONTEXT_DIAGNOSTIC_CHECK_IDS.length),
@@ -629,13 +629,13 @@ export const agentContextDiagnosticsReportSchema = z.object({
   ) {
     const runtimeCloudMcp = value.mcps.find((mcp) =>
       mcp.source === "config.remote"
-      && mcp.name === "omnirush-cloud"
+      && mcp.name === "mars-cloud"
       && mcp.path !== null
     );
     if (!runtimeCloudMcp) {
       context.addIssue({
         code: "custom",
-        message: "cloud handshake evidence requires the retained runtime OmniRush.ai Cloud entry",
+        message: "cloud handshake evidence requires the retained runtime MarsAI Cloud entry",
         path: ["mcps"],
       });
     }

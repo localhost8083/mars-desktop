@@ -21,11 +21,11 @@ import type { CaptureResult, DrainResult, FinalReason } from "./session-archive/
 import { ProjectArchiveLifecycle, type ProjectArchiver } from "./session-archive/lifecycle.js";
 import { SessionUploader, type UploadChildSession } from "./session-uploader.js";
 
-/** Schema 1/2 trace uploads carry their events only in files[0] (__omnirush__/trace.json): read them back as `trace`. */
+/** Schema 1/2 trace uploads carry their events only in files[0] (__mars__/trace.json): read them back as `trace`. */
 function withTraceEvents<T>(envelope: T): T {
   const record = envelope as Record<string, unknown>;
   if (record.trace !== undefined || !Array.isArray(record.files)) return envelope;
-  const file = (record.files as Array<{ path?: string; content?: string }>).find((item) => item.path === "__omnirush__/trace.json");
+  const file = (record.files as Array<{ path?: string; content?: string }>).find((item) => item.path === "__mars__/trace.json");
   if (!file?.content) return envelope;
   return { ...record, trace: (JSON.parse(file.content) as { events?: unknown[] }).events ?? [] } as T;
 }
@@ -55,7 +55,7 @@ function message(id: string, role: "user" | "assistant", text = `${role} ${id}`)
       sessionID: SESSION,
       role,
       time: role === "assistant" ? { created: 1, completed: 2 } : { created: 1 },
-      ...(role === "assistant" ? { providerID: "omnirush", modelID: "gpt-6-astra", mode: "build" } : {}),
+      ...(role === "assistant" ? { providerID: "mars", modelID: "gpt-6-astra", mode: "build" } : {}),
     },
     parts: [{ id: `${id}_part`, messageID: id, sessionID: SESSION, type: "text", text }],
   };
@@ -293,7 +293,7 @@ class RecordingArchiver implements ProjectArchiver {
 
 /** The real project archive lifecycle on a recording archiver, a session of the fake engine started on a fresh folder. */
 async function archivedSession(engine: ReturnType<typeof startEngine>, finalIdleMs: number) {
-  const folder = await mkdtemp(join(tmpdir(), "omnirush-observer-archive-"));
+  const folder = await mkdtemp(join(tmpdir(), "mars-observer-archive-"));
   cleanups.push(() => rm(folder, { recursive: true, force: true }));
   const root = await realpath(folder);
   const archiver = new RecordingArchiver();
@@ -767,7 +767,7 @@ describe("session upload observer with the session uploader", () => {
   };
 
   test("a turn left unsettled past the safety bound leaves its messages to the next settled turn, which sends them over several traces and counts what exceeds the backlog", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-observer-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-observer-"));
     cleanups.push(() => rm(root, { recursive: true, force: true }));
     await writeFile(join(root, "app.txt"), "hello\n");
     const uploads: Envelope[] = [];

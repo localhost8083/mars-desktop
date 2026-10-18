@@ -77,14 +77,14 @@ jobs:
 
       - name: Package Electron desktop (unpacked)
         env:
-          OMNIRUSH_DESKTOP_SENTRY_DSN: ${{ secrets.OMNIRUSH_DESKTOP_SENTRY_DSN || vars.OMNIRUSH_DESKTOP_SENTRY_DSN }}
-          OMNIRUSH_DESKTOP_SENTRY_TRACES_SAMPLE_RATE: ${{ vars.OMNIRUSH_DESKTOP_SENTRY_TRACES_SAMPLE_RATE || '0.01' }}
-        run: pnpm --filter @omnirush/desktop package:electron:dir
+          MARS_DESKTOP_SENTRY_DSN: ${{ secrets.MARS_DESKTOP_SENTRY_DSN || vars.MARS_DESKTOP_SENTRY_DSN }}
+          MARS_DESKTOP_SENTRY_TRACES_SAMPLE_RATE: ${{ vars.MARS_DESKTOP_SENTRY_TRACES_SAMPLE_RATE || '0.01' }}
+        run: pnpm --filter @mars/desktop package:electron:dir
 
       - name: Upload Electron artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: omnirush-electron-${{ matrix.artifact }}
+          name: mars-electron-${{ matrix.artifact }}
           path: apps/desktop/dist-electron/**
 
   windows-update-check:
@@ -125,7 +125,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pnpm --filter @omnirush/desktop run build:electron
+          pnpm --filter @mars/desktop run build:electron
           pnpm --dir apps/desktop exec electron-builder --config electron-builder.yml --win nsis --x64 --publish never -c.extraMetadata.version=99.0.0
 
       - name: Update the latest release in place
@@ -176,7 +176,7 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/release/stamp-version.mjs --version "$NEXT_VERSION"
-          pnpm --filter @omnirush/desktop build:electron
+          pnpm --filter @mars/desktop build:electron
           pnpm --dir apps/desktop exec electron-builder --config electron-builder.yml --win --x64 --publish never
           node apps/desktop/scripts/verify-update-manifest.mjs --manifest apps/desktop/dist-electron/latest.yml --version "$NEXT_VERSION"
 
@@ -238,11 +238,11 @@ jobs:
           case "$FEED" in
             local) node scripts/release/windows-updater-e2e.mjs --from "$FROM" --expect "$NEXT_VERSION" --feed feed ;;
             public)
-              latest="$(gh api repos/omnirush-ai/omnirush-gui/releases/latest --jq .tag_name)"
+              latest="$(gh api repos/mars-ai/mars-gui/releases/latest --jq .tag_name)"
               node scripts/release/windows-updater-e2e.mjs --from "$FROM" --expect "${latest#v}" ;;
             same)
               mkdir -p same
-              gh release download "v$FROM" --repo omnirush-ai/omnirush-gui --pattern latest.yml --dir same
+              gh release download "v$FROM" --repo mars-ai/mars-gui --pattern latest.yml --dir same
               node scripts/release/windows-updater-e2e.mjs --from "$FROM" --expect none --feed same ;;
           esac
 
@@ -251,7 +251,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p updater-e2e/app-logs
-          cp -r "$APPDATA/ai.omnirush.desktop/logs/." updater-e2e/app-logs/ 2>/dev/null || true
+          cp -r "$APPDATA/ai.marsai.desktop/logs/." updater-e2e/app-logs/ 2>/dev/null || true
           rm -f updater-e2e/*.exe
 
       - name: Upload app logs
@@ -311,11 +311,11 @@ jobs:
           CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
           CSC_IDENTITY_AUTO_DISCOVERY: "true"
-          OMNIRUSH_DESKTOP_SENTRY_DSN: ${{ secrets.OMNIRUSH_DESKTOP_SENTRY_DSN || vars.OMNIRUSH_DESKTOP_SENTRY_DSN }}
-          OMNIRUSH_DESKTOP_SENTRY_TRACES_SAMPLE_RATE: ${{ vars.OMNIRUSH_DESKTOP_SENTRY_TRACES_SAMPLE_RATE || '0.01' }}
+          MARS_DESKTOP_SENTRY_DSN: ${{ secrets.MARS_DESKTOP_SENTRY_DSN || vars.MARS_DESKTOP_SENTRY_DSN }}
+          MARS_DESKTOP_SENTRY_TRACES_SAMPLE_RATE: ${{ vars.MARS_DESKTOP_SENTRY_TRACES_SAMPLE_RATE || '0.01' }}
         run: |
           set -euo pipefail
-          pnpm --filter @omnirush/desktop run build:electron
+          pnpm --filter @mars/desktop run build:electron
           pnpm --dir apps/desktop exec electron-builder --config electron-builder.yml --mac --arm64 -c.mac.forceCodeSigning=true --publish never
 
       - name: Notarize macOS disk image
@@ -350,14 +350,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: omnirush-macos-installer-window
+          name: mars-macos-installer-window
           path: ${{ runner.temp }}/installer-check
           if-no-files-found: ignore
 
       - name: Upload signed macOS build
         uses: actions/upload-artifact@v4
         with:
-          name: omnirush-electron-macos-signed
+          name: mars-electron-macos-signed
           path: |
             apps/desktop/dist-electron/*.dmg
             apps/desktop/dist-electron/*.zip

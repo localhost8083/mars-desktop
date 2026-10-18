@@ -6,7 +6,7 @@
  * only posts calls and answers the worker's requests for the gateway broker
  * and external egress. Opening or switching sessions never waits on a scan,
  * a snapshot or an archive. If the worker cannot start (a runtime without
- * worker support for this module, or OMNIRUSH_CAPTURE_WORKER=0) the same host
+ * worker support for this module, or MARS_CAPTURE_WORKER=0) the same host
  * runs in-process; a worker that dies after starting is replaced, again and
  * again with a growing pause, and the calls made meanwhile wait for it.
  */
@@ -53,7 +53,7 @@ const SESSION_ID_PATTERN = /^[A-Za-z0-9._:-]{8,128}$/;
 const MAX_OBSERVED_TARGETS = 256;
 
 export type CaptureServiceOptions = Omit<CaptureHostOptions, "onSessionClosed"> & {
-  /** Run capture on a worker thread; default on unless OMNIRUSH_CAPTURE_WORKER is 0, false, no or off. */
+  /** Run capture on a worker thread; default on unless MARS_CAPTURE_WORKER is 0, false, no or off. */
   worker?: boolean;
   /** How long shutdown waits for the capture to stop; STOP_TIMEOUT_MS unless a test lowers it. */
   stopTimeoutMs?: number;
@@ -126,7 +126,7 @@ export type CaptureService = {
 const START_GATE_SLACK_MS = 1_000;
 
 export function captureWorkerEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return !["0", "false", "no", "off"].includes((env.OMNIRUSH_CAPTURE_WORKER ?? "").trim().toLowerCase());
+  return !["0", "false", "no", "off"].includes((env.MARS_CAPTURE_WORKER ?? "").trim().toLowerCase());
 }
 
 function workerUrl(): URL {
@@ -316,8 +316,8 @@ class CaptureClient implements CaptureService {
     const timedOut = new Promise<true>((resolvePromise) => {
       timer = setTimeout(() => {
         this.options.log("warn", this.local
-          ? "OmniRush capture did not stop in time; its uploads in flight are aborted"
-          : "OmniRush capture did not stop in time; the capture worker is terminated", { timeoutMs });
+          ? "Mars capture did not stop in time; its uploads in flight are aborted"
+          : "Mars capture did not stop in time; the capture worker is terminated", { timeoutMs });
         resolvePromise(true);
       }, timeoutMs);
       timer.unref?.();
@@ -352,7 +352,7 @@ class CaptureClient implements CaptureService {
       try {
         return Promise.resolve(invokeCapture(this.local, call)).catch(() => null);
       } catch (error) {
-        this.options.log("warn", "OmniRush capture call failed", { method: call.method, error: errorSummary(error) });
+        this.options.log("warn", "Mars capture call failed", { method: call.method, error: errorSummary(error) });
         return Promise.resolve(null);
       }
     }
@@ -378,7 +378,7 @@ class CaptureClient implements CaptureService {
       }
       if (!this.overflowing) {
         this.overflowing = true;
-        this.options.log("warn", "OmniRush capture calls are queued past the limit while the capture worker starts; the oldest are dropped", { limit: MAX_QUEUED_CALLS });
+        this.options.log("warn", "Mars capture calls are queued past the limit while the capture worker starts; the oldest are dropped", { limit: MAX_QUEUED_CALLS });
       }
     }
     this.queue.push(queued);
@@ -397,7 +397,7 @@ class CaptureClient implements CaptureService {
     try {
       worker.postMessage(call satisfies ToWorker, transfer);
     } catch (error) {
-      this.options.log("warn", "OmniRush capture call could not be sent to the capture worker", { method: call.method, error: errorSummary(error) });
+      this.options.log("warn", "Mars capture call could not be sent to the capture worker", { method: call.method, error: errorSummary(error) });
       if (call.id === null) return;
       const resolvePromise = this.replies.get(call.id);
       this.replies.delete(call.id);
@@ -449,7 +449,7 @@ class CaptureClient implements CaptureService {
       worker = new Worker(workerUrl(), { workerData: this.workerInit() });
     } catch (error) {
       if (this.canRunLocally) this.runLocally(error);
-      else this.scheduleRestart("OmniRush capture worker could not start; starting a new one", { error: errorSummary(error) });
+      else this.scheduleRestart("Mars capture worker could not start; starting a new one", { error: errorSummary(error) });
       return;
     }
     // The server's listener keeps the process alive; the worker never holds it open on its own.
@@ -457,7 +457,7 @@ class CaptureClient implements CaptureService {
     this.worker = worker;
     worker.on("message", (message: FromWorker) => this.onMessage(worker, message));
     worker.on("error", (error: unknown) => {
-      if (worker === this.worker) this.options.log("warn", "OmniRush capture worker failed", { error: errorSummary(error) });
+      if (worker === this.worker) this.options.log("warn", "Mars capture worker failed", { error: errorSummary(error) });
     });
     worker.on("exit", (code: number) => this.onExit(worker, code));
   }
@@ -504,7 +504,7 @@ class CaptureClient implements CaptureService {
     }
     // Its sessions are gone with it; each resumes on its next prompt.
     this.sessions.clear();
-    this.scheduleRestart("OmniRush capture worker exited; starting a new one", { code });
+    this.scheduleRestart("Mars capture worker exited; starting a new one", { code });
   }
 
   /** Starts a new worker after the backoff's pause; calls made meanwhile are queued for it. */
@@ -537,7 +537,7 @@ class CaptureClient implements CaptureService {
   /** No worker: the host runs on this thread, starting with the calls queued so far. */
   private runLocally(reason: unknown): void {
     if (reason !== null) {
-      this.options.log("warn", "OmniRush capture worker could not start; capturing in-process", { error: errorSummary(reason) });
+      this.options.log("warn", "Mars capture worker could not start; capturing in-process", { error: errorSummary(reason) });
     }
     const { worker: _worker, stopTimeoutMs: _stopTimeoutMs, restartBackoffMs: _backoff, onModeChange: _onModeChange, ...hostOptions } = this.options;
     this.canRunLocally = false;
@@ -546,7 +546,7 @@ class CaptureClient implements CaptureService {
     } catch (error) {
       // Only reached after a worker failed the same way: new workers are tried, with the queued calls kept for them.
       if (reason === null) throw error;
-      this.scheduleRestart("OmniRush capture could not start in-process either; starting a new capture worker", { error: errorSummary(error) });
+      this.scheduleRestart("Mars capture could not start in-process either; starting a new capture worker", { error: errorSummary(error) });
       return;
     }
     this.setMode("local");
@@ -556,7 +556,7 @@ class CaptureClient implements CaptureService {
       try {
         value = invokeCapture(this.local, call);
       } catch (error) {
-        this.options.log("warn", "OmniRush capture call failed", { method: call.method, error: errorSummary(error) });
+        this.options.log("warn", "Mars capture call failed", { method: call.method, error: errorSummary(error) });
       }
       if (id === null) continue;
       const resolvePromise = this.replies.get(id);

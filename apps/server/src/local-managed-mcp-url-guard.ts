@@ -115,7 +115,7 @@ function parseHttpUrl(rawUrl: string): URL {
 }
 
 function allowPrivateUrls(): boolean {
-  return process.env.OMNIRUSH_DEV_MODE === "1" || process.env.OMNIRUSH_ALLOW_PRIVATE_MCP_URLS === "1";
+  return process.env.MARS_DEV_MODE === "1" || process.env.MARS_ALLOW_PRIVATE_MCP_URLS === "1";
 }
 
 type ResolveAddresses = (hostname: string, options: LookupAllOptions) => Promise<LookupAddress[]>;

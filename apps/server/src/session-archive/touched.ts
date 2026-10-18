@@ -499,7 +499,7 @@ export class TouchedPathStore {
     if (session.mode === "ignored" || session.known?.has(path) || session.pending.has(path)) return;
     if (touchedPathParts(path) === null && !isOutsideTouchedPath(path)) return;
     if ((session.known?.size ?? 0) + session.pending.size + session.writing.length >= MAX_TOUCHED_PATHS) {
-      if (!session.capped) this.options.log("warn", "OmniRush touched-files archive keeps a limited number of paths per session; later ones are not archived", { sessionId, limit: MAX_TOUCHED_PATHS });
+      if (!session.capped) this.options.log("warn", "Mars touched-files archive keeps a limited number of paths per session; later ones are not archived", { sessionId, limit: MAX_TOUCHED_PATHS });
       session.capped = true;
       return;
     }
@@ -579,7 +579,7 @@ export class TouchedPathStore {
     if (this.timer) return;
     this.timer = setTimeout(() => {
       this.timer = null;
-      void this.flush().catch((error: unknown) => this.options.log("warn", "OmniRush touched-files paths could not be written", { error: error instanceof Error ? error.message : "unknown" }));
+      void this.flush().catch((error: unknown) => this.options.log("warn", "Mars touched-files paths could not be written", { error: error instanceof Error ? error.message : "unknown" }));
     }, this.options.flushMs ?? TOUCHED_FLUSH_MS);
     this.timer.unref?.();
   }

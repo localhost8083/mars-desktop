@@ -8,12 +8,12 @@ export function PasswordResetEmail({ resetLink }: PasswordResetEmailProps) {
   return (
     <Html>
       <Head />
-      <Preview>Reset your OmniRush.ai password</Preview>
+      <Preview>Reset your MarsAI password</Preview>
       <Body style={styles.body}>
         <Container style={styles.container}>
-          <Text style={styles.eyebrow}>OmniRush.ai account</Text>
+          <Text style={styles.eyebrow}>MarsAI account</Text>
           <Heading style={styles.heading}>Reset your password</Heading>
-          <Text style={styles.text}>Use this secure link to choose a new password for your OmniRush.ai account.</Text>
+          <Text style={styles.text}>Use this secure link to choose a new password for your MarsAI account.</Text>
           <Button href={resetLink} style={styles.button}>Reset password</Button>
           <Text style={styles.footer}>This link expires in 1 hour. If you did not request a password reset, you can ignore this email.</Text>
           <Hr style={styles.hr} />

@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/automations",
+  "name": "@mars/automations",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -28,7 +28,7 @@
     "test": "bun test src"
   },
   "dependencies": {
-    "@omnirush/types": "workspace:*",
+    "@mars/types": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {

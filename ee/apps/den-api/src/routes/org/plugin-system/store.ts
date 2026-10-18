@@ -796,8 +796,8 @@ const DEFAULT_OMNIRUSH_EXTENSION_MANIFESTS = [
     composer: { prompt: "Use Computer Use to " },
     setup: { instructions: "Computer Use is Mac only. Grant Accessibility and Screen Recording permissions, then connect the local MCP server in this workspace." },
     resources: [
-      { type: "mcp", id: "computer-use-mcp", label: "Computer Use MCP", mcpServerName: "computer-use", command: ["npx", "-y", "@omnirush/handsfree", "mcp"], localCommandRef: "omnirush.computerUseMcp", required: true },
-      { type: "native-binary", id: "computer-use-native", label: "macOS accessibility runtime", packageName: "@omnirush/handsfree", required: true },
+      { type: "mcp", id: "computer-use-mcp", label: "Computer Use MCP", mcpServerName: "computer-use", command: ["npx", "-y", "@mars/handsfree", "mcp"], localCommandRef: "omnirush.computerUseMcp", required: true },
+      { type: "native-binary", id: "computer-use-native", label: "macOS accessibility runtime", packageName: "@mars/handsfree", required: true },
     ],
     contributions: [
       { type: "setup-instructions", ref: "omnirush.computerUse.setup", location: "settings-detail" },

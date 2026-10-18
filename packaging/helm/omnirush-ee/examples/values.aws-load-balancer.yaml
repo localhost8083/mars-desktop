@@ -1,9 +1,9 @@
-# AWS EKS Auto Mode starter values for a first OmniRush.ai EE self-host install.
+# AWS EKS Auto Mode starter values for a first MarsAI EE self-host install.
 #
 # Copy this file, replace every REPLACE_* value, and install with:
 #
-#   helm upgrade --install omnirush-ee oci://ghcr.io/omnirush-ai/charts/omnirush-ee \
-#     --version REPLACE_OMNIRUSH_VERSION \
+#   helm upgrade --install omnirush-ee oci://ghcr.io/mars-ai/charts/omnirush-ee \
+#     --version REPLACE_MARS_VERSION \
 #     --namespace omnirush-ee \
 #     --create-namespace \
 #     -f values.aws.yaml
@@ -13,7 +13,7 @@
 # test and for installs where separate web/API hostnames are acceptable.
 
 image:
-  tag: "REPLACE_OMNIRUSH_VERSION"
+  tag: "REPLACE_MARS_VERSION"
   pullPolicy: IfNotPresent
 
 config:
@@ -53,7 +53,7 @@ secret:
   values:
     # RDS MySQL private-network smoke path. sslaccept=accept preserves TLS but
     # does not require the RDS CA chain to be mounted into the image.
-    databaseUrl: "mysql://omnirush:REPLACE_DB_PASSWORD@REPLACE_RDS_ENDPOINT:3306/omnirush_den?sslaccept=accept"
+    databaseUrl: "mysql://mars:REPLACE_DB_PASSWORD@REPLACE_RDS_ENDPOINT:3306/omnirush_den?sslaccept=accept"
     # Generate with: openssl rand -base64 48
     betterAuthSecret: "REPLACE_BETTER_AUTH_SECRET"
     # Generate separately with: openssl rand -base64 48

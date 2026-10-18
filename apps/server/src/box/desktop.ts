@@ -1,10 +1,10 @@
 /**
  * The server's one BoxService (service.ts) per ServerConfig, with the
- * workspace settings in the workspace's OmniRush config row
+ * workspace settings in the workspace's Mars config row
  * (`localBox: { mode: "on" | "off", offered: true }`).
  */
-import { omnirushPluginPath } from "../omnirush-extensions-plugin-path.js";
-import { readOmniRushWorkspaceConfig, writeOmniRushWorkspaceConfig } from "../omnirush-workspace-config-store.js";
+import { marsPluginPath } from "../mars-extensions-plugin-path.js";
+import { readMarsWorkspaceConfig, writeMarsWorkspaceConfig } from "../mars-workspace-config-store.js";
 import { runtimeStorageDir } from "../runtime-db.js";
 import type { ServerConfig } from "../types.js";
 import type { BoxLog } from "./box.js";
@@ -18,8 +18,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /** The workspace's own choice: "on", "off", or null (the server's default). */
-export function readBoxSettings(omnirush: Record<string, unknown>): { mode: ProjectBoxMode; offered: boolean } {
-  const block = isRecord(omnirush[BOX_SETTINGS_KEY]) ? omnirush[BOX_SETTINGS_KEY] : {};
+export function readBoxSettings(mars: Record<string, unknown>): { mode: ProjectBoxMode; offered: boolean } {
+  const block = isRecord(mars[BOX_SETTINGS_KEY]) ? mars[BOX_SETTINGS_KEY] : {};
   const mode = block.mode === "on" || block.mode === "off" ? block.mode : null;
   return { mode, offered: block.offered === true };
 }
@@ -34,9 +34,9 @@ export function boxServiceFor(config: ServerConfig, log?: BoxLog): BoxService {
   }
   service = new BoxService({
     stateDir: runtimeStorageDir(config),
-    readSettings: async (workspaceId) => readBoxSettings(await readOmniRushWorkspaceConfig(config, workspaceId)),
+    readSettings: async (workspaceId) => readBoxSettings(await readMarsWorkspaceConfig(config, workspaceId)),
     writeSettings: async (workspaceId, update) => {
-      await writeOmniRushWorkspaceConfig(config, workspaceId, (current) => {
+      await writeMarsWorkspaceConfig(config, workspaceId, (current) => {
         const block = isRecord(current[BOX_SETTINGS_KEY]) ? { ...current[BOX_SETTINGS_KEY] } : {};
         if (update.mode !== undefined) {
           if (update.mode === null) delete block.mode;
@@ -47,7 +47,7 @@ export function boxServiceFor(config: ServerConfig, log?: BoxLog): BoxService {
       });
     },
     workspaces: () => config.workspaces,
-    pluginPath: () => omnirushPluginPath("omnirush-box"),
+    pluginPath: () => marsPluginPath("mars-box"),
     ...(log ? { log } : {}),
   });
   services.set(config, service);

@@ -2,10 +2,10 @@ import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect } from "vitest";
-import { denFetch } from "@omnirush/behaviors";
-import { queryDenDatabase } from "@omnirush/env";
-import { eventually, mcpMock, needs, server, test } from "@omnirush/testkit";
-import { bootServer, isRecord, stopChild } from "../worlds/omnirush-server-cli.ts";
+import { denFetch } from "@mars/behaviors";
+import { queryDenDatabase } from "@mars/env";
+import { eventually, mcpMock, needs, server, test } from "@mars/testkit";
+import { bootServer, isRecord, stopChild } from "../worlds/mars-server-cli.ts";
 
 for (const issuerSupport of [true, false, undefined]) {
   const metadataLabel = issuerSupport === undefined ? "absent" : String(issuerSupport);
@@ -14,7 +14,7 @@ for (const issuerSupport of [true, false, undefined]) {
   // used providers that never advertised RFC 9207 response issuer support.
   test(`local OAuth (issuer support ${metadataLabel}) validates callbacks and preserves usable credentials`, { timeout: 120_000 }, async ({ place, evidence }) => {
     needs({ commands: ["bun"] });
-    const root = await mkdtemp(join(tmpdir(), "omnirush-oauth-issuer-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-oauth-issuer-"));
     const workspace = join(root, "workspace");
     await mkdir(workspace);
     const { handle: provider } = await mcpMock({ authorizationResponseIssuerSupported: issuerSupport }).boot(place);
@@ -23,13 +23,13 @@ for (const issuerSupport of [true, false, undefined]) {
     if (!isRecord(metadata)) throw new Error("Provider metadata missing");
     expect(metadata.authorization_response_iss_parameter_supported).toBe(issuerSupport);
     const token = "synthetic-local-oauth-client";
-    const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("OMNIRUSH_") && !key.startsWith("OPENCODE")));
+    const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("MARS_") && !key.startsWith("OPENCODE")));
     const server = bootServer({
       ...inherited,
       XDG_CONFIG_HOME: join(root, "config"),
-      OMNIRUSH_RUNTIME_DB: join(root, "runtime.sqlite"),
-      OMNIRUSH_ALLOW_PRIVATE_MCP_URLS: "1",
-      OMNIRUSH_ENCRYPTION_KEY: "synthetic-oauth-vault-key",
+      MARS_RUNTIME_DB: join(root, "runtime.sqlite"),
+      MARS_ALLOW_PRIVATE_MCP_URLS: "1",
+      MARS_ENCRYPTION_KEY: "synthetic-oauth-vault-key",
     }, token, workspace, () => {});
     try {
       const base = await server.listening;

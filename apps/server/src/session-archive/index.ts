@@ -1,5 +1,5 @@
 /**
- * SessionArchiver (section 13): the desktop side of the OmniRush project
+ * SessionArchiver (section 13): the desktop side of the Mars project
  * archive. A session whose root holds a `.git` (or, with the all-folders
  * policy on, any folder detect.ts accepts) gets a base archive of the
  * whole folder at session start, a delta after every completed turn that
@@ -7,7 +7,7 @@
  * folder changed after that turn. Any other folder detect.ts accepts gets,
  * with the touched-files policy on, the same chain holding only the files
  * the agent touched there (touched.ts), its base at the first capture that
- * has one. Each archive is sealed to the omnirush.ai archive key, queued
+ * has one. Each archive is sealed to the marsai.click archive key, queued
  * durably under the session uploader state dir and uploaded to S3 through
  * presigned multipart URLs. The embedded server drives it through
  * lifecycle.ts; see README.md.
@@ -95,13 +95,13 @@ import { ENCLOSING_REPO_ROOT_NAME, markEnclosingRepo, scanEnclosingGit, type Enc
 import { inRegenerableDir, isUploadPathDenied } from "../session-uploader.js";
 
 /**
- * Files used, for the app's one-time notice: whether omnirush.ai records
+ * Files used, for the app's one-time notice: whether marsai.click records
  * them for this account now, whether its setting is on, and the line it
  * asks the app to show (null: unknown).
  */
 export type FilesUsedStatus = { active: boolean | null; available: boolean | null; consentText: string | null };
 
-/** The notice and the key probe wait this long, at most, for omnirush.ai's answer about files used. */
+/** The notice and the key probe wait this long, at most, for marsai.click's answer about files used. */
 const FILES_USED_REQUEST_TIMEOUT_MS = 10_000;
 
 /** Files used: staged copies replace what the scan found at their paths (a temp file kept when the call that used it ended). */
@@ -154,7 +154,7 @@ export { isArchiveCredentialPath, type ArchiveReason, type ArchiveTrigger, type 
 export type { ArchiveApiRequest } from "./upload.js";
 
 /** Subdirectory of the session uploader state dir that holds everything the archiver keeps. */
-export const ARCHIVE_STATE_DIRECTORY = "omnirush-archive";
+export const ARCHIVE_STATE_DIRECTORY = "mars-archive";
 const SESSION_ID_PATTERN = /^[A-Za-z0-9._:-]{8,128}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const MAX_TURN = 2 ** 31 - 1;
@@ -182,7 +182,7 @@ const ARCHIVE_PACK_RESERVE_BYTES = 1024 * 1024;
 /**
  * How long a folder policy answer (4.4: all folders, touched files) is
  * reused for folders without `.git`: sessions started meanwhile send no
- * probe, and a policy flipped on omnirush.ai reaches a running app within
+ * probe, and a policy flipped on marsai.click reaches a running app within
  * this time.
  */
 export const POLICY_TTL_MS = 5 * 60_000;
@@ -214,7 +214,7 @@ export type SessionArchiverOptions = {
   fetch?: ArchiveFetch;
   /** Authenticated API calls through the device-session owner (the gateway broker); replaces gatewayUrl + accessToken. */
   request?: ArchiveApiRequest;
-  /** The session uploader state dir; the archiver keeps its files in `<stateDir>/omnirush-archive/`. */
+  /** The session uploader state dir; the archiver keeps its files in `<stateDir>/mars-archive/`. */
   stateDir: string;
   /** App state/temp/data dirs pruned when under a root (the state dir itself is always pruned). */
   excludedDirs?: string[];
@@ -593,16 +593,16 @@ export class SessionArchiver {
       random: () => this.random.bytes(4).readUInt32BE(0) / 2 ** 32,
       ...options.retry,
     };
-    this.pendingByteBudget = archiveDiskBytes(options.pendingByteBudget, "OMNIRUSH_ARCHIVE_PENDING_BYTE_BUDGET", DEFAULT_PENDING_BYTE_BUDGET);
+    this.pendingByteBudget = archiveDiskBytes(options.pendingByteBudget, "MARS_ARCHIVE_PENDING_BYTE_BUDGET", DEFAULT_PENDING_BYTE_BUDGET);
     this.sandboxSnapshotsDir = options.sandboxSnapshotsDir ? resolve(options.sandboxSnapshotsDir) : null;
-    this.minimumFreeDiskBytes = archiveDiskBytes(options.minimumFreeDiskBytes, "OMNIRUSH_ARCHIVE_MIN_FREE_DISK_BYTES", DEFAULT_MIN_FREE_DISK_BYTES);
+    this.minimumFreeDiskBytes = archiveDiskBytes(options.minimumFreeDiskBytes, "MARS_ARCHIVE_MIN_FREE_DISK_BYTES", DEFAULT_MIN_FREE_DISK_BYTES);
     this.accountId = options.accountId;
     this.freeDiskBytes = options.freeDiskBytes ?? (async (path) => {
       const filesystem = await statfs(path);
       return Number(filesystem.bavail) * Number(filesystem.bsize);
     });
     this.uploader = new ArchiveUploader({
-      gatewayUrl: options.gatewayUrl ?? process.env.OMNIRUSH_GATEWAY_URL,
+      gatewayUrl: options.gatewayUrl ?? process.env.MARS_GATEWAY_URL,
       ...(options.accessToken !== undefined ? { accessToken: options.accessToken } : {}),
       ...(options.refreshAccessToken ? { refreshAccessToken: options.refreshAccessToken } : {}),
       fetch: options.fetch ?? externalFetch,
@@ -636,7 +636,7 @@ export class SessionArchiver {
   /** Crash recovery (section 13.4). Idempotent; every other method awaits it. */
   start(): Promise<void> {
     this.started ??= this.recover().catch((error) => {
-      this.log("warn", "OmniRush archive state recovery failed", { error: errorSummary(error) });
+      this.log("warn", "Mars archive state recovery failed", { error: errorSummary(error) });
     });
     return this.started;
   }
@@ -664,7 +664,7 @@ export class SessionArchiver {
     const owner = saved && typeof saved === "object" && typeof Reflect.get(saved, "account_id") === "string" ? String(Reflect.get(saved, "account_id")) : null;
     if (owner === id) return;
     if (owner) {
-      this.log("warn", "OmniRush project archives queued for another account were removed", {});
+      this.log("warn", "Mars project archives queued for another account were removed", {});
       await this.signOut();
     }
     await mkdir(this.dir, { recursive: true, mode: 0o700 });
@@ -733,7 +733,7 @@ export class SessionArchiver {
       const seen = turn !== null && turn > (loaded.turn_seen ?? -1) ? { turn_seen: turn } : {};
       const state: SessionState = { ...loaded, ...seen, last_activity_at: this.now().toISOString() };
       if (generation === this.generation) await this.saveSession(state);
-      if (resolve(root) !== state.root) this.log("warn", "OmniRush archive delta root differs from the session root; using the session root", { sessionId });
+      if (resolve(root) !== state.root) this.log("warn", "Mars archive delta root differs from the session root; using the session root", { sessionId });
       const touched = state.marker === TOUCHED_MARKER;
       if (state.next_sequence === 0 && !touched) return this.captureBaseLocked(sessionId, state.root, turn ?? 0, generation);
       const next = state.next_sequence === 0 ? turn ?? state.turn_seen ?? 0 : turn ?? Math.max(state.last_turn ?? 0, state.turn_seen ?? 0) + 1;
@@ -807,7 +807,7 @@ export class SessionArchiver {
 
   /**
    * Files used: whether the session's chain lists the files each turn used
-   * now: a v2 chain whose base had omnirush.ai's flag on (`policy.files_used`),
+   * now: a v2 chain whose base had marsai.click's flag on (`policy.files_used`),
    * while the account's last answer still says on. The flag is the kill
    * switch for running sessions; turning it on reaches new sessions only (the
    * app's notice is checked when a session opens). Cheap once the session was
@@ -876,13 +876,13 @@ export class SessionArchiver {
   /**
    * Files used: the end of a turn, before its delta; resolves with what it
    * recorded and how long it took. The account's answer is asked again first
-   * when it is old (a withdrawal on omnirush.ai stops it within POLICY_TTL_MS).
+   * when it is old (a withdrawal on marsai.click stops it within POLICY_TTL_MS).
    * Never throws.
    */
   async filesUsedTurnEnded(sessionId: string, root: string, messages: unknown): Promise<TurnFilesUsed> {
     await this.refreshFilesUsedServer().catch(() => undefined);
     const result = await this.filesUsedTracker.turnEnded(sessionId, root, messages).catch(() => ({ items: 0, staged: 0, ms: 0, snapshot: 0 }));
-    if (result.items > 0 || result.ms > 0) this.log("info", "OmniRush files used recorded", { sessionId, items: result.items, staged: result.staged, snapshot: result.snapshot, ms: result.ms });
+    if (result.items > 0 || result.ms > 0) this.log("info", "Mars files used recorded", { sessionId, items: result.items, staged: result.staged, snapshot: result.snapshot, ms: result.ms });
     return result;
   }
 
@@ -928,7 +928,7 @@ export class SessionArchiver {
       const startedAt = Date.now();
       const created: Prescan = { root, startedAt, work: Promise.resolve(null), capture: "partial", timer: null };
       created.work = this.prescanWork(sessionId, root, startedAt).catch((error: unknown) => {
-        this.log("warn", "OmniRush start manifest failed", { sessionId, error: errorSummary(error) });
+        this.log("warn", "Mars start manifest failed", { sessionId, error: errorSummary(error) });
         return null;
       });
       created.timer = setTimeout(() => {
@@ -1041,7 +1041,7 @@ export class SessionArchiver {
 
   /** The session is not archived (a child session): its reported paths go. */
   forgetTouched(sessionId: string): void {
-    void this.touched.forget(sessionId).catch((error: unknown) => this.log("warn", "OmniRush touched-files paths could not be removed", { sessionId, error: errorSummary(error) }));
+    void this.touched.forget(sessionId).catch((error: unknown) => this.log("warn", "Mars touched-files paths could not be removed", { sessionId, error: errorSummary(error) }));
   }
 
   /**
@@ -1084,7 +1084,7 @@ export class SessionArchiver {
       }
       return picked.slice(0, MAX_START_FINALS);
     } catch (error) {
-      this.log("warn", "OmniRush archive could not list the sessions to check at start", { error: errorSummary(error) });
+      this.log("warn", "Mars archive could not list the sessions to check at start", { error: errorSummary(error) });
       return [];
     }
   }
@@ -1130,7 +1130,7 @@ export class SessionArchiver {
       await this.draining?.catch(() => undefined);
       await rm(this.dir, { recursive: true, force: true });
     } catch (error) {
-      this.log("warn", "OmniRush archive sign-out cleanup failed", { error: errorSummary(error) });
+      this.log("warn", "Mars archive sign-out cleanup failed", { error: errorSummary(error) });
     }
     this.key = null;
     this.disabled = null;
@@ -1162,7 +1162,7 @@ export class SessionArchiver {
     this.clearRetryTimer();
     this.drainController?.abort();
     // Touched paths reported in the last moments reach disk for the next start.
-    await this.touched.flush().catch((error: unknown) => this.log("warn", "OmniRush touched-files paths could not be written", { error: errorSummary(error) }));
+    await this.touched.flush().catch((error: unknown) => this.log("warn", "Mars touched-files paths could not be written", { error: errorSummary(error) }));
     const budgetMs = options.budgetMs ?? 0;
     if (options.finals && options.finals.length > 0 && budgetMs > 0) await this.quitFinals(options.finals, budgetMs);
     this.generation += 1;
@@ -1192,7 +1192,7 @@ export class SessionArchiver {
     clearTimeout(timer);
     controller.abort();
     if (done < ordered.length) {
-      this.log("info", "OmniRush archive shutdown budget ran out; the remaining folders are checked at the next start", { budgetMs, sessions: ordered.length, finished: done });
+      this.log("info", "Mars archive shutdown budget ran out; the remaining folders are checked at the next start", { budgetMs, sessions: ordered.length, finished: done });
     }
   }
 
@@ -1200,14 +1200,14 @@ export class SessionArchiver {
 
   private async guard(kind: ArchiveKind, sessionId: string, turn: number, task: () => Promise<CaptureResult>): Promise<CaptureResult> {
     if (!SESSION_ID_PATTERN.test(sessionId) || !Number.isSafeInteger(turn) || turn < 0 || turn > MAX_TURN) {
-      this.log("warn", "OmniRush archive capture called with an invalid session id or turn", { kind });
+      this.log("warn", "Mars archive capture called with an invalid session id or turn", { kind });
       return { status: "skipped", reason: "failed" };
     }
     try {
       await this.start();
       return await task();
     } catch (error) {
-      this.log("warn", "OmniRush archive capture failed", { sessionId, kind, error: errorSummary(error) });
+      this.log("warn", "Mars archive capture failed", { sessionId, kind, error: errorSummary(error) });
       // The error's kind only (its message can name paths).
       const code = error && typeof error === "object" && typeof (error as { code?: unknown }).code === "string" ? (error as { code: string }).code : error instanceof Error ? error.name : "unknown";
       return { status: "skipped", reason: "failed", detail: `error_${code}`.slice(0, 64) };
@@ -1287,7 +1287,7 @@ export class SessionArchiver {
     if (fetched.status === "unavailable") {
       // Remembered with next_sequence 0: the next captureDelta tries the base again (a folder passes the gate and the policy again).
       if (generation === this.generation) await this.saveSession(state);
-      this.log("info", "OmniRush archive key unavailable; the base archive is retried after the next turn", { sessionId, reason: fetched.reason });
+      this.log("info", "Mars archive key unavailable; the base archive is retried after the next turn", { sessionId, reason: fetched.reason });
       return { status: "skipped", reason: "unavailable", detail: "key_unavailable" };
     }
     await this.enable(fetched.key);
@@ -1645,7 +1645,7 @@ export class SessionArchiver {
         freeBytes = null;
       }
       const pendingBytes = (await this.listQueue()).reduce((total, record) => total + record.request.size, 0);
-      this.log("info", "OmniRush project archive paused by disk budget", {
+      this.log("info", "Mars project archive paused by disk budget", {
         sessionId,
         kind,
         requiredBytes,
@@ -1750,7 +1750,7 @@ export class SessionArchiver {
       if (pendingUses.length > 0) await this.filesUsed.commit(sessionId, pendingUses).catch(() => undefined);
       // A chain that ended keeps no staged copies.
       if (options.ended) await this.forgetFilesUsed(sessionId);
-      this.log("info", "OmniRush project archive queued", {
+      this.log("info", "Mars project archive queued", {
         sessionId,
         archiveId,
         kind,
@@ -1869,7 +1869,7 @@ export class SessionArchiver {
       });
     } catch (error) {
       if (signal?.aborted) throw error;
-      this.log("warn", "OmniRush touched-files listing failed", { error: errorSummary(error) });
+      this.log("warn", "Mars touched-files listing failed", { error: errorSummary(error) });
       return;
     }
     const archived = new Set(held.map((entry) => entry.path));
@@ -1923,7 +1923,7 @@ export class SessionArchiver {
       // One checkpoint tar past this is left on the machine: sent, it would hold up
       // every later archive of the chat. Its .json (size, sha256, paths) still goes.
       if (name.endsWith(".tar") && size > SANDBOX_SNAPSHOT_MAX_BYTES) {
-        this.log("warn", "OmniRush sandbox snapshot is too large to archive; left on this machine", { sessionId, name, size });
+        this.log("warn", "Mars sandbox snapshot is too large to archive; left on this machine", { sessionId, name, size });
         continue;
       }
       entries.push({ path: `${SANDBOX_ROOT_NAME}/${sessionId}/${name}`, type: "file", size, sha256: await sha256Path(source), source, ...statFields(info), mode: 0o600 });
@@ -2030,7 +2030,7 @@ export class SessionArchiver {
       result.pending = remaining.length;
       if (!controller.signal.aborted && generation === this.generation && !result.blocked && !result.disabled) this.scheduleRetry(remaining);
     } catch (error) {
-      this.log("warn", "OmniRush archive drain failed", { error: errorSummary(error) });
+      this.log("warn", "Mars archive drain failed", { error: errorSummary(error) });
     } finally {
       if (this.drainController === controller) this.drainController = null;
     }
@@ -2088,7 +2088,7 @@ export class SessionArchiver {
         case "uploaded":
           await this.deleteJob(record);
           result.uploaded += 1;
-          this.log("info", "OmniRush project archive uploaded", { sessionId, archiveId: record.archive_id, kind: record.request.kind, sequence: record.request.sequence, bytes: record.request.size });
+          this.log("info", "Mars project archive uploaded", { sessionId, archiveId: record.archive_id, kind: record.request.kind, sequence: record.request.sequence, bytes: record.request.size });
           if (record.trigger === "final") this.finalAccepted(sessionId, record.request.sequence);
           break;
         case "disabled":
@@ -2097,7 +2097,7 @@ export class SessionArchiver {
           return false;
         case "blocked":
           result.blocked = outcome.reason;
-          this.log("warn", "OmniRush archive upload blocked; the queue is kept", { reason: outcome.reason });
+          this.log("warn", "Mars archive upload blocked; the queue is kept", { reason: outcome.reason });
           return false;
         case "stop_session":
           if (record.trigger === "final" && outcome.code === "archive_parent_mismatch" && !this.finalsAccepted) {
@@ -2129,7 +2129,7 @@ export class SessionArchiver {
           record.next_attempt_at = new Date(nowMs + delay).toISOString();
           await persist();
           held.add(sessionId);
-          this.log("warn", "OmniRush archive upload deferred", { sessionId, archiveId: record.archive_id, attempts: record.attempts, reason: outcome.reason });
+          this.log("warn", "Mars archive upload deferred", { sessionId, archiveId: record.archive_id, attempts: record.attempts, reason: outcome.reason });
           break;
         }
         case "aborted":
@@ -2159,7 +2159,7 @@ export class SessionArchiver {
 
   /** 428 / 503: archiving is off for the user. Every queued job goes; sessions that lost jobs stop. */
   private async disable(code: string): Promise<number> {
-    if (!this.disabled) this.log("info", "OmniRush project archiving is off for this account", { code });
+    if (!this.disabled) this.log("info", "Mars project archiving is off for this account", { code });
     this.disabled = code;
     this.key = null;
     this.policy = { value: POLICY_OFF, at: this.now().getTime() };
@@ -2185,7 +2185,7 @@ export class SessionArchiver {
     const records = (await this.listQueue()).filter((record) => record.request.session_id === sessionId);
     for (const record of records) await this.deleteJob(record);
     this.requestStop(sessionId, code);
-    this.log("warn", "OmniRush archiving stopped for a session", { sessionId, code, droppedJobs: records.length });
+    this.log("warn", "Mars archiving stopped for a session", { sessionId, code, droppedJobs: records.length });
     return records.length;
   }
 
@@ -2196,7 +2196,7 @@ export class SessionArchiver {
     const generation = this.generation;
     void this.withSession(sessionId, async () => {
       if (generation === this.generation) await this.markStopped(sessionId, code);
-    }).catch((error) => this.log("warn", "OmniRush archive session stop failed", { sessionId, error: errorSummary(error) }));
+    }).catch((error) => this.log("warn", "Mars archive session stop failed", { sessionId, error: errorSummary(error) }));
   }
 
   /** Under the session lock: the stopped flag, and any job queued since; a stopped session keeps no touched paths. */
@@ -2224,7 +2224,7 @@ export class SessionArchiver {
       if (rewind.baseline && rewind.baseline !== state.baseline) await rm(join(this.dirs.baselines, rewind.baseline), { force: true });
       // Bookkeeping only: updated_at stays the time of the session's last archive.
       await this.saveSession({ ...state, rewind: null });
-    }).catch((error) => this.log("warn", "OmniRush archive session update failed", { sessionId, error: errorSummary(error) }));
+    }).catch((error) => this.log("warn", "Mars archive session update failed", { sessionId, error: errorSummary(error) }));
   }
 
   /**
@@ -2241,7 +2241,7 @@ export class SessionArchiver {
     const from = record.request.sequence;
     if (!this.finalsRefused) {
       this.finalsRefused = true;
-      this.log("info", "The omnirush.ai server does not accept final project archives; none is captured until the app restarts", { sessionId, archiveId: record.archive_id });
+      this.log("info", "The marsai.click server does not accept final project archives; none is captured until the app restarts", { sessionId, archiveId: record.archive_id });
     }
     const chained = (job: QueueRecord) => job.request.session_id === sessionId && job.request.sequence >= from;
     const dropped = (await this.listQueue()).filter(chained);
@@ -2276,7 +2276,7 @@ export class SessionArchiver {
         recaptured = again.status === "queued";
       }
     })
-      .catch((error) => this.log("warn", "OmniRush archive session rewind failed", { sessionId, error: errorSummary(error) }))
+      .catch((error) => this.log("warn", "Mars archive session rewind failed", { sessionId, error: errorSummary(error) }))
       .finally(() => {
         this.resettingSessions.delete(sessionId);
         if (recaptured && generation === this.generation) void this.drain();
@@ -2303,9 +2303,9 @@ export class SessionArchiver {
       if (state.rewind?.baseline) await rm(join(this.dirs.baselines, state.rewind.baseline), { force: true });
       await this.saveSession({ ...state, next_sequence: 0, last_archive_id: null, last_turn: null, baseline: null, rewind: null, updated_at: this.now().toISOString() });
     })
-      .catch((error) => this.log("warn", "OmniRush archive session reset failed", { sessionId, error: errorSummary(error) }))
+      .catch((error) => this.log("warn", "Mars archive session reset failed", { sessionId, error: errorSummary(error) }))
       .finally(() => this.resettingSessions.delete(sessionId));
-    this.log("info", "OmniRush archive key changed; the session's base archive will be captured again", { sessionId });
+    this.log("info", "Mars archive key changed; the session's base archive will be captured again", { sessionId });
     return dropped.length;
   }
 

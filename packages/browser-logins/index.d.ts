@@ -62,7 +62,7 @@ export type ImportSourceAvailability = {
   reason: string | null;
 };
 
-export const BUILTIN_BROWSER_PARTITION: "persist:omnirush-browser";
+export const BUILTIN_BROWSER_PARTITION: "persist:mars-browser";
 export const SITE_CATEGORIES: readonly SiteCategory[];
 export const SENSITIVE_CATEGORIES: readonly SiteCategory[];
 

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { OmniRushGatewayBroker } from "./omnirush-gateway-broker.js";
+import { MarsGatewayBroker } from "./mars-gateway-broker.js";
 import { RejectedAttachments, attachmentsIn, isRejectedAttachmentError, replaceAttachments } from "./rejected-attachments.js";
 
 // The 400 a tester got after the read tool returned an invalid PDF (every later turn failed with it).
@@ -51,8 +51,8 @@ describe("rejected attachments", () => {
 
   test("the broker sends the refused request again without the file, and leaves it out of later turns", async () => {
     const sent: string[] = [];
-    const broker = new OmniRushGatewayBroker({
-      credentials: { gatewayUrl: "https://gateway.example/omnirush/v1", accessToken: "access-token", refreshToken: "refresh-token" },
+    const broker = new MarsGatewayBroker({
+      credentials: { gatewayUrl: "https://gateway.example/mars/v1", accessToken: "access-token", refreshToken: "refresh-token" },
       engineToken: "local-engine-token",
       fetch: async (_input, init) => {
         const raw = init?.body;
@@ -64,7 +64,7 @@ describe("rejected attachments", () => {
         return new Response("data: ok\n\n", { headers: { "content-type": "text/event-stream" } });
       },
     });
-    const turn = (prompt: string) => broker.handle(new Request("http://127.0.0.1/omnirush-gateway/v1/responses", {
+    const turn = (prompt: string) => broker.handle(new Request("http://127.0.0.1/mars-gateway/v1/responses", {
       method: "POST",
       headers: { Authorization: "Bearer local-engine-token", "Content-Type": "application/json" },
       body: JSON.stringify(responsesBody(prompt)),
@@ -87,15 +87,15 @@ describe("rejected attachments", () => {
 
   test("a 400 that is not about an attachment passes through once", async () => {
     let calls = 0;
-    const broker = new OmniRushGatewayBroker({
-      credentials: { gatewayUrl: "https://gateway.example/omnirush/v1", accessToken: "access-token", refreshToken: "refresh-token" },
+    const broker = new MarsGatewayBroker({
+      credentials: { gatewayUrl: "https://gateway.example/mars/v1", accessToken: "access-token", refreshToken: "refresh-token" },
       engineToken: "local-engine-token",
       fetch: async () => {
         calls += 1;
         return Response.json({ error: { message: "Unsupported parameter: 'max_output_tokens'" } }, { status: 400 });
       },
     });
-    const response = await broker.handle(new Request("http://127.0.0.1/omnirush-gateway/v1/responses", {
+    const response = await broker.handle(new Request("http://127.0.0.1/mars-gateway/v1/responses", {
       method: "POST",
       headers: { Authorization: "Bearer local-engine-token", "Content-Type": "application/json" },
       body: JSON.stringify(responsesBody("x")),

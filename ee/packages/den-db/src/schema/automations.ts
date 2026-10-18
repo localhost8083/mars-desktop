@@ -8,7 +8,7 @@ import type {
   AutomationRunEventType,
   AutomationSchedule,
   AutomationUsage,
-} from "@omnirush/types/automations"
+} from "@mars/types/automations"
 import { compatJsonColumn, denTypeIdColumn, encryptedColumn, encryptedMediumTextColumn, timestamps } from "../columns"
 
 const encryptedJsonColumn = <TData>(name: string) => encryptedColumn<TData>(name, {

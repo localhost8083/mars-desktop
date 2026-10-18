@@ -1,11 +1,11 @@
-# Azure AKS starter values for a first OmniRush.ai EE self-host install.
+# Azure AKS starter values for a first MarsAI EE self-host install.
 #
 # Follow docs/azure-aks-helm.md to create the VNet, AKS subnet, delegated
 # MySQL subnet, AKS cluster, and Azure Database for MySQL Flexible Server.
 # Then copy this file, replace every REPLACE_* value, and install with:
 #
-#   helm upgrade --install omnirush-ee oci://ghcr.io/omnirush-ai/charts/omnirush-ee \
-#     --version REPLACE_OMNIRUSH_VERSION \
+#   helm upgrade --install omnirush-ee oci://ghcr.io/mars-ai/charts/omnirush-ee \
+#     --version REPLACE_MARS_VERSION \
 #     --namespace omnirush-ee \
 #     --create-namespace \
 #     -f values.azure.yaml
@@ -15,7 +15,7 @@
 # tests where browser auth and SSO need stable HTTPS hostnames.
 
 image:
-  tag: "REPLACE_OMNIRUSH_VERSION"
+  tag: "REPLACE_MARS_VERSION"
   pullPolicy: IfNotPresent
 
 config:
@@ -55,7 +55,7 @@ secret:
   values:
     # Azure Database for MySQL Flexible Server private-network smoke path.
     # sslaccept=accept preserves TLS without requiring a mounted CA bundle.
-    databaseUrl: "mysql://omnirush:REPLACE_DB_PASSWORD@REPLACE_MYSQL_SERVER_NAME.mysql.database.azure.com:3306/omnirush_den?sslaccept=accept"
+    databaseUrl: "mysql://mars:REPLACE_DB_PASSWORD@REPLACE_MYSQL_SERVER_NAME.mysql.database.azure.com:3306/omnirush_den?sslaccept=accept"
     # Generate with: openssl rand -base64 48
     betterAuthSecret: "REPLACE_BETTER_AUTH_SECRET"
     # Generate separately with: openssl rand -base64 48
@@ -64,7 +64,7 @@ secret:
     initialAdminBootstrapCode: "REPLACE_BOOTSTRAP_CODE"
     # Optional SMTP settings for invitations and other transactional email.
     # SMTP delivery requires both emailFrom and smtpHost.
-    emailFrom: "OmniRush.ai <no-reply@example.com>"
+    emailFrom: "MarsAI <no-reply@example.com>"
     smtpHost: ""
     smtpPort: "587"
     smtpUser: ""

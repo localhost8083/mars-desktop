@@ -1,7 +1,7 @@
 import { expect } from "vitest";
-import { denFetch, provisionOrg } from "@omnirush/behaviors";
-import type { DenSession } from "@omnirush/behaviors";
-import { spec } from "@omnirush/testkit";
+import { denFetch, provisionOrg } from "@mars/behaviors";
+import type { DenSession } from "@mars/behaviors";
+import { spec } from "@mars/testkit";
 import { orgModelAnalyticsWorld } from "../worlds/org-model-analytics.ts";
 
 const test = spec.world(orgModelAnalyticsWorld, { timeout: 900_000, needs: {} });
@@ -18,7 +18,7 @@ function requireRecord(value: unknown, label: string): Record<string, unknown> {
 function auth(session: DenSession, orgId: string): Record<string, string> {
   return {
     authorization: `Bearer ${session.token}`,
-    "x-omnirush-org-id": orgId,
+    "x-mars-org-id": orgId,
   };
 }
 
@@ -113,7 +113,7 @@ test("organization model analytics aggregate session dimensions without cross-or
     JSON.stringify(otherModels),
     Array.isArray(otherModels.usage30d) && otherModels.usage30d.length === 0,
   );
-  await user.see({ text: "Understand how your team works in OmniRush.ai" }, { timeoutMs: 60_000 });
+  await user.see({ text: "Understand how your team works in MarsAI" }, { timeoutMs: 60_000 });
   await user.click({ role: "button", label: "Refresh analytics" });
   await user.see({ text: /^prov\/model-a\s+1$/ }, { timeoutMs: 30_000 });
   await user.see({ text: /^prov\/model-b\s+1$/ });
@@ -134,10 +134,10 @@ test("organization model analytics aggregate session dimensions without cross-or
   await user.notSee({ text: "Could not load analytics." });
   evidence.recordAssertionEvidence("An analytics outage is shown as an error and can recover without inventing zero usage", "An analytics storage outage returned HTTP 500 and produced the error state with no empty charts; Refresh restored the previously ingested models after recovery", true);
   await user.click({ role: "link", label: "Models & usage" });
-  await user.see({ text: "Understand your team’s OmniRush.ai Models activity, consumption, and shared limits." });
+  await user.see({ text: "Understand your team’s MarsAI Models activity, consumption, and shared limits." });
   await user.notSee({ role: "button", label: "Subscribe" });
   await user.click({ role: "link", label: /^Usage & adoption$/ });
-  await user.see({ text: "Understand how your team works in OmniRush.ai" });
+  await user.see({ text: "Understand how your team works in MarsAI" });
   await user.see({ text: "prov/model-b" });
   evidence.recordAssertionEvidence("Shared navigation connects adoption and Models analytics", "Both views are reachable through the shared navigation and returning preserves access to the same organization’s model analytics", true);
 });

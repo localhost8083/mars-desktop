@@ -1,4 +1,4 @@
-import type { DetectedPlatform, DownloadCardInstallers } from "@omnirush/ui/react";
+import type { DetectedPlatform, DownloadCardInstallers } from "@mars/ui/react";
 
 export function automaticDownloadHref(
   installers: DownloadCardInstallers,

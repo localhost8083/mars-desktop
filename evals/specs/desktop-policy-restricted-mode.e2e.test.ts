@@ -1,9 +1,9 @@
 import { expect } from "vitest";
-import { selectModel } from "@omnirush/behaviors";
-import { spec } from "@omnirush/testkit";
+import { selectModel } from "@mars/behaviors";
+import { spec } from "@mars/testkit";
 import { defaultPolicyEditorAndMemberDesktop, readDefaultDesktopPolicy, teamAccess } from "../worlds/desktop-policies.ts";
 
-// An organization that wants a vanilla OmniRush.ai picks one decision, Restricted,
+// An organization that wants a vanilla MarsAI picks one decision, Restricted,
 // in the Den policy editor. This spec drives the real editor as the admin and a
 // real member desktop side by side: the editor locks every governed capability
 // and stores plain booleans, and the member's settings and Library surfaces
@@ -60,7 +60,7 @@ const permissionsTab: { role: "tab"; label: string } = { role: "tab", label: "Ap
 const accountTab: { role: "tab"; label: string } = { role: "tab", label: "Account" };
 const signOut: { role: "button"; label: string } = { role: "button", label: "Sign out" };
 const manageExtensionsNotice = { testId: "manage-extensions-policy-notice" };
-const builtInExtensionsNotice = "Built-in OmniRush.ai extensions are disabled by your organization";
+const builtInExtensionsNotice = "Built-in MarsAI extensions are disabled by your organization";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -316,7 +316,7 @@ test(defaultJourney, async ({ world: selectedWorld, user, agent, probe, step, ev
   expect(builtInNoticeShown).toBe(true);
   await member.user.looks([
     "The Library is open and shows a notice that the organization administrator disabled local extension management",
-    "A notice says built-in OmniRush.ai extensions are disabled by your organization",
+    "A notice says built-in MarsAI extensions are disabled by your organization",
   ]);
   evidence.recordAssertionEvidence(
     "The Library removes the local workspace MCP add path while the organization MCP add form remains reachable",

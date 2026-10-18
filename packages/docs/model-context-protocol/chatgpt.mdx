@@ -1,14 +1,14 @@
 ---
-title: "OmniRush.ai MCP for ChatGPT"
+title: "MarsAI MCP for ChatGPT"
 sidebarTitle: "ChatGPT"
-description: "ChatGPT MCP setup for OmniRush.ai Connect, so ChatGPT Desktop can use your org's shared OmniRush.ai capabilities through OAuth."
+description: "ChatGPT MCP setup for MarsAI Connect, so ChatGPT Desktop can use your org's shared MarsAI capabilities through OAuth."
 ---
 
-The OmniRush.ai MCP server ([OmniRush.ai Connect](/cloud/run-in-the-cloud/cloud-mcp))
-enables ChatGPT Desktop to use the OmniRush.ai capabilities your organization has
+The MarsAI MCP server ([MarsAI Connect](/cloud/run-in-the-cloud/cloud-mcp))
+enables ChatGPT Desktop to use the MarsAI capabilities your organization has
 made available to you: Gmail read/search, Calendar list/create, Drive
 search/read, Gmail draft creation, shared MCP connections such as Notion,
-Linear, Slack, Stripe, Exa, and Context7, shared skills, and OmniRush.ai Cloud
+Linear, Slack, Stripe, Exa, and Context7, shared skills, and MarsAI Cloud
 resources like skills, plugins, Collections, workers, members, roles, teams,
 and LLM providers. The server exposes only `search_capabilities` and
 `execute_capability`, so ChatGPT searches what you can access and runs exact
@@ -17,12 +17,12 @@ capability names instead of loading hundreds of tool definitions into context.
 ## Server URL
 
 ```text
-https://api.omnirush.example.com/mcp/agent
+https://api.mars.example.com/mcp/agent
 ```
 
-omnirush.ai does not run a hosted Den, so there is no public endpoint: use the
+marsai.click does not run a hosted Den, so there is no public endpoint: use the
 `/mcp/agent` URL on the API origin of your [self-hosted Den](/start-here/self-host)
-(`api.omnirush.example.com` above is a placeholder). OAuth sign-in uses your
+(`api.mars.example.com` above is a placeholder). OAuth sign-in uses your
 account on that Den, and the organization you pick is pinned into the token.
 
 ## Setup
@@ -33,19 +33,19 @@ account on that Den, and the organization you pick is pinned into the token.
 2. Paste the server URL:
 
    ```text
-   https://api.omnirush.example.com/mcp/agent
+   https://api.mars.example.com/mcp/agent
    ```
 
-3. Start OAuth from ChatGPT's connection prompt, sign in to OmniRush.ai, and pick
+3. Start OAuth from ChatGPT's connection prompt, sign in to MarsAI, and pick
    the organization ChatGPT should use.
 
 ## Switch organizations
 
-Open ChatGPT `Settings > MCP servers`, disconnect or clear the `OmniRush.ai`
+Open ChatGPT `Settings > MCP servers`, disconnect or clear the `MarsAI`
 server's stored auth, then connect again and choose the organization you want.
 
 <Note>
-This is a setup guide. These steps match OmniRush.ai Connect's OAuth profile:
+This is a setup guide. These steps match MarsAI Connect's OAuth profile:
 HTTPS or HTTP loopback callbacks, PKCE S256, and dynamic client registration
 fallback. ChatGPT Desktop is listed as setup only because native proof is not
 complete. See the
@@ -55,7 +55,7 @@ table.
 
 ## What you can ask
 
-- "Which OmniRush.ai organization am I connected to?"
+- "Which MarsAI organization am I connected to?"
 - "Search my org's capabilities for calendar tools, then list tomorrow's events."
 - "Create a skill that writes weekly status reports and share it with my whole organization."
 - "Find the Q3 launch page in Notion and summarize it."

@@ -1,8 +1,8 @@
 import { and, asc, eq, isNull, sql } from "@omnirush-ee/den-db/drizzle"
 import { InferenceOrgLimitPolicyTable, InferenceOrgUsageBucketTable, MemberTable, OrganizationTable } from "@omnirush-ee/den-db"
 import { createDenTypeId, normalizeDenTypeId, type DenTypeId } from "@omnirush-ee/utils/typeid"
-import { INFERENCE_TIER_LIMITS, INFERENCE_WINDOW_DURATIONS_MS } from "@omnirush/types/den/inference"
-import type { InferenceTier, InferenceWindowType } from "@omnirush/types/den/inference"
+import { INFERENCE_TIER_LIMITS, INFERENCE_WINDOW_DURATIONS_MS } from "@mars/types/den/inference"
+import type { InferenceTier, InferenceWindowType } from "@mars/types/den/inference"
 import { db } from "./db.js"
 
 export type BucketMetadata = Partial<Record<string, DenTypeId<"inferenceOrgUsageBucket">>>

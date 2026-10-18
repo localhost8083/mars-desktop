@@ -4,16 +4,16 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 import { createManagedOpencodeServer, type ManagedOpencodeServer } from "./managed-opencode.js";
-import { omnirushSwarmPluginPath } from "./omnirush-extensions-plugin-path.js";
-import { OMNIRUSH_AGENT_PROMPT } from "./omnirush-agent-prompt.js";
-import { OMNIRUSH_TASK_TOOL_NOTE, omnirushSubagentNote } from "./omnirush-swarm.js";
+import { marsSwarmPluginPath } from "./mars-extensions-plugin-path.js";
+import { MARS_AGENT_PROMPT } from "./mars-agent-prompt.js";
+import { MARS_TASK_TOOL_NOTE, marsSubagentNote } from "./mars-swarm.js";
 
 /**
- * omnirush.ai's delegation rules reach the model on the real engine (the
+ * marsai.click's delegation rules reach the model on the real engine (the
  * bundled sidecar with the swarm plugin) against a mock provider:
  *
  *   - the main session's request carries the restraint wording of the agent
- *     prompt and the task tool's description carries omnirush.ai's note once,
+ *     prompt and the task tool's description carries marsai.click's note once,
  *     and it gets no sub-agent note;
  *   - a sub-agent session's request carries the sub-agent note (system).
  *
@@ -106,13 +106,13 @@ describeMaybe("delegation rules on the bundled engine (mock provider)", () => {
     const configPath = join(data, "runtime-opencode-config.json");
     writeFileSync(configPath, JSON.stringify({
       model: "mock/mock-model",
-      default_agent: "omnirush",
-      agent: { omnirush: { mode: "primary", prompt: OMNIRUSH_AGENT_PROMPT } },
+      default_agent: "mars",
+      agent: { mars: { mode: "primary", prompt: MARS_AGENT_PROMPT } },
       permission: { "*": "allow" },
       provider: {
         mock: { name: "Mock", npm: "@ai-sdk/openai-compatible", options: { baseURL: `${base}/v1`, apiKey: "mock-key" }, models: { "mock-model": { name: "Mock", tool_call: true, limit: { context: 100_000, output: 4_000 } } } },
       },
-      plugin: [omnirushSwarmPluginPath()],
+      plugin: [marsSwarmPluginPath()],
     }));
     engine = await createManagedOpencodeServer({
       bin: enginePath!,
@@ -120,9 +120,9 @@ describeMaybe("delegation rules on the bundled engine (mock provider)", () => {
       env: {
         OPENCODE_CONFIG: configPath,
         OPENCODE_DISABLE_MODELS_FETCH: "1",
-        OMNIRUSH_SERVER_URL: base,
-        OMNIRUSH_POLICY_TOKEN: "policy",
-        OMNIRUSH_SERVER_TOKEN: "server",
+        MARS_SERVER_URL: base,
+        MARS_POLICY_TOKEN: "policy",
+        MARS_SERVER_TOKEN: "server",
         HOME: join(data, "home"),
         OPENCODE_TEST_HOME: join(data, "home"),
         XDG_DATA_HOME: join(data, "xdg-data"),
@@ -160,11 +160,11 @@ describeMaybe("delegation rules on the bundled engine (mock provider)", () => {
     const mainTool = main.tools!.find((tool) => tool.function.name === "task");
     expect(mainTool).toBeDefined();
     // Once, after the engine's own text (the engine lists the sub-agents after it).
-    expect(mainTool!.function.description!.split(OMNIRUSH_TASK_TOOL_NOTE)).toHaveLength(2);
+    expect(mainTool!.function.description!.split(MARS_TASK_TOOL_NOTE)).toHaveLength(2);
 
     const child = await waitFor(() => seen.find(isChild), "the sub-agent's request");
-    expect(systemOf(child)).toContain(omnirushSubagentNote(1));
+    expect(systemOf(child)).toContain(marsSubagentNote(1));
     const childTool = child.tools!.find((tool) => tool.function.name === "task");
-    if (childTool) expect(childTool.function.description!.split(OMNIRUSH_TASK_TOOL_NOTE)).toHaveLength(2);
+    if (childTool) expect(childTool.function.description!.split(MARS_TASK_TOOL_NOTE)).toHaveLength(2);
   }, 150_000);
 });

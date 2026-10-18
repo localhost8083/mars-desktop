@@ -37,7 +37,7 @@ async function replaceProtectedKey(filePath, encrypted) {
 }
 
 /**
- * Compact filename-safe UTC timestamp mirroring the `*.omnirush-backup-<ts>`
+ * Compact filename-safe UTC timestamp mirroring the `*.mars-backup-<ts>`
  * naming used by the server legacy-config sweep.
  *
  * @param {Date} date
@@ -60,14 +60,14 @@ function backupTimestamp(date) {
 function decodeKey(encoded) {
   const key = Buffer.from(encoded, "base64");
   if (key.byteLength !== KEY_BYTES) {
-    throw new Error("The protected OmniRush.ai credential key is invalid.");
+    throw new Error("The protected MarsAI credential key is invalid.");
   }
   return key;
 }
 
 /**
  * Creates a lazy key provider so Electron does not initialize secure storage
- * until a user opts into OmniRush.ai-managed OAuth.
+ * until a user opts into MarsAI-managed OAuth.
  *
  * @param {{
  *   filePath: string;
@@ -157,7 +157,7 @@ export function createDesktopVaultKeyProvider({
       if (!(error instanceof KeyringRefusedError)) throw error;
       if (!fileFallback) throw error.cause;
       const cause = error.cause instanceof Error ? error.cause.message : String(error.cause);
-      log(`[omnirush] The system keyring could not encrypt the MCP credential vault key (${cause}); keeping it in the private file.`);
+      log(`[mars] The system keyring could not encrypt the MCP credential vault key (${cause}); keeping it in the private file.`);
       return loadUnprotectedKey();
     }
   }
@@ -182,10 +182,10 @@ export function createDesktopVaultKeyProvider({
     const basicText = encryptionAvailable && platform === "linux" && safeStorage.getSelectedStorageBackend() === "basic_text";
     if (fileFallback && (!encryptionAvailable || basicText)) return loadUnprotectedKey();
     if (!encryptionAvailable) {
-      throw new Error("Operating-system secure storage is unavailable for OmniRush.ai-managed OAuth.");
+      throw new Error("Operating-system secure storage is unavailable for MarsAI-managed OAuth.");
     }
     if (basicText) {
-      throw new Error("A secure Linux password store is required for OmniRush.ai-managed OAuth.");
+      throw new Error("A secure Linux password store is required for MarsAI-managed OAuth.");
     }
 
     const unprotected = fileFallback ? await readUnprotectedKey() : null;
@@ -196,7 +196,7 @@ export function createDesktopVaultKeyProvider({
       // then the file keeps the vault usable and a later launch retries.
       const existing = await readSealedKey(safeStorage);
       if (!existing?.equals(unprotected)) {
-        await rename(filePath, `${filePath}.omnirush-backup-${backupTimestamp(new Date())}`).catch((error) => {
+        await rename(filePath, `${filePath}.mars-backup-${backupTimestamp(new Date())}`).catch((error) => {
           if (error?.code !== "ENOENT") throw error;
         });
         try {
@@ -209,9 +209,9 @@ export function createDesktopVaultKeyProvider({
       if (readBack?.equals(unprotected)) {
         await discardPlaintextCredentialFile(fallbackFilePath, PLAINTEXT_KIND, log);
         await noteKeyringSealed(safeStorage);
-        log("[omnirush] Moved the MCP credential vault key from the private file into the system keyring.");
+        log("[mars] Moved the MCP credential vault key from the private file into the system keyring.");
       } else {
-        log("[omnirush] The system keyring did not return the MCP credential vault key; keeping it in the private file.");
+        log("[mars] The system keyring did not return the MCP credential vault key; keeping it in the private file.");
       }
       return unprotected;
     }
@@ -236,7 +236,7 @@ export function createDesktopVaultKeyProvider({
         // Secure storage is available but can no longer decrypt the blob (for
         // example the OS keychain secret changed), so quarantine the original
         // bytes and mint a fresh key instead of failing on every launch.
-        await rename(filePath, `${filePath}.omnirush-backup-${backupTimestamp(new Date())}`);
+        await rename(filePath, `${filePath}.mars-backup-${backupTimestamp(new Date())}`);
       }
       if (decrypted && key) {
         if (decrypted.shouldReEncrypt) {

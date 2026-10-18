@@ -110,7 +110,7 @@ describe("native OpenCode session operations", () => {
       },
     });
     try {
-      const client = createClient(endpoint.opencodeBaseUrl, session.directory, { token: endpoint.token, mode: "omnirush" });
+      const client = createClient(endpoint.opencodeBaseUrl, session.directory, { token: endpoint.token, mode: "mars" });
       const messageID = createPromptMessageID();
       expect(await hasAcceptedPromptMessage(client, session.id, messageID)).toBe(false);
       for (const info of [
@@ -579,7 +579,7 @@ describe("native Stop and follow-up handoff", () => {
       if (action === "prompt") { events.push(`prompt:${id}`); return Response.json({ data: {} }); }
       throw new Error(`Unexpected v2 request: ${request.method} ${path}`);
     }, async (requests) => {
-      const client = createClientV2(baseUrl, session.directory, { token: endpoint.token, mode: "omnirush" });
+      const client = createClientV2(baseUrl, session.directory, { token: endpoint.token, mode: "mars" });
       const stop = interruptSessionTurn(baseUrl, client, rootID, session.directory);
       const next = submitAfterInterruption(baseUrl, rootID, async () => unwrap(await client.session.promptAsync({
         sessionID: rootID, model: { providerID: "mock", modelID: "mock" }, parts: [{ type: "text", text: "new turn" }],
@@ -662,7 +662,7 @@ describe("native Stop and follow-up handoff", () => {
       if (!action && id && sessions[id]) return Response.json(sessions[id]);
       throw new Error(`Unexpected request: ${request.method} ${path}`);
     }, async (requests) => {
-      const client = createClient(baseUrl, root.directory, { token: endpoint.token, mode: "omnirush" });
+      const client = createClient(baseUrl, root.directory, { token: endpoint.token, mode: "mars" });
       const stop = interruptSessionTurn(baseUrl, client, root.id, root.directory, {
         timeoutMs: 1_000, onStopped: () => { admissionReconciled = true; },
       });

@@ -10,7 +10,7 @@ import {
   type EgressDiagnosticRun,
   type EgressDiagnosticStep,
   type EgressDiagnosticStepId,
-} from "@omnirush/types/den/egress-diagnostics"
+} from "@mars/types/den/egress-diagnostics"
 
 type DiagnosticFetch = typeof fetch
 

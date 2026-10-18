@@ -17,15 +17,15 @@ RUN_SEED=0
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Pid + random suffix so parallel invocations (multiple features/worktrees)
 # never collide on the second-granularity timestamp.
-SANDBOX="omnirush-server-$(date +%Y%m%d-%H%M%S)-$$-$(od -An -N2 -tx2 /dev/urandom | tr -d ' ')"
-DAYTONA_SERVER_SNAPSHOT="${DAYTONA_SERVER_SNAPSHOT:-omnirush-server}"
+SANDBOX="mars-server-$(date +%Y%m%d-%H%M%S)-$$-$(od -An -N2 -tx2 /dev/urandom | tr -d ' ')"
+DAYTONA_SERVER_SNAPSHOT="${DAYTONA_SERVER_SNAPSHOT:-mars-server}"
 DAYTONA_TARGET="${DAYTONA_TARGET:-us}"
 DEN_API_PORT="${DEN_API_PORT:-8788}"
 DEN_WEB_PORT="${DEN_WEB_PORT:-3005}"
 MAX_WAIT="${DAYTONA_SERVER_MAX_WAIT:-240}"
 DEN_GENERATED_ARTIFACT_VIEWS_ENABLED="${DEN_GENERATED_ARTIFACT_VIEWS_ENABLED:-}"
 if [ -z "$DEN_GENERATED_ARTIFACT_VIEWS_ENABLED" ]; then
-  if [ "${OMNIRUSH_EVAL_GENERATED_ARTIFACT_VIEWS_E2E_TEST:-0}" = "1" ]; then
+  if [ "${MARS_EVAL_GENERATED_ARTIFACT_VIEWS_E2E_TEST:-0}" = "1" ]; then
     DEN_GENERATED_ARTIFACT_VIEWS_ENABLED="true"
   else
     DEN_GENERATED_ARTIFACT_VIEWS_ENABLED="false"
@@ -127,27 +127,27 @@ DEN_API_URL="$(daytona preview-url "$SANDBOX" -p "$DEN_API_PORT" --expires 86400
 # baked URLs to the caller through a trusted runner-side file instead; this
 # write happens on the runner from daytona CLI output only, so sandbox (ref
 # controlled) output can never influence it.
-if [ -n "${OMNIRUSH_DEN_URLS_FILE:-}" ]; then
+if [ -n "${MARS_DEN_URLS_FILE:-}" ]; then
   printf 'DEN_WEB_URL=%s\nDEN_API_URL=%s\n' \
-    "$DEN_WEB_URL" "$DEN_API_URL" > "$OMNIRUSH_DEN_URLS_FILE"
+    "$DEN_WEB_URL" "$DEN_API_URL" > "$MARS_DEN_URLS_FILE"
 fi
 
 echo "==> Checking out $REF..."
-daytona exec "$SANDBOX" -- "bash -lc 'set -euo pipefail; cd /workspace; REF=\"$REF\"; FORCE_INSTALL=\"$FORCE_INSTALL\"; git reset --hard HEAD; if git fetch origin \"\$REF\"; then git checkout --detach FETCH_HEAD; else git fetch origin dev --depth 50 || true; git checkout \"\$REF\"; fi; git rev-parse --short HEAD; if [ \"\$FORCE_INSTALL\" = 1 ]; then rm -f .omnirush-daytona/pnpm-lock.sha256 .omnirush-daytona/den-web-build.tree .omnirush-daytona/den-api-assets.tree; fi'"
+daytona exec "$SANDBOX" -- "bash -lc 'set -euo pipefail; cd /workspace; REF=\"$REF\"; FORCE_INSTALL=\"$FORCE_INSTALL\"; git reset --hard HEAD; if git fetch origin \"\$REF\"; then git checkout --detach FETCH_HEAD; else git fetch origin dev --depth 50 || true; git checkout \"\$REF\"; fi; git rev-parse --short HEAD; if [ \"\$FORCE_INSTALL\" = 1 ]; then rm -f .mars-daytona/pnpm-lock.sha256 .mars-daytona/den-web-build.tree .mars-daytona/den-api-assets.tree; fi'"
 
 echo "==> Uploading server start script..."
 START_SCRIPT_B64="$(base64 < "$ROOT_DIR/.devcontainer/start-daytona-server.sh" | tr -d '\n')"
 daytona exec "$SANDBOX" -- "bash -lc 'set -euo pipefail; cd /workspace; mkdir -p .devcontainer; printf %s $START_SCRIPT_B64 | base64 -d > .devcontainer/start-daytona-server.sh; chmod +x .devcontainer/start-daytona-server.sh'"
 
-echo "==> Starting OmniRush.ai Den server stack..."
+echo "==> Starting MarsAI Den server stack..."
 BOOTSTRAP_ADMIN_EMAILS_B64="$(printf %s "${DEN_BOOTSTRAP_ADMIN_EMAILS:-}" | base64 | tr -d '\n')"
 # Caller-supplied Den env (base64 KEY=VALUE lines from the eval harness); the
 # start script exports it before launching Den. Base64 keeps values out of
 # this command line.
-case "${OMNIRUSH_DEN_EXTRA_ENV_B64:-}" in
-  *[!A-Za-z0-9+/=]*) echo "ERROR: OMNIRUSH_DEN_EXTRA_ENV_B64 must be base64." >&2; exit 1 ;;
+case "${MARS_DEN_EXTRA_ENV_B64:-}" in
+  *[!A-Za-z0-9+/=]*) echo "ERROR: MARS_DEN_EXTRA_ENV_B64 must be base64." >&2; exit 1 ;;
 esac
-daytona exec "$SANDBOX" -- "bash -lc 'set -euo pipefail; cd /workspace; OMNIRUSH_DEN_EXTRA_ENV_B64=\"${OMNIRUSH_DEN_EXTRA_ENV_B64:-}\" DEN_BOOTSTRAP_ADMIN_EMAILS=\"\$(printf %s $BOOTSTRAP_ADMIN_EMAILS_B64 | base64 -d)\" DEN_GENERATED_ARTIFACT_VIEWS_ENABLED=\"$DEN_GENERATED_ARTIFACT_VIEWS_ENABLED\" DEN_WEB_PUBLIC_URL=\"$DEN_WEB_URL\" DEN_API_PUBLIC_URL=\"$DEN_API_URL\" DEN_WEB_PORT=$DEN_WEB_PORT DEN_API_PORT=$DEN_API_PORT RUN_SEED=$RUN_SEED bash .devcontainer/start-daytona-server.sh'"
+daytona exec "$SANDBOX" -- "bash -lc 'set -euo pipefail; cd /workspace; MARS_DEN_EXTRA_ENV_B64=\"${MARS_DEN_EXTRA_ENV_B64:-}\" DEN_BOOTSTRAP_ADMIN_EMAILS=\"\$(printf %s $BOOTSTRAP_ADMIN_EMAILS_B64 | base64 -d)\" DEN_GENERATED_ARTIFACT_VIEWS_ENABLED=\"$DEN_GENERATED_ARTIFACT_VIEWS_ENABLED\" DEN_WEB_PUBLIC_URL=\"$DEN_WEB_URL\" DEN_API_PUBLIC_URL=\"$DEN_API_URL\" DEN_WEB_PORT=$DEN_WEB_PORT DEN_API_PORT=$DEN_API_PORT RUN_SEED=$RUN_SEED bash .devcontainer/start-daytona-server.sh'"
 
 echo "==> Waiting for public Den Web health (up to ${MAX_WAIT}s)..."
 elapsed=0

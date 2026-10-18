@@ -1,7 +1,7 @@
 import { desktopBootstrapFromConnectClaims } from "./connect-link.mjs";
 
 /**
- * @param {Partial<import("@omnirush/types/desktop-ipc").DesktopBootstrapConfig>} config
+ * @param {Partial<import("@mars/types/desktop-ipc").DesktopBootstrapConfig>} config
  * @param {(iconUrl: string) => Promise<unknown>} applyBrandIconUrl
  */
 export async function applyDesktopBootstrapBrandIcon(config, applyBrandIconUrl) {
@@ -11,11 +11,11 @@ export async function applyDesktopBootstrapBrandIcon(config, applyBrandIconUrl) 
 }
 
 /**
- * @param {import("@omnirush/types/connect-link").ConnectLinkClaims} claims
+ * @param {import("@mars/types/connect-link").ConnectLinkClaims} claims
  * @param {{
  *   persistBootstrap: (
- *     config: Partial<import("@omnirush/types/desktop-ipc").DesktopBootstrapConfig>
- *   ) => Promise<import("@omnirush/types/desktop-ipc").DesktopBootstrapConfig>,
+ *     config: Partial<import("@mars/types/desktop-ipc").DesktopBootstrapConfig>
+ *   ) => Promise<import("@mars/types/desktop-ipc").DesktopBootstrapConfig>,
  *   applyBrandIconUrl: (iconUrl: string) => Promise<unknown>,
  *   enterpriseActivation?: { activatedAt: string, denBaseUrl: string } | null,
  * }} dependencies

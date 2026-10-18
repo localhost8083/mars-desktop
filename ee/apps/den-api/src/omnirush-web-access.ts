@@ -1,4 +1,4 @@
-import { readOrganizationMetadata } from "@omnirush/types/den/managed-models-policy"
+import { readOrganizationMetadata } from "@mars/types/den/managed-models-policy"
 
 export type OmniRushWebAccessSource = "subscription" | "complimentary" | null
 

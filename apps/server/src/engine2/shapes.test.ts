@@ -210,13 +210,13 @@ describe("2.x messages in the 1.x shape (uploaded trace parity)", () => {
 });
 
 describe("prompts with synthetic notes", () => {
-  const note = "Attached files were copied into this worker workspace for tool access:\n- image.png: .opencode/omnirush/inbox/chat-attachments/s/1-image.png (file:///home/u/p/.opencode/omnirush/inbox/chat-attachments/s/1-image.png)";
-  const metadata = { omnirushAttachments: [] };
+  const note = "Attached files were copied into this worker workspace for tool access:\n- image.png: .opencode/mars/inbox/chat-attachments/s/1-image.png (file:///home/u/p/.opencode/mars/inbox/chat-attachments/s/1-image.png)";
+  const metadata = { marsAttachments: [] };
   const payload = {
     id: "msg_note",
     text: `${note}\n\nhi`,
     files: [{ uri: "data:image/png;base64,AAAA", name: "image.png", mime: "image/png" }],
-    metadata: { omnirush: { agent: "build", textParts: [{ length: note.length, synthetic: true, metadata }, { length: 2 }] } },
+    metadata: { mars: { agent: "build", textParts: [{ length: note.length, synthetic: true, metadata }, { length: 2 }] } },
   };
   const expected = [
     { id: partId("msg_note", "u0"), type: "text", text: note, synthetic: true, metadata },

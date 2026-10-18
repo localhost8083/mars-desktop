@@ -1,12 +1,12 @@
 import { expect } from "vitest";
-import { denFetch, evalIn, fill, waitFor, type DenSession } from "@omnirush/behaviors";
-import { browserScript, navigate } from "@omnirush/cdp";
-import { chrome } from "@omnirush/hosts";
-import { eventually, needs, server, test } from "@omnirush/testkit";
+import { denFetch, evalIn, fill, waitFor, type DenSession } from "@mars/behaviors";
+import { browserScript, navigate } from "@mars/cdp";
+import { chrome } from "@mars/hosts";
+import { eventually, needs, server, test } from "@mars/testkit";
 import { parseTeamAdminContext } from "./helpers/team-admin-context.ts";
 
 test("owners toggle team Admin in Den Web while inherited admins see a disabled checkbox and provenance", { timeout: 600_000 }, async ({ place, evidence }) => {
-  needs({ optIn: ["OMNIRUSH_EVAL_E2E_TESTS"] });
+  needs({ optIn: ["MARS_EVAL_E2E_TESTS"] });
   await using den = await server({ place, web: true, org: { name: "Team Admin UI", members: { teammate: { name: "Inherited Teammate" } } } });
   const teammate = den.members.teammate;
   if (!teammate) throw new Error("Missing teammate");
@@ -45,7 +45,7 @@ test("owners toggle team Admin in Den Web while inherited admins see a disabled 
   const showAs = async (session: DenSession) => {
     await evalIn(browser, async () => {
       await fetch("/api/auth/sign-out", { method: "POST", credentials: "include", headers: { "content-type": "application/json" }, body: "{}" });
-      localStorage.removeItem("omnirush:web:auth-token");
+      localStorage.removeItem("mars:web:auth-token");
     }, { awaitPromise: true, timeoutMs: 30_000 });
     await navigate(browser.client, den.ref.webUrl);
     await waitFor(browser, () => Boolean(document.querySelector('input[type="email"]')), { timeoutMs: 30_000, label: "email sign-in step" });

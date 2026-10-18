@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { pinnedSessions } from "../worlds/session-shell.ts";
 
 const test = spec.world(pinnedSessions);
@@ -60,7 +60,7 @@ test("pinned sessions are exposed to agents through list_sessions, the context s
     });
     const pinnedContext = await probe.eventually(() => world.context(), {
       within: 30_000,
-      label: "pinned candidate exposed in OmniRush.ai context",
+      label: "pinned candidate exposed in MarsAI context",
       until: (snapshot) => snapshot.pinnedSessionIds.includes(candidateId),
     });
 
@@ -88,7 +88,7 @@ test("pinned sessions are exposed to agents through list_sessions, the context s
     });
     const unpinnedContext = await probe.eventually(() => world.context(), {
       within: 30_000,
-      label: "unpinned candidate removed from OmniRush.ai context",
+      label: "unpinned candidate removed from MarsAI context",
       until: (snapshot) => snapshot.pinnedSessionIds.length === 0,
     });
 

@@ -2,7 +2,7 @@
  * The desktop's Linux sandbox ("box", ported from the CLI: see launch.ts):
  * one per server, for every local workspace whose box is on. It keeps
  *
- * - the per-workspace choice in the workspace's OmniRush settings
+ * - the per-workspace choice in the workspace's Mars settings
  *   (`localBox: { mode: "on" | "off", offered }`; no mode: the server's
  *   default from /collect/capabilities -> local_box.default);
  * - the engine bits (the shell, named bash, and the box plugin) that go
@@ -117,7 +117,7 @@ export type BoxServiceOptions = {
   readSettings: (workspaceId: string) => Promise<{ mode: ProjectBoxMode; offered: boolean }>;
   writeSettings: (workspaceId: string, update: { mode?: ProjectBoxMode; offered?: boolean }) => Promise<void>;
   workspaces: () => BoxWorkspace[];
-  /** The engine plugin file (opencode-plugins/omnirush-box). */
+  /** The engine plugin file (opencode-plugins/mars-box). */
   pluginPath: () => string;
   log?: BoxLog;
   env?: NodeJS.ProcessEnv;
@@ -212,7 +212,7 @@ export class BoxService {
     return serverDefault(this.options.stateDir);
   }
 
-  /** The backend detection's inputs: the setting (or OMNIRUSH_BOX_BACKEND) and the server's allowlist. */
+  /** The backend detection's inputs: the setting (or MARS_BOX_BACKEND) and the server's allowlist. */
   private detectOptions(): Pick<DetectOptions, "asked" | "allow"> {
     return { asked: askedBackend({ env: this.env, stateDir: this.options.stateDir }).backend, allow: serverBackends(this.options.stateDir) };
   }
@@ -277,9 +277,9 @@ export class BoxService {
    * macOS / Windows: a project folder with this computer's builds (node_modules,
    * a venv, Mach-O / PE programs; host-builds.ts). Only the server's default
    * putting it in the box: its chats stay here (`native`); the user's own
-   * choice (the project's switch, OMNIRUSH_BOX=1): in the box, with a warning.
+   * choice (the project's switch, MARS_BOX=1): in the box, with a warning.
    * Null on Linux, with the box off, or when the folder has none.
-   * OMNIRUSH_BOX_KEEP_NATIVE=off or OMNIRUSH_BOX_HOST_BUILDS=off skips it.
+   * MARS_BOX_KEEP_NATIVE=off or MARS_BOX_HOST_BUILDS=off skips it.
    */
   private buildathonBox(root: string): "on" | "offer" | "off" | null {
     try {
@@ -291,7 +291,7 @@ export class BoxService {
 
   private hostGate(root: string, mode: { on: boolean; source: string }): { native: boolean; things: string; notice: string } | null {
     if (!mode.on || !hostRules(this.platform)) return null;
-    if (String(this.env.OMNIRUSH_BOX_KEEP_NATIVE ?? "").trim().toLowerCase() === "off") return null;
+    if (String(this.env.MARS_BOX_KEEP_NATIVE ?? "").trim().toLowerCase() === "off") return null;
     let found;
     try {
       found = hostBuilds(root, { platform: this.platform, stateDir: this.options.stateDir, env: this.env });
@@ -311,7 +311,7 @@ export class BoxService {
    * offer, and the helpers for this machine are installed.
    */
   async engineBits(): Promise<{ shell: string; plugin: string } | null> {
-    let wanted = this.serverDefault() !== "off" || ["1", "on", "true"].includes(String(this.env.OMNIRUSH_BOX ?? "").trim().toLowerCase());
+    let wanted = this.serverDefault() !== "off" || ["1", "on", "true"].includes(String(this.env.MARS_BOX ?? "").trim().toLowerCase());
     for (const workspace of this.options.workspaces()) {
       if (wanted) break;
       if (workspace.workspaceType !== "local") continue;

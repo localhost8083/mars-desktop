@@ -19,7 +19,7 @@ function parseArgs(argv: readonly string[]): DevHeadlessOptions {
   if (unsupported) throw new Error(`Unsupported dev-headless flag: ${unsupported}`);
   return {
     replace: argv.includes("--replace")
-      || ["1", "true", "yes", "on"].includes((process.env.OMNIRUSH_DEV_HEADLESS_WEB_REPLACE ?? "").trim().toLowerCase()),
+      || ["1", "true", "yes", "on"].includes((process.env.MARS_DEV_HEADLESS_WEB_REPLACE ?? "").trim().toLowerCase()),
     keepTokens: argv.includes("--keep-tokens"),
     rotateTokens: argv.includes("--rotate-tokens"),
   };
@@ -28,7 +28,7 @@ function parseArgs(argv: readonly string[]): DevHeadlessOptions {
 function outputs(handle: HeadlessWebHandle): Record<string, string> {
   return {
     webUrl: handle.manifest.webUrl,
-    omnirushUrl: handle.manifest.omnirushUrl,
+    marsUrl: handle.manifest.marsUrl,
     workspace: handle.manifest.workspace,
     runtimeManifest: handle.manifest.runtimeManifestPath,
   };

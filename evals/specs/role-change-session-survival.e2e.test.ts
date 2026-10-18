@@ -1,16 +1,16 @@
 import { expect } from "vitest";
-import { denFetch, freshSession } from "@omnirush/behaviors";
-import type { DenSession } from "@omnirush/behaviors";
-import { eventually, localMysqlIsRunning, needs, server, test } from "@omnirush/testkit";
+import { denFetch, freshSession } from "@mars/behaviors";
+import type { DenSession } from "@mars/behaviors";
+import { eventually, localMysqlIsRunning, needs, server, test } from "@mars/testkit";
 
 const ORGANIZATION_NAME = "Role Change Session Survival";
-const e2eTestsEnabled = process.env.OMNIRUSH_EVAL_E2E_TESTS === "1";
-const localPlacement = process.env.OMNIRUSH_EVAL_DAYTONA !== "1" && !process.env.OMNIRUSH_EVAL_DEN_API_URL?.trim();
+const e2eTestsEnabled = process.env.MARS_EVAL_E2E_TESTS === "1";
+const localPlacement = process.env.MARS_EVAL_DAYTONA !== "1" && !process.env.MARS_EVAL_DEN_API_URL?.trim();
 const mysqlOpen = await localMysqlIsRunning();
 const title = !e2eTestsEnabled
-  ? "role change session survival skipped — needs: set OMNIRUSH_EVAL_E2E_TESTS=1"
+  ? "role change session survival skipped — needs: set MARS_EVAL_E2E_TESTS=1"
   : !localPlacement
-    ? "role change session survival skipped — needs local placement without OMNIRUSH_EVAL_DEN_API_URL"
+    ? "role change session survival skipped — needs local placement without MARS_EVAL_DEN_API_URL"
     : !mysqlOpen
       ? "role change session survival skipped — needs MySQL on 127.0.0.1:3306"
       : "role upgrades preserve live sessions while demotions revoke them";
@@ -40,7 +40,7 @@ async function memberIdByEmail(admin: DenSession, orgId: string, email: string):
   const result = await denFetch(admin, "/v1/org", {
     headers: {
       ...auth(admin),
-      "x-omnirush-org-id": orgId,
+      "x-mars-org-id": orgId,
     },
   });
   const members = isRecord(result.body) && Array.isArray(result.body.members)
@@ -60,7 +60,7 @@ async function updateMemberRole(admin: DenSession, orgId: string, memberId: stri
     method: "POST",
     headers: {
       ...auth(privilegedAdmin),
-      "x-omnirush-org-id": orgId,
+      "x-mars-org-id": orgId,
     },
     body: JSON.stringify({ role }),
   });
@@ -73,7 +73,7 @@ async function sessionStatus(member: DenSession): Promise<number> {
 }
 
 test.skipIf(!e2eTestsEnabled || !localPlacement || !mysqlOpen)(title, async ({ evidence, place }) => {
-  needs({ optIn: ["OMNIRUSH_EVAL_E2E_TESTS"] });
+  needs({ optIn: ["MARS_EVAL_E2E_TESTS"] });
 
   await using den = await server({
     place,

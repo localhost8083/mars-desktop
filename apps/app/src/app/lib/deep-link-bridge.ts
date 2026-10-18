@@ -1,5 +1,5 @@
-export const deepLinkBridgeEvent = "omnirush:deep-link";
-export const nativeDeepLinkEvent = "omnirush:deep-link-native";
+export const deepLinkBridgeEvent = "mars:deep-link";
+export const nativeDeepLinkEvent = "mars:deep-link-native";
 
 export type DeepLinkBridgeDetail = {
   urls: string[];
@@ -7,7 +7,7 @@ export type DeepLinkBridgeDetail = {
 
 declare global {
   interface Window {
-    __OMNIRUSH__?: {
+    __MARS__?: {
       deepLinks?: string[];
     };
   }
@@ -26,9 +26,9 @@ export function pushPendingDeepLinks(target: Window, urls: readonly string[]): s
     return [];
   }
 
-  target.__OMNIRUSH__ ??= {};
-  const pending = target.__OMNIRUSH__.deepLinks ?? [];
-  target.__OMNIRUSH__.deepLinks = [...pending, ...normalized];
+  target.__MARS__ ??= {};
+  const pending = target.__MARS__.deepLinks ?? [];
+  target.__MARS__.deepLinks = [...pending, ...normalized];
   target.dispatchEvent(
     new CustomEvent<DeepLinkBridgeDetail>(deepLinkBridgeEvent, {
       detail: { urls: normalized },
@@ -38,9 +38,9 @@ export function pushPendingDeepLinks(target: Window, urls: readonly string[]): s
 }
 
 export function drainPendingDeepLinks(target: Window): string[] {
-  const pending = target.__OMNIRUSH__?.deepLinks ?? [];
-  if (target.__OMNIRUSH__) {
-    target.__OMNIRUSH__.deepLinks = [];
+  const pending = target.__MARS__?.deepLinks ?? [];
+  if (target.__MARS__) {
+    target.__MARS__.deepLinks = [];
   }
   return [...pending];
 }

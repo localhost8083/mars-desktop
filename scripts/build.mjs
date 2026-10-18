@@ -1,3 +1,3 @@
 import { execSync } from "node:child_process";
 
-execSync("pnpm --filter @omnirush/desktop build", { stdio: "inherit" });
+execSync("pnpm --filter @mars/desktop build", { stdio: "inherit" });

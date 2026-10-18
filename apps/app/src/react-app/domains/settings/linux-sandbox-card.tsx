@@ -2,7 +2,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { AlertTriangle, Box, Check, CheckCircle2, ChevronRight, Copy, LoaderCircle, Power, RotateCcw, XCircle } from "lucide-react";
 
-import type { OmniRushWorkspaceBox } from "@/app/lib/omnirush-server";
+import type { MarsWorkspaceBox } from "@/app/lib/mars-server";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress as ProgressPrimitive } from "@base-ui/react/progress";
@@ -23,7 +23,7 @@ import {
 } from "./linux-sandbox";
 
 export type LinuxSandboxCardProps = {
-  box: OmniRushWorkspaceBox | null;
+  box: MarsWorkspaceBox | null;
   pending: LinuxSandboxPending;
   problem: LinuxSandboxProblem | null;
   notice: string;
@@ -144,7 +144,7 @@ function StatusRow(props: { view: LinuxSandboxView; busy: boolean; onAction: () 
   );
 }
 
-function Advanced(props: { box: OmniRushWorkspaceBox; busy: boolean; defaultOpen: boolean; onBackend?: (backend: string) => void; onReset: () => void }) {
+function Advanced(props: { box: MarsWorkspaceBox; busy: boolean; defaultOpen: boolean; onBackend?: (backend: string) => void; onReset: () => void }) {
   const { box } = props;
   const [open, setOpen] = useState(props.defaultOpen);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -288,7 +288,7 @@ export function LinuxSandboxCard(props: LinuxSandboxCardProps) {
 
         {showOffer ? (
           <div className="mx-4 mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-dls-border bg-dls-hover px-3 py-2" data-testid="linux-sandbox-offer">
-            <div className="min-w-0 flex-1 text-[11px] text-dls-text">Your omnirush.ai server recommends the sandbox for this project.</div>
+            <div className="min-w-0 flex-1 text-[11px] text-dls-text">Your marsai.click server recommends the sandbox for this project.</div>
             <div className="flex items-center gap-1.5">
               <Button size="xs" onClick={() => props.onToggle(true)}>Turn on</Button>
               <Button size="xs" variant="ghost" onClick={() => setOfferDismissed(true)}>Not now</Button>

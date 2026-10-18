@@ -1,4 +1,4 @@
-// Ported from the CLI (omnirush-cli src/box/runtime.js,
+// Ported from the CLI (mars-cli src/box/runtime.js,
 // feat/local-box-backends); keep the two in step. Only types were added here.
 //
 // The container engines a box backend can be (backends/container.ts): rootless
@@ -52,7 +52,7 @@ export type RuntimeInfo = {
   /** The docker context the runtime answered through (macOS, Windows). */
   context?: string;
   wsl?: boolean;
-  /** The OmniRush WSL distro: its name, whether it is imported yet. */
+  /** The Mars WSL distro: its name, whether it is imported yet. */
   distro?: string;
   installed?: boolean;
   state?: string | null;
@@ -117,7 +117,7 @@ export function windowsBinaryInWsl(file: string): boolean {
 }
 
 /**
- * Runtime CLIs to try, best first: OMNIRUSH_BOX_RUNTIME (docker, podman or a
+ * Runtime CLIs to try, best first: MARS_BOX_RUNTIME (docker, podman or a
  * path) alone when set; else on Linux Podman then Docker (rootless Podman
  * keeps files owned by the user with no daemon), on macOS and Windows Docker
  * then Podman (Docker Desktop, OrbStack, colima, Rancher all speak docker).
@@ -128,7 +128,7 @@ export function candidates({ platform = process.platform, home = os.homedir(), e
   const join = platform === "win32" ? path.win32.join : path.posix.join;
   const pathDirs = String(env.PATH || env.Path || "").split(sep).filter(Boolean);
   const dirs = [...pathDirs, ...searchDirs({ platform, home, env })];
-  const asked = String(env.OMNIRUSH_BOX_RUNTIME || "").trim();
+  const asked = String(env.MARS_BOX_RUNTIME || "").trim();
   const out: RuntimeCandidate[] = [];
   const seen = new Set<string>();
   const add = (name: string, file: string, skipped?: string) => {
@@ -244,7 +244,7 @@ export async function probe(candidate: RuntimeCandidate, { run = runCommand, env
   if (candidate.skipped) return { ok: false, name, bin, reason: `${bin}: ${candidate.skipped}` };
   if (name === "docker") {
     const host = String(env.DOCKER_HOST || "");
-    if (/^(ssh|tcp|https?):\/\//i.test(host) && env.OMNIRUSH_BOX_ALLOW_REMOTE !== "1") {
+    if (/^(ssh|tcp|https?):\/\//i.test(host) && env.MARS_BOX_ALLOW_REMOTE !== "1") {
       return { ok: false, name, bin, reason: "DOCKER_HOST points at another machine, which cannot see this folder" };
     }
   }
@@ -330,7 +330,7 @@ export async function probeWsl(wslExe: string, { run = runCommand, env = process
 
 /**
  * The backend for boxes on this machine (backends/index.ts: bubblewrap,
- * Apple container, WSL containers, the OmniRush WSL distro, then the
+ * Apple container, WSL containers, the Mars WSL distro, then the
  * container engines above, in a ranked order per OS). Kept here under its
  * old name.
  */
@@ -352,7 +352,7 @@ export type DetectOptions = {
   /** Probe every backend and list them as `alternatives` (status). */
   all?: boolean;
   timeoutMs?: number;
-  /** A backend id, "auto" or "native" (the desktop setting); default OMNIRUSH_BOX_BACKEND. */
+  /** A backend id, "auto" or "native" (the desktop setting); default MARS_BOX_BACKEND. */
   asked?: string | null;
   /** The server's allowlist (local_box.backends); null: any. */
   allow?: string[] | null;

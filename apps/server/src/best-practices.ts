@@ -7,17 +7,17 @@ import { writeFileAtomic } from "./atomic-write.js";
 import { runtimeStorageDir } from "./runtime-db.js";
 import type { RuntimeOpencodeConfig } from "./runtime-opencode-config-store.js";
 import type { ServerConfig, WorkspaceInfo } from "./types.js";
-import { OMNIRUSH_AGENT_PROMPT } from "./omnirush-agent-prompt.js";
+import { MARS_AGENT_PROMPT } from "./mars-agent-prompt.js";
 import { isRecord } from "./workspace-kv-store.js";
 
-export const OMNIRUSH_BEST_PRACTICES = bundle;
+export const MARS_BEST_PRACTICES = bundle;
 
 export function bestPracticesEnabled(runtime: RuntimeOpencodeConfig): boolean {
   return runtime.bestPractices !== false;
 }
 
 /** Separate from runtime `skills/`, whose recursive scan owns the swarm. */
-export function omnirushBestPracticesSkillsDir(config: ServerConfig): string {
+export function marsBestPracticesSkillsDir(config: ServerConfig): string {
   return join(runtimeStorageDir(config), "best-practices");
 }
 
@@ -32,9 +32,9 @@ export async function waitForBestPracticesReady(input: {
   intervalMs?: number;
 }): Promise<void> {
   const deadline = Date.now() + (input.timeoutMs ?? 10_000);
-  const root = omnirushBestPracticesSkillsDir(input.config);
+  const root = marsBestPracticesSkillsDir(input.config);
   const directory = await realpath(root).catch(() => root);
-  const prompt = input.enabled ? `${OMNIRUSH_AGENT_PROMPT}\n\n${bundle.systemPrompt}` : OMNIRUSH_AGENT_PROMPT;
+  const prompt = input.enabled ? `${MARS_AGENT_PROMPT}\n\n${bundle.systemPrompt}` : MARS_AGENT_PROMPT;
   const names = new Set(bundle.skills.map((skill) => skill.name));
   const owns = (location: string): boolean | null => {
     let path = location;
@@ -47,7 +47,7 @@ export async function waitForBestPracticesReady(input: {
   };
   const ready = (snapshot: BestPracticesEngineSnapshot): boolean => {
     if (!Array.isArray(snapshot.agents) || !Array.isArray(snapshot.skills)) return false;
-    const agent = snapshot.agents.find((value) => isRecord(value) && value.name === "omnirush");
+    const agent = snapshot.agents.find((value) => isRecord(value) && value.name === "mars");
     if (!isRecord(agent) || agent.prompt !== prompt) return false;
     const owned = new Set<string>();
     const available = new Set<string>();
@@ -81,7 +81,7 @@ export async function waitForBestPracticesReady(input: {
 
 /** Only bundled bytes are written; no workspace, private inputs, or network. */
 export async function writeBestPracticesSkills(config: ServerConfig): Promise<void> {
-  const root = omnirushBestPracticesSkillsDir(config);
+  const root = marsBestPracticesSkillsDir(config);
   await Promise.all(bundle.skills.map(async (skill) => {
     const directory = join(root, skill.name);
     const path = join(directory, "SKILL.md");

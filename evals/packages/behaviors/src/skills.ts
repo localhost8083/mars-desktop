@@ -1,5 +1,5 @@
-import { browserScript } from "@omnirush/cdp";
-import type { Surface } from "@omnirush/cdp";
+import { browserScript } from "@mars/cdp";
+import type { Surface } from "@mars/cdp";
 import { evalIn, waitFor } from "./desktop.ts";
 
 const PLUG_BUTTON = 'button[title="Commands, skills, and MCPs"]';
@@ -136,12 +136,12 @@ export async function readLoadedExtensions(app: Surface): Promise<string[]> {
     button.click();
     return true;
   }, { label: "Extensions section" });
-  await waitFor(app, () => (document.body.innerText.includes("OmniRush.ai Browser")), {
+  await waitFor(app, () => (document.body.innerText.includes("MarsAI Browser")), {
     timeoutMs: 10_000,
-    label: "OmniRush.ai Browser extension",
+    label: "MarsAI Browser extension",
   });
   const value = await waitFor(app, () => (([...document.querySelectorAll("button")]
     .map((button) => (button.textContent ?? "").replace(/\s+/g, " ").trim())
-    .filter((label) => label.includes("OmniRush.ai Browser")))), { timeoutMs: 60_000, label: "OmniRush.ai Browser extension rows" });
+    .filter((label) => label.includes("MarsAI Browser")))), { timeoutMs: 60_000, label: "MarsAI Browser extension rows" });
   return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
 }

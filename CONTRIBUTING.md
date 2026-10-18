@@ -1,4 +1,4 @@
-# Contributing to OmniRush.ai
+# Contributing to MarsAI
 
 Thanks for contributing. Two things keep this project's licensing clean —
 please read them before opening a pull request.
@@ -45,7 +45,7 @@ the terms above for the directories it modifies. Maintainers will not merge
 If you are contributing as part of paid work, a work trial, or on behalf of
 an employer, make sure a signed agreement covering intellectual property
 assignment is in place with Different AI, Inc. **before** your first pull
-request — ask your contact at OmniRush.ai if you are unsure. Maintainers will
+request — ask your contact at MarsAI if you are unsure. Maintainers will
 not merge substantive contributions from paid engagements without one.
 
 ## Practical notes

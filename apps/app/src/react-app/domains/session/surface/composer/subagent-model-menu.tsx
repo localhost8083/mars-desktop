@@ -19,6 +19,7 @@ import {
   SUBAGENT_MODEL_HELP,
   subagentEffortLabel,
   subagentEffortOptions,
+  subagentModelChoices,
   subagentModelName,
   subagentModelUnavailable,
   subagentSummary,
@@ -34,7 +35,7 @@ export const SUBAGENT_MENU_POLICY_LOCK = "Locked by your organisation: its polic
  * The composer's "Sub-agents" menu beside the model selector: the model and
  * effort sub-agents run on (default: the main agent's). Shares its state with
  * Settings > Preferences through useSubagentModel. Hidden until a server
- * client exists and an omnirush.ai account is signed in.
+ * client exists and an marsai.click account is signed in.
  */
 export function SubagentModelMenu(props: { client: SubagentModelClient | null }) {
   const policyLocked = useDesktopRestriction("allowControlSettings");
@@ -82,7 +83,7 @@ function SubagentModelPicker(props: { client: SubagentModelClient; policyLocked:
             <DropdownMenuRadioItem value={SAME} disabled={locked} data-testid="subagent-model-same" onClick={() => save({ model: null })}>
               {SAME_AS_MAIN_LABEL}
             </DropdownMenuRadioItem>
-            {state.models.map((model) => (
+            {subagentModelChoices(state, setting.model).map((model) => (
               <DropdownMenuRadioItem
                 key={model.id}
                 value={model.id}

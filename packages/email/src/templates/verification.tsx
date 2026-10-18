@@ -8,12 +8,12 @@ export function VerificationEmail({ verificationCode }: VerificationEmailProps) 
   return (
     <Html>
       <Head />
-      <Preview>Your OmniRush.ai verification code is {verificationCode}</Preview>
+      <Preview>Your MarsAI verification code is {verificationCode}</Preview>
       <Body style={styles.body}>
         <Container style={styles.container}>
-          <Text style={styles.eyebrow}>OmniRush.ai</Text>
+          <Text style={styles.eyebrow}>MarsAI</Text>
           <Heading style={styles.heading}>Verify your email</Heading>
-          <Text style={styles.text}>Enter this code to finish signing in to OmniRush.ai.</Text>
+          <Text style={styles.text}>Enter this code to finish signing in to MarsAI.</Text>
           <Section style={styles.codeBox}>
             <Text style={styles.code}>{verificationCode}</Text>
           </Section>

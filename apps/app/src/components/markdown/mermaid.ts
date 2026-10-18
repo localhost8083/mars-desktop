@@ -282,7 +282,7 @@ export async function renderMermaidSource(
         loaded = true;
         runtime.initialize(mermaidConfigForTheme(theme));
         mermaidRenderId += 1;
-        return runtime.render(`omnirush-mermaid-${mermaidRenderId}`, source);
+        return runtime.render(`mars-mermaid-${mermaidRenderId}`, source);
       })(), timeoutMs);
 
       return { status: "rendered", svg: sanitizeMermaidSvg(rendered.svg) };
@@ -304,16 +304,16 @@ function sourceStatus(reason: Exclude<MermaidRenderResult, { status: "rendered" 
 }
 
 function setMermaidView(element: HTMLElement, view: "rendered" | "source") {
-  const rendered = element.querySelector("[data-omnirush-mermaid-rendered]");
-  const source = element.querySelector("[data-omnirush-mermaid-source]");
-  const renderedButton = element.querySelector("[data-omnirush-mermaid-view='rendered']");
-  const sourceButton = element.querySelector("[data-omnirush-mermaid-view='source']");
+  const rendered = element.querySelector("[data-mars-mermaid-rendered]");
+  const source = element.querySelector("[data-mars-mermaid-source]");
+  const renderedButton = element.querySelector("[data-mars-mermaid-view='rendered']");
+  const sourceButton = element.querySelector("[data-mars-mermaid-view='source']");
   if (!(rendered instanceof HTMLElement) || !(source instanceof HTMLElement)) return;
 
   const showRendered = view === "rendered" && mermaidSvgByElement.has(element);
   rendered.hidden = !showRendered;
   source.hidden = showRendered;
-  element.dataset.omnirushMermaidState = showRendered ? "rendered" : "source";
+  element.dataset.marsMermaidState = showRendered ? "rendered" : "source";
   renderedButton?.setAttribute("aria-pressed", String(showRendered));
   sourceButton?.setAttribute("aria-pressed", String(!showRendered));
   renderedButton?.classList.toggle("bg-muted", showRendered);
@@ -323,11 +323,11 @@ function setMermaidView(element: HTMLElement, view: "rendered" | "source") {
 }
 
 async function enhanceMermaidElement(element: HTMLElement, theme: ResolvedThemeMode, signal: AbortSignal) {
-  const code = element.querySelector("[data-omnirush-mermaid-source] code");
-  const renderedPane = element.querySelector("[data-omnirush-mermaid-rendered]");
-  const renderedButton = element.querySelector("[data-omnirush-mermaid-view='rendered']");
-  const downloadButton = element.querySelector("[data-omnirush-mermaid-download]");
-  const status = element.querySelector("[data-omnirush-mermaid-status]");
+  const code = element.querySelector("[data-mars-mermaid-source] code");
+  const renderedPane = element.querySelector("[data-mars-mermaid-rendered]");
+  const renderedButton = element.querySelector("[data-mars-mermaid-view='rendered']");
+  const downloadButton = element.querySelector("[data-mars-mermaid-download]");
+  const status = element.querySelector("[data-mars-mermaid-status]");
   if (!(code instanceof HTMLElement) || !(renderedPane instanceof HTMLElement)) return;
 
   element.setAttribute("aria-busy", "true");
@@ -338,13 +338,13 @@ async function enhanceMermaidElement(element: HTMLElement, theme: ResolvedThemeM
 
   const result = await renderMermaidSource(code.textContent ?? "", theme);
   if (signal.aborted || !element.isConnected) return;
-  const preserveSource = mermaidSvgByElement.has(element) && element.dataset.omnirushMermaidState === "source";
+  const preserveSource = mermaidSvgByElement.has(element) && element.dataset.marsMermaidState === "source";
 
   element.setAttribute("aria-busy", "false");
   if (result.status === "source") {
     mermaidSvgByElement.delete(element);
     renderedPane.replaceChildren();
-    element.dataset.omnirushMermaidReason = result.reason;
+    element.dataset.marsMermaidReason = result.reason;
     if (renderedButton instanceof HTMLButtonElement) renderedButton.disabled = true;
     if (downloadButton instanceof HTMLButtonElement) downloadButton.hidden = true;
     if (status instanceof HTMLElement) status.textContent = sourceStatus(result.reason);
@@ -352,10 +352,10 @@ async function enhanceMermaidElement(element: HTMLElement, theme: ResolvedThemeM
     return;
   }
 
-  delete element.dataset.omnirushMermaidReason;
+  delete element.dataset.marsMermaidReason;
   renderedPane.innerHTML = result.svg;
   mermaidSvgByElement.set(element, result.svg);
-  element.dataset.omnirushMermaidTheme = theme;
+  element.dataset.marsMermaidTheme = theme;
   if (renderedButton instanceof HTMLButtonElement) renderedButton.disabled = false;
   if (downloadButton instanceof HTMLButtonElement) downloadButton.hidden = false;
   if (status instanceof HTMLElement) status.hidden = true;
@@ -375,23 +375,23 @@ export function useMermaidEnhancer(
     if (!root || !enabled) return;
 
     const controller = new AbortController();
-    const diagrams = Array.from(root.querySelectorAll("[data-omnirush-mermaid]"))
+    const diagrams = Array.from(root.querySelectorAll("[data-mars-mermaid]"))
       .filter((element): element is HTMLElement => element instanceof HTMLElement);
 
     const handleClick = (event: MouseEvent) => {
       if (!(event.target instanceof Element)) return;
       const button = event.target.closest("button");
-      const diagram = button?.closest("[data-omnirush-mermaid]");
+      const diagram = button?.closest("[data-mars-mermaid]");
       if (!(button instanceof HTMLButtonElement) || !(diagram instanceof HTMLElement)) return;
 
-      const view = button.dataset.omnirushMermaidView;
+      const view = button.dataset.marsMermaidView;
       if (view === "source" || view === "rendered") {
         event.preventDefault();
         setMermaidView(diagram, view);
         return;
       }
 
-      if (!button.hasAttribute("data-omnirush-mermaid-download")) return;
+      if (!button.hasAttribute("data-mars-mermaid-download")) return;
       const svg = mermaidSvgByElement.get(diagram);
       if (!svg) return;
 

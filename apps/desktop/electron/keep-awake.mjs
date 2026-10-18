@@ -10,7 +10,7 @@
 // admin rights, no power setting is changed.
 //
 // On by default: Settings > General > "Keep this computer awake while the
-// agent works" (<userData>/keep-awake.json), or OMNIRUSH_KEEP_AWAKE=0 for a
+// agent works" (<userData>/keep-awake.json), or MARS_KEEP_AWAKE=0 for a
 // launch. Skipped, silently, over SSH and in CI.
 
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
@@ -21,7 +21,7 @@ const OFF_WORDS = ["0", "off", "false", "no"];
 
 /** Why keep awake never runs in this launch ("env", "ssh", "ci"), or null. */
 export function keepAwakeSkipReason(env = process.env) {
-  if (OFF_WORDS.includes(String(env.OMNIRUSH_KEEP_AWAKE ?? "").trim().toLowerCase())) return "env";
+  if (OFF_WORDS.includes(String(env.MARS_KEEP_AWAKE ?? "").trim().toLowerCase())) return "env";
   if (env.SSH_CONNECTION || env.SSH_TTY || env.SSH_CLIENT) return "ssh";
   const ci = String(env.CI ?? "").trim().toLowerCase();
   if (ci && !OFF_WORDS.includes(ci)) return "ci";

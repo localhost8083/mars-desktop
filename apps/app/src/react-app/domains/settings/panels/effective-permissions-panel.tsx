@@ -4,15 +4,15 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { t } from "@/i18n";
 import type {
-  OmniRushEffectivePermissionKey,
-  OmniRushEffectivePermissionRow,
-  OmniRushEffectivePermissionsResponse,
-  OmniRushPermissionAction,
-  OmniRushPermissionSource,
-  OmniRushServerCapabilities,
-  OmniRushServerClient,
-  OmniRushServerStatus,
-} from "../../../../app/lib/omnirush-server";
+  MarsEffectivePermissionKey,
+  MarsEffectivePermissionRow,
+  MarsEffectivePermissionsResponse,
+  MarsPermissionAction,
+  MarsPermissionSource,
+  MarsServerCapabilities,
+  MarsServerClient,
+  MarsServerStatus,
+} from "../../../../app/lib/mars-server";
 import { safeStringify } from "../../../../app/utils";
 import { SettingsNotice } from "../settings-section";
 import {
@@ -30,37 +30,37 @@ const ROW_LABEL_KEYS = {
   outside_folders: "context_panel.effective_permission_outside_folders",
   env_files: "context_panel.effective_permission_env_files",
   doom_loop: "context_panel.effective_permission_doom_loop",
-} as const satisfies Record<OmniRushEffectivePermissionKey, string>;
+} as const satisfies Record<MarsEffectivePermissionKey, string>;
 
 const ACTION_LABEL_KEYS = {
   allow: "context_panel.permission_action_allow",
   ask: "context_panel.permission_action_ask",
   deny: "context_panel.permission_action_deny",
-} as const satisfies Record<OmniRushPermissionAction, string>;
+} as const satisfies Record<MarsPermissionAction, string>;
 
 const SOURCE_LABEL_KEYS = {
   engine: "context_panel.permission_source_engine",
   global: "context_panel.permission_source_global",
-  omnirush: "context_panel.permission_source_omnirush",
+  mars: "context_panel.permission_source_mars",
   workspace: "context_panel.permission_source_workspace",
-} as const satisfies Record<OmniRushPermissionSource, string>;
+} as const satisfies Record<MarsPermissionSource, string>;
 
-function actionBadgeVariant(action: OmniRushPermissionAction): "secondary" | "outline" | "destructive" {
+function actionBadgeVariant(action: MarsPermissionAction): "secondary" | "outline" | "destructive" {
   if (action === "deny") return "destructive";
   if (action === "ask") return "outline";
   return "secondary";
 }
 
 export type EffectivePermissionsPanelProps = {
-  omnirushServerClient: OmniRushServerClient | null;
-  omnirushServerStatus: OmniRushServerStatus;
-  omnirushServerCapabilities: OmniRushServerCapabilities | null;
+  marsServerClient: MarsServerClient | null;
+  marsServerStatus: MarsServerStatus;
+  marsServerCapabilities: MarsServerCapabilities | null;
   runtimeWorkspaceId: string | null;
   /** Bump to re-read after a permission-affecting change elsewhere in Settings. */
   refreshToken?: number;
 };
 
-function EffectivePermissionRowItem({ row }: { row: OmniRushEffectivePermissionRow }) {
+function EffectivePermissionRowItem({ row }: { row: MarsEffectivePermissionRow }) {
   return (
     <li
       className="flex flex-row items-center justify-between gap-3 rounded-2xl border border-dls-border px-4 py-3"
@@ -83,17 +83,17 @@ function EffectivePermissionRowItem({ row }: { row: OmniRushEffectivePermissionR
 }
 
 export function EffectivePermissionsPanel(props: EffectivePermissionsPanelProps) {
-  const [response, setResponse] = useState<OmniRushEffectivePermissionsResponse | null>(null);
+  const [response, setResponse] = useState<MarsEffectivePermissionsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const ready =
-    props.omnirushServerStatus === "connected"
+    props.marsServerStatus === "connected"
     && Boolean(props.runtimeWorkspaceId)
-    && (props.omnirushServerCapabilities?.config?.read ?? false);
+    && (props.marsServerCapabilities?.config?.read ?? false);
 
   useEffect(() => {
-    const client = props.omnirushServerClient;
+    const client = props.marsServerClient;
     const workspaceId = props.runtimeWorkspaceId;
     if (!client || !workspaceId || !ready) {
       setResponse(null);
@@ -116,7 +116,7 @@ export function EffectivePermissionsPanel(props: EffectivePermissionsPanelProps)
     return () => {
       cancelled = true;
     };
-  }, [props.omnirushServerClient, props.runtimeWorkspaceId, props.refreshToken, ready]);
+  }, [props.marsServerClient, props.runtimeWorkspaceId, props.refreshToken, ready]);
 
   return (
     <LayoutSectionItem className="gap-6">

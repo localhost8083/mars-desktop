@@ -14,9 +14,9 @@ const mysql = denDbRequire("mysql2/promise");
 const bootstrapPath = join(denDbDir, "dist", "scripts", "bootstrap.js");
 const currentSchemaPath = join(denDbDir, "dist", "current-schema.sql");
 const denDbIndexPath = join(denDbDir, "dist", "index.js");
-const image = process.env.OMNIRUSH_EVAL_MYSQL_IMAGE?.trim() || "mysql:8.4";
-const containerName = `omnirush-custom-ca-mysql-${process.pid}-${Date.now()}`;
-const tmp = mkdtempSync(join(tmpdir(), "omnirush-custom-ca-mysql-"));
+const image = process.env.MARS_EVAL_MYSQL_IMAGE?.trim() || "mysql:8.4";
+const containerName = `mars-custom-ca-mysql-${process.pid}-${Date.now()}`;
+const tmp = mkdtempSync(join(tmpdir(), "mars-custom-ca-mysql-"));
 const certsDir = join(tmp, "certs");
 const caKey = join(certsDir, "ca.key");
 const caCert = join(certsDir, "ca.crt");
@@ -26,8 +26,8 @@ const serverCert = join(certsDir, "server.crt");
 const opensslConfig = join(tmp, "openssl.cnf");
 const mysqlConfig = join(tmp, "tls.cnf");
 const databaseName = "omnirush_den";
-const databaseUser = "omnirush";
-const databasePassword = "omnirush_tls_test_password";
+const databaseUser = "mars";
+const databasePassword = "mars_tls_test_password";
 let containerStarted = false;
 
 function run(command, args, options = {}) {
@@ -82,7 +82,7 @@ IP.1 = 127.0.0.1
 `,
   );
 
-  runOpenSsl(["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1", "-subj", "/CN=OmniRush.ai Test MySQL CA", "-keyout", caKey, "-out", caCert]);
+  runOpenSsl(["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1", "-subj", "/CN=MarsAI Test MySQL CA", "-keyout", caKey, "-out", caCert]);
   runOpenSsl(["req", "-newkey", "rsa:2048", "-nodes", "-keyout", serverKey, "-out", serverCsr, "-config", opensslConfig]);
   runOpenSsl(["x509", "-req", "-in", serverCsr, "-CA", caCert, "-CAkey", caKey, "-CAcreateserial", "-out", serverCert, "-days", "1", "-extensions", "v3_req", "-extfile", opensslConfig]);
   chmodSync(serverKey, 0o644);
@@ -117,7 +117,7 @@ function startMysqlContainer() {
     "--publish",
     "127.0.0.1::3306",
     "--env",
-    "MYSQL_ROOT_PASSWORD=omnirush_root_password",
+    "MYSQL_ROOT_PASSWORD=mars_root_password",
     "--env",
     "MYSQL_ROOT_HOST=%",
     "--env",
@@ -188,7 +188,7 @@ function childEnv(extra = {}) {
   return env;
 }
 
-function runOmniRushMysqlQuery(databaseUrl, query, extraEnv = {}) {
+function runMarsMysqlQuery(databaseUrl, query, extraEnv = {}) {
   const source = `
 import { createRequire } from "node:module";
 const mysql = createRequire(process.argv[1])("mysql2/promise");
@@ -213,9 +213,9 @@ function runBootstrap(databaseUrl) {
     cwd: denDbDir,
     env: childEnv({
       DATABASE_URL: databaseUrl,
-      DEN_DB_ENCRYPTION_KEY: "omnirush-custom-ca-mysql-tls-test-key-1234567890",
+      DEN_DB_ENCRYPTION_KEY: "mars-custom-ca-mysql-tls-test-key-1234567890",
       NODE_EXTRA_CA_CERTS: caCert,
-      OMNIRUSH_DEN_DB_ENV_PATH: join(tmp, "does-not-exist.env"),
+      MARS_DEN_DB_ENV_PATH: join(tmp, "does-not-exist.env"),
     }),
     timeout: 180_000,
   });
@@ -237,35 +237,35 @@ try {
   const databaseUrl = strictDatabaseUrl(port);
   console.log(`TLS MySQL endpoint ready at ${redactedDatabaseUrl(port)}`);
 
-  const withoutCa = runOmniRushMysqlQuery(databaseUrl, "select 1 as ok");
+  const withoutCa = runMarsMysqlQuery(databaseUrl, "select 1 as ok");
   if (withoutCa.status === 0) {
-    throw new Error("Strict OmniRush.ai/mysql2 unexpectedly connected without NODE_EXTRA_CA_CERTS");
+    throw new Error("Strict MarsAI/mysql2 unexpectedly connected without NODE_EXTRA_CA_CERTS");
   }
   const withoutCaError = `${withoutCa.stdout}\n${withoutCa.stderr}`.trim();
   if (!/certificate|verify|self-signed|unable/i.test(withoutCaError)) {
-    throw new Error(`Strict OmniRush.ai/mysql2 failed for a non-certificate reason:\n${withoutCaError}`);
+    throw new Error(`Strict MarsAI/mysql2 failed for a non-certificate reason:\n${withoutCaError}`);
   }
   const certificateError = withoutCaError.split("\n").find((line) => /certificate|verify|self-signed|unable/i.test(line)) ?? withoutCaError.split("\n").find(Boolean);
-  console.log(`Strict OmniRush.ai/mysql2 without custom CA: rejected (${certificateError})`);
+  console.log(`Strict MarsAI/mysql2 without custom CA: rejected (${certificateError})`);
 
   const bootstrap = runBootstrap(databaseUrl);
-  ensureSuccess(bootstrap, "OmniRush.ai migration bootstrap with NODE_EXTRA_CA_CERTS");
-  console.log("OmniRush.ai migration bootstrap completed with NODE_EXTRA_CA_CERTS and strict DATABASE_URL");
+  ensureSuccess(bootstrap, "MarsAI migration bootstrap with NODE_EXTRA_CA_CERTS");
+  console.log("MarsAI migration bootstrap completed with NODE_EXTRA_CA_CERTS and strict DATABASE_URL");
   console.log(bootstrap.stdout.trim());
 
-  const query = runOmniRushMysqlQuery(
+  const query = runMarsMysqlQuery(
     databaseUrl,
     "select (select count(*) from information_schema.tables where table_schema = database()) as table_count, (select count(*) from `__drizzle_migrations`) as migration_count",
     { NODE_EXTRA_CA_CERTS: caCert },
   );
-  ensureSuccess(query, "OmniRush.ai/mysql2 strict post-migration query with NODE_EXTRA_CA_CERTS");
+  ensureSuccess(query, "MarsAI/mysql2 strict post-migration query with NODE_EXTRA_CA_CERTS");
   const rows = JSON.parse(query.stdout.trim());
   const tableCount = Number(rows[0]?.table_count ?? 0);
   const migrationCount = Number(rows[0]?.migration_count ?? 0);
   if (tableCount <= 0 || migrationCount <= 0) {
-    throw new Error(`Expected migrated OmniRush.ai tables and migration ledger rows, got ${query.stdout}`);
+    throw new Error(`Expected migrated MarsAI tables and migration ledger rows, got ${query.stdout}`);
   }
-  console.log(`OmniRush.ai/mysql2 strict query succeeded after migration: tables=${tableCount}, migrations=${migrationCount}`);
+  console.log(`MarsAI/mysql2 strict query succeeded after migration: tables=${tableCount}, migrations=${migrationCount}`);
 } finally {
   cleanup();
 }

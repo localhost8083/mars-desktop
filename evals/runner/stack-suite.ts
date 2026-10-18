@@ -11,9 +11,9 @@ export function shouldPrepareSuite(argv: readonly string[]): boolean {
 }
 
 function configuredWorkerCount(env: NodeJS.ProcessEnv): number {
-  const configured = Number.parseInt(env.OMNIRUSH_EVAL_MAX_WORKERS?.trim() ?? "", 10);
+  const configured = Number.parseInt(env.MARS_EVAL_MAX_WORKERS?.trim() ?? "", 10);
   if (Number.isInteger(configured) && configured > 0) return configured;
-  return env.OMNIRUSH_EVAL_DAYTONA?.trim() === "1" ? 2 : 3;
+  return env.MARS_EVAL_DAYTONA?.trim() === "1" ? 2 : 3;
 }
 
 export function suiteWorkerCount(argv: readonly string[], env: NodeJS.ProcessEnv): number {

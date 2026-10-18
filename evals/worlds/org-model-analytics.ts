@@ -1,5 +1,5 @@
-import { queryDenDatabase, type Seed } from "@omnirush/env";
-import { defaultDaytonaExec, execInSandbox } from "@omnirush/hosts";
+import { queryDenDatabase, type Seed } from "@mars/env";
+import { defaultDaytonaExec, execInSandbox } from "@mars/hosts";
 
 export async function orgModelAnalyticsWorld(seed: Seed) {
   const den = await seed.den({ web: true, org: { name: "Analytics team" }, env: { DEN_ORG_MODE: "multi_org", DEN_PLAN_GATING_ENABLED: "false" } });

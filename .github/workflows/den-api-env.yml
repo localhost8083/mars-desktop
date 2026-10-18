@@ -32,7 +32,7 @@ concurrency:
 jobs:
   set-env:
     name: Set env var and deploy
-    if: github.repository == 'omnirush-ai/omnirush-gui'
+    if: github.repository == 'mars-ai/mars-gui'
     runs-on: blacksmith-4vcpu-ubuntu-2204
 
     env:

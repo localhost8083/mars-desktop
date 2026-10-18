@@ -1,6 +1,6 @@
 /** @jsxImportSource react */
 import { useEffect, useRef, type ReactNode } from "react";
-import { desktopPolicyKeys, type BrandAccentColor } from "@omnirush/types/den/desktop-policies";
+import { desktopPolicyKeys, type BrandAccentColor } from "@mars/types/den/desktop-policies";
 
 import { useNotificationStore } from "../../kernel/notification-store";
 import { useOrgRestrictions } from "./desktop-config-provider";
@@ -86,7 +86,7 @@ export function useBrandLogoUrl(): string | undefined {
 
 /** Organization-managed display name. It does not change the signed app identity. */
 export function useBrandAppName(): string {
-  return useOrgRestrictions().brandAppName ?? "omnirush.ai";
+  return useOrgRestrictions().brandAppName ?? "marsai.click";
 }
 
 const POLICY_NOTIFICATION_DEDUPE = "desktop-policy-active";

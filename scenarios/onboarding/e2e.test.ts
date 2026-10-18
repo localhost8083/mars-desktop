@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { onboardingWorld } from "./world.ts";
 import { onboarding } from "./workflow.ts";
 import { completionScreenshot } from "./screenshots.ts";

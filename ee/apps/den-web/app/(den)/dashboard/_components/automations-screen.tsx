@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, CalendarClock, Cloud, ExternalLink, Monitor, Square } from "lucide-react";
-import type { AutomationList, AutomationSchedule } from "@omnirush/types/automations";
+import type { AutomationList, AutomationSchedule } from "@mars/types/automations";
 import { DenButton } from "../../_components/ui/button";
 import { useDenFlow } from "../../_providers/den-flow-provider";
 import { WorkflowArtifactResult } from "./workflow-artifact-result";

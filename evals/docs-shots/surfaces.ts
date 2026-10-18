@@ -1,21 +1,21 @@
-import { browserScript } from "@omnirush/cdp";
+import { browserScript } from "@mars/cdp";
 import { spawn } from "node:child_process";
 import { mkdir, readFile, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
-import { go, waitFor } from "@omnirush/behaviors";
-import { navigate } from "@omnirush/cdp";
-import type { Surface } from "@omnirush/cdp";
-import { chrome } from "@omnirush/hosts";
-import type { App } from "@omnirush/testkit/stack";
+import { go, waitFor } from "@mars/behaviors";
+import { navigate } from "@mars/cdp";
+import type { Surface } from "@mars/cdp";
+import { chrome } from "@mars/hosts";
+import type { App } from "@mars/testkit/stack";
 import { provider } from "./ctx.ts";
 import type { Provider } from "./ctx.ts";
 import { inPage } from "./inpage.ts";
 import type { SeededOrg } from "./seed.ts";
 
 export const REPO_ROOT = resolve(fileURLToPath(new URL("../..", import.meta.url)));
-export const WEB_DEMO_WORKSPACE = "/tmp/omnirush-web-demo/acme-robotics";
+export const WEB_DEMO_WORKSPACE = "/tmp/mars-web-demo/acme-robotics";
 
 export interface WorkspaceModel {
   providerId: string;
@@ -48,8 +48,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 async function configureWorkspaceModel(app: App, model: WorkspaceModel): Promise<void> {
   const configured = await inPage(app, async (args) => {
-    const port = localStorage.getItem("omnirush.server.port");
-    const token = localStorage.getItem("omnirush.server.token");
+    const port = localStorage.getItem("mars.server.port");
+    const token = localStorage.getItem("mars.server.token");
     if (!port || !token) return "missing local server credentials";
     const request = async (path: string, init?: RequestInit) => {
       const response = await fetch("http://127.0.0.1:" + port + path, {
@@ -66,9 +66,9 @@ async function configureWorkspaceModel(app: App, model: WorkspaceModel): Promise
           provider: {
             [args.providerId]: {
               npm: "@ai-sdk/openai-compatible",
-              name: "OmniRush.ai",
+              name: "MarsAI",
               options: { baseURL: args.baseUrl, apiKey: "sk-docs-shots" },
-              models: { [args.modelId]: { name: "OmniRush.ai", tool_call: true } },
+              models: { [args.modelId]: { name: "MarsAI", tool_call: true } },
             },
           },
         },
@@ -77,18 +77,18 @@ async function configureWorkspaceModel(app: App, model: WorkspaceModel): Promise
     if (patched !== "ok") return patched;
     const reloaded = await request("/workspace/" + encodeURIComponent(args.workspaceId) + "/engine/reload", { method: "POST" });
     if (reloaded !== "ok" && !reloaded.includes("opencode_reload_timeout")) return reloaded;
-    const raw = localStorage.getItem("omnirush.preferences");
+    const raw = localStorage.getItem("mars.preferences");
     let preferences: Record<string, unknown> = {};
     try { preferences = raw ? JSON.parse(raw) : {}; } catch { preferences = {}; }
     if (!preferences || typeof preferences !== "object" || Array.isArray(preferences)) preferences = {};
-    localStorage.setItem("omnirush.preferences", JSON.stringify({
+    localStorage.setItem("mars.preferences", JSON.stringify({
       ...preferences,
       defaultModel: { providerID: args.providerId, modelID: args.modelId },
       modelVariant: null,
       providerStepCompleted: true,
     }));
-    localStorage.setItem("omnirush.defaultModel", args.providerId + "/" + args.modelId);
-    localStorage.removeItem("omnirush.sessionModels." + args.workspaceId);
+    localStorage.setItem("mars.defaultModel", args.providerId + "/" + args.modelId);
+    localStorage.removeItem("mars.sessionModels." + args.workspaceId);
     return "ok";
   }, {
     workspaceId: app.workspaceId,
@@ -98,8 +98,8 @@ async function configureWorkspaceModel(app: App, model: WorkspaceModel): Promise
   }, { awaitPromise: true, timeoutMs: 90_000 });
   if (configured !== "ok") throw new Error(`Configuring the workspace model failed: ${String(configured)}`);
   await inPage(app, () => { location.reload(); return true; }, {});
-  await waitFor(app, () => (Boolean(window.__omnirushControl)), { timeoutMs: 60_000, label: "desktop control after reload" });
-  await waitFor(app, () => (window.__omnirushControl.listActions().some((action) => action.id === "session.create_task" && !action.disabled)), {
+  await waitFor(app, () => (Boolean(window.__marsControl)), { timeoutMs: 60_000, label: "desktop control after reload" });
+  await waitFor(app, () => (window.__marsControl.listActions().some((action) => action.id === "session.create_task" && !action.disabled)), {
     timeoutMs: 60_000,
     label: "desktop ready after model configuration",
   });
@@ -141,8 +141,8 @@ export function denWeb(options: { org: Provider<SeededOrg>; as: string }): Provi
       label: "Den Web origin before auth token handoff",
     });
     const stored = await inPage(browser, (args) => {
-      localStorage.setItem("omnirush:web:auth-token", args.token);
-      return localStorage.getItem("omnirush:web:auth-token") === args.token;
+      localStorage.setItem("mars:web:auth-token", args.token);
+      return localStorage.getItem("mars:web:auth-token") === args.token;
     }, { token: member.token });
     if (stored !== true) throw new Error("Storing the Den Web auth token failed.");
     return {
@@ -206,8 +206,8 @@ async function ensureHeadlessWeb(denWebUrl: string): Promise<HeadlessWebInfo> {
     detached: true,
     env: {
       ...process.env,
-      OMNIRUSH_WORKSPACE: WEB_DEMO_WORKSPACE,
-      OMNIRUSH_DEV_DEN_PROXY_TARGET: denWebUrl,
+      MARS_WORKSPACE: WEB_DEMO_WORKSPACE,
+      MARS_DEV_DEN_PROXY_TARGET: denWebUrl,
     },
   });
   child.unref();
@@ -237,7 +237,7 @@ export function webTab(options: { org: Provider<SeededOrg> }): Provider<ShotSurf
         await navigate(browser.client, new URL(path, info.webUrl).toString());
         await waitFor(browser, () => (document.readyState === "complete"), {
           timeoutMs: 60_000,
-          label: `OmniRush.ai Web ${path}`,
+          label: `MarsAI Web ${path}`,
         });
       },
     };

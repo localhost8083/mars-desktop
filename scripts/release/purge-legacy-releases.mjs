@@ -12,7 +12,7 @@ const RELEASE_GROUPS = [
   { group: "channel-build", pattern: /^(canary|experimental)-macos-v\d/ },
 ];
 const SIDECAR_GROUPS = [
-  { group: "sidecar-orchestrator", pattern: /^omnirush-orchestrator-v\d/ },
+  { group: "sidecar-orchestrator", pattern: /^mars-orchestrator-v\d/ },
   { group: "sidecar-openwrk", pattern: /^openwrk-v\d/ },
 ];
 

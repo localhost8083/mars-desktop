@@ -368,7 +368,7 @@ export type SetupOptions = {
   bundledSkills?: Array<{ name: string; version: string | null; sha256: string }>;
   /** Extra opencode config files (the engine config the app writes: OPENCODE_CONFIG). */
   configFiles?: string[];
-  /** Extra Claude-style MCP config files (the CLI's ~/.omnirush/mcp.json). */
+  /** Extra Claude-style MCP config files (the CLI's ~/.mars/mcp.json). */
   mcpFiles?: string[];
   privacy: PrivacyContext;
   scrub: Scrubber;

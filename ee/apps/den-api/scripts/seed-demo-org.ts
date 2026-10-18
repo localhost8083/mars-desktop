@@ -24,7 +24,7 @@ import { ensureDefaultDesktopPolicyForOrganization } from "../src/desktop-polici
 import { env } from "../src/env.js"
 import { seedDefaultOrganizationRoles } from "../src/orgs.js"
 import { updateOrganizationMetadata } from "../src/organization-metadata.js"
-import { readOrganizationMetadata } from "@omnirush/types/den/managed-models-policy"
+import { readOrganizationMetadata } from "@mars/types/den/managed-models-policy"
 import { calculateOrganizationSeatBillingCounts } from "../src/stripe-billing.js"
 
 const RESET_MODE = process.argv.includes("--reset")

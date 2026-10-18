@@ -1,9 +1,9 @@
-# Google Cloud GKE starter values for a first OmniRush.ai EE self-host install.
+# Google Cloud GKE starter values for a first MarsAI EE self-host install.
 #
 # Copy this file, replace every REPLACE_* value, and install with:
 #
-#   helm upgrade --install omnirush-ee oci://ghcr.io/omnirush-ai/charts/omnirush-ee \
-#     --version REPLACE_OMNIRUSH_VERSION \
+#   helm upgrade --install omnirush-ee oci://ghcr.io/mars-ai/charts/omnirush-ee \
+#     --version REPLACE_MARS_VERSION \
 #     --namespace omnirush-ee \
 #     --create-namespace \
 #     -f values.gcp.yaml
@@ -13,7 +13,7 @@
 # BackendConfig manifests from docs/gcp-gke-helm.md before installing.
 
 image:
-  tag: "REPLACE_OMNIRUSH_VERSION"
+  tag: "REPLACE_MARS_VERSION"
   pullPolicy: IfNotPresent
 
 config:
@@ -53,7 +53,7 @@ secret:
   values:
     # Direct private IP Cloud SQL example. The current chart does not inject
     # Cloud SQL Auth Proxy sidecars, so use a private IP reachable from GKE.
-    databaseUrl: "mysql://omnirush:REPLACE_DB_PASSWORD@REPLACE_CLOUD_SQL_PRIVATE_IP:3306/omnirush_den"
+    databaseUrl: "mysql://mars:REPLACE_DB_PASSWORD@REPLACE_CLOUD_SQL_PRIVATE_IP:3306/omnirush_den"
     # Generate with: openssl rand -base64 48
     betterAuthSecret: "REPLACE_BETTER_AUTH_SECRET"
     # Generate separately with: openssl rand -base64 48

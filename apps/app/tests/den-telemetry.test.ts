@@ -16,13 +16,13 @@ describe("Den telemetry endpoint", () => {
 
   test("uses the nested hosted API default for hosted desktop telemetry", () => {
     expect(resolveDenTelemetryIngestUrl({
-      baseUrl: "https://app.omnirush.example.com",
-      apiBaseUrl: "https://api.app.omnirush.example.com",
+      baseUrl: "https://app.mars.example.com",
+      apiBaseUrl: "https://api.app.mars.example.com",
       authToken: "tok_test",
       activeOrgId: null,
       activeOrgSlug: null,
       activeOrgName: null,
-    })).toBe("https://api.app.omnirush.example.com/v1/telemetry/ingest");
+    })).toBe("https://api.app.mars.example.com/v1/telemetry/ingest");
   });
 
   test("returns null without an auth token", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ElementType, ReactNode } from "react";
-import { PaperMeshGradient } from "@omnirush/ui/react";
+import { PaperMeshGradient } from "@mars/ui/react";
 import { useWebGlSupported } from "../../_lib/use-webgl-supported";
 
 /**

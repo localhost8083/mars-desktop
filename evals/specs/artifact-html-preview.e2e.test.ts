@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { eventually, spec } from "@omnirush/testkit";
+import { eventually, spec } from "@mars/testkit";
 import { artifactHtmlPreviewWorld, previewCanaryKey, previewFileName, previewWitnessKey } from "../worlds/artifact-html-preview.ts";
 
 const test = spec.world(artifactHtmlPreviewWorld);

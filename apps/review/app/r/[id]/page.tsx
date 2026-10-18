@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { readReview } from "@omnirush/review/storage";
+import { readReview } from "@mars/review/storage";
 import { Report } from "../../../components/report";
 
 export const dynamic = "force-dynamic";

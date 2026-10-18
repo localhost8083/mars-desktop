@@ -1,5 +1,5 @@
-import { browserScript } from "@omnirush/cdp";
-import type { Surface } from "@omnirush/cdp";
+import { browserScript } from "@mars/cdp";
+import type { Surface } from "@mars/cdp";
 import { clickButton, currentHash, evalIn, fill, waitFor, waitForText } from "./desktop.ts";
 
 export interface LocalWorkspaceFacts {

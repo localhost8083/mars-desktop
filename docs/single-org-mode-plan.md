@@ -13,8 +13,8 @@ behavior and production bootstrap-token UX remain follow-up work.
 
 ## Goal
 
-Make self-hosted OmniRush.ai EE deployments behave like one customer-owned
-workspace by default, while keeping hosted OmniRush.ai Cloud multi-org.
+Make self-hosted MarsAI EE deployments behave like one customer-owned
+workspace by default, while keeping hosted MarsAI Cloud multi-org.
 
 The internal model should still use organizations, members, roles, SSO, SCIM,
 workers, plugins, API keys, and MCP resources. The product experience should
@@ -34,7 +34,7 @@ Recommended defaults:
 
 - Helm chart: `single_org`
 - Local development: `single_org` unless a developer opts into multi-org
-- Hosted OmniRush.ai Cloud: `multi_org`
+- Hosted MarsAI Cloud: `multi_org`
 
 Suggested Helm values:
 
@@ -42,7 +42,7 @@ Suggested Helm values:
 config:
   tenancy:
     mode: single_org
-    singleOrgName: OmniRush.ai
+    singleOrgName: MarsAI
     singleOrgSlug: default
     ownerEmails: ""
     allowPublicSignup: "false"
@@ -362,8 +362,8 @@ Baseline check on 2026-07-05 after dependency repair:
 
 1. `pnpm install --frozen-lockfile` completed successfully with pnpm 11.7.0.
 2. First `pnpm dev:web-local` runtime attempt started MySQL and schema sync but
-   `den-api` failed because `@omnirush/install-config` had no `dist/index.js`.
-3. `pnpm --filter @omnirush/install-config build` fixed the missing package
+   `den-api` failed because `@mars/install-config` had no `dist/index.js`.
+3. `pnpm --filter @mars/install-config build` fixed the missing package
    artifact.
 4. Restarted `pnpm dev:web-local`; all services came up:
    - Den API: `http://127.0.0.1:8788`
@@ -411,13 +411,13 @@ Validation update on 2026-07-05:
     `evals/results/2026-07-05T15-25-15-884Z/fraimz.html`.
 9. Native `helm version --short` failed because Helm is not installed locally.
    Helm validation was completed through OrbStack Docker instead:
-   - `docker run --rm -v /Users/omar/code/omnirush/packaging/helm/omnirush-ee:/chart:ro alpine/helm:3.15.4 version --short`
+   - `docker run --rm -v /Users/omar/code/mars/packaging/helm/omnirush-ee:/chart:ro alpine/helm:3.15.4 version --short`
      returned `v3.15.4+gfa9efb0`.
-   - `docker run --rm -v /Users/omar/code/omnirush/packaging/helm/omnirush-ee:/chart:ro alpine/helm:3.15.4 lint /chart --set image.tag=test`
+   - `docker run --rm -v /Users/omar/code/mars/packaging/helm/omnirush-ee:/chart:ro alpine/helm:3.15.4 lint /chart --set image.tag=test`
      passed with 0 chart failures.
-   - `docker run --rm -v /Users/omar/code/omnirush/packaging/helm/omnirush-ee:/chart:ro alpine/helm:3.15.4 template omnirush-ee /chart --set image.tag=test --show-only templates/configmap.yaml`
+   - `docker run --rm -v /Users/omar/code/mars/packaging/helm/omnirush-ee:/chart:ro alpine/helm:3.15.4 template omnirush-ee /chart --set image.tag=test --show-only templates/configmap.yaml`
      rendered `DEN_ORG_MODE: "single_org"` and singleton settings.
-   - `docker run --rm -v /Users/omar/code/omnirush/packaging/helm/omnirush-ee:/chart:ro alpine/helm:3.15.4 template omnirush-ee /chart --set image.tag=test --set config.tenancy.mode=multi_org --show-only templates/configmap.yaml`
+   - `docker run --rm -v /Users/omar/code/mars/packaging/helm/omnirush-ee:/chart:ro alpine/helm:3.15.4 template omnirush-ee /chart --set image.tag=test --set config.tenancy.mode=multi_org --show-only templates/configmap.yaml`
      rendered `DEN_ORG_MODE: "multi_org"`.
 
 ## Orchestration Plan
@@ -450,9 +450,9 @@ validating worker output.
 6. How should existing customer DBs with multiple orgs behave when
    `DEN_ORG_MODE=single_org` is enabled: fail fast, choose a configured slug, or
    migrate one org?
-7. Should self-host docs call Den web "OmniRush.ai Cloud" after Helm defaults to
-   single-org mode, or rename that surface in docs to "OmniRush.ai web" /
-   "OmniRush.ai admin" for private deployments?
+7. Should self-host docs call Den web "MarsAI Cloud" after Helm defaults to
+   single-org mode, or rename that surface in docs to "MarsAI web" /
+   "MarsAI admin" for private deployments?
 
 ## Documentation Updates Needed
 
@@ -460,7 +460,7 @@ Self-host and packaging docs need to stop describing the Helm path as if users
 must understand multi-org creation.
 
 - `packages/docs/start-here/self-host.mdx`: distinguish single-org private
-  deployments from hosted OmniRush.ai Cloud. The current "Cloud-style accounts,
+  deployments from hosted MarsAI Cloud. The current "Cloud-style accounts,
   teams, and organization management" wording conflicts with a single-org Helm
   default.
 - `packages/docs/start-here/self-host.mdx`: fix the "Minimal Working Stack"
@@ -469,7 +469,7 @@ must understand multi-org creation.
   single-org deployments still use org-scoped RBAC internally, while hosted cloud
   remains multi-org.
 - `packaging/docker/README.md`: avoid calling every local/private web surface
-  "OmniRush.ai Cloud web app" after single-org mode lands.
+  "MarsAI Cloud web app" after single-org mode lands.
 
 ## Proposed First Milestone
 

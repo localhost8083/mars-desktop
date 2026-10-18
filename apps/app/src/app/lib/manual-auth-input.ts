@@ -5,7 +5,7 @@ export type ManualAuthInput = {
   baseUrl?: string;
 };
 
-/** Accept a raw handoff grant or an omnirush.ai desktop-auth deep link. */
+/** Accept a raw handoff grant or an marsai.click desktop-auth deep link. */
 export function parseManualAuthInput(value: string): ManualAuthInput | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
@@ -18,7 +18,7 @@ export function parseManualAuthInput(value: string): ManualAuthInput | null {
     const routeSegments = routePath.split("/").filter(Boolean);
     const routeTail = routeSegments[routeSegments.length - 1] ?? "";
     if (
-      (protocol === "omnirush:" || protocol === "omnirush-dev:") &&
+      (protocol === "mars:" || protocol === "mars-dev:") &&
       (routeHost === "den-auth" ||
         routePath === "den-auth" ||
         routeTail === "den-auth")

@@ -4,6 +4,9 @@ import { useNavigate } from "react-router";
 
 import { t } from "../../i18n";
 import {
+  marsAccountConnect,
+  marsAccountConnectApiKey,
+  marsAccountStatus,
   pickDirectory,
   resolveWorkspaceListSelectedId,
   workspaceCreateRemote,
@@ -25,16 +28,16 @@ import type { CreateWorkspaceOptions } from "../domains/workspace/types";
 import { useDenAuth } from "../domains/cloud/den-auth-provider";
 import { useDenControlPlaneConfigured } from "../domains/cloud/use-den-control-plane-configured";
 import { JoinOrganizationDialog } from "../domains/cloud/join-organization-dialog";
-import { resolveOmniRushConnection } from "./omnirush-connection";
+import { resolveMarsConnection } from "./mars-connection";
 import { captureAnalyticsEvent } from "../../app/lib/analytics";
 import { noteNewBuildathonProject } from "../../app/lib/buildathon";
-import { buildOmniRushWorkspaceBaseUrl, createOmniRushServerClient } from "../../app/lib/omnirush-server";
+import { buildMarsWorkspaceBaseUrl, createMarsServerClient } from "../../app/lib/mars-server";
 import { buildDenAuthUrl, DEFAULT_DEN_BASE_URL, readDenSettings } from "../../app/lib/den";
 import { markDesktopSignInInitiated } from "../../app/lib/den-sign-in-intent";
 import { denSettingsChangedEvent } from "../../app/lib/den-session-events";
 import { writeActiveWorkspaceId, writeLastSessionFor, writeWorkspaceProjectDimension } from "./session-memory";
 import { workspaceSessionRoute } from "./workspace-routes";
-import { ensureDesktopLocalOmniRushConnection } from "./desktop-local-omnirush";
+import { ensureDesktopLocalMarsConnection } from "./desktop-local-mars";
 import { shouldHoldWelcomeForDenSession } from "./welcome-den-session";
 
 function subscribeToDenSettings(onStoreChange: () => void) {
@@ -55,8 +58,17 @@ function folderNameFromPath(path: string) {
 
 function focusPromptSoon() {
   if (typeof window === "undefined") return;
-  const focus = () => window.dispatchEvent(new Event("omnirush:focusPrompt"));
+  const focus = () => window.dispatchEvent(new Event("mars:focusPrompt"));
   [0, 80, 240, 600].forEach((delay) => window.setTimeout(focus, delay));
+}
+
+async function connectedMarsAccount() {
+  try {
+    const status = await marsAccountStatus();
+    return Boolean(status.connected);
+  } catch {
+    return false;
+  }
 }
 
 type WelcomeState = {
@@ -139,6 +151,12 @@ export function WelcomeRoute() {
   const [state, dispatch] = useReducer(welcomeReducer, initialWelcomeState);
   const [manualFolder, setManualFolder] = useState("");
   const [joinOrganizationOpen, setJoinOrganizationOpen] = useState(false);
+  // Desktop sign-in gate: absent while the bridge is being checked; false
+  // keeps the welcome page on the two Mars sign-in options until the app is
+  // connected (a MarsAI account in the browser or a pasted API key).
+  const [marsConnected, setMarsConnected] = useState<boolean | null>(isDesktopRuntime() ? null : false);
+  const [marsBusy, setMarsBusy] = useState(false);
+  const [marsError, setMarsError] = useState<string | null>(null);
   const denAuthTokenSnapshot = useSyncExternalStore(
     subscribeToDenSettings,
     readDenAuthTokenSnapshot,
@@ -156,6 +174,11 @@ export function WelcomeRoute() {
       navigate("/session", { replace: true });
     }
   }, [local.prefs.hasCompletedOnboarding, navigate]);
+
+  // Desktop: the app opens into MarsAI, so check the stored sign-in once.
+  useEffect(() => {
+    if (isDesktopRuntime()) void connectedMarsAccount().then(setMarsConnected);
+  }, []);
 
   useEffect(() => {
     if (denAuth.isSignedIn) {
@@ -179,14 +202,14 @@ export function WelcomeRoute() {
         let sessionToken = "";
         try {
           const { normalizedBaseUrl, resolvedToken, resolvedHostToken } =
-            await resolveOmniRushConnection();
+            await resolveMarsConnection();
           if (normalizedBaseUrl && (resolvedToken || resolvedHostToken)) {
-            const omnirushClient = createOmniRushServerClient({
+            const marsClient = createMarsServerClient({
               baseUrl: normalizedBaseUrl,
               token: resolvedToken || undefined,
               hostToken: resolvedHostToken || undefined,
             });
-            list = await omnirushClient.createLocalWorkspace({
+            list = await marsClient.createLocalWorkspace({
               folderPath: folder,
               name: workspaceName,
               preset: "starter",
@@ -198,7 +221,7 @@ export function WelcomeRoute() {
           list = null;
         }
         if (!list) {
-          throw new Error("omnirush.ai server is unavailable. Start or reconnect the server before creating a workspace.");
+          throw new Error("marsai.click server is unavailable. Start or reconnect the server before creating a workspace.");
         }
         const createdId =
           resolveWorkspaceListSelectedId(list) ||
@@ -213,12 +236,12 @@ export function WelcomeRoute() {
           writeActiveWorkspaceId(createdId);
         }
         if (targetWorkspace) {
-          await ensureDesktopLocalOmniRushConnection({
+          await ensureDesktopLocalMarsConnection({
             route: "session",
             workspace: targetWorkspace,
             allWorkspaces: list.workspaces,
           }).catch(() => undefined);
-          const fresh = await resolveOmniRushConnection().catch(() => null);
+          const fresh = await resolveMarsConnection().catch(() => null);
           if (fresh?.normalizedBaseUrl && fresh.resolvedToken) {
             sessionBaseUrl = fresh.normalizedBaseUrl;
             sessionToken = fresh.resolvedToken;
@@ -228,9 +251,9 @@ export function WelcomeRoute() {
           try {
             const workspacePath = targetWorkspace?.path?.trim() || folder;
             const session = unwrap(await createClient(
-              `${(buildOmniRushWorkspaceBaseUrl(sessionBaseUrl, targetWorkspaceId) ?? sessionBaseUrl).replace(/\/+$/, "")}/opencode`,
+              `${(buildMarsWorkspaceBaseUrl(sessionBaseUrl, targetWorkspaceId) ?? sessionBaseUrl).replace(/\/+$/, "")}/opencode`,
               workspacePath || undefined,
-              { token: sessionToken, mode: "omnirush" },
+              { token: sessionToken, mode: "mars" },
             ).session.create({ directory: workspacePath || undefined }));
             targetSessionId = session.id;
             captureAnalyticsEvent("task_created", { source: "onboarding", workspace_type: "local" });
@@ -266,20 +289,20 @@ export function WelcomeRoute() {
 
   const handleCreateRemote = useCallback(
     async (input: {
-      omnirushHostUrl?: string | null;
-      omnirushToken?: string | null;
+      marsHostUrl?: string | null;
+      marsToken?: string | null;
       directory?: string | null;
       displayName?: string | null;
     }) => {
-      const baseUrlValue = input.omnirushHostUrl?.trim() ?? "";
+      const baseUrlValue = input.marsHostUrl?.trim() ?? "";
       if (!baseUrlValue) return false;
       dispatch({ type: "remote:start" });
       try {
-        const remoteType: "omnirush" = "omnirush";
+        const remoteType: "mars" = "mars";
         const payload = {
           baseUrl: baseUrlValue,
-          omnirushHostUrl: baseUrlValue,
-          omnirushToken: input.omnirushToken?.trim() || null,
+          marsHostUrl: baseUrlValue,
+          marsToken: input.marsToken?.trim() || null,
           displayName: input.displayName?.trim() || null,
           directory: input.directory?.trim() || null,
           remoteType,
@@ -290,9 +313,9 @@ export function WelcomeRoute() {
         } else {
           try {
             const { normalizedBaseUrl, resolvedToken, resolvedHostToken } =
-              await resolveOmniRushConnection();
+              await resolveMarsConnection();
             if (normalizedBaseUrl && (resolvedToken || resolvedHostToken)) {
-              list = await createOmniRushServerClient({
+              list = await createMarsServerClient({
                 baseUrl: normalizedBaseUrl,
                 token: resolvedToken || undefined,
                 hostToken: resolvedHostToken || undefined,
@@ -303,7 +326,7 @@ export function WelcomeRoute() {
           }
         }
         if (!list) {
-          throw new Error("omnirush.ai server is unavailable. Start or reconnect the server before connecting a remote workspace.");
+          throw new Error("marsai.click server is unavailable. Start or reconnect the server before connecting a remote workspace.");
         }
         const createdId =
           resolveWorkspaceListSelectedId(list) ||
@@ -371,6 +394,34 @@ export function WelcomeRoute() {
     if (state.pendingSessionId) focusPromptSoon();
   }, [markOnboardingComplete, navigate, state.pendingRoute, state.pendingSessionId]);
 
+  const handleMarsSignIn = useCallback(async () => {
+    setMarsBusy(true);
+    setMarsError(null);
+    try {
+      // Resolves once the link is approved in the browser (main opens it);
+      // the account store saves the pair and restarts the embedded server.
+      await marsAccountConnect();
+      setMarsConnected(await connectedMarsAccount());
+    } catch (error) {
+      setMarsError(error instanceof Error ? error.message : t("welcome.mars.failed_fallback"));
+    } finally {
+      setMarsBusy(false);
+    }
+  }, []);
+
+  const handleMarsApiKey = useCallback(async (key: string) => {
+    setMarsBusy(true);
+    setMarsError(null);
+    try {
+      await marsAccountConnectApiKey({ apiKey: key });
+      setMarsConnected(await connectedMarsAccount());
+    } catch (error) {
+      setMarsError(error instanceof Error ? error.message : t("welcome.mars.failed_fallback"));
+    } finally {
+      setMarsBusy(false);
+    }
+  }, []);
+
   const handleAttributionSubmit = useCallback(
     (source: AttributionSource, aiPrompt?: string) => {
       const prompt = aiPrompt?.trim().slice(0, 500) ?? "";
@@ -394,6 +445,12 @@ export function WelcomeRoute() {
     return null;
   }
 
+  // MarsAI-only desktop: until a Mars sign-in exists, the welcome page offers
+  // only the two sign-in options.
+  const marsGate = marsConnected === false && isDesktopRuntime()
+    ? { busy: marsBusy, error: marsError, onSignIn: handleMarsSignIn, onApiKey: handleMarsApiKey }
+    : null;
+
   return (
     <>
       <WelcomePage
@@ -403,9 +460,10 @@ export function WelcomeRoute() {
         manualFolder={manualFolder}
         onManualFolderChange={setManualFolder}
         onUseManualFolder={handleUseManualFolder}
-        showManualFolder={import.meta.env.DEV && isDesktopRuntime()}
+        showManualFolder={import.meta.env.DEV && isDesktopRuntime() && !marsGate}
         onTeamSignIn={denControlPlaneConfigured ? handleTeamSignIn : undefined}
         onJoinOrganization={() => setJoinOrganizationOpen(true)}
+        gate={marsGate}
       />
       <JoinOrganizationDialog
         open={joinOrganizationOpen}

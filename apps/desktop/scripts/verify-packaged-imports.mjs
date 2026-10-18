@@ -9,7 +9,7 @@
 // every relative import target exists inside the same archive.
 //
 // It also verifies that the resources directory next to each app.asar ships
-// the bundled UI-control MCP (omnirush-ui-mcp/index.mjs) as a self-contained
+// the bundled UI-control MCP (mars-ui-mcp/index.mjs) as a self-contained
 // module: the app launches that file with its own binary and never falls back
 // to resolving the package from npm.
 //
@@ -40,11 +40,11 @@ function findAsars(dir, out = []) {
 const importPattern = /(?:^|[\s;])(?:import|export)\s+(?:[^"'`;]*?\s+from\s+)?["'](\.{1,2}\/[^"'`]+)["']|\bimport\(\s*["'](\.{1,2}\/[^"'`]+)["']\s*\)|\brequire\(\s*["'](\.{1,2}\/[^"'`]+)["']\s*\)/g;
 // Workspace packages resolve through their package.json "default" condition
 // under Electron's Node, which cannot load .ts files from node_modules.
-const workspacePattern = /(?:^|[\s;])(?:import|export)\s+(?:[^"'`;]*?\s+from\s+)?["'](@omnirush\/[^"'`]+)["']|\bimport\(\s*["'](@omnirush\/[^"'`]+)["']\s*\)/g;
+const workspacePattern = /(?:^|[\s;])(?:import|export)\s+(?:[^"'`;]*?\s+from\s+)?["'](@mars\/[^"'`]+)["']|\bimport\(\s*["'](@mars\/[^"'`]+)["']\s*\)/g;
 
 function workspaceTarget(asarPath, files, native, spec) {
   const [, pkg, ...rest] = spec.split("/");
-  const manifestPath = `node_modules/@omnirush/${pkg}/package.json`;
+  const manifestPath = `node_modules/@mars/${pkg}/package.json`;
   if (!files.has(manifestPath)) return { error: `${manifestPath} missing from archive` };
   let manifest;
   try {
@@ -57,7 +57,7 @@ function workspaceTarget(asarPath, files, native, spec) {
   const target = typeof entry === "string" ? entry : entry?.default ?? entry?.import ?? entry?.require;
   if (typeof target !== "string") return { error: `no export for ${subpath}` };
   if (target.endsWith(".ts")) return { error: `${subpath} default -> ${target} (TypeScript source cannot load from node_modules)` };
-  const resolved = posix.normalize(posix.join(`node_modules/@omnirush/${pkg}`, target));
+  const resolved = posix.normalize(posix.join(`node_modules/@mars/${pkg}`, target));
   return files.has(resolved) ? {} : { error: `${subpath} -> ${resolved} missing from archive` };
 }
 

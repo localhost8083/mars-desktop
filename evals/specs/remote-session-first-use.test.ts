@@ -1,8 +1,8 @@
 import { expect } from "vitest";
-import { denFetch, type DenSession } from "@omnirush/behaviors";
-import { queryDenDatabase } from "@omnirush/env";
-import { startCloudRuntimeWitness } from "@omnirush/labs";
-import { eventually, localMysqlIsRunning, localRedisIsRunning, needs, server, test } from "@omnirush/testkit";
+import { denFetch, type DenSession } from "@mars/behaviors";
+import { queryDenDatabase } from "@mars/env";
+import { startCloudRuntimeWitness } from "@mars/labs";
+import { eventually, localMysqlIsRunning, localRedisIsRunning, needs, server, test } from "@mars/testkit";
 
 const available = await localMysqlIsRunning() && await localRedisIsRunning();
 
@@ -38,8 +38,8 @@ test("first cloud task provisions once over MCP, preserves access boundaries, an
       DAYTONA_SNAPSHOT: "witness-snapshot", DAYTONA_SHARED_VOLUME_NAME: "witness-volume",
       DAYTONA_USE_DEPRECATED_POLLING: "true", DAYTONA_HEALTHCHECK_TIMEOUT_MS: "120000",
       WORKER_PROVISIONING_RECONCILE_INTERVAL_MS: "0", CLOUD_IDLE_LOOP_SECONDS: "0",
-      DEN_OMNIRUSH_WEB_ENABLED: "true",
-      STRIPE_OMNIRUSH_WEB_PRICE_ID: "price_first_use_witness",
+      DEN_MARS_WEB_ENABLED: "true",
+      STRIPE_MARS_WEB_PRICE_ID: "price_first_use_witness",
     },
   });
   if (!den.database) throw new Error("This isolated HTTP journey requires its own database");
@@ -75,7 +75,7 @@ test("first cloud task provisions once over MCP, preserves access boundaries, an
     return queryDenDatabase(databaseUrl, "SELECT id, created_by_user_id, status FROM worker WHERE org_id = ?", [orgId]);
   }
 
-  expect((await call(writeToken, "create", {})).payload.error).toBe("omnirush_web_access_required");
+  expect((await call(writeToken, "create", {})).payload.error).toBe("mars_web_access_required");
   expect(await workers()).toEqual([]);
   expect(witness.sandboxes).toHaveLength(0);
   evidence.recordAssertionEvidence("Paid access is checked before provisioning", "A valid write token in an organization without Web access was denied; zero worker rows and zero provider creates.", true);
@@ -153,7 +153,7 @@ test("first cloud task provisions once over MCP, preserves access boundaries, an
   evidence.recordAssertionEvidence("Members get distinct workspaces", "A second member's first call created a different worker and sandbox without creating a session on the first member's runtime.", true);
 
   await queryDenDatabase(databaseUrl, "UPDATE org_subscriptions SET status = 'canceled' WHERE organization_id = ?", [orgId]);
-  expect((await call(writeToken, "create", task)).payload.error).toBe("omnirush_web_access_required");
+  expect((await call(writeToken, "create", task)).payload.error).toBe("mars_web_access_required");
   expect(witness.sessions).toHaveLength(1);
   expect(witness.sandboxes).toHaveLength(2);
   expect(await workers()).toHaveLength(2);

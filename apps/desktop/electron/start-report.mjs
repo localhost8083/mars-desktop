@@ -1,6 +1,6 @@
 /**
  * One small, impersonal report when the desktop cannot start
- * (POST /omnirush/diagnostics/crashes, `product: "gui"`, `kind:
+ * (POST /mars/diagnostics/crashes, `product: "gui"`, `kind:
  * "start_failure"`), plus the hint the start screen shows for it.
  *
  * A report carries enums, numbers and booleans: the failure's category,
@@ -215,7 +215,7 @@ export function classifyStartFailure(rawError, { fallbackPhase = "unknown" } = {
   if (code === "ENOSPC" || /\bENOSPC\b|no space left|SQLITE_FULL|database or disk is full/i.test(message)) {
     return set("disk_full", fallbackPhase === "unknown" ? "server" : fallbackPhase, { errorCode: knownCode(code) ?? "ENOSPC" });
   }
-  if (/Timeout waiting for OmniRush server/.test(message)) return set("engine_timeout", "engine_ready");
+  if (/Timeout waiting for Mars server/.test(message)) return set("engine_timeout", "engine_ready");
   if (/exited with code/.test(message) || result.exitCode !== null) {
     if (/CPU lacks AVX|Illegal instruction/i.test(message) || status === STATUS_ILLEGAL_INSTRUCTION) {
       return set("engine_cpu_unsupported", "engine_ready");
@@ -235,7 +235,7 @@ export function classifyStartFailure(rawError, { fallbackPhase = "unknown" } = {
   }
   if (/did not exit after SIGKILL/.test(message)) return set("engine_stuck", "engine_ready");
   if (code === "EADDRINUSE" || /\bEADDRINUSE\b/.test(message)) return set("port_in_use", "server", { errorCode: "EADDRINUSE" });
-  if (/Cannot find OmniRush\.ai embedded server bundle/.test(message)) return set("server_bundle_missing", "server");
+  if (/Cannot find Mars\.ai embedded server bundle/.test(message)) return set("server_bundle_missing", "server");
   if (/did not stay running|did not report a base URL|did not report an access token|did not finish starting/i.test(message)) {
     return set("server_not_ready", "server_ready");
   }
@@ -499,38 +499,38 @@ export function startFailureHint(category, { platform = process.platform, avHint
   const windows = platform === "win32";
   if (category === "engine_missing" || avHint === "binary_missing") {
     return {
-      title: "Your antivirus may have removed omnirush.ai's engine",
+      title: "Your antivirus may have removed marsai.click's engine",
       body: windows
-        ? "Open Windows Security > Virus & threat protection > Protection history, restore or allow the omnirush.ai item (opencode.exe), add the omnirush.ai install folder as an exclusion, then reinstall omnirush.ai and press Try again."
-        : "Allow omnirush.ai's engine (opencode) in your antivirus, reinstall omnirush.ai, then press Try again.",
+        ? "Open Windows Security > Virus & threat protection > Protection history, restore or allow the marsai.click item (opencode.exe), add the marsai.click install folder as an exclusion, then reinstall marsai.click and press Try again."
+        : "Allow marsai.click's engine (opencode) in your antivirus, reinstall marsai.click, then press Try again.",
     };
   }
   if (category === "engine_blocked") {
     return {
-      title: "omnirush.ai's engine was blocked",
+      title: "marsai.click's engine was blocked",
       body: windows
-        ? "Windows Security, Smart App Control or your antivirus stopped opencode.exe. Allow it (Protection history > Allow, or add the omnirush.ai install folder as an exclusion), then press Try again."
+        ? "Windows Security, Smart App Control or your antivirus stopped opencode.exe. Allow it (Protection history > Allow, or add the marsai.click install folder as an exclusion), then press Try again."
         : "Your antivirus or system policy stopped the engine (opencode). Allow it, then press Try again.",
     };
   }
   if (category === "engine_modified") {
     return {
-      title: "omnirush.ai's engine file is damaged",
-      body: "The engine no longer matches the one that was installed, which usually means an antivirus changed it. Reinstall omnirush.ai, allow it in your antivirus, then press Try again.",
+      title: "marsai.click's engine file is damaged",
+      body: "The engine no longer matches the one that was installed, which usually means an antivirus changed it. Reinstall marsai.click, allow it in your antivirus, then press Try again.",
     };
   }
   if (category === "engine_timeout") {
     return {
       title: "The engine took too long to start",
       body: windows
-        ? "This often happens while an antivirus scans the engine. Wait a minute and press Try again. If it keeps happening, add the omnirush.ai install folder as an exclusion in Windows Security."
+        ? "This often happens while an antivirus scans the engine. Wait a minute and press Try again. If it keeps happening, add the marsai.click install folder as an exclusion in Windows Security."
         : "Wait a minute and press Try again. If it keeps happening, restart your computer.",
     };
   }
   if (category === "engine_cpu_unsupported") {
     return {
-      title: "This computer's processor is too old for omnirush.ai's engine",
-      body: "The engine stopped on an instruction this processor does not support. Please tell us in support which computer this is; the omnirush CLI (npm i -g omnirush) may work here meanwhile.",
+      title: "This computer's processor is too old for marsai.click's engine",
+      body: "The engine stopped on an instruction this processor does not support. Please tell us in support which computer this is; the mars CLI (npm i -g mars) may work here meanwhile.",
     };
   }
   if (category === "config_incompatible" || category === "config_invalid") {
@@ -543,34 +543,34 @@ export function startFailureHint(category, { platform = process.platform, avHint
     return {
       title: "Your workspace folder can't be opened",
       body: windows
-        ? "It may be on a disconnected drive, offline in OneDrive, or blocked by Controlled folder access (Windows Security > Ransomware protection: allow omnirush.ai). Reconnect it, or use Reset app data."
+        ? "It may be on a disconnected drive, offline in OneDrive, or blocked by Controlled folder access (Windows Security > Ransomware protection: allow marsai.click). Reconnect it, or use Reset app data."
         : "It may be on a disconnected drive or no longer exist. Reconnect it, or use Reset app data.",
     };
   }
   if (category === "store_readonly") {
     if (storeCheck?.elevated === true && windows) {
       return {
-        title: "omnirush.ai is running as administrator",
+        title: "marsai.click is running as administrator",
         body: storeCheck?.repairable
-          ? "Close omnirush.ai and start it normally (not with Run as administrator). If it still can't start, press Fix and restart."
-          : "Close omnirush.ai and start it normally (not with Run as administrator). If it still can't start, use Reset app data.",
+          ? "Close marsai.click and start it normally (not with Run as administrator). If it still can't start, press Fix and restart."
+          : "Close marsai.click and start it normally (not with Run as administrator). If it still can't start, use Reset app data.",
       };
     }
     return {
-      title: "omnirush.ai can't write its local data",
+      title: "marsai.click can't write its local data",
       body: storeCheck?.repairable
         ? (windows
-          ? "Some of omnirush.ai's data files are marked read-only. Press Fix and restart: it clears the read-only mark and restarts omnirush.ai."
-          : "Some of omnirush.ai's data files are read-only. Press Fix and restart: it makes them writable and restarts omnirush.ai.")
+          ? "Some of marsai.click's data files are marked read-only. Press Fix and restart: it clears the read-only mark and restarts marsai.click."
+          : "Some of marsai.click's data files are read-only. Press Fix and restart: it makes them writable and restarts marsai.click.")
         : (windows
-          ? "Windows refuses omnirush.ai write access to its data files. Use Reset app data: it moves the files to a backup folder (nothing is deleted) and restarts with fresh ones. Don't start omnirush.ai with Run as administrator."
-          : "omnirush.ai can't write its data files. Use Reset app data: it moves the files to a backup folder (nothing is deleted) and restarts with fresh ones."),
+          ? "Windows refuses marsai.click write access to its data files. Use Reset app data: it moves the files to a backup folder (nothing is deleted) and restarts with fresh ones. Don't start marsai.click with Run as administrator."
+          : "marsai.click can't write its data files. Use Reset app data: it moves the files to a backup folder (nothing is deleted) and restarts with fresh ones."),
     };
   }
   if (category === "store_error") {
     return {
-      title: "omnirush.ai's local data is damaged",
-      body: "Use Reset app data: it moves the local data to a backup folder (nothing is deleted) and restarts omnirush.ai.",
+      title: "marsai.click's local data is damaged",
+      body: "Use Reset app data: it moves the local data to a backup folder (nothing is deleted) and restarts marsai.click.",
     };
   }
   if (category === "disk_full") {

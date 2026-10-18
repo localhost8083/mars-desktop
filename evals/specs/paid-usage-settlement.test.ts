@@ -1,6 +1,6 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
-import { denFetch } from "@omnirush/behaviors";
+import { spec } from "@mars/testkit";
+import { denFetch } from "@mars/behaviors";
 import { paidUsageWorld } from "../worlds/models-analytics.ts";
 
 const test = spec.world(paidUsageWorld, { timeout: 900_000, needs: { placement: "local" } });
@@ -19,7 +19,7 @@ function text(value: unknown): string {
 
 test("paid usage keeps its admitted windows through retries, reset, repricing and revocation", async ({ world, evidence, probe, step }) => {
   const api = (path: string, method = "GET", body?: unknown) => denFetch(world.den.admin, path, {
-    method, headers: { authorization: `Bearer ${world.den.admin.token}`, "x-omnirush-org-id": world.orgId },
+    method, headers: { authorization: `Bearer ${world.den.admin.token}`, "x-mars-org-id": world.orgId },
     body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(30_000),
   });
   const fixture = async (action = "state", body: Record<string, unknown> = {}) => {
@@ -64,7 +64,7 @@ test("paid usage keeps its admitted windows through retries, reset, repricing an
     expect(upgraded.ledger).toEqual(legacy.ledger);
     expect(await fixture("upgrade")).toEqual(upgraded);
     expect(rows((await fixture()).ledger)[0]?.provider_usage).toBeNull();
-    await fixture("partial", { requestId: trace.omnirush_request_id });
+    await fixture("partial", { requestId: trace.mars_request_id });
     const legacyGap = await fixture();
     expect((await usage(trace, "upgrade-receipt")).body.deferred).toBe(1);
     expect(await fixture()).toEqual(legacyGap);
@@ -90,7 +90,7 @@ test("paid usage keeps its admitted windows through retries, reset, repricing an
       expect(bucket.used_amount).toBe(Number(before.used_amount) + 2);
       expect(bucket.limit_amount).toBe(before.limit_amount);
     }
-    await fixture("partial", { requestId: original.omnirush_request_id });
+    await fixture("partial", { requestId: original.mars_request_id });
     expect((await usage(original, "duplicate-paid")).status).toBe(200);
     const repaired = await fixture();
     expect(repaired.buckets).toEqual(settled.buckets);
@@ -113,11 +113,11 @@ test("paid usage keeps its admitted windows through retries, reset, repricing an
     expect(await complete()).toBe(200);
     const unpricedTrace = record((await calls()).at(-1)?.trace);
     expect((await usage(unpricedTrace, "unpriced-event", { input_tokens: 7, input_cost: " ", output_cost: "" })).body.deferred).toBe(1);
-    const retained = rows((await fixture()).ledger).find((row) => row.external_job_id === unpricedTrace.omnirush_request_id)!;
+    const retained = rows((await fixture()).ledger).find((row) => row.external_job_id === unpricedTrace.mars_request_id)!;
     expect(record(retained.provider_usage)).toMatchObject({ status: "unpriced", inputCost: null, outputCost: null });
     expect((await usage(unpricedTrace, "unpriced-event", { input_cost: 0.00000003, output_cost: 0 })).body.ingested).toBe(1);
     const repriced = await fixture();
-    const promoted = rows(repriced.ledger).filter((row) => row.external_job_id === unpricedTrace.omnirush_request_id);
+    const promoted = rows(repriced.ledger).filter((row) => row.external_job_id === unpricedTrace.mars_request_id);
     expect(promoted).toHaveLength(1);
     expect(promoted[0]).toMatchObject({ id: retained.id, occurred_at: retained.occurred_at, inference_key_id: retained.inference_key_id, cost_amount: 3, event_type: "openrouter_usage" });
     expect(record(promoted[0]!.provider_usage).status).toBe("priced");
@@ -137,9 +137,9 @@ test("paid usage keeps its admitted windows through retries, reset, repricing an
     expect(await complete()).toBe(200);
     const changedIdTrace = record((await calls()).at(-1)?.trace);
     expect((await usage(changedIdTrace, "unpriced-original-id", {})).body.deferred).toBe(1);
-    const beforePromotion = rows((await fixture()).ledger).find((row) => row.external_job_id === changedIdTrace.omnirush_request_id)!;
+    const beforePromotion = rows((await fixture()).ledger).find((row) => row.external_job_id === changedIdTrace.mars_request_id)!;
     expect((await usage({ ...changedIdTrace, usage_started_at: "2030-01-01T00:00:00Z" }, "priced-replacement-id")).body.ingested).toBe(1);
-    const changedIdEntries = rows((await fixture()).ledger).filter((row) => row.external_job_id === changedIdTrace.omnirush_request_id);
+    const changedIdEntries = rows((await fixture()).ledger).filter((row) => row.external_job_id === changedIdTrace.mars_request_id);
     expect(changedIdEntries).toHaveLength(1);
     expect(changedIdEntries[0]).toMatchObject({ id: beforePromotion.id, occurred_at: beforePromotion.occurred_at, external_event_id: "unpriced-original-id", cost_amount: 1 });
     evidence.recordAssertionEvidence("Pricing and delivery changes do not create a second ledger identity", "Missing costs stayed nullable; complete costs promoted one row in place. Changed event IDs, later timestamps, different costs and a cross-key event collision did not alter its identity/time or charge again. Malformed inherited OTLP usage was 400; a real persistence outage was retryable 503.", true);
@@ -156,7 +156,7 @@ test("paid usage keeps its admitted windows through retries, reset, repricing an
       const retained = await fixture();
       expect(retained.buckets).toEqual(ambiguous.buckets);
       expect(retained.charges).toEqual(ambiguous.charges);
-      expect(rows(retained.ledger).filter((row) => row.external_job_id === trace.omnirush_request_id)).toHaveLength(1);
+      expect(rows(retained.ledger).filter((row) => row.external_job_id === trace.mars_request_id)).toHaveLength(1);
     } finally { await fixture("clear-ambiguous"); }
     expect((await usage(trace, "ambiguous-history")).body.ingested).toBe(1);
     const repaired = await fixture();

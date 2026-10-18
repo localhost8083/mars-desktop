@@ -1,8 +1,8 @@
 import { and, asc, eq, isNull } from "@omnirush-ee/den-db/drizzle"
 import { DesktopPolicyTable, MemberTable, OrganizationTable } from "@omnirush-ee/den-db/schema"
 import { createDenTypeId } from "@omnirush-ee/utils/typeid"
-import { normalizeDesktopAppRestrictions } from "@omnirush/types/den/desktop-app-restrictions"
-import type { DesktopPolicyValue } from "@omnirush/types/den/desktop-policies"
+import { normalizeDesktopAppRestrictions } from "@mars/types/den/desktop-app-restrictions"
+import type { DesktopPolicyValue } from "@mars/types/den/desktop-policies"
 import { db } from "../src/db.js"
 
 const DEFAULT_DESKTOP_POLICY_NAME = "Default desktop policy"

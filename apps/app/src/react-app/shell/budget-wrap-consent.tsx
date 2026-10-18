@@ -5,7 +5,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useControlAction, type OmniRushControlAction } from "./control/control-provider";
+import { useControlAction, type MarsControlAction } from "./control/control-provider";
 
 type Choice = "pending" | "accept" | "decline" | "done";
 type Offer = { sessionID: string; offerID: string; scopes: string; choice: Choice; error?: string };
@@ -35,7 +35,7 @@ const useWrapStore = create<WrapStore>()(persist((set, get) => ({
     offers: state.offers.filter((entry) => entry.sessionID !== sessionID || entry.offerID !== offerID),
   })),
 }), {
-  name: "omnirush:budget-wrap-consent:v2",
+  name: "mars:budget-wrap-consent:v2",
   storage: createJSONStorage(() => localStorage),
   // Persist final choices, not a live popup: after a full app restart the
   // engine must renew an offer before Accept can start a real compaction.
@@ -57,7 +57,7 @@ export function BudgetWrapConsent() {
   const offers = useWrapStore((state) => state.offers);
   const pending = offers.find((entry) => entry.choice === "pending");
 
-  const updateAction = useMemo<OmniRushControlAction>(() => ({
+  const updateAction = useMemo<MarsControlAction>(() => ({
     id: "budget.wrap.update",
     label: "Update pending quota wrap",
     description: "Show or settle a local, user-approved context wrap offer.",

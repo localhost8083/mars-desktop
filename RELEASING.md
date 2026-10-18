@@ -2,7 +2,7 @@
 
 ## How a release gets its sandbox images
 
-The Linux sandbox runs every project on a prebuilt image, `ghcr.io/omnirush-ai/box-{base,go,rust,java,ruby}`. On Windows, the OmniRush WSL backend imports its own root filesystem. The app pins both:
+The Linux sandbox runs every project on a prebuilt image, `ghcr.io/mars-ai/box-{base,go,rust,java,ruby}`. On Windows, the Mars WSL backend imports its own root filesystem. The app pins both:
 
 - `apps/server/src/box/images.json`: each image by its multi-arch digest (linux/amd64 and linux/arm64);
 - `apps/server/src/box/wsl.json`: the WSL image's URL and sha256, for amd64 and arm64.

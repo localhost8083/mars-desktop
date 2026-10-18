@@ -110,9 +110,9 @@ describe("permission approval modal helpers", () => {
       sourceTitle: "OpenCode browser task",
       respondPermission: () => {},
     }));
-    expect(html).toContain("Approve omnirush-chrome-devtools_browser_open?");
-    expect(html).toContain("OmniRush browser access");
-    expect(html).toContain("Requested by OmniRush browser task");
+    expect(html).toContain("Approve mars-chrome-devtools_browser_open?");
+    expect(html).toContain("Mars browser access");
+    expect(html).toContain("Requested by Mars browser task");
     expect(html.toLowerCase()).not.toContain("opencode");
     expect(permission).toEqual(original);
     expect(buttonText(html)).toEqual(["Deny", "Allow once", "Allow for session"]);

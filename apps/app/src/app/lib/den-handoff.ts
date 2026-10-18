@@ -20,7 +20,7 @@ import {
   resolveHandoffOrgPlan,
 } from "./den-sign-in-intent";
 
-export const DEN_HANDOFF_AUTO_CONTINUE_KEY = "omnirush.den.handoffAutoContinueAt";
+export const DEN_HANDOFF_AUTO_CONTINUE_KEY = "mars.den.handoffAutoContinueAt";
 
 export type HandoffActiveOrg = {
   id: string;
@@ -136,7 +136,7 @@ export async function exchangeHandoffAndSignIn(
   grant: string,
   options: ExchangeHandoffOptions,
 ): Promise<ExchangeHandoffResult> {
-  const fallback = options.fallbackErrorMessage ?? "Failed to sign in to omnirush.ai Cloud.";
+  const fallback = options.fallbackErrorMessage ?? "Failed to sign in to marsai.click Cloud.";
   const attempt = ++handoffAttemptCounter;
 
   const fail = (

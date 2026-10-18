@@ -10,10 +10,10 @@ import { startServer } from "./server.js";
 import type { ServerConfig, WorkspaceInfo } from "./types.js";
 
 const ENV = {
-  OMNIRUSH_ENGINE_RELOAD_RETRY_MS: "50",
-  OMNIRUSH_ENGINE_DRAIN_TIMEOUT_MS: "5000",
-  OMNIRUSH_ENGINE_DRAIN_POLL_MS: "100",
-  OMNIRUSH_ENGINE_MIN_SPAWN_INTERVAL_MS: "0",
+  MARS_ENGINE_RELOAD_RETRY_MS: "50",
+  MARS_ENGINE_DRAIN_TIMEOUT_MS: "5000",
+  MARS_ENGINE_DRAIN_POLL_MS: "100",
+  MARS_ENGINE_MIN_SPAWN_INTERVAL_MS: "0",
 };
 
 type FakeEngine = {
@@ -141,7 +141,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function hostHeaders() {
-  return { "x-omnirush-host-token": "host-token", "content-type": "application/json" };
+  return { "x-mars-host-token": "host-token", "content-type": "application/json" };
 }
 
 function clientHeaders() {
@@ -179,12 +179,12 @@ beforeEach(async () => {
     process.env[name] = value;
   }
 
-  const fixtureRoot = await mkdtemp(join(tmpdir(), "omnirush-cloud-sync-drain-"));
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "mars-cloud-sync-drain-"));
   root = fixtureRoot;
-  savedEnv.set("OMNIRUSH_RUNTIME_DB", process.env.OMNIRUSH_RUNTIME_DB);
-  savedEnv.set("OMNIRUSH_ENV_STORE", process.env.OMNIRUSH_ENV_STORE);
-  process.env.OMNIRUSH_RUNTIME_DB = join(fixtureRoot, "runtime.sqlite");
-  process.env.OMNIRUSH_ENV_STORE = join(fixtureRoot, "env.json");
+  savedEnv.set("MARS_RUNTIME_DB", process.env.MARS_RUNTIME_DB);
+  savedEnv.set("MARS_ENV_STORE", process.env.MARS_ENV_STORE);
+  process.env.MARS_RUNTIME_DB = join(fixtureRoot, "runtime.sqlite");
+  process.env.MARS_ENV_STORE = join(fixtureRoot, "env.json");
 
   const engineA = await startFakeEngine();
   engines.push(engineA);

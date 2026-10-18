@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/test-evidence",
+  "name": "@mars/test-evidence",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -19,8 +19,8 @@
     }
   },
   "dependencies": {
-    "@omnirush/cdp": "workspace:*",
-    "@omnirush/env": "workspace:*",
-    "@omnirush/timeline": "workspace:*"
+    "@mars/cdp": "workspace:*",
+    "@mars/env": "workspace:*",
+    "@mars/timeline": "workspace:*"
   }
 }

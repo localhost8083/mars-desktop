@@ -2,7 +2,7 @@ import { appendFile, chmod, mkdir, readFile, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { OutputMeta } from "./outputs.ts";
 
-export const EVENTS_ENV = "OMNIRUSH_WORLD_EVENTS";
+export const EVENTS_ENV = "MARS_WORLD_EVENTS";
 
 export function eventsPath(snapshotDirectory: string, receiptName: string): string {
   return join(snapshotDirectory, `${receiptName}.events.jsonl`);

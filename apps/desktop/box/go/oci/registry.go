@@ -75,7 +75,7 @@ type Image struct {
 	Labels   map[string]string `json:"labels,omitempty"`
 }
 
-// Client talks to registries (anonymous; OMNIRUSH_BOX_REGISTRY_AUTH=user:token
+// Client talks to registries (anonymous; MARS_BOX_REGISTRY_AUTH=user:token
 // for a private one).
 type Client struct {
 	HTTP      *http.Client
@@ -90,8 +90,8 @@ type Client struct {
 func NewClient() *Client {
 	return &Client{
 		HTTP:      &http.Client{Timeout: 0, Transport: &http.Transport{Proxy: http.ProxyFromEnvironment, ResponseHeaderTimeout: 60 * time.Second, IdleConnTimeout: 30 * time.Second}},
-		Auth:      os.Getenv("OMNIRUSH_BOX_REGISTRY_AUTH"),
-		UserAgent: "omnirush-boxrun",
+		Auth:      os.Getenv("MARS_BOX_REGISTRY_AUTH"),
+		UserAgent: "mars-boxrun",
 	}
 }
 

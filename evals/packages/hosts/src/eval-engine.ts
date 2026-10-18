@@ -4,5 +4,5 @@ export function resolveEvalEngineValue(value: string | undefined): EvalEngine {
   if (value === undefined) return "v1";
   const normalized = value.trim().toLowerCase();
   if (normalized === "v1" || normalized === "v2") return normalized;
-  throw new Error(`Invalid OMNIRUSH_EVAL_ENGINE value ${JSON.stringify(value)}; expected "v1" or "v2".`);
+  throw new Error(`Invalid MARS_EVAL_ENGINE value ${JSON.stringify(value)}; expected "v1" or "v2".`);
 }

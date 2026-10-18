@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Activity as ActivityIcon, ArrowLeft, CheckCircle2, Clock3, Coins, Layers, Plug, RefreshCw, ShieldCheck, Sparkles, Zap } from "lucide-react";
-import { INFERENCE_MODEL_ALIASES } from "@omnirush/types/den/inference";
+import { INFERENCE_MODEL_ALIASES } from "@mars/types/den/inference";
 import { z } from "zod";
 import { modelsAnalyticsSettingsSchema, modelsAnalyticsActivitySchema, modelsConsumptionSchema, type ModelsAnalyticsSettings } from "@omnirush-ee/telemetry-contracts";
 import { DenButton } from "../../_components/ui/button";

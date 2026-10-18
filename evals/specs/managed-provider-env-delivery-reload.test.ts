@@ -2,11 +2,11 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { eventually, test } from "@omnirush/testkit";
+import { eventually, test } from "@mars/testkit";
 import { expect } from "vitest";
 
 import { resetManagedProviderAuthCache } from "../../apps/server/src/managed-provider-auth.js";
-import { omnirushRuntimeConfigFilePath } from "../../apps/server/src/omnirush-runtime-config.js";
+import { marsRuntimeConfigFilePath } from "../../apps/server/src/mars-runtime-config.js";
 import { startServer } from "../../apps/server/src/server.js";
 import type { ServerConfig } from "../../apps/server/src/types.js";
 
@@ -14,7 +14,7 @@ const CLIENT_TOKEN = "owt_managed_provider_env_client";
 const HOST_TOKEN = "owt_managed_provider_env_host";
 
 function hostHeaders() {
-  return { "x-omnirush-host-token": HOST_TOKEN, "content-type": "application/json" };
+  return { "x-mars-host-token": HOST_TOKEN, "content-type": "application/json" };
 }
 
 function managedProviderChanges(requests: string[]): string[] {
@@ -36,7 +36,7 @@ async function handleEngineRequest(
   const path = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
   requests.push(`${method} ${path}`);
   if (method === "GET" && path === "/config") {
-    const content = await readFile(omnirushRuntimeConfigFilePath(config), "utf8");
+    const content = await readFile(marsRuntimeConfigFilePath(config), "utf8");
     response.writeHead(200, { "content-type": "application/json" });
     response.end(content);
     return;
@@ -74,11 +74,11 @@ async function startFakeEngine(config: ServerConfig, requests: string[]) {
 }
 
 test("stored managed provider credentials reload the engine after auth delivery", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-provider-env-reload-"));
-  const previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
-  const previousEnvStore = process.env.OMNIRUSH_ENV_STORE;
-  process.env.OMNIRUSH_RUNTIME_DB = join(root, "runtime.sqlite");
-  process.env.OMNIRUSH_ENV_STORE = join(root, "env.json");
+  const root = await mkdtemp(join(tmpdir(), "mars-provider-env-reload-"));
+  const previousRuntimeDb = process.env.MARS_RUNTIME_DB;
+  const previousEnvStore = process.env.MARS_ENV_STORE;
+  process.env.MARS_RUNTIME_DB = join(root, "runtime.sqlite");
+  process.env.MARS_ENV_STORE = join(root, "env.json");
   resetManagedProviderAuthCache();
 
   const engineRequests: string[] = [];
@@ -203,10 +203,10 @@ test("stored managed provider credentials reload the engine after auth delivery"
     await server?.stop();
     await engine?.stop();
     resetManagedProviderAuthCache();
-    if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-    else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
-    if (previousEnvStore === undefined) delete process.env.OMNIRUSH_ENV_STORE;
-    else process.env.OMNIRUSH_ENV_STORE = previousEnvStore;
+    if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+    else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
+    if (previousEnvStore === undefined) delete process.env.MARS_ENV_STORE;
+    else process.env.MARS_ENV_STORE = previousEnvStore;
     await rm(root, { recursive: true, force: true });
   }
 });

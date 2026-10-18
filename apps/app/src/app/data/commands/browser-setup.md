@@ -1,6 +1,6 @@
 ---
 name: browser-setup
-description: Use the built-in OmniRush.ai browser
+description: Use the built-in MarsAI browser
 ---
 
 Use browser_tabs to find this conversation's tabs, then browser_open to open https://example.com if needed.

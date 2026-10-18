@@ -1,12 +1,12 @@
 # Approval modes
 
-The engine asks before some tool calls. The omnirush.ai desktop app has two
+The engine asks before some tool calls. The marsai.click desktop app has two
 approval modes:
 
 | Mode | What asks |
 | --- | --- |
 | `guarded` (default) | The git and pull-request rules from [git-workflows.md](git-workflows.md): write commands ask once per session per command family, destructive commands always ask. Everything else follows the engine's own defaults (for example editing files outside authorized folders). |
-| `full` | Nothing asks. The injected engine config sets `permission.bash` to a single `"*": "allow"` rule (no git ask rules, no `OMNIRUSH_DESTRUCTIVE` marker rule), `permission.read` to a single `"*": "allow"` rule (the engine asks before reading `.env` files by default; the later catch-all wins) and `edit`, `webfetch`, `websearch`, `doom_loop` and `external_directory` to `allow`. |
+| `full` | Nothing asks. The injected engine config sets `permission.bash` to a single `"*": "allow"` rule (no git ask rules, no `MARS_DESTRUCTIVE` marker rule), `permission.read` to a single `"*": "allow"` rule (the engine asks before reading `.env` files by default; the later catch-all wins) and `edit`, `webfetch`, `websearch`, `doom_loop` and `external_directory` to `allow`. |
 
 Organization rules from Den (`commands: deny`, `blockedCommands`, approved
 browser origins) are still appended after those rules in both modes. The
@@ -24,7 +24,7 @@ either:
 1. persists the setting in the global runtime config row
    (`approvals.mode`, `PUT /runtime-config/approvals`);
 2. rewrites the injected engine config file
-   (`~/.config/omnirush/runtime-opencode-config.json`);
+   (`~/.config/mars/runtime-opencode-config.json`);
 3. triggers a manual engine reload, the same call Settings "Reload" makes, so
    the rules apply within seconds. The status reads "Full permissions on.
    Engine reloaded.", "Guarded mode. Engine reloaded." or the error to act
@@ -33,14 +33,14 @@ either:
 
 Both controls reflect the current mode on load. While full mode is on the
 composer switch is filled in the accent colour, so it is obvious that nothing
-will ask for approval. While `OMNIRUSH_APPROVALS` forces the mode both are
+will ask for approval. While `MARS_APPROVALS` forces the mode both are
 disabled: Settings shows "Set by environment", the composer says so in a
 tooltip. When the organization policy disables changing app settings the
 composer switch is disabled as well and its tooltip says why.
 
 ## Forcing the mode from the environment
 
-`OMNIRUSH_APPROVALS=full` or `OMNIRUSH_APPROVALS=guarded` in the environment
+`MARS_APPROVALS=full` or `MARS_APPROVALS=guarded` in the environment
 of the server process wins over the persisted setting. The value is
 case-insensitive; anything else is ignored and the setting (or the default)
 applies.
@@ -51,17 +51,17 @@ applies.
   binary directly:
 
   ```sh
-  OMNIRUSH_APPROVALS=full "/Applications/omnirush.app/Contents/MacOS/omnirush"
+  MARS_APPROVALS=full "/Applications/mars.app/Contents/MacOS/mars"
   ```
 
   On Linux run the AppImage or installed binary the same way; on Windows set
   the variable in the shell that starts the executable.
-- Development: `OMNIRUSH_APPROVALS=full pnpm dev`, and
-  `OMNIRUSH_APPROVALS=full pnpm world up dev-headless --detach` for the
+- Development: `MARS_APPROVALS=full pnpm dev`, and
+  `MARS_APPROVALS=full pnpm world up dev-headless --detach` for the
   headless web world.
-- Standalone server: set the variable for the `omnirush-server` process.
+- Standalone server: set the variable for the `mars-server` process.
 
-The Settings > Environment tab cannot set it: `OMNIRUSH_*` keys in the user
+The Settings > Environment tab cannot set it: `MARS_*` keys in the user
 environment file are reserved and dropped.
 
 ## How the mode reaches the engine
@@ -70,13 +70,13 @@ environment file are reserved and dropped.
   setting, then `guarded`.
 - `legacyExecutionPermissions` (`apps/server/src/managed-policy-rules.ts`)
   renders the permission block for that mode into the injected engine config
-  (`apps/server/src/omnirush-runtime-config.ts`). The engine re-reads the file
+  (`apps/server/src/mars-runtime-config.ts`). The engine re-reads the file
   on reload.
 - The managed-policy engine plugin does not read the environment. Every
   `POST /managed-policy/evaluate` answer carries `approvalMode`, so the plugin
   applies the mode the server resolved for that very tool call. In full mode
   it skips the destructive-marker rewrite and the commit-identity refusal; it
-  still sets the repository-local identity from the connected omnirush.ai
+  still sets the repository-local identity from the connected marsai.click
   account when the repository has none, and says so in the tool output.
 
 ## API

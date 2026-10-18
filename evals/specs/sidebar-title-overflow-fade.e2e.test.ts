@@ -1,6 +1,6 @@
-import { browserScript } from "@omnirush/testkit";
+import { browserScript } from "@mars/testkit";
 import { beforeEach, describe, expect } from "vitest";
-import { spec, readSidebarOverflow, type Surface } from "@omnirush/testkit";
+import { spec, readSidebarOverflow, type Surface } from "@mars/testkit";
 import { sidebarExpansion, sidebarOverflow } from "../worlds/session-shell.ts";
 
 type SidebarMode = "overflow" | "workspace" | "group" | "ungrouped";
@@ -114,8 +114,8 @@ test("the sidebar title fade follows only the edges with hidden text", async ({ 
     const platformClasses = await seed.evalIn(world.app, () => (document.documentElement.className));
     if (typeof platformClasses !== "string") throw new Error("Desktop platform classes were not readable.");
     await seed.evalIn(world.app, () => {
-      document.documentElement.classList.remove('omnirush-platform-linux', 'omnirush-platform-windows');
-      document.documentElement.classList.add('omnirush-electron', 'omnirush-platform-mac');
+      document.documentElement.classList.remove('mars-platform-linux', 'mars-platform-windows');
+      document.documentElement.classList.add('mars-electron', 'mars-platform-mac');
     });
     // TODO(primitive): probe.geometry should compare a pane and its visible titlebar trigger.
     const geometry = () => probe.eval(() => {
@@ -129,7 +129,7 @@ test("the sidebar title fade follows only the edges with hidden text", async ({ 
       const headerBox = header.getBoundingClientRect();
       const triggerBox = trigger.getBoundingClientRect();
       return {
-        isMac: document.documentElement.classList.contains('omnirush-platform-mac'),
+        isMac: document.documentElement.classList.contains('mars-platform-mac'),
         state: sidebar.getAttribute('data-state'),
         top: box.top,
         left: box.left,
@@ -352,7 +352,7 @@ for (const mode of expansionModes) {
         });
       }
       expect((await world.observation.read()).current.selected).toEqual(initial.current.selected);
-      const management = await probe.storage("omnirush.react.sessionManagement");
+      const management = await probe.storage("mars.react.sessionManagement");
       if (mode === "group") expect(management).toMatchObject({ state: { groupsByWorkspace: {
         [world.workspace.workspaceId]: { groups: [{ id: "grp_neighbor" }, { id: "grp_expansion" }] },
       } } });

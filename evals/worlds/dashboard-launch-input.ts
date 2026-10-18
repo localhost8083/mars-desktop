@@ -1,13 +1,13 @@
-import { browserScript } from "@omnirush/cdp";
-import type { Den, Seed } from "@omnirush/env";
-import { evalIn as rawEvalIn } from "@omnirush/behaviors";
-import type { DenSession } from "@omnirush/behaviors";
+import { browserScript } from "@mars/cdp";
+import type { Den, Seed } from "@mars/env";
+import { evalIn as rawEvalIn } from "@mars/behaviors";
+import type { DenSession } from "@mars/behaviors";
 
 import {
   atlassianAppTools, confluenceResourceUri, jiraResourceUri,
   confluenceTileTitle, jiraTileTitle, pastedConfluenceJson, pastedJqlJson,
-} from "@omnirush/labs";
-export { confluenceTileTitle, jiraTileTitle, expectedJql } from "@omnirush/labs";
+} from "@mars/labs";
+export { confluenceTileTitle, jiraTileTitle, expectedJql } from "@mars/labs";
 
 /**
  * A managed Dashboard whose two tiles launch an Atlassian-shaped MCP with
@@ -66,7 +66,7 @@ async function activeOrganizationId(seed: Seed, session: DenSession): Promise<st
 async function mintMcpTokens(seed: Seed, den: Den, organizationId: string): Promise<{ mcpToken: string; appHostToken: string }> {
   const result = await seed.api(den.admin, "/v1/mcp/token", {
     method: "POST",
-    headers: { "x-omnirush-org-id": organizationId },
+    headers: { "x-mars-org-id": organizationId },
     body: JSON.stringify({ scopes: ["mcp:read", "mcp:write"] }),
   });
   const body = requireRecord(result.body, "MCP token response");
@@ -85,7 +85,7 @@ export async function atlassianDashboardTiles(seed: Seed) {
     org: { name: `Dashboard launch input ${Date.now()}`, admin: { name: "Avery" } },
   });
   const organizationId = await activeOrganizationId(seed, den.admin);
-  const orgHeaders = { "x-omnirush-org-id": organizationId };
+  const orgHeaders = { "x-mars-org-id": organizationId };
   const connection = await seed.orgConnection(den.admin, {
     name: "Atlassian (One org account)",
     url: den.mocks.atlassian.mcpUrl,
@@ -157,10 +157,10 @@ export async function atlassianDashboardTiles(seed: Seed) {
   // authorization. This is the documented reconcile surface, not a stub.
   // TODO(primitive): seed.connectMcp
   const reconciled = await rawEvalIn(app, browserScript(async (workspaceId, value, inputValue, inputValue2) => {
-    const port = localStorage.getItem("omnirush.server.port");
-    const token = localStorage.getItem("omnirush.server.token");
+    const port = localStorage.getItem("mars.server.port");
+    const token = localStorage.getItem("mars.server.token");
     if (!port || !token) return "missing local server credentials";
-    const response = await fetch("http://127.0.0.1:" + port + "/workspace/" + encodeURIComponent(workspaceId) + "/mcp/omnirush-cloud/reconcile", {
+    const response = await fetch("http://127.0.0.1:" + port + "/workspace/" + encodeURIComponent(workspaceId) + "/mcp/mars-cloud/reconcile", {
       method: "POST",
       headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
       body: JSON.stringify({

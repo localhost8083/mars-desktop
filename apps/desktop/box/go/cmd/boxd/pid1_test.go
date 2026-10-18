@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"omnirush.ai/box/proto"
+	"marsai.click/box/proto"
 )
 
 // TestPID1ExitCodes runs the real boxd binary as PID 1 of its own PID

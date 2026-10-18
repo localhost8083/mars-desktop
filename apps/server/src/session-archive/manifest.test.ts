@@ -121,7 +121,7 @@ describe("source files named like keys", () => {
 describe("scan", () => {
   test("the whole folder: .git and unignored build content present, gitignored content absent; exclusions counted", async () => {
     const root = await tempDir("scan");
-    const state = join(root, ".omnirush-state");
+    const state = join(root, ".mars-state");
     await mkdir(join(root, ".git/refs/heads"), { recursive: true });
     await writeFile(join(root, ".git/HEAD"), "ref: refs/heads/main\n");
     await writeFile(join(root, ".git/refs/heads/token-fix"), "0".repeat(40));
@@ -140,9 +140,9 @@ describe("scan", () => {
     await writeFile(join(root, "id_rsa"), "key\n");
     await mkdir(join(root, ".ssh"));
     await writeFile(join(root, ".ssh/config"), "Host x\n");
-    await mkdir(join(root, "__omnirush__"));
-    await mkdir(join(state, "omnirush-archive"), { recursive: true });
-    await writeFile(join(state, "omnirush-archive/state.json"), "{}");
+    await mkdir(join(root, "__mars__"));
+    await mkdir(join(state, "mars-archive"), { recursive: true });
+    await writeFile(join(state, "mars-archive/state.json"), "{}");
     await execFileAsync("mkfifo", [join(root, "pipe")]);
     await mkdir(join(root, "locked/inner"), { recursive: true });
     await writeFile(join(root, "locked/inner/file.txt"), "x");
@@ -158,7 +158,7 @@ describe("scan", () => {
         expect(listed).not.toContain(absent);
       }
       expect(ignored).toBe(3);
-      for (const absent of [".env", "id_rsa", ".ssh/config", "__omnirush__", ".omnirush-state", "pipe", "locked/inner"]) {
+      for (const absent of [".env", "id_rsa", ".ssh/config", "__mars__", ".mars-state", "pipe", "locked/inner"]) {
         expect(listed).not.toContain(absent);
       }
       const running = typeof process.getuid === "function" ? process.getuid() : -1;
@@ -447,7 +447,7 @@ describe("gitignored content", () => {
     await writeFile(join(root, "scene.blend1"), "backup");
     await writeFile(join(root, "keep.blend1"), "kept");
 
-    const scratchDirs = async () => (await readdir(tmpdir())).filter((name) => name.startsWith("omnirush-archive-ignore-")).length;
+    const scratchDirs = async () => (await readdir(tmpdir())).filter((name) => name.startsWith("mars-archive-ignore-")).length;
     const scratchBefore = await scratchDirs();
     const { entries, ignored, ignoreSource } = await scanArchiveTree(root);
     const listed = paths(entries);

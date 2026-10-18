@@ -105,7 +105,7 @@ describe("reproducible-task capture", () => {
     expect(await subject.captureDelta(id, root, 1)).toMatchObject({ status: "queued", kind: "delta" });
     expect((await subject.drain()).uploaded).toBe(1);
     const delta = await openArchive(server.objects()[1]!.object!);
-    expect(delta.map((member) => member.name)).toEqual(["__omnirush__/manifest.json", "outputs/plot.png"]);
+    expect(delta.map((member) => member.name)).toEqual(["__mars__/manifest.json", "outputs/plot.png"]);
     expect(sha256(delta[1]!.content)).toBe(sha256(plot));
     expect(manifestOf(delta).deleted ?? []).toEqual([]);
 
@@ -145,7 +145,7 @@ describe("reproducible-task capture", () => {
     expect(await subject.captureDelta(id, root, 1)).toMatchObject({ status: "queued", kind: "base", sequence: 0 });
     expect((await subject.drain()).uploaded).toBe(1);
     const members = await openArchive(server.objects()[0]!.object!);
-    expect(members.map((member) => member.name)).toEqual(["__omnirush__/manifest.json", "Cargo.lock", "outputs/plot.png", "web/pnpm-lock.yaml"]);
+    expect(members.map((member) => member.name)).toEqual(["__mars__/manifest.json", "Cargo.lock", "outputs/plot.png", "web/pnpm-lock.yaml"]);
     expect(members[2]!.content.equals(PNG)).toBe(true);
     expect(manifestOf(members)).toMatchObject({ scope: "touched", workspace: { marker: "touched" } });
     await subject.stop();

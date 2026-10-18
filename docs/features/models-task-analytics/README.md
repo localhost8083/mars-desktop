@@ -1,10 +1,10 @@
-# OmniRush.ai Models task analytics
+# MarsAI Models task analytics
 
 The API and migration land first in #4567. This desktop follow-up uses that
 existing API after its deployment is verified. The organization rollout capability
 remains off by default, and analytics still requires explicit admin consent.
 
-Task analytics is included with a paid OmniRush.ai Models subscription. An internal
+Task analytics is included with a paid MarsAI Models subscription. An internal
 organization capability, `modelsAnalytics`, controls rollout and defaults to off.
 After rollout, workspace admins see **Unlock custom insights** on the Models page
 and can choose **Enable task analytics** or **Not now**. Purchasing or enabling
@@ -18,7 +18,7 @@ and organization. Runtime events must match that member's actual Models request.
 
 ```mermaid
 flowchart LR
-  App[OmniRush.ai task] --> Inference[Existing OmniRush.ai inference]
+  App[MarsAI task] --> Inference[Existing MarsAI inference]
   Inference --> Router[Existing OpenRouter upstream]
   Inference -. provider usage .-> Events[Consented event history]
   App -. task and tool metadata .-> Events

@@ -1,4 +1,4 @@
-import type { OmniRushAuditEntry } from "@/app/lib/omnirush-server";
+import type { MarsAuditEntry } from "@/app/lib/mars-server";
 import type { AuditTrailRecord, AuditWorkspaceRecord } from "./audit-trail-types";
 import { redactAuditText, redactAuditValueWithMetadata } from "./redact-audit-value";
 
@@ -25,7 +25,7 @@ function relativeTarget(target: string, workspacePath?: string): string {
   return normalized.split("/").pop() || normalized;
 }
 
-export function normalizeWorkspaceAuditEntry(entry: OmniRushAuditEntry, options: NormalizeWorkspaceAuditOptions | string = {}): AuditWorkspaceRecord {
+export function normalizeWorkspaceAuditEntry(entry: MarsAuditEntry, options: NormalizeWorkspaceAuditOptions | string = {}): AuditWorkspaceRecord {
   const opts = typeof options === "string" ? { workspacePath: options } : options;
   const workspaceId = opts.workspaceId ?? entry.workspaceId;
   const target = relativeTarget(typeof entry.target === "string" ? entry.target : "", opts.workspacePath);
@@ -52,7 +52,7 @@ export function normalizeWorkspaceAuditEntry(entry: OmniRushAuditEntry, options:
   };
 }
 
-export function normalizeWorkspaceAuditEntries(entries: readonly OmniRushAuditEntry[], options: NormalizeWorkspaceAuditOptions | string = {}): AuditTrailRecord[] {
+export function normalizeWorkspaceAuditEntries(entries: readonly MarsAuditEntry[], options: NormalizeWorkspaceAuditOptions | string = {}): AuditTrailRecord[] {
   const seen = new Set<string>();
   const records = entries.map((entry) => normalizeWorkspaceAuditEntry(entry, options)).filter((record) => {
     if (seen.has(record.id)) return false;

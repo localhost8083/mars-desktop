@@ -75,8 +75,8 @@ describe("workspace route native session lists", () => {
       id: "rem_ui-id",
       workspaceType: "remote",
       baseUrl: "https://remote.example.test/worker",
-      omnirushToken: "remote-token",
-      omnirushWorkspaceId: "server/id",
+      marsToken: "remote-token",
+      marsWorkspaceId: "server/id",
     }, {
       baseUrl: "https://local.example.test",
       token: "local-token",

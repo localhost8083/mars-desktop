@@ -26,7 +26,7 @@ if (current.stdout.trim() !== sha) {
     "Source run is no longer current; existing evidence is unchanged.",
   );
 } else {
-  const directory = await mkdtemp(join(tmpdir(), "omnirush-review-"));
+  const directory = await mkdtemp(join(tmpdir(), "mars-review-"));
   try {
     const download = spawnSync(
       "gh",

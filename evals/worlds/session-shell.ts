@@ -1,11 +1,11 @@
-import { allocateFreePort, browserScript, clickAt, evaluate, hoverAt, reload, type Point, type Surface, typeText } from "@omnirush/cdp";
+import { allocateFreePort, browserScript, clickAt, evaluate, hoverAt, reload, type Point, type Surface, typeText } from "@mars/cdp";
 import { createServer, type Server, type ServerResponse } from "node:http";
 import { mkdir, rm } from "node:fs/promises";
-import { engineSessionProbe, observeSidebarExpansion, readAvailableModels, selectModel, waitFor } from "@omnirush/behaviors";
-import { resolveEvalEngine, SkipError } from "@omnirush/env";
-import type { Place, Seed } from "@omnirush/env";
-import { daytonaSandbox, desktop as launchDesktop } from "@omnirush/hosts";
-import { startMockMcp } from "@omnirush/labs";
+import { engineSessionProbe, observeSidebarExpansion, readAvailableModels, selectModel, waitFor } from "@mars/behaviors";
+import { resolveEvalEngine, SkipError } from "@mars/env";
+import type { Place, Seed } from "@mars/env";
+import { daytonaSandbox, desktop as launchDesktop } from "@mars/hosts";
+import { startMockMcp } from "@mars/labs";
 
 const stormProviderId = "active-session-storm-mock";
 const stormModelId = "mock-agent-workload-model";
@@ -86,7 +86,7 @@ async function observeInstantRenderer(
         && style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0;
     };
     const surfaceRoot = () => {
-      if ((localStorage.getItem("omnirush.react.activeWorkspace") ?? "") !== workspaceId) return null;
+      if ((localStorage.getItem("mars.react.activeWorkspace") ?? "") !== workspaceId) return null;
       const sessionlessRoute = `#/workspace/${workspaceId}/session`;
       if (location.hash === sessionlessRoute) {
         const heading = [...document.querySelectorAll<HTMLElement>("h2")]
@@ -219,14 +219,14 @@ async function instantBoundaryController(app: Surface, workspaceId: string) {
   const endpoint = app.client.webSocketDebuggerUrl;
   if (!endpoint) throw new Error("Instant-send boundary observer requires the desktop CDP endpoint");
   const runtime = await evaluate(app.client, async () => {
-    const info = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("omnirushServerInfo");
+    const info = await window.__MARS_ELECTRON__?.invokeDesktop?.("marsServerInfo");
     return {
       baseUrl: info?.running && info.baseUrl ? String(info.baseUrl) : "",
       rendererOrigin: window.location.origin,
     };
   }, { awaitPromise: true });
   const { baseUrl, rendererOrigin } = runtime;
-  if (typeof baseUrl !== "string" || !baseUrl) throw new Error("OmniRush.ai server URL was unavailable to the boundary observer");
+  if (typeof baseUrl !== "string" || !baseUrl) throw new Error("MarsAI server URL was unavailable to the boundary observer");
   const origin = new URL(baseUrl).origin;
   const encodedWorkspaceId = encodeURIComponent(workspaceId);
   const sessionBases = ["workspace", "w"].map((mount) => `/${mount}/${encodedWorkspaceId}/opencode/session`);
@@ -464,16 +464,16 @@ async function additionalWorkspace(
   app: Awaited<ReturnType<Seed["desktop"]>>,
   path: string,
 ): Promise<ShellWorkspace> {
-  const previous = await seed.evalIn(app, () => (localStorage.getItem("omnirush.react.activeWorkspace") ?? ""));
+  const previous = await seed.evalIn(app, () => (localStorage.getItem("mars.react.activeWorkspace") ?? ""));
   // TODO(primitive): seed.workspace should always create the requested additional workspace.
-  const result = await seed.evalIn(app, browserScript((path) => window.__omnirushControl.execute("workspace.create", { path }), [path]), { awaitPromise: true, timeoutMs: 120_000 });
+  const result = await seed.evalIn(app, browserScript((path) => window.__marsControl.execute("workspace.create", { path }), [path]), { awaitPromise: true, timeoutMs: 120_000 });
   if (!isRecord(result) || result.ok !== true) throw new Error(`Could not create workspace ${path}: ${JSON.stringify(result)}`);
   const deadline = Date.now() + 120_000;
   while (Date.now() < deadline) {
     const state = await seed.evalIn(app, () => (({
-      workspaceId: localStorage.getItem("omnirush.react.activeWorkspace") ?? "",
+      workspaceId: localStorage.getItem("mars.react.activeWorkspace") ?? "",
       route: window.location.hash,
-      ready: Boolean(window.__omnirushControl),
+      ready: Boolean(window.__marsControl),
     })));
     if (isRecord(state)
       && typeof state.workspaceId === "string"
@@ -503,7 +503,7 @@ async function configureWorkspaceProvider(
 ): Promise<void> {
   // TODO(primitive): seed.configureWorkspaceProvider should configure and reload a workspace model without raw renderer evaluation.
   const result = await seed.evalIn(app, browserScript(async (workspaceIdsJson, smallModel, allowTools, providerId, modelId, modelName, baseUrl, defaultModel) => {
-    const info = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("omnirushServerInfo");
+    const info = await window.__MARS_ELECTRON__?.invokeDesktop?.("marsServerInfo");
     if (!info?.running || !info.baseUrl) return { error: "local_server_unavailable" };
     const workspaceIds = JSON.parse(workspaceIdsJson);
     const root = String(info.baseUrl).replace(/\/+$/, "");
@@ -542,18 +542,18 @@ async function configureWorkspaceProvider(
       });
       outcomes.push({ workspaceId, stage: "reload", status: reload.status, text: reload.ok ? "ok" : (await reload.text()).slice(0, 300) });
     }
-    const raw = localStorage.getItem("omnirush.preferences");
+    const raw = localStorage.getItem("mars.preferences");
     let preferences: Record<string, unknown> = {};
     try { preferences = raw ? JSON.parse(raw) : {}; } catch { preferences = {}; }
     if (!preferences || typeof preferences !== "object" || Array.isArray(preferences)) preferences = {};
-    localStorage.setItem("omnirush.preferences", JSON.stringify({
+    localStorage.setItem("mars.preferences", JSON.stringify({
       ...preferences,
       defaultModel: { providerID: providerId, modelID: modelId },
       modelVariant: null,
       providerStepCleaned: true,
     }));
-    localStorage.setItem("omnirush.defaultModel", defaultModel);
-    for (const workspaceId of workspaceIds) localStorage.removeItem("omnirush.sessionModels." + workspaceId);
+    localStorage.setItem("mars.defaultModel", defaultModel);
+    for (const workspaceId of workspaceIds) localStorage.removeItem("mars.sessionModels." + workspaceId);
     return { outcomes };
   }, [
       JSON.stringify(workspaceIds),
@@ -612,20 +612,20 @@ export async function sidebarExpansion(seed: Seed, mode: "workspace" | "group" |
   ]);
   // Persist real group state and manual order before reload; no component/store imports.
   await seed.evalIn(app, browserScript(async (workspaceId, groups, assignments, ids) => {
-    const info = await window.__OMNIRUSH_ELECTRON__.invokeDesktop("omnirushServerInfo");
+    const info = await window.__MARS_ELECTRON__.invokeDesktop("marsServerInfo");
     if (!info?.baseUrl) throw new Error("Sidebar seed needs the local server");
     const response = await fetch(`${info.baseUrl.replace(/\/+$/, "")}/workspace/${encodeURIComponent(workspaceId)}/session-groups`, {
       method: "PUT", headers: { Authorization: `Bearer ${info.ownerToken ?? info.clientToken}`, "Content-Type": "application/json" },
       body: JSON.stringify({ state: { groups, assignments } }), signal: AbortSignal.timeout(30_000),
     });
     if (!response.ok) throw new Error(`Sidebar group seed failed: ${response.status}`);
-    localStorage.setItem("omnirush.react.sessionManagement", JSON.stringify({ state: {
+    localStorage.setItem("mars.react.sessionManagement", JSON.stringify({ state: {
       pinnedIds: [], unreadIds: [], orderByWorkspace: { [workspaceId]: ids },
       groupsByWorkspace: { [workspaceId]: { groups, assignments, collapsedGroupIds: [] } },
     }, version: 0 }));
   }, [workspace.workspaceId, groups, assignments, [...sessions.map(session => session.sessionId), neighbor.sessionId]]));
   await app.client.send("Page.reload");
-  await waitFor(app, () => Boolean(document.querySelector('[data-sidebar-session-id]')) && Boolean(window.__omnirushControl), {
+  await waitFor(app, () => Boolean(document.querySelector('[data-sidebar-session-id]')) && Boolean(window.__marsControl), {
     timeoutMs: 60_000, label: "sidebar expansion fixture reloaded",
   });
   const observation = await observeSidebarExpansion(app);
@@ -635,15 +635,15 @@ export async function sidebarExpansion(seed: Seed, mode: "workspace" | "group" |
 export async function sidebarWorkspaceTitles(seed: Seed) {
   const runId = Date.now().toString(36);
   const shortName = `Yonder-${runId}`;
-  const longName = `omnirush-workspace-title-that-keeps-going-past-the-sidebar-${runId}`;
+  const longName = `mars-workspace-title-that-keeps-going-past-the-sidebar-${runId}`;
   const app = await seed.desktop({ name: "sidebar-workspace-title-fit" });
   const shortWorkspace = await seed.workspace(app, `/tmp/${shortName}`);
   return { app, shortName, longName, shortWorkspace };
 }
 
 export async function workspaceNewTask(seed: Seed, { place }: { place: Place }) {
-  if (place.kind !== "local") throw new SkipError("local renderer performance contract (OMNIRUSH_WORLD_PLACE=local and --local)");
-  if (resolveEvalEngine() !== "v1") throw new SkipError("native v1 instant-send contract (OMNIRUSH_EVAL_ENGINE=v1)");
+  if (place.kind !== "local") throw new SkipError("local renderer performance contract (MARS_WORLD_PLACE=local and --local)");
+  if (resolveEvalEngine() !== "v1") throw new SkipError("native v1 instant-send contract (MARS_EVAL_ENGINE=v1)");
   const providerId = "new-task-mock";
   const modelId = "new-task-model";
   const nonce = `${Date.now().toString(36)}-${process.pid}`;
@@ -673,13 +673,13 @@ export async function workspaceNewTask(seed: Seed, { place }: { place: Place }) 
   await using setup = new AsyncDisposableStack();
   const mock = setup.use(await startMockMcp({ port: await allocateFreePort(), agentWorkloads: workloads }));
   const app = await seed.desktop({ name: "workspace-new-task", model: `${providerId}/${modelId}` });
-  const workspacePath = seed.tmpPath(`omnirush-workspace-new-task-long-name-${Date.now()}`);
+  const workspacePath = seed.tmpPath(`mars-workspace-new-task-long-name-${Date.now()}`);
   const workspace = await seed.workspace(app, workspacePath, { create: true });
   await configureWorkspaceProvider(seed, app, [workspace.workspaceId], {
     providerId, modelId, modelName: "New task model", baseUrl: `${mock.url}/v1`,
   });
   await reload(app, { timeoutMs: 60_000 });
-  await waitFor(app, () => Boolean(window.__omnirushControl?.listActions()
+  await waitFor(app, () => Boolean(window.__marsControl?.listActions()
     .some((entry) => entry.id === "session.model_picker.open" && entry.disabled === false)), {
     timeoutMs: 60_000,
     label: "reloaded renderer model picker is interactive",
@@ -691,7 +691,7 @@ export async function workspaceNewTask(seed: Seed, { place }: { place: Place }) 
   if (!unrelated || !existing) throw new Error("Instant-send world did not create both real v1 sessions.");
 
   const serverInfo = await seed.evalIn(app, async () => {
-    const info = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("omnirushServerInfo");
+    const info = await window.__MARS_ELECTRON__?.invokeDesktop?.("marsServerInfo");
     return info?.running && info.baseUrl
       ? { baseUrl: String(info.baseUrl), token: String(info.ownerToken ?? info.clientToken ?? "") }
       : null;
@@ -776,7 +776,7 @@ export async function workspaceNewTask(seed: Seed, { place }: { place: Place }) 
     ]);
   }
   await waitFor(app, browserScript((marker, reply, workspaceId, sessionId) => {
-    if ((localStorage.getItem("omnirush.react.activeWorkspace") ?? "") !== workspaceId
+    if ((localStorage.getItem("mars.react.activeWorkspace") ?? "") !== workspaceId
       || location.hash !== `#/workspace/${workspaceId}/session/${sessionId}`) return false;
     const pane = document.querySelector<HTMLElement>('[data-workbench-pane="primary"]');
     const surface = [...(pane?.querySelectorAll<HTMLElement>("[data-session-surface-id]") ?? [])]
@@ -831,7 +831,7 @@ export async function workspaceNewTask(seed: Seed, { place }: { place: Place }) 
       let serverInfoError: string | null = null;
       try {
         currentServerInfo = await seed.evalIn(app, async () => {
-          const info = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("omnirushServerInfo");
+          const info = await window.__MARS_ELECTRON__?.invokeDesktop?.("marsServerInfo");
           if (!info?.running || !info.baseUrl) return null;
           return {
             baseUrl: String(info.baseUrl),
@@ -1038,7 +1038,7 @@ export async function workspaceNewTask(seed: Seed, { place }: { place: Place }) 
     };
   }, [sessionId, role, marker]));
   const rendererDiagnostic = (expectedSessionId: string | null) => seed.evalIn(app, browserScript((expectedWorkspaceId, expectedSessionId) => {
-    const composer = window.__omnirush?.slice("composer") ?? null;
+    const composer = window.__mars?.slice("composer") ?? null;
     const ownerWorkspaceId: unknown = composer ? Reflect.get(composer, "workspaceId") : null;
     const ownerSessionId: unknown = composer ? Reflect.get(composer, "sessionId") : null;
     return {
@@ -1076,7 +1076,7 @@ export async function workspaceNewTask(seed: Seed, { place }: { place: Place }) 
         && rect.right > 0 && rect.bottom > 0 && rect.left < innerWidth && rect.top < innerHeight
         && style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0;
     };
-    if ((localStorage.getItem("omnirush.react.activeWorkspace") ?? "") !== workspaceId) {
+    if ((localStorage.getItem("mars.react.activeWorkspace") ?? "") !== workspaceId) {
       return { rootKind: "", focused: false, editable: false, text: "" };
     }
     let root: HTMLElement | null = null;
@@ -1262,7 +1262,7 @@ export async function workspaceNewTask(seed: Seed, { place }: { place: Place }) 
           && rect.right > 0 && rect.bottom > 0 && rect.left < innerWidth && rect.top < innerHeight
           && style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0;
       };
-      if ((localStorage.getItem("omnirush.react.activeWorkspace") ?? "") !== workspaceId) {
+      if ((localStorage.getItem("mars.react.activeWorkspace") ?? "") !== workspaceId) {
         return { ready: false, rootKind: "", composerText: "", focusedEditor: false, buttonFound: false, buttonDisabled: null, buttonHit: false };
       }
       let root: HTMLElement | null = null;
@@ -1352,10 +1352,10 @@ export async function pinnedSessions(seed: Seed) {
   const [candidate, neighbor] = await seed.sessions(app, ["Candidate session", "Neighbor session"]);
   if (!candidate || !neighbor) throw new Error("Pinned world did not create both sessions.");
 
-  // TODO(primitive): probe.context should expose the OmniRush.ai context snapshot.
+  // TODO(primitive): probe.context should expose the MarsAI context snapshot.
   async function context(): Promise<{ pinnedSessionIds: string[]; pinnedResourceRefs: string[] }> {
     const value = await seed.evalIn(app, () => {
-      const c = window.__omnirushControl?.context?.();
+      const c = window.__marsControl?.context?.();
       return {
         pinnedSessionIds: c?.conversations?.pinnedSessionIds ?? null,
         pinnedResourceRefs: (c?.resources ?? [])
@@ -1368,7 +1368,7 @@ export async function pinnedSessions(seed: Seed) {
       || !value.pinnedSessionIds.every((id) => typeof id === "string")
       || !Array.isArray(value.pinnedResourceRefs)
       || !value.pinnedResourceRefs.every((ref) => typeof ref === "string")) {
-      throw new Error(`OmniRush.ai context pin state was malformed: ${JSON.stringify(value)}`);
+      throw new Error(`MarsAI context pin state was malformed: ${JSON.stringify(value)}`);
     }
     return {
       pinnedSessionIds: value.pinnedSessionIds,
@@ -1414,13 +1414,13 @@ export async function archiveSessions(seed: Seed) {
 
   /**
    * OpenCode's own `time.archived` stamp per session id (0 when active), read
-   * through the workspace-scoped OmniRush.ai server mount the desktop uses.
+   * through the workspace-scoped MarsAI server mount the desktop uses.
    */
   // TODO(primitive): probe.sessions should expose the workspace's native session list.
   async function archivedAt(): Promise<Record<string, number>> {
     const value = await seed.evalIn(app, browserScript(async (workspaceId, engine) => {
-      const info = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("omnirushServerInfo");
-      if (!info?.running || !info.baseUrl) throw new Error("OmniRush.ai server is unavailable");
+      const info = await window.__MARS_ELECTRON__?.invokeDesktop?.("marsServerInfo");
+      if (!info?.running || !info.baseUrl) throw new Error("MarsAI server is unavailable");
       const response = await fetch(
         String(info.baseUrl).replace(/\/+$/, "") + "/workspace/" + encodeURIComponent(workspaceId) + (engine === "v2" ? "/opencode2/api/session?limit=200" : "/opencode/session?limit=200"),
         {
@@ -1576,12 +1576,12 @@ export async function externalSessionVisibility(seed: Seed) {
     timeoutMs: 30_000,
     label: "model picker backdrop dismissed before sidebar interaction",
   });
-  const rawServerInfo = await seed.evalIn(app, () => (window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("omnirushServerInfo")), {
+  const rawServerInfo = await seed.evalIn(app, () => (window.__MARS_ELECTRON__?.invokeDesktop?.("marsServerInfo")), {
     awaitPromise: true,
     timeoutMs: 30_000,
   });
   if (!isRecord(rawServerInfo) || typeof rawServerInfo.baseUrl !== "string") {
-    throw new Error(`OmniRush.ai server info was unavailable: ${JSON.stringify(rawServerInfo)}`);
+    throw new Error(`MarsAI server info was unavailable: ${JSON.stringify(rawServerInfo)}`);
   }
   const serverUrl = new URL(rawServerInfo.baseUrl);
   const serverToken = typeof rawServerInfo.ownerToken === "string"
@@ -1589,13 +1589,13 @@ export async function externalSessionVisibility(seed: Seed) {
     : typeof rawServerInfo.clientToken === "string"
       ? rawServerInfo.clientToken
       : "";
-  if (!serverToken) throw new Error("OmniRush.ai server info did not include a token.");
+  if (!serverToken) throw new Error("MarsAI server info did not include a token.");
   let externalServerUrl = serverUrl.origin;
   if (app.handle.hostKind === "daytona") {
     const sandboxId = app.handle.sandboxId?.trim();
     if (!sandboxId) throw new Error("Daytona desktop did not expose its sandbox id.");
     await using previewHost = daytonaSandbox(sandboxId);
-    if (!previewHost.previewUrl) throw new Error("Daytona host cannot expose the OmniRush.ai server port.");
+    if (!previewHost.previewUrl) throw new Error("Daytona host cannot expose the MarsAI server port.");
     externalServerUrl = await previewHost.previewUrl(Number(serverUrl.port));
   }
   return {
@@ -1800,7 +1800,7 @@ export async function externalSessionVisibility(seed: Seed) {
     // TODO(primitive): probe.route should expose the sidebar's per-workspace session lists.
     async route(): Promise<SidebarRouteFacts> {
       return parseSidebarRouteFacts(await seed.evalIn(app, () => {
-        const route = window.__omnirush?.slice?.("route");
+        const route = window.__mars?.slice?.("route");
         if (!route) return null;
         return {
           selectedWorkspaceId: String(route.selectedWorkspaceId ?? ""),
@@ -1819,7 +1819,7 @@ export async function externalSessionVisibility(seed: Seed) {
     },
     /**
      * Creates a session the way another client would: straight against the
-     * OmniRush.ai server's workspace mount, never through the desktop's UI state.
+     * MarsAI server's workspace mount, never through the desktop's UI state.
      */
     // TODO(primitive): seed.externalSession should create a session on the server without touching the renderer.
     async createSessionOutsideWindow(workspaceId: string, title: string, requestedDirectory?: string): Promise<string> {
@@ -1865,12 +1865,12 @@ export async function externalSessionVisibility(seed: Seed) {
 export async function crossWorkspaceSessions(seed: Seed) {
   const runId = `${Date.now().toString(36)}-${process.pid}`;
   const app = await seed.desktop({ name: "cross-workspace-split-view" });
-  const workspaceA = await seed.workspace(app, `/tmp/omnirush-cross-workspace-split-${runId}-a`);
+  const workspaceA = await seed.workspace(app, `/tmp/mars-cross-workspace-split-${runId}-a`);
   const [primary, sameWorkspacePeer] = await seed.sessions(app, [
     `Primary workspace anchor ${runId}`,
     `Primary workspace peer ${runId}`,
   ]);
-  const workspaceB = await additionalWorkspace(seed, app, `/tmp/omnirush-cross-workspace-split-${runId}-b`);
+  const workspaceB = await additionalWorkspace(seed, app, `/tmp/mars-cross-workspace-split-${runId}-b`);
   const [crossWorkspacePeer] = await seed.sessions(app, [`Secondary workspace peer ${runId}`]);
   if (!primary || !sameWorkspacePeer || !crossWorkspacePeer) throw new Error("Split world did not create all sessions.");
   return {
@@ -1885,8 +1885,8 @@ export async function crossWorkspaceSessions(seed: Seed) {
 
 export async function settingsRuntime(seed: Seed) {
   const stamp = Date.now();
-  const firstName = `omnirush-session-settings-a-${stamp}`;
-  const secondName = `omnirush-session-settings-b-${stamp}`;
+  const firstName = `mars-session-settings-a-${stamp}`;
+  const secondName = `mars-session-settings-b-${stamp}`;
   const app = await seed.desktop({ name: "session-switch-settings-runtime" });
   const firstWorkspace = await seed.workspace(app, `/tmp/${firstName}`);
   const secondWorkspace = await additionalWorkspace(seed, app, `/tmp/${secondName}`);
@@ -1910,18 +1910,18 @@ export async function rendererCrash(seed: Seed) {
   return { app };
 }
 
-export async function renderCycle(seed: Seed, { place }: { place: import("@omnirush/env").Place }) {
+export async function renderCycle(seed: Seed, { place }: { place: import("@mars/env").Place }) {
   // TODO(primitive): seed.desktop should accept environment overrides for instrumented renderer launches.
   const app = await launchDesktop({
     name: "desktop-render-cycle-stability",
     host: place.host(),
-    env: { VITE_OMNIRUSH_PROFILER: "1" },
+    env: { VITE_MARS_PROFILER: "1" },
   });
   const workspacePath = seed.tmpPath("desktop-render-cycle");
   await mkdir(workspacePath, { recursive: true });
   // TODO(primitive): seed.storage should arrange persisted renderer preferences without raw evaluation.
   await seed.evalIn(app, () => {
-    localStorage.setItem("omnirush.debug.profilerOverlay", "1");
+    localStorage.setItem("mars.debug.profilerOverlay", "1");
     location.reload();
     return true;
   }).catch(() => undefined);
@@ -2039,9 +2039,9 @@ export async function titleFailure(seed: Seed) {
 }
 
 function stormMinutes(): number {
-  const value = Number(process.env.OMNIRUSH_EVAL_ACTIVE_SESSION_STORM_MINUTES ?? "2");
+  const value = Number(process.env.MARS_EVAL_ACTIVE_SESSION_STORM_MINUTES ?? "2");
   if (!Number.isFinite(value) || value < 1 || value > 5) {
-    throw new Error("OMNIRUSH_EVAL_ACTIVE_SESSION_STORM_MINUTES must be a number from 1 through 5.");
+    throw new Error("MARS_EVAL_ACTIVE_SESSION_STORM_MINUTES must be a number from 1 through 5.");
   }
   return value;
 }
@@ -2056,7 +2056,7 @@ export async function activeSessionStorm(seed: Seed) {
   const slowToolMs = Math.round(stormMinutes() * 60_000);
   const plans = Array.from({ length: 3 }, (_, offset) => {
     const index = offset + 1;
-    const path = `/tmp/omnirush-active-session-storm-${runId}-w${index}`;
+    const path = `/tmp/mars-active-session-storm-${runId}-w${index}`;
     const marker = `STORM-W${index}-${runId}`;
     return {
       index,
@@ -2093,7 +2093,7 @@ export async function activeSessionStorm(seed: Seed) {
   const app = await seed.desktop({
     den,
     as: "member",
-    profileDir: process.env.OMNIRUSH_EVAL_ACTIVE_SESSION_STORM_PROFILE_DIR?.trim(),
+    profileDir: process.env.MARS_EVAL_ACTIVE_SESSION_STORM_PROFILE_DIR?.trim(),
   });
   const seededPlans: StormPlan[] = [];
   for (const plan of plans) {
@@ -2113,8 +2113,8 @@ export async function activeSessionStorm(seed: Seed) {
   await seed.evalIn(app, () => { location.reload(); return true; }).catch(() => undefined);
   const reloadDeadline = Date.now() + 60_000;
   while (Date.now() < reloadDeadline) {
-    const ready = await seed.evalIn(app, () => (Boolean(window.__omnirushControl)
-      && Boolean((localStorage.getItem("omnirush.den.authToken") ?? "").trim())))
+    const ready = await seed.evalIn(app, () => (Boolean(window.__marsControl)
+      && Boolean((localStorage.getItem("mars.den.authToken") ?? "").trim())))
       .catch(() => false);
     if (ready === true) break;
     await new Promise((resolve) => setTimeout(resolve, 250));

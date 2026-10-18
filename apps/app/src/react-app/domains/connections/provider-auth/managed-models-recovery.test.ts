@@ -48,19 +48,19 @@ describe("managed model sync ordering", () => {
       signedIn: true,
       selectedModelUsesCloudProvider: true,
       cloudProviderSyncReady: false,
-      omniRushModelsSyncing: false,
+      marsModelsSyncing: false,
     })).toBe(true);
     expect(isManagedModelAvailabilityPending({
       signedIn: true,
       selectedModelUsesCloudProvider: true,
       cloudProviderSyncReady: true,
-      omniRushModelsSyncing: true,
+      marsModelsSyncing: true,
     })).toBe(true);
     expect(isManagedModelAvailabilityPending({
       signedIn: true,
       selectedModelUsesCloudProvider: true,
       cloudProviderSyncReady: true,
-      omniRushModelsSyncing: false,
+      marsModelsSyncing: false,
     })).toBe(false);
   });
 
@@ -69,13 +69,13 @@ describe("managed model sync ordering", () => {
       signedIn: true,
       selectedModelUsesCloudProvider: false,
       cloudProviderSyncReady: false,
-      omniRushModelsSyncing: true,
+      marsModelsSyncing: true,
     })).toBe(false);
     expect(isManagedModelAvailabilityPending({
       signedIn: false,
       selectedModelUsesCloudProvider: true,
       cloudProviderSyncReady: false,
-      omniRushModelsSyncing: true,
+      marsModelsSyncing: true,
     })).toBe(false);
   });
 });
@@ -120,7 +120,7 @@ describe("managed model recovery", () => {
 
   test("returns the refreshed provider snapshot for lifecycle and product triggers", async () => {
     const calls: string[] = [];
-    const snapshot = { connected: ["omnirush"], all: [] };
+    const snapshot = { connected: ["mars"], all: [] };
 
     const result = await refreshOrganizationModels({
       runCloudProviderSync: async (reason) => {

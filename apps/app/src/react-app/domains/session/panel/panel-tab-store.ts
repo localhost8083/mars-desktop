@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 
 import { isCollectibleArtifactTarget, type OpenTarget, type OpenTargetPreview } from "../artifacts/open-target";
 
-export const PERSISTED_PANEL_TAB_STORE_KEY = "omnirush:panel-tabs:v1";
+export const PERSISTED_PANEL_TAB_STORE_KEY = "mars:panel-tabs:v1";
 
 export type PanelTabType = "artifact" | "browser" | "app";
 

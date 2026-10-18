@@ -1,14 +1,14 @@
 /**
  * The Headless Threads contract.
  *
- * A "thread" is a native OmniRush.ai session: the same workspace, the same
+ * A "thread" is a native MarsAI session: the same workspace, the same
  * managed OpenCode engine, the same session id, the same persisted messages
  * and tool activity the desktop UI shows. Nothing here introduces a second
  * chat engine, a second session store, or a second model gateway — the types
- * below only describe the session surface OmniRush.ai already serves.
+ * below only describe the session surface MarsAI already serves.
  */
 
-/** Model selection, in OmniRush.ai's server casing (`providerId`/`modelId`). */
+/** Model selection, in MarsAI's server casing (`providerId`/`modelId`). */
 export interface HeadlessThreadModel {
   providerId: string;
   modelId: string;
@@ -74,7 +74,7 @@ export interface CreateThreadInput {
 
 export interface HeadlessThread {
   /**
-   * The native OpenCode session id. It is the same id the OmniRush.ai UI uses,
+   * The native OpenCode session id. It is the same id the MarsAI UI uses,
    * so a headless thread can be opened in the app afterwards.
    */
   id: string;
@@ -197,10 +197,10 @@ export type HeadlessFetch = (
 ) => Promise<Response>;
 
 export interface HeadlessThreadClientOptions {
-  /** OmniRush.ai server base URL, e.g. `http://127.0.0.1:8787`. */
+  /** MarsAI server base URL, e.g. `http://127.0.0.1:8787`. */
   baseUrl: string;
   workspaceId: string;
-  /** A collaborator-scoped OmniRush.ai client token. */
+  /** A collaborator-scoped MarsAI client token. */
   token: string;
   /** Host credential for server-to-server execution against the resolved Cloud runtime. */
   hostToken?: string;

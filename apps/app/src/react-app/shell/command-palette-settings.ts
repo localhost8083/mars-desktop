@@ -24,7 +24,7 @@ const SETTINGS_KEYWORDS: Partial<Record<SettingsTab, string[]>> = {
   voice: ["voice", "dictation", "microphone", "mic", "speech", "talk", "hotkey"],
   updates: ["version", "upgrade", "check for updates", "release"],
   debug: ["logs", "diagnostics", "developer mode"],
-  "cloud-account": ["sign in", "log in", "login", "account", "organization", "org", "den", "cloud", "omnirush cloud"],
+  "cloud-account": ["sign in", "log in", "login", "account", "organization", "org", "den", "cloud", "mars cloud"],
   general: ["settings", "preferences", "options", "configure", "best practices", "guides"],
 };
 

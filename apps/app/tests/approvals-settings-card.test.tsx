@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import type { OmniRushApprovalMode, OmniRushRuntimeApprovals } from "../src/app/lib/omnirush-server";
+import type { MarsApprovalMode, MarsRuntimeApprovals } from "../src/app/lib/mars-server";
 import {
   FULL_PERMISSIONS_HELP,
   applyFullPermissions,
@@ -12,10 +12,10 @@ import { BEST_PRACTICES_HELP, bestPracticesChangeMessage, type BestPracticesClie
 
 function fakeClient(options: { reloadError?: Error } = {}) {
   const calls: string[] = [];
-  let approvals: OmniRushRuntimeApprovals = { mode: "guarded", source: "default", setting: null };
+  let approvals: MarsRuntimeApprovals = { mode: "guarded", source: "default", setting: null };
   const client: ApprovalsClient = {
     getRuntimeApprovals: async () => approvals,
-    setRuntimeApprovals: async (mode: OmniRushApprovalMode) => {
+    setRuntimeApprovals: async (mode: MarsApprovalMode) => {
       calls.push(`set:${mode}`);
       approvals = { mode, source: "settings", setting: mode };
       return { ...approvals, ok: true, changed: true };
@@ -61,7 +61,7 @@ describe("approvals settings card", () => {
     );
     expect(switchMarkup(markup)).toContain('aria-checked="true"');
     expect(switchMarkup(markup)).toContain('aria-disabled="true"');
-    expect(markup).toContain("Set by environment (OMNIRUSH_APPROVALS=full)");
+    expect(markup).toContain("Set by environment (MARS_APPROVALS=full)");
     // Nothing is claimed before the server has answered.
     const loading = renderToStaticMarkup(<ApprovalsCard approvals={null} busy={false} status="" onToggle={() => {}} />);
     expect(switchMarkup(loading)).toContain('aria-disabled="true"');
@@ -108,7 +108,7 @@ describe("best practices settings card", () => {
       <GeneralSettingsView
         developerMode={false}
         onNavigateTab={() => {}}
-        omnirushClient={null}
+        marsClient={null}
         bestPracticesClient={bestPracticesClient}
       />,
     );

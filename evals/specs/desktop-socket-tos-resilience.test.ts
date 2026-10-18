@@ -3,7 +3,7 @@ import { promisify } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 
-import { test } from "@omnirush/testkit";
+import { test } from "@mars/testkit";
 import { expect } from "vitest";
 
 const execFileAsync = promisify(execFile);

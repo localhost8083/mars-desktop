@@ -4,7 +4,7 @@ const idSchema = z.string().trim().min(1).max(160)
 
 export const connectionActionAppSchemaVersion = "1" as const
 // Persisted conversations may still contain this retired resource; never embed it.
-export const legacyConnectionActionAppResourceUri = "ui://omnirush/connection-action/v1/view.html"
+export const legacyConnectionActionAppResourceUri = "ui://mars/connection-action/v1/view.html"
 
 /**
  * Data contract for the native connection card: one live
@@ -23,7 +23,7 @@ export const connectionActionPayloadSchema = z.object({
     "organization_admin",
     "provider_admin",
     "network_admin",
-    "omnirush",
+    "mars",
   ]).nullable(),
   message: z.string().trim().min(1).max(2_000),
   action: z.object({
@@ -34,15 +34,15 @@ export const connectionActionPayloadSchema = z.object({
       "inspect_connection",
       "fix_provider",
       "fix_network",
-      "contact_omnirush",
+      "contact_mars",
     ]),
     label: z.string().trim().min(1).max(255),
     surface: z.enum([
-      "omnirush_your_connections",
-      "omnirush_organization_connections",
+      "mars_your_connections",
+      "mars_organization_connections",
       "provider_admin_console",
       "network_infrastructure",
-      "omnirush_support",
+      "mars_support",
     ]),
     url: z.string().url().optional(),
   }).nullable(),

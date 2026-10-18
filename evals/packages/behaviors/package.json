@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/behaviors",
+  "name": "@mars/behaviors",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -31,9 +31,9 @@
     }
   },
   "dependencies": {
-    "@omnirush/cdp": "workspace:*",
-    "@omnirush/labs": "workspace:*",
-    "@omnirush/matchers": "workspace:*",
-    "@omnirush/timeline": "workspace:*"
+    "@mars/cdp": "workspace:*",
+    "@mars/labs": "workspace:*",
+    "@mars/matchers": "workspace:*",
+    "@mars/timeline": "workspace:*"
   }
 }

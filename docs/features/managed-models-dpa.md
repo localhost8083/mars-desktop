@@ -13,9 +13,9 @@ new column, or new table is required. The canonical top-level key is a boolean:
 }
 ```
 
-The shared contract is `@omnirush/types/den/managed-models-policy`.
+The shared contract is `@mars/types/den/managed-models-policy`.
 
-- `dpaSigned: true`: company-provided OmniRush.ai Models are forbidden.
+- `dpaSigned: true`: company-provided MarsAI Models are forbidden.
 - Missing `dpaSigned` or explicit `false`: existing eligibility is unchanged.
 - Any present non-boolean value, malformed metadata, an array/scalar document,
   a missing organization, or a failed policy lookup: do not authorize Models.
@@ -87,7 +87,7 @@ The inference API uses its existing OpenAI-style envelope:
   "error": {
     "type": "invalid_request_error",
     "code": "managed_models_disabled_for_dpa",
-    "message": "Company-provided OmniRush.ai Models are unavailable for this organization because a DPA is signed. Permitted customer-key providers and AI Gateway may still be used."
+    "message": "Company-provided MarsAI Models are unavailable for this organization because a DPA is signed. Permitted customer-key providers and AI Gateway may still be used."
   }
 }
 ```
@@ -106,8 +106,8 @@ but DPA denial does not activate Models or cause endless policy-denial retries.
 An unavailable policy remains a retryable failure.
 
 Usable provider lists, resource snapshots, and Web materialization exclude
-company-managed (`source: omnirush`) configurations when policy denies them.
-Automation model authority rejects the OmniRush.ai Models branch. In a list/connect
+company-managed (`source: mars`) configurations when policy denies them.
+Automation model authority rejects the MarsAI Models branch. In a list/connect
 race, direct managed connect deliberately stays HTTP 200 with null credentials,
 empty models, `memberCredential.state: blocked`, and `managedModelsPolicy` denial,
 so older desktops do not abort unrelated BYOK synchronization.

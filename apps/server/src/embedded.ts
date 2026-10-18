@@ -1,5 +1,5 @@
 /**
- * Single entry point for embedding the OmniRush.ai server in-process.
+ * Single entry point for embedding the MarsAI server in-process.
  *
  * Handles config resolution, managed OpenCode spawn, and server start
  * in one call -- mirrors what cli.ts does but returns a handle instead
@@ -38,27 +38,27 @@ import {
 } from "./server.js";
 import { ensureLocalWorkspaceFiles } from "./workspace-init.js";
 import { findManagedEngineWorkspace } from "./workspaces.js";
-import { keepOmniRushRuntimeConfigFileFresh, omnirushOwnPluginPaths, writeOmniRushRuntimeConfigFile } from "./omnirush-runtime-config.js";
-import { migrateOmniRushCloudMcpRuntimeConfig } from "./cloud-mcp-health.js";
+import { keepMarsRuntimeConfigFileFresh, marsOwnPluginPaths, writeMarsRuntimeConfigFile } from "./mars-runtime-config.js";
+import { migrateMarsCloudMcpRuntimeConfig } from "./cloud-mcp-health.js";
 import { migrateWorkspaceRuntimeConfigToEngineGlobal } from "./runtime-opencode-config-store.js";
-import { migrateLegacyOmniRushUiMcpCommand, type OmniRushUiMcpLaunch } from "./omnirush-ui-mcp-migration.js";
+import { migrateLegacyMarsUiMcpCommand, type MarsUiMcpLaunch } from "./mars-ui-mcp-migration.js";
 import { resolveOpencodeModelsEnv } from "./opencode-models-url.js";
 import { assertOpencodeConfigCompat } from "./opencode-config-compat.js";
 import { adoptOpencodeCredentials, startEngine2SessionImport } from "./engine2/import.js";
 import type { ServeResult } from "./serve-node.js";
-import type { CaptureFileUpload, LocalManagedMcpVaultKeyProvider, OmniRushGatewayCredentials, ServerConfig } from "./types.js";
+import type { CaptureFileUpload, LocalManagedMcpVaultKeyProvider, MarsGatewayCredentials, ServerConfig } from "./types.js";
 
 export type EmbeddedServerOptions = CliArgs & {
   /** When true, spawn a managed OpenCode child process. */
   manageOpencode?: boolean;
-  /** Path to the OpenCode binary. Falls back to OMNIRUSH_OPENCODE_BIN env. */
+  /** Path to the OpenCode binary. Falls back to MARS_OPENCODE_BIN env. */
   opencodeBin?: string;
   /** Working directory for the managed OpenCode process. */
   opencodeCwd?: string;
   /** Secure key custody for the local managed MCP credential vault. */
   localManagedMcpVaultKey?: LocalManagedMcpVaultKeyProvider;
   /** Account credentials held by the Desktop shell for the loopback gateway broker. */
-  omnirushGatewayCredentials?: OmniRushGatewayCredentials;
+  marsGatewayCredentials?: MarsGatewayCredentials;
   resumeInterruptedTasks?: boolean;
   /** Version of the embedding desktop app, reported as environment.app_version by the session uploader. */
   appVersion?: string;
@@ -70,10 +70,10 @@ export type EmbeddedServerOptions = CliArgs & {
   onTurnActivity?: (running: boolean) => void;
   /**
    * How the embedding desktop launches its bundled UI-control MCP. Persisted
-   * entries still using `npx -y omnirush-ui-mcp` are rewritten to it before
+   * entries still using `npx -y mars-ui-mcp` are rewritten to it before
    * the engine starts; without it they are removed instead.
    */
-  omnirushUiMcp?: OmniRushUiMcpLaunch | null;
+  marsUiMcp?: MarsUiMcpLaunch | null;
 };
 
 export type EmbeddedServerHandle = {
@@ -101,8 +101,8 @@ export type EmbeddedServerHandle = {
 export async function startEmbeddedServer(options: EmbeddedServerOptions): Promise<EmbeddedServerHandle> {
   const config = await resolveServerConfig(options);
   config.localManagedMcpVaultKey = options.localManagedMcpVaultKey;
-  config.omnirushGatewayCredentials = options.omnirushGatewayCredentials;
-  config.omnirushEngineToken = randomUUID();
+  config.marsGatewayCredentials = options.marsGatewayCredentials;
+  config.marsEngineToken = randomUUID();
   config.resumeInterruptedTasks = options.resumeInterruptedTasks === true && options.manageOpencode === true && !config.opencodeBaseUrl;
   config.appVersion = typeof options.appVersion === "string" && options.appVersion.trim() ? options.appVersion.trim() : undefined;
   config.captureFileUpload = options.captureFileUpload;
@@ -186,7 +186,7 @@ export async function startEmbeddedServer(options: EmbeddedServerOptions): Promi
 
     if (errors.length === 1) throw errors[0];
     if (errors.length > 1) {
-      throw new AggregateError(errors, "Failed to stop embedded OmniRush.ai server");
+      throw new AggregateError(errors, "Failed to stop embedded MarsAI server");
     }
   };
 
@@ -204,7 +204,7 @@ export async function startEmbeddedServer(options: EmbeddedServerOptions): Promi
       } catch (cleanupError) {
         throw new AggregateError(
           [startupError, cleanupError],
-          "Embedded OmniRush.ai server startup failed and cleanup was incomplete",
+          "Embedded MarsAI server startup failed and cleanup was incomplete",
         );
       }
       throw startupError;
@@ -217,29 +217,29 @@ export async function startEmbeddedServer(options: EmbeddedServerOptions): Promi
     await ensureLocalWorkspaceFiles(config.workspaces, { createMissing: false });
     // First among the runtime-DB migrations: the store drops leftover
     // registry launches on any write, before this could rewrite them.
-    await migrateLegacyOmniRushUiMcpCommand(config, options.omnirushUiMcp ?? null);
-    await migrateOmniRushCloudMcpRuntimeConfig(config);
+    await migrateLegacyMarsUiMcpCommand(config, options.marsUiMcp ?? null);
+    await migrateMarsCloudMcpRuntimeConfig(config);
     await migrateWorkspaceRuntimeConfigToEngineGlobal(config);
   }
 
   // Bind the HTTP server before spawning the engine: serve-node may fall back
   // to an OS-assigned port on EADDRINUSE, and the engine's spawn-time env
-  // (OMNIRUSH_SERVER_URL) must point at the port that actually bound, not the
+  // (MARS_SERVER_URL) must point at the port that actually bound, not the
   // requested one. Proxy requests that land in the short window before the
   // engine is ready fail with opencode_unconfigured and clients retry; the
   // desktop only learns the server URL after this function returns.
   // The Linux sandbox's helpers ship beside the engine (sidecars/box/): known before the server plans any box.
-  const engineBin = options.opencodeBin || process.env.OMNIRUSH_OPENCODE_BIN;
+  const engineBin = options.opencodeBin || process.env.MARS_OPENCODE_BIN;
   if (engineBin?.trim()) setToolsRoot(dirname(engineBin.trim()));
   server = await duringStartup(() => startServer(config));
   config.port = server.port;
   const serverUrl = `http://${config.host === "0.0.0.0" ? "127.0.0.1" : config.host}:${server.port}`;
-  delete process.env.OMNIRUSH_ENGINE_GATEWAY_URL;
-  delete process.env.OMNIRUSH_ACCESS_TOKEN;
-  delete process.env.OMNIRUSH_REFRESH_TOKEN;
-  if (config.omnirushGatewayCredentials && config.omnirushEngineToken) {
-    process.env.OMNIRUSH_ENGINE_GATEWAY_URL = `${serverUrl}/omnirush-gateway/v1`;
-    process.env.OMNIRUSH_ACCESS_TOKEN = config.omnirushEngineToken;
+  delete process.env.MARS_ENGINE_GATEWAY_URL;
+  delete process.env.MARS_ACCESS_TOKEN;
+  delete process.env.MARS_REFRESH_TOKEN;
+  if (config.marsGatewayCredentials && config.marsEngineToken) {
+    process.env.MARS_ENGINE_GATEWAY_URL = `${serverUrl}/mars-gateway/v1`;
+    process.env.MARS_ACCESS_TOKEN = config.marsEngineToken;
   }
 
   if (!config.opencodeBaseUrl && options.manageOpencode) {
@@ -249,31 +249,31 @@ export async function startEmbeddedServer(options: EmbeddedServerOptions): Promi
       // effort: a failed reap must never block startup.
       await reapOrphanEngineInstances(config).catch(() => undefined);
       // Server-managed config file: the engine re-reads it from disk on every
-      // instance rebuild, and keepOmniRushRuntimeConfigFileFresh synchronizes it
+      // instance rebuild, and keepMarsRuntimeConfigFileFresh synchronizes it
       // on every runtime-DB write — so disposes always pick up current state.
-      const { path: runtimeConfigPath } = await writeOmniRushRuntimeConfigFile(config);
-      stopRuntimeConfigFileRefresh = keepOmniRushRuntimeConfigFileFresh(config);
+      const { path: runtimeConfigPath } = await writeMarsRuntimeConfigFile(config);
+      stopRuntimeConfigFileRefresh = keepMarsRuntimeConfigFileFresh(config);
       const cwd = options.opencodeCwd
-        || process.env.OMNIRUSH_MANAGED_OPENCODE_CWD?.trim()
+        || process.env.MARS_MANAGED_OPENCODE_CWD?.trim()
         || workspace.path;
       await duringStartup(() => mkdir(cwd, { recursive: true }));
       const opencodeModelsEnv = await duringStartup(() => resolveOpencodeModelsEnv());
 
-      const opencodeBin = options.opencodeBin || process.env.OMNIRUSH_OPENCODE_BIN;
+      const opencodeBin = options.opencodeBin || process.env.MARS_OPENCODE_BIN;
       // Shared by the first spawn and by any later rollover standby, so a
       // replacement engine is identical apart from its port.
       const engineEnv: Record<string, string | undefined> = {
-        ...(process.env.OMNIRUSH_DEV_MODE ? { OMNIRUSH_DEV_MODE: process.env.OMNIRUSH_DEV_MODE } : {}),
-        ...(process.env.OMNIRUSH_UI_CONTROL_DISCOVERY ? { OMNIRUSH_UI_CONTROL_DISCOVERY: process.env.OMNIRUSH_UI_CONTROL_DISCOVERY } : {}),
-        ...(config.omnirushGatewayCredentials && config.omnirushEngineToken
-          ? { OMNIRUSH_ACCESS_TOKEN: config.omnirushEngineToken }
+        ...(process.env.MARS_DEV_MODE ? { MARS_DEV_MODE: process.env.MARS_DEV_MODE } : {}),
+        ...(process.env.MARS_UI_CONTROL_DISCOVERY ? { MARS_UI_CONTROL_DISCOVERY: process.env.MARS_UI_CONTROL_DISCOVERY } : {}),
+        ...(config.marsGatewayCredentials && config.marsEngineToken
+          ? { MARS_ACCESS_TOKEN: config.marsEngineToken }
           : {}),
-        OMNIRUSH_SERVER_URL: serverUrl,
-        OMNIRUSH_SERVER_TOKEN: config.token,
-        OMNIRUSH_POLICY_TOKEN: managedDesktopPolicy(config).evaluationToken,
+        MARS_SERVER_URL: serverUrl,
+        MARS_SERVER_TOKEN: config.token,
+        MARS_POLICY_TOKEN: managedDesktopPolicy(config).evaluationToken,
         OPENCODE_CONFIG: runtimeConfigPath,
         ...opencodeModelsEnv,
-        ...pluginsNoDepsEnv(omnirushOwnPluginPaths()),
+        ...pluginsNoDepsEnv(marsOwnPluginPaths()),
       };
       engineSpawnTemplate = {
         bin: opencodeBin,
@@ -306,7 +306,7 @@ export async function startEmbeddedServer(options: EmbeddedServerOptions): Promi
         excludedPorts: [config.port],
         env: engineEnv,
       }));
-      // Sessions the 2.x engine of OmniRush.ai 2.2.0 – 3.x stored: copied once into this engine's store.
+      // Sessions the 2.x engine of MarsAI 2.2.0 – 3.x stored: copied once into this engine's store.
       void startEngine2SessionImport({
         bin: opencodeBin?.trim() || "opencode",
         env: { ...process.env, ...engineEnv },

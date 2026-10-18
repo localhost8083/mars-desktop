@@ -219,7 +219,7 @@ export async function discoverConnectionRequirements(
   let client: Client | undefined
   try {
     client = new Client(
-      { name: "OmniRush.ai requirements discovery", version: "1.0.0" },
+      { name: "MarsAI requirements discovery", version: "1.0.0" },
       { capabilities: {}, versionNegotiation: { mode: "auto" } },
     )
     const transport = new StreamableHTTPClientTransport(serverUrl, { fetch })

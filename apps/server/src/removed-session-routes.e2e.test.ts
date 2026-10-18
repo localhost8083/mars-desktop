@@ -24,8 +24,8 @@ afterEach(async () => {
   }
 });
 
-async function startOmniRushServer() {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), "omnirush-removed-session-routes-"));
+async function startMarsServer() {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "mars-removed-session-routes-"));
   await mkdir(join(workspaceRoot, ".opencode"), { recursive: true });
   roots.push(workspaceRoot);
   const workspaces: WorkspaceInfo[] = [{
@@ -74,13 +74,13 @@ describe("removed session wrapper routes", () => {
   ];
 
   test("every removed wrapper route answers 404 for an authorized client", async () => {
-    const omnirush = await startOmniRushServer();
+    const mars = await startMarsServer();
 
     for (const route of removedRoutes) {
-      const response = await fetch(`http://127.0.0.1:${omnirush.server.port}${route.path}`, {
+      const response = await fetch(`http://127.0.0.1:${mars.server.port}${route.path}`, {
         method: route.method,
         headers: {
-          Authorization: `Bearer ${omnirush.token}`,
+          Authorization: `Bearer ${mars.token}`,
           ...(route.body === undefined ? {} : { "Content-Type": "application/json" }),
         },
         ...(route.body === undefined ? {} : { body: route.body }),
@@ -91,10 +91,10 @@ describe("removed session wrapper routes", () => {
   });
 
   test("session-group routes stay mounted after the sessions.ts removal", async () => {
-    const omnirush = await startOmniRushServer();
+    const mars = await startMarsServer();
 
-    const response = await fetch(`http://127.0.0.1:${omnirush.server.port}/workspace/ws_1/session-groups`, {
-      headers: { Authorization: `Bearer ${omnirush.token}` },
+    const response = await fetch(`http://127.0.0.1:${mars.server.port}/workspace/ws_1/session-groups`, {
+      headers: { Authorization: `Bearer ${mars.token}` },
     });
 
     expect(response.status).toBe(200);

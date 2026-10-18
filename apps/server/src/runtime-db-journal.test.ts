@@ -76,7 +76,7 @@ async function readOnlyCount(dbPath: string): Promise<number> {
 }
 
 test("a hot journal fails read-only reads until it is rolled back", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-runtime-journal-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-runtime-journal-"));
   try {
     const dbPath = join(root, "runtime.sqlite");
     await leaveHotJournal(root, dbPath);
@@ -91,19 +91,19 @@ test("a hot journal fails read-only reads until it is rolled back", async () => 
 });
 
 test("the start's first read of the runtime store recovers from a hot journal", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-runtime-journal-"));
-  const previous = process.env.OMNIRUSH_RUNTIME_DB;
+  const root = await mkdtemp(join(tmpdir(), "mars-runtime-journal-"));
+  const previous = process.env.MARS_RUNTIME_DB;
   try {
     const dbPath = join(root, "runtime.sqlite");
     await leaveHotJournal(root, dbPath);
-    process.env.OMNIRUSH_RUNTIME_DB = dbPath;
+    process.env.MARS_RUNTIME_DB = dbPath;
     const rows = await listRuntimeOpencodeConfigRows({} as ServerConfig);
     assert.equal(rows.length, 200);
     // The rolled-back transaction's updates are gone: the rows are as last committed.
     assert.equal(JSON.stringify(rows[0]?.value).includes("yyyy"), false);
   } finally {
-    if (previous === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-    else process.env.OMNIRUSH_RUNTIME_DB = previous;
+    if (previous === undefined) delete process.env.MARS_RUNTIME_DB;
+    else process.env.MARS_RUNTIME_DB = previous;
     await rm(root, { recursive: true, force: true });
   }
 });
@@ -113,7 +113,7 @@ test("a runtime store that cannot be written is reported as read-only", async (t
     t.skip("root writes read-only files");
     return;
   }
-  const root = await mkdtemp(join(tmpdir(), "omnirush-runtime-journal-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-runtime-journal-"));
   const dbPath = join(root, "runtime.sqlite");
   try {
     await leaveHotJournal(root, dbPath);

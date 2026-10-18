@@ -1,7 +1,7 @@
 import {
   MICROSOFT_365_DEFAULT_FEATURES,
   type Microsoft365Feature,
-} from "@omnirush/types/den/microsoft-365";
+} from "@mars/types/den/microsoft-365";
 
 export { MICROSOFT_365_DEFAULT_FEATURES };
 

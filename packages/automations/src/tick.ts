@@ -1,4 +1,4 @@
-import type { Automation } from "@omnirush/types/automations"
+import type { Automation } from "@mars/types/automations"
 import type { AutomationListItem } from "./ports.js"
 
 export function selectDueAutomations(

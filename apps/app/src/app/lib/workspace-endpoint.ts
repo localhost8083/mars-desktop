@@ -1,16 +1,16 @@
 /**
  * Single source of truth for "where does a workspace's server live?".
  *
- * Every workspace-scoped API call in the app must route to the omnirush.ai server
+ * Every workspace-scoped API call in the app must route to the marsai.click server
  * that actually owns that workspace. For local workspaces that's the user's
- * local omnirush.ai server. For workspaces hosted on a remote omnirush.ai worker
+ * local marsai.click server. For workspaces hosted on a remote marsai.click worker
  * (`id` starts with `rem_` and `workspaceType === "remote"`), it's the
- * `baseUrl`/`omnirushHostUrl` and `omnirushToken` saved on the workspace
+ * `baseUrl`/`marsHostUrl` and `marsToken` saved on the workspace
  * record, with the workspace addressed by its server-side id (the `rem_`
- * prefix is stripped, or `omnirushWorkspaceId` is used when present).
+ * prefix is stripped, or `marsWorkspaceId` is used when present).
  *
  * Always go through {@link resolveWorkspaceEndpoint} when you need:
- *   - an `OmniRushServerClient` for a workspace
+ *   - an `MarsServerClient` for a workspace
  *   - a mounted `/workspace/<id>` URL prefix
  *   - the `/opencode` URL for the OpenCode SDK
  *
@@ -21,22 +21,22 @@
 
 import type { WorkspaceInfo } from "./desktop";
 import {
-  buildOmniRushWorkspaceBaseUrl,
-  createOmniRushServerClient,
-  type OmniRushServerClient,
-} from "./omnirush-server";
+  buildMarsWorkspaceBaseUrl,
+  createMarsServerClient,
+  type MarsServerClient,
+} from "./mars-server";
 
 export type ResolvedWorkspaceEndpoint = {
-  /** Host URL of the omnirush.ai server that owns this workspace (no `/workspace` mount). */
+  /** Host URL of the marsai.click server that owns this workspace (no `/workspace` mount). */
   baseUrl: string;
   /** Auth token for that server. May be empty for unauthenticated local servers. */
   token: string;
   /** Workspace id as the owning server expects it in URL paths. No `rem_` prefix. */
   workspaceId: string;
-  /** True when the workspace lives on a remote omnirush.ai worker, not the user's local server. */
+  /** True when the workspace lives on a remote marsai.click worker, not the user's local server. */
   isRemote: boolean;
-  /** OmniRushServerClient bound to {@link baseUrl}/{@link token}. */
-  client: OmniRushServerClient;
+  /** MarsServerClient bound to {@link baseUrl}/{@link token}. */
+  client: MarsServerClient;
   /** Mounted base url: `<baseUrl>/workspace/<workspaceId>`. No trailing slash. */
   mountedBaseUrl: string;
   /** OpenCode SDK base url: `<mountedBaseUrl>/opencode`. */
@@ -53,11 +53,11 @@ type WorkspaceEndpointInput = Pick<
   | "id"
   | "workspaceType"
   | "baseUrl"
-  | "omnirushHostUrl"
-  | "omnirushToken"
-  | "omnirushClientToken"
-  | "omnirushHostToken"
-  | "omnirushWorkspaceId"
+  | "marsHostUrl"
+  | "marsToken"
+  | "marsClientToken"
+  | "marsHostToken"
+  | "marsWorkspaceId"
 > | null | undefined;
 
 /**
@@ -80,22 +80,22 @@ export function workspaceServerId(workspace: WorkspaceEndpointInput): string {
   if (!workspace) return "";
   const id = workspace.id.trim();
   if (!isRemoteWorkspace(workspace)) return id;
-  const explicit = workspace.omnirushWorkspaceId?.trim();
+  const explicit = workspace.marsWorkspaceId?.trim();
   if (explicit) return explicit;
   return id.startsWith("rem_") ? id.slice("rem_".length) : id;
 }
 
 function pickRemoteBaseUrl(workspace: WorkspaceEndpointInput): string {
   if (!workspace) return "";
-  return (workspace.baseUrl ?? workspace.omnirushHostUrl ?? "").trim();
+  return (workspace.baseUrl ?? workspace.marsHostUrl ?? "").trim();
 }
 
 function pickRemoteToken(workspace: WorkspaceEndpointInput): string {
   if (!workspace) return "";
   return (
-    workspace.omnirushToken ??
-    workspace.omnirushClientToken ??
-    workspace.omnirushHostToken ??
+    workspace.marsToken ??
+    workspace.marsClientToken ??
+    workspace.marsHostToken ??
     ""
   ).trim();
 }
@@ -117,12 +117,12 @@ export function resolveWorkspaceEndpoint(
     if (!baseUrl) return null;
     const token = pickRemoteToken(workspace);
     const workspaceId = workspaceServerId(workspace);
-    const client = createOmniRushServerClient({
+    const client = createMarsServerClient({
       baseUrl,
       token: token || undefined,
     });
     const mountedBaseUrl = (
-      buildOmniRushWorkspaceBaseUrl(baseUrl, workspaceId) ?? baseUrl
+      buildMarsWorkspaceBaseUrl(baseUrl, workspaceId) ?? baseUrl
     ).replace(/\/+$/, "");
     return {
       baseUrl,
@@ -139,12 +139,12 @@ export function resolveWorkspaceEndpoint(
   if (!localBaseUrl) return null;
   const localToken = (localServer.token ?? "").trim();
   const workspaceId = workspace.id.trim();
-  const client = createOmniRushServerClient({
+  const client = createMarsServerClient({
     baseUrl: localBaseUrl,
     token: localToken || undefined,
   });
   const mountedBaseUrl = (
-    buildOmniRushWorkspaceBaseUrl(localBaseUrl, workspaceId) ?? localBaseUrl
+    buildMarsWorkspaceBaseUrl(localBaseUrl, workspaceId) ?? localBaseUrl
   ).replace(/\/+$/, "");
   return {
     baseUrl: localBaseUrl,

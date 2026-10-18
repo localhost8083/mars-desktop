@@ -151,7 +151,7 @@ describe("wav", () => {
   });
 
   test("the file input hook is read from the environment", () => {
-    expect(voiceInputFileFromEnv({ OMNIRUSH_VOICE_INPUT_FILE: " /tmp/clip.wav " })).toBe("/tmp/clip.wav");
+    expect(voiceInputFileFromEnv({ MARS_VOICE_INPUT_FILE: " /tmp/clip.wav " })).toBe("/tmp/clip.wav");
     expect(voiceInputFileFromEnv({})).toBeNull();
   });
 });
@@ -182,12 +182,12 @@ describe("text", () => {
 
 describe("keyterms", () => {
   test("built from the repository, branch and files, capped at 50 terms / 1024 chars", () => {
-    const terms = buildKeyterms({ repo: "omnirush-gui", branch: "feat/voice-mode", files: ["src/useVoiceDictation.ts", "a/b/segmenter.ts"] });
-    expect(terms).toContain("omnirush-gui");
+    const terms = buildKeyterms({ repo: "mars-gui", branch: "feat/voice-mode", files: ["src/useVoiceDictation.ts", "a/b/segmenter.ts"] });
+    expect(terms).toContain("mars-gui");
     expect(terms).toContain("voice");
     expect(terms).toContain("useVoiceDictation.ts");
     expect(terms).toContain("Dictation");
-    expect(terms.filter((t) => t.toLowerCase() === "omnirush")).toHaveLength(1);
+    expect(terms.filter((t) => t.toLowerCase() === "mars")).toHaveLength(1);
     const many = buildKeyterms({ files: Array.from({ length: 200 }, (_, i) => `file${"x".repeat(40)}${i}.ts`) });
     expect(many.length).toBeLessThanOrEqual(50);
     expect(many.join(" ").length).toBeLessThanOrEqual(1024);
@@ -415,14 +415,14 @@ describe("remote transcriber", () => {
     segmentIndex: 2,
     recordingId: "abc",
     language: "en",
-    keyterms: ["OmniRush", "voice"],
+    keyterms: ["Mars", "voice"],
     durationMs: 100,
   };
 
   test("posts a multipart segment and reads the text", async () => {
     let seen: Request | null = null;
     const transcriber = new RemoteTranscriber({
-      url: "http://127.0.0.1:1/omnirush/voice/transcribe",
+      url: "http://127.0.0.1:1/mars/voice/transcribe",
       headers: () => ({ Authorization: "Bearer t" }),
       fetch: async (url, init) => {
         // Plain bytes, never a Blob (a browser may page Blobs to disk).
@@ -438,7 +438,7 @@ describe("remote transcriber", () => {
     expect(form.get("segment_index")).toBe("2");
     expect(form.get("recording_id")).toBe("abc");
     expect(form.get("language")).toBe("en");
-    expect(form.get("prompt_terms")).toBe("OmniRush, voice");
+    expect(form.get("prompt_terms")).toBe("Mars, voice");
     const file = form.get("file") as File;
     expect(file.type).toMatch(/wav/);
     expect(file.size).toBe(request.wav.length);
@@ -457,7 +457,7 @@ describe("remote transcriber", () => {
     [400, { detail: "invalid_multipart" }, "unreadable", false],
     [429, { detail: "daily_grant_exhausted" }, "rate_limited", false],
     [503, { detail: "voice_budget_unavailable" }, "network", true],
-    [401, { error: "omnirush_account_required" }, "signed_out", false],
+    [401, { error: "mars_account_required" }, "signed_out", false],
     [413, { detail: "audio_too_large" }, "too_large", false],
   ] as const)("HTTP %i %j → %s", async (status, body, kind, retryable) => {
     const transcriber = new RemoteTranscriber({

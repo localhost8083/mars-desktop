@@ -1,14 +1,14 @@
 // Mandatory client update, renderer side. The Electron main process derives
 // the state (apps/desktop/electron/update-gate.mjs) from /device/me
-// `client_update`, the gateway's x-omnirush-update-required header and 426
+// `client_update`, the gateway's x-mars-update-required header and 426
 // `update_required` refusals; these helpers decide what the banner and the
 // blocked view say and what "Update now" does.
 
 import { create } from "zustand";
 
-import type { OmniRushUpdateGateState } from "@omnirush/types/desktop-ipc";
+import type { MarsUpdateGateState } from "@mars/types/desktop-ipc";
 
-export type UpdateGateState = OmniRushUpdateGateState;
+export type UpdateGateState = MarsUpdateGateState;
 
 export const NO_UPDATE_GATE: UpdateGateState = {
   status: "none",
@@ -16,7 +16,7 @@ export const NO_UPDATE_GATE: UpdateGateState = {
   minimum: null,
   deadline: null,
   message: null,
-  downloadUrl: "https://omnirush.ai/download",
+  downloadUrl: "https://marsai.click/download",
   source: null,
 };
 
@@ -29,13 +29,13 @@ type UpdateGateBridge = {
 declare global {
   interface Window {
     /** Lets evals and screenshots drive the gate without a gateway. */
-    __omnirushUpdateGateEval?: (state: Partial<UpdateGateState> | null) => void;
+    __marsUpdateGateEval?: (state: Partial<UpdateGateState> | null) => void;
   }
 }
 
 function bridge(): UpdateGateBridge | null {
   if (typeof window === "undefined") return null;
-  return (window.__OMNIRUSH_ELECTRON__ as { updateGate?: UpdateGateBridge } | undefined)?.updateGate ?? null;
+  return (window.__MARS_ELECTRON__ as { updateGate?: UpdateGateBridge } | undefined)?.updateGate ?? null;
 }
 
 /** A state from the bridge, or NO_UPDATE_GATE for anything malformed. */
@@ -71,7 +71,7 @@ export function formatUpdateCountdown(deadline: string | null, now: number): str
   return `${rest}m`;
 }
 
-/** The banner line: "OmniRush.ai 3.1.0 is required in 5h 12m". */
+/** The banner line: "MarsAI 3.1.0 is required in 5h 12m". */
 export function updateBannerText(state: UpdateGateState, appName: string, now: number): string {
   const version = state.minimum ? `${appName} ${state.minimum}` : `A newer ${appName}`;
   const countdown = formatUpdateCountdown(state.deadline, now);
@@ -233,7 +233,7 @@ export function connectUpdateGate(): void {
   if (subscribed || typeof window === "undefined") return;
   subscribed = true;
   const apply = (value: unknown) => useUpdateGateStore.getState().set(normalizeUpdateGateState(value));
-  window.__omnirushUpdateGateEval = (state) => apply(state ? { ...NO_UPDATE_GATE, ...state } : NO_UPDATE_GATE);
+  window.__marsUpdateGateEval = (state) => apply(state ? { ...NO_UPDATE_GATE, ...state } : NO_UPDATE_GATE);
   const desktop = bridge();
   if (!desktop) return;
   desktop.onChange?.(apply);

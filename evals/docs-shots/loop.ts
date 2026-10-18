@@ -1,7 +1,7 @@
 import { setTimeout as delay } from "node:timers/promises";
-import type { Surface } from "@omnirush/cdp";
-import { screenshot } from "@omnirush/test-evidence";
-import type { ScreenshotArtifact } from "@omnirush/test-evidence";
+import type { Surface } from "@mars/cdp";
+import { screenshot } from "@mars/test-evidence";
+import type { ScreenshotArtifact } from "@mars/test-evidence";
 import type { Gate } from "./gate.ts";
 
 /** Wait for accepted content to hold across stable consecutive frames. */

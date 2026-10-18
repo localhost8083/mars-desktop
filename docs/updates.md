@@ -1,6 +1,6 @@
 # Desktop updates
 
-How the omnirush.ai desktop app finds, downloads, and installs new versions, and what a release must contain for that to work.
+How the marsai.click desktop app finds, downloads, and installs new versions, and what a release must contain for that to work.
 
 ## How a check works
 
@@ -10,7 +10,7 @@ The Updates page (Settings > Updates) and the "Check for Updates..." menu item c
 2. "Download" fetches the file the manifest lists for the running platform and architecture and verifies its `sha512` against the manifest.
 3. "Install" applies it. On Windows (NSIS) and Linux (AppImage) the installer runs in place; on macOS the behaviour depends on the app's code signature (see below).
 
-With "Check automatically" enabled the page checks every 15 minutes while the app is focused; "Download automatically" downloads as soon as an update is found. On a public install the check contacts only `github.com`: omnirush.ai has no hosted Den control plane, so no organization release inventory or policy is consulted unless a Den base URL was configured explicitly (`desktop-bootstrap.json`, a connect link, or Settings > Advanced).
+With "Check automatically" enabled the page checks every 15 minutes while the app is focused; "Download automatically" downloads as soon as an update is found. On a public install the check contacts only `github.com`: marsai.click has no hosted Den control plane, so no organization release inventory or policy is consulted unless a Den base URL was configured explicitly (`desktop-bootstrap.json`, a connect link, or Settings > Advanced).
 
 Failures are shown verbatim on the page, minus the `Error invoking remote method '...':` prefix Electron adds to IPC failures.
 
@@ -18,10 +18,10 @@ Failures are shown verbatim on the page, minus the `Error invoking remote method
 
 | Channel | Feed directory | Manifest read by the app |
 | --- | --- | --- |
-| Stable (the only public channel) | `https://github.com/omnirush-ai/omnirush-gui/releases/latest/download` | `latest-mac.yml`, `latest.yml` (Windows), `latest-linux.yml` |
-| Targeted recovery/rollback | `https://github.com/omnirush-ai/omnirush-gui/releases/download/v<version>` | same names |
+| Stable (the only public channel) | `https://github.com/mars-ai/mars-gui/releases/latest/download` | `latest-mac.yml`, `latest.yml` (Windows), `latest-linux.yml` |
+| Targeted recovery/rollback | `https://github.com/mars-ai/mars-gui/releases/download/v<version>` | same names |
 
-There is no public Alpha feed. A persisted or requested "alpha" channel is normalized back to "stable" and the channel selector stays hidden. A custom distribution can enable an Alpha channel by shipping an https feed directory in its electron-builder `extraMetadata` as `omnirushAlphaUpdateFeedUrl` (development runs may set `OMNIRUSH_DESKTOP_ALPHA_UPDATE_FEED_URL`); the Cloud and Enterprise flavors keep their parallel `cloud*.yml` / `enterprise*.yml` manifests on the stable feed.
+There is no public Alpha feed. A persisted or requested "alpha" channel is normalized back to "stable" and the channel selector stays hidden. A custom distribution can enable an Alpha channel by shipping an https feed directory in its electron-builder `extraMetadata` as `marsAlphaUpdateFeedUrl` (development runs may set `MARS_DESKTOP_ALPHA_UPDATE_FEED_URL`); the Cloud and Enterprise flavors keep their parallel `cloud*.yml` / `enterprise*.yml` manifests on the stable feed.
 
 ## What a release must contain
 
@@ -29,16 +29,16 @@ For each platform the release needs the installers **and** the electron-builder 
 
 | Platform | Installers | Manifest |
 | --- | --- | --- |
-| macOS Apple Silicon | `omnirush-mac-arm64-<version>.zip` (+`.blockmap`), `omnirush-mac-arm64-<version>.dmg` (+`.blockmap`) | `latest-mac.yml` |
-| Windows x64 | `omnirush-win-x64-<version>.exe` (+`.blockmap`) | `latest.yml` |
-| Linux x64 | `omnirush-linux-x86_64-<version>.AppImage`, `omnirush-linux-x64-<version>.tar.gz` | `latest-linux.yml` |
+| macOS Apple Silicon | `mars-mac-arm64-<version>.zip` (+`.blockmap`), `mars-mac-arm64-<version>.dmg` (+`.blockmap`) | `latest-mac.yml` |
+| Windows x64 | `mars-win-x64-<version>.exe` (+`.blockmap`) | `latest.yml` |
+| Linux x64 | `mars-linux-x86_64-<version>.AppImage`, `mars-linux-x64-<version>.tar.gz` | `latest-linux.yml` |
 
 The manifest is the file electron-updater reads; a release without it makes every installed app report a 404 when checking for updates (this is what happened to v1.0.2 through v1.0.4). electron-builder writes the manifest into `apps/desktop/dist-electron/` whenever a `publish` block is configured, even with `--publish never`; the release workflow verifies it with `apps/desktop/scripts/verify-update-manifest.mjs` (version, listed files, sizes, sha512 checksums, and the required installer types) and fails the job if it is missing or inconsistent, then uploads it together with the installers.
 
 To check a local package:
 
 ```bash
-pnpm --filter @omnirush/desktop package:electron
+pnpm --filter @mars/desktop package:electron
 node apps/desktop/scripts/verify-update-manifest.mjs --manifest apps/desktop/dist-electron/latest-mac.yml
 ```
 
@@ -48,8 +48,8 @@ Squirrel.Mac, which electron-updater uses to swap the app bundle on macOS, only 
 
 The app therefore checks its own signature once at startup (`codesign -dv --verbose=2` on the bundle). When the bundle is not Developer ID signed the Updates page reports install mode `manual-dmg`:
 
-- "Download" fetches `omnirush-mac-arm64-<version>.dmg` from the same feed directory and verifies the `sha512` listed in `latest-mac.yml`.
-- "Open installer" opens the verified DMG, shows "Installer opened. Drag omnirush.ai to Applications, replace the old copy, then reopen it." and quits the app after a short delay.
+- "Download" fetches `mars-mac-arm64-<version>.dmg` from the same feed directory and verifies the `sha512` listed in `latest-mac.yml`.
+- "Open installer" opens the verified DMG, shows "Installer opened. Drag marsai.click to Applications, replace the old copy, then reopen it." and quits the app after a short delay.
 
 Once releases are signed with a Developer ID (and notarized), the same code path detects the signature and uses the normal Squirrel in-place install and restart. Windows and Linux installs are in place regardless of signing.
 
@@ -58,7 +58,7 @@ Once releases are signed with a Developer ID (and notarized), the same code path
 Releases are built by the **Desktop Release** workflow (`.github/workflows/release-desktop.yml`) from a semantic-version tag:
 
 ```bash
-git tag -a v1.0.5 -m "OmniRush.ai v1.0.5"
+git tag -a v1.0.5 -m "MarsAI v1.0.5"
 git push origin v1.0.5
 ```
 
@@ -74,7 +74,7 @@ The Windows in-app updater can be exercised end to end with **Build Electron Des
 
 ### Installing over an existing install
 
-Running a newer installer over the installed app updates it in place: on Windows the NSIS installer reuses the install folder and keeps `%APPDATA%\ai.omnirush.desktop`, which holds the chats (`engine-data\omnirush\opencode.db`), settings and the credentials vault key; uninstalling does not delete app data either (`deleteAppDataOnUninstall` is off). On macOS replace the app in Applications; data lives in `~/Library/Application Support/ai.omnirush.desktop`.
+Running a newer installer over the installed app updates it in place: on Windows the NSIS installer reuses the install folder and keeps `%APPDATA%\ai.marsai.desktop`, which holds the chats (`engine-data\mars\opencode.db`), settings and the credentials vault key; uninstalling does not delete app data either (`deleteAppDataOnUninstall` is off). On macOS replace the app in Applications; data lives in `~/Library/Application Support/ai.marsai.desktop`.
 
 ## Release notes
 

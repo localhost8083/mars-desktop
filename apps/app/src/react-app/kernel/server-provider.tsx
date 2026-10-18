@@ -13,16 +13,16 @@ import { createOpencodeClient } from "@opencode-ai/sdk/v2/client";
 
 import { desktopFetch } from "../../app/lib/desktop";
 import {
-  getOmniRushGatewayOrigin,
-  readOmniRushGatewayDenToken,
+  getMarsGatewayOrigin,
+  readMarsGatewayDenToken,
 } from "../../app/lib/gateway-runtime";
-import { isWebDeployment } from "../../app/lib/omnirush-deployment";
-import { normalizeOmniRushServerUrl } from "../../app/lib/omnirush-server";
+import { isWebDeployment } from "../../app/lib/mars-deployment";
+import { normalizeMarsServerUrl } from "../../app/lib/mars-server";
 import { isDesktopRuntime } from "../../app/utils";
 import { initialServerState, serverReducer } from "./server-provider-state";
 
 export function normalizeServerUrl(input: string): string | undefined {
-  return normalizeOmniRushServerUrl(input) ?? undefined;
+  return normalizeMarsServerUrl(input) ?? undefined;
 }
 
 export function serverDisplayName(url: string): string {
@@ -45,7 +45,7 @@ const ServerContext = createContext<ServerContextValue | undefined>(undefined);
 function readStoredList(): string[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem("omnirush.server.list");
+    const raw = window.localStorage.getItem("mars.server.list");
     const parsed = raw ? (JSON.parse(raw) as unknown) : [];
     return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : [];
   } catch {
@@ -56,32 +56,32 @@ function readStoredList(): string[] {
 function readStoredActive(): string {
   if (typeof window === "undefined") return "";
   try {
-    const stored = window.localStorage.getItem("omnirush.server.active");
+    const stored = window.localStorage.getItem("mars.server.active");
     return typeof stored === "string" ? stored : "";
   } catch {
     return "";
   }
 }
 
-function readOmniRushToken(): string {
-  if (getOmniRushGatewayOrigin()) return readOmniRushGatewayDenToken();
+function readMarsToken(): string {
+  if (getMarsGatewayOrigin()) return readMarsGatewayDenToken();
 
   if (typeof window === "undefined") return "";
   try {
-    return (window.localStorage.getItem("omnirush.server.token") ?? "").trim();
+    return (window.localStorage.getItem("mars.server.token") ?? "").trim();
   } catch {
     return "";
   }
 }
 
-export function buildOmniRushHealthHeaders(url: string): Record<string, string> | undefined {
-  const token = readOmniRushToken();
+export function buildMarsHealthHeaders(url: string): Record<string, string> | undefined {
+  const token = readMarsToken();
   return token && url.includes("/opencode") ? { Authorization: `Bearer ${token}` } : undefined;
 }
 
 async function checkHealth(url: string): Promise<boolean> {
   if (!url) return false;
-  const headers = buildOmniRushHealthHeaders(url);
+  const headers = buildMarsHealthHeaders(url);
   const client = createOpencodeClient({
     baseUrl: url,
     headers,
@@ -107,18 +107,18 @@ export function ServerProvider({ children, defaultUrl }: ServerProviderProps) {
     if (readyRef.current) return;
     if (typeof window === "undefined") return;
 
-    const gatewayOrigin = getOmniRushGatewayOrigin();
+    const gatewayOrigin = getMarsGatewayOrigin();
     const fallback = normalizeServerUrl(gatewayOrigin ? `${gatewayOrigin}/opencode` : defaultUrl) ?? "";
 
-    // Hosted web deployments served by omnirush.ai must reuse the OpenCode proxy
+    // Hosted web deployments served by marsai.click must reuse the OpenCode proxy
     // rather than any persisted localhost target.
     const forceProxy =
       Boolean(gatewayOrigin) ||
       (!isDesktopRuntime() &&
         isWebDeployment() &&
         (import.meta.env.PROD ||
-          (typeof import.meta.env?.VITE_OMNIRUSH_URL === "string" &&
-            import.meta.env.VITE_OMNIRUSH_URL.trim().length > 0)));
+          (typeof import.meta.env?.VITE_MARS_URL === "string" &&
+            import.meta.env.VITE_MARS_URL.trim().length > 0)));
 
     if (forceProxy && fallback) {
       dispatchServer({ type: "ready", list: [fallback], active: fallback });
@@ -140,8 +140,8 @@ export function ServerProvider({ children, defaultUrl }: ServerProviderProps) {
     if (!readyRef.current) return;
     if (typeof window === "undefined") return;
     try {
-      window.localStorage.setItem("omnirush.server.list", JSON.stringify(list));
-      window.localStorage.setItem("omnirush.server.active", active);
+      window.localStorage.setItem("mars.server.list", JSON.stringify(list));
+      window.localStorage.setItem("mars.server.active", active);
     } catch {
       // ignore
     }
@@ -150,7 +150,7 @@ export function ServerProvider({ children, defaultUrl }: ServerProviderProps) {
   useEffect(() => {
     if (!active) return;
     if (isDesktopRuntime() && !active.includes("/opencode")) {
-      // Desktop React routes now talk to omnirush.ai server workspace-mounted
+      // Desktop React routes now talk to marsai.click server workspace-mounted
       // `/opencode` URLs directly. Ignore old persisted raw OpenCode daemon
       // URLs here; their ephemeral ports go stale across restarts and otherwise
       // produce noisy `/global/health` connection-refused polling forever.

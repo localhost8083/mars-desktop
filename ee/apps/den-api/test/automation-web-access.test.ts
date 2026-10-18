@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from "bun:test"
-import { createAutomationSchema } from "@omnirush/types/automations"
+import { createAutomationSchema } from "@mars/types/automations"
 
 function seedRequiredEnv() {
   process.env.DATABASE_URL = process.env.DATABASE_URL ?? "mysql://root:password@127.0.0.1:3306/omnirush_test"

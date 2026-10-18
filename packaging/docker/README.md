@@ -1,4 +1,4 @@
-# OmniRush.ai Host (Docker)
+# MarsAI Host (Docker)
 
 ## Pull-only evaluation stack
 
@@ -6,12 +6,12 @@ Run Den API, Den web, and MySQL from published images without cloning or buildin
 
 ```bash
 curl -fsSLo docker-compose.eval.yml \
-  https://raw.githubusercontent.com/omnirush-ai/omnirush-gui/9f8645ebc482c15ab99c0cf155aabaa411e1ca6a/packaging/docker/docker-compose.eval.yml
+  https://raw.githubusercontent.com/mars-ai/mars-gui/9f8645ebc482c15ab99c0cf155aabaa411e1ca6a/packaging/docker/docker-compose.eval.yml
 printf '%s  %s\n' \
   '69cc7f2666157b7697ebf69b31b0c83887dd99e796c7d956f9ccaab8fa8bf2fc' \
   'docker-compose.eval.yml' | shasum -a 256 --check
 umask 077
-printf 'OMNIRUSH_AUTH_SECRET=%s\nOMNIRUSH_DB_ENCRYPTION_KEY=%s\n' \
+printf 'MARS_AUTH_SECRET=%s\nMARS_DB_ENCRYPTION_KEY=%s\n' \
   "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > .env
 docker compose -f docker-compose.eval.yml up -d --wait
 ```
@@ -40,20 +40,20 @@ What it does:
 - Starts **MySQL** for the Den service
 - Starts **Den control plane** on port 8788 inside Docker with `PROVISIONER_MODE=stub`
 - Runs **Den migrations** automatically before the API starts in the local compose stack
-- Starts the **OmniRush.ai Cloud web app** on port 3005 inside Docker
+- Starts the **MarsAI Cloud web app** on port 3005 inside Docker
 - Points the web app's auth + API proxy routes at the local Den service
 - Prints randomized host URLs so multiple stacks can run side by side
 
 Production-oriented EE images:
-- `Dockerfile.den` -> `ghcr.io/omnirush-ai/omnirush-den-api`
-- `Dockerfile.den-web` -> `ghcr.io/omnirush-ai/omnirush-den-web`
-- `Dockerfile.inference` -> `ghcr.io/omnirush-ai/omnirush-inference`
+- `Dockerfile.den` -> `ghcr.io/mars-ai/mars-den-api`
+- `Dockerfile.den-web` -> `ghcr.io/mars-ai/mars-den-web`
+- `Dockerfile.inference` -> `ghcr.io/mars-ai/mars-inference`
 
 These images are intended for Terraform, Helm, ECS, EKS, and customer-cloud deployments. Prefer immutable tags or digests in production.
 
 Publish flow:
 - Release tags like `v0.17.1` publish images tagged `v0.17.1`, `0.17.1`, `sha-<commit>`, and `latest`.
-- The same workflow publishes the Helm chart to `oci://ghcr.io/omnirush-ai/charts/omnirush-ee` with chart version `0.17.1`.
+- The same workflow publishes the Helm chart to `oci://ghcr.io/mars-ai/charts/omnirush-ee` with chart version `0.17.1`.
 - Manual publishes from a branch require `push=true` and an explicit `chart_version`.
 
 Health and smoke expectations:
@@ -74,7 +74,7 @@ The seed is local/dev-only, idempotent for the `acme-robotics-demo` org, and doe
 Default demo login:
 
 - Email: `alex@acme.test`
-- Password: `OmniRushDemo123!`
+- Password: `MarsDemo123!`
 
 For the Docker stack with randomized MySQL ports, source the printed runtime env file first and pass `DEN_MYSQL_URL` as `DATABASE_URL`:
 
@@ -173,7 +173,7 @@ OTEL_TRACES_EXPORTER=otlp \
 OTEL_METRICS_EXPORTER=otlp \
 OTEL_LOGS_EXPORTER=otlp \
 OTEL_TRACES_SAMPLER=parentbased_always_on \
-docker compose -p omnirush-den-otel \
+docker compose -p mars-den-otel \
   -f packaging/docker/docker-compose.den-dev.yml \
   -f packaging/docker/docker-compose.otel-lgtm.yml \
   up --build --wait
@@ -237,7 +237,7 @@ docker buildx build \
   --secret id=sentry_project,env=SENTRY_PROJECT \
   --secret id=sentry_release,env=SENTRY_RELEASE \
   --secret id=sentry_dist,env=SENTRY_DIST \
-  -t omnirush-den-api:sentry .
+  -t mars-den-api:sentry .
 ```
 
 For custom Den Web images, `DEN_WEB_UPLOAD_SENTRY_SOURCEMAPS=1` requires
@@ -258,7 +258,7 @@ docker buildx build \
   --secret id=sentry_url,env=SENTRY_URL \
   --secret id=sentry_release,env=SENTRY_RELEASE \
   --secret id=sentry_dist,env=SENTRY_DIST \
-  -t omnirush-den-web:sentry .
+  -t mars-den-web:sentry .
 ```
 
 The EE image publish workflow never passes repository Sentry secrets to
@@ -278,28 +278,28 @@ Run the install-link migration once against the Den database:
 docker compose -f packaging/docker/docker-compose.den-dev.yml exec den sh -lc "node /app/ee/packages/den-db/dist/scripts/bootstrap.js"
 ```
 
-Set `DEN_BOOTSTRAP_ADMIN_EMAILS` on the Den API service, restart it, open `/admin`, and toggle `Install links` for each org. Optional installer artifact env vars are `OMNIRUSH_INSTALLER_RELEASE_TAG`, `OMNIRUSH_INSTALLER_RELEASE_REPO`, and `OMNIRUSH_INSTALLER_ARTIFACTS_DIR`; see the [operator guide](../../docs/org-install-links.md).
+Set `DEN_BOOTSTRAP_ADMIN_EMAILS` on the Den API service, restart it, open `/admin`, and toggle `Install links` for each org. Optional installer artifact env vars are `MARS_INSTALLER_RELEASE_TAG`, `MARS_INSTALLER_RELEASE_REPO`, and `MARS_INSTALLER_ARTIFACTS_DIR`; see the [operator guide](../../docs/org-install-links.md).
 
 ### Faster inner-loop alternative
 
 If you are iterating on Den locally and do not need the full Dockerized web stack, use the hybrid path instead:
 
-From the OmniRush.ai repo root:
+From the MarsAI repo root:
 
 ```bash
 pnpm dev:den
 ```
 
-Or from the OmniRush.ai enterprise root:
+Or from the MarsAI enterprise root:
 
 ```bash
-pnpm --dir _repos/omnirush dev:den
+pnpm --dir _repos/mars dev:den
 ```
 
 What it does:
 - Starts only **MySQL** in Docker
 - Runs **Den controller** locally in watch mode
-- Runs **OmniRush.ai Cloud web app** locally in Next.js dev mode
+- Runs **MarsAI Cloud web app** locally in Next.js dev mode
 - Reuses the existing local-dev wiring in `scripts/dev-web-local.sh`
 
 This is usually the fastest path for UI/auth/control-plane iteration because it avoids rebuilding the Docker web image on each boot.
@@ -323,26 +323,26 @@ pnpm dev:den:mysql:down
 
 ## Pre-baked Micro-Sandbox Image
 
-For micro-sandbox work, use the pre-baked image that compiles `omnirush-server` from source and downloads the pinned `opencode` binary during `docker build`.
+For micro-sandbox work, use the pre-baked image that compiles `mars-server` from source and downloads the pinned `opencode` binary during `docker build`.
 
 Build it from the repo root:
 
 ```bash
-./scripts/build-microsandbox-omnirush-image.sh
+./scripts/build-microsandbox-mars-image.sh
 ```
 
 Run it locally:
 
 ```bash
 docker run --rm -p 8787:8787 \
-  -e OMNIRUSH_CONNECT_HOST=127.0.0.1 \
-  omnirush-microsandbox:dev
+  -e MARS_CONNECT_HOST=127.0.0.1 \
+  mars-microsandbox:dev
 ```
 
 Defaults:
-- `OMNIRUSH_TOKEN=microsandbox-token`
-- `OMNIRUSH_HOST_TOKEN=microsandbox-host-token`
-- `OMNIRUSH_APPROVAL_MODE=auto`
+- `MARS_TOKEN=microsandbox-token`
+- `MARS_HOST_TOKEN=microsandbox-host-token`
+- `MARS_APPROVAL_MODE=auto`
 
 Verification:
 - Health: `curl http://127.0.0.1:8787/health`
@@ -350,21 +350,21 @@ Verification:
 - Docker health: `docker inspect --format '{{json .State.Health}}' <container>`
 
 Useful overrides:
-- `OMNIRUSH_TOKEN` — set your own client bearer token
-- `OMNIRUSH_HOST_TOKEN` — set your own host/admin token
-- `OMNIRUSH_CONNECT_HOST` — host name embedded in the printed connect URL
+- `MARS_TOKEN` — set your own client bearer token
+- `MARS_HOST_TOKEN` — set your own host/admin token
+- `MARS_CONNECT_HOST` — host name embedded in the printed connect URL
 - `DOCKER_PLATFORM` — optional platform passed to `docker build`
 
 ---
 
 ## Production container
 
-This is a minimal packaging template to run the OmniRush.ai Host contract in a single container.
+This is a minimal packaging template to run the MarsAI Host contract in a single container.
 
 It runs:
 
-- `omnirush-server` published on `0.0.0.0:8787` (the only published surface)
-- Managed `opencode` launched internally by `omnirush-server`
+- `mars-server` published on `0.0.0.0:8787` (the only published surface)
+- Managed `opencode` launched internally by `mars-server`
 
 ### Local run (compose)
 
@@ -382,20 +382,20 @@ Then open:
 
 Recommended env vars:
 
-- `OMNIRUSH_TOKEN` (client token)
-- `OMNIRUSH_HOST_TOKEN` (host/owner token)
+- `MARS_TOKEN` (client token)
+- `MARS_HOST_TOKEN` (host/owner token)
 
 Optional:
 
-- `OMNIRUSH_APPROVAL_MODE=auto|manual`
-- `OMNIRUSH_APPROVAL_TIMEOUT_MS=30000`
+- `MARS_APPROVAL_MODE=auto|manual`
+- `MARS_APPROVAL_TIMEOUT_MS=30000`
 
 Persistence:
 
 - Workspace is mounted at `/workspace`
-- Host data dir is mounted at `/data` (OpenCode caches + OmniRush.ai server config/tokens)
+- Host data dir is mounted at `/data` (OpenCode caches + MarsAI server config/tokens)
 
 ### Notes
 
-- OpenCode is not exposed directly; access it via the OmniRush.ai proxy (`/opencode/*`).
+- OpenCode is not exposed directly; access it via the MarsAI proxy (`/opencode/*`).
 - For PaaS, replace `./workspace:/workspace` with a volume or a checkout strategy (git clone on boot).

@@ -3,7 +3,7 @@ import { ImageIcon, Monitor, Smartphone } from "lucide-react";
 import {
   visualizationSchema,
   type Visualization,
-} from "@omnirush/types/visualization";
+} from "@mars/types/visualization";
 import type { AnyToolPart } from "@/lib/tool-aggregate";
 import { Button } from "@/components/ui/button";
 import { useMessageList } from "@/components/chat/message-list-provider";

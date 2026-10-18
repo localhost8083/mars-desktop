@@ -2,19 +2,19 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import { join } from "node:path";
-import { SkipError } from "@omnirush/env";
-import type { Seed } from "@omnirush/env";
+import { SkipError } from "@mars/env";
+import type { Seed } from "@mars/env";
 import { buildTestPdf, pdfDataUrl } from "../../apps/server/src/pdf-attachments/pdf-fixture.test-helper.ts";
-import { bootManagedOmniRushServer, close, engineBinary, isRecord, listen, readBody, sendJson, sendStream } from "./omnirush-server-cli.ts";
+import { bootManagedMarsServer, close, engineBinary, isRecord, listen, readBody, sendJson, sendStream } from "./mars-server-cli.ts";
 
 // A PDF attached in chat must work with every model the engine can run. The
 // engine forwards a PDF part to the provider untouched, so a model without PDF
-// input fails the whole request. OmniRush.ai's omnirush-pdf-attachments engine
+// input fails the whole request. MarsAI's mars-pdf-attachments engine
 // plugin rewrites only the provider-facing copy per step: native PDF stays
 // native, image-capable models get rendered pages plus text, text-only models
 // get text, and the transcript keeps the original PDF part.
 //
-// This world boots the real omnirush-server CLI, which writes the engine's
+// This world boots the real mars-server CLI, which writes the engine's
 // runtime config (including the shipped plugin list) and spawns the real
 // OpenCode engine against a workspace whose only provider is a loopback mock
 // that records exactly what each model received.
@@ -33,7 +33,7 @@ function summarizeToolResults(body: unknown): string[] {
   for (const message of body.messages) {
     if (!isRecord(message) || message.role !== "tool") continue;
     const content = typeof message.content === "string" ? message.content : JSON.stringify(message.content);
-    results.push(content.includes("OmniRush.ai prepared the PDF") ? "tool:note" : `tool:${content.slice(0, 30)}`);
+    results.push(content.includes("MarsAI prepared the PDF") ? "tool:note" : `tool:${content.slice(0, 30)}`);
   }
   return results;
 }
@@ -65,7 +65,7 @@ function summarizeUserContent(body: unknown): string[] {
       } else if (item.type === "file") {
         parts.push(`file:${isRecord(item.file) && typeof item.file.filename === "string" ? item.file.filename : "?"}`);
       } else if (item.type === "text" && typeof item.text === "string") {
-        parts.push(item.text.startsWith("OmniRush.ai prepared the PDF") ? "text:note" : `text:${item.text.slice(0, 20)}`);
+        parts.push(item.text.startsWith("MarsAI prepared the PDF") ? "text:note" : `text:${item.text.slice(0, 20)}`);
       } else {
         parts.push(`other:${String(item.type)}`);
       }
@@ -116,7 +116,7 @@ function mockProvider(workspace: string, requests: ProviderRequest[]): Server {
 }
 
 export interface PdfRoutingWorld extends AsyncDisposable {
-  /** omnirush-server base URL. */
+  /** mars-server base URL. */
   base: string;
   workspaceId: string;
   workspacePath: string;
@@ -125,17 +125,17 @@ export interface PdfRoutingWorld extends AsyncDisposable {
   attachment: { type: "file"; mime: "application/pdf"; filename: string; url: string };
   /** Everything the mock provider received, in order. */
   requests: ProviderRequest[];
-  /** Proxied engine call through omnirush-server: path is relative to the engine root, e.g. /session. */
+  /** Proxied engine call through mars-server: path is relative to the engine root, e.g. /session. */
   engine(method: string, path: string, body?: unknown): Promise<unknown>;
   /** Derived PDF bundle directories the plugin left in the workspace inbox. */
   derivedBundles(): Promise<string[]>;
-  /** omnirush-server and engine output so far, for diagnostics. */
+  /** mars-server and engine output so far, for diagnostics. */
   output(): string;
 }
 
 export async function pdfRouting(seed: Seed): Promise<PdfRoutingWorld> {
   const binary = engineBinary();
-  if (!binary) throw new SkipError("set OMNIRUSH_OPENCODE_BIN or install opencode");
+  if (!binary) throw new SkipError("set MARS_OPENCODE_BIN or install opencode");
 
   const root = seed.tmpPath("pdf-routing");
   await mkdir(root, { recursive: true });
@@ -174,7 +174,7 @@ export async function pdfRouting(seed: Seed): Promise<PdfRoutingWorld> {
   const token = "pdf-routing-client-token";
   let output = "";
   const sink = (chunk: string) => { output += chunk; };
-  let managed: Awaited<ReturnType<typeof bootManagedOmniRushServer>> | null = null;
+  let managed: Awaited<ReturnType<typeof bootManagedMarsServer>> | null = null;
   const dispose = async () => {
     if (managed) await managed.stop();
     await close(provider);
@@ -184,7 +184,7 @@ export async function pdfRouting(seed: Seed): Promise<PdfRoutingWorld> {
   };
 
   try {
-    managed = await bootManagedOmniRushServer({ scratch, workspace, token, sink, binary });
+    managed = await bootManagedMarsServer({ scratch, workspace, token, sink, binary });
     const engineVersion = spawnSync(managed.binary, ["--version"], { encoding: "utf8" }).stdout.trim();
     const attachment: PdfRoutingWorld["attachment"] = { type: "file", mime: "application/pdf", filename: ATTACHED_PDF, url: pdfDataUrl(buildTestPdf(["Quarterly revenue report", "Second page", null])) };
 
@@ -197,7 +197,7 @@ export async function pdfRouting(seed: Seed): Promise<PdfRoutingWorld> {
       requests,
       engine: managed.engine,
       async derivedBundles() {
-        return (await readdir(join(workspace, ".opencode", "omnirush", "inbox", "pdf-pages")).catch(() => [])).sort();
+        return (await readdir(join(workspace, ".opencode", "mars", "inbox", "pdf-pages")).catch(() => [])).sort();
       },
       output: () => output,
       [Symbol.asyncDispose]: dispose,

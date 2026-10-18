@@ -2,7 +2,7 @@
 import type { ReactNode } from "react";
 import type { McpDirectoryInfo } from "../../../app/constants";
 import { extensionContribution } from "../../../app/extensions";
-import type { OmniRushServerClient } from "../../../app/lib/omnirush-server";
+import type { MarsServerClient } from "../../../app/lib/mars-server";
 import type { LocalProviderInstallInput } from "./openai-image-extension";
 
 /**
@@ -10,8 +10,8 @@ import type { LocalProviderInstallInput } from "./openai-image-extension";
  * Each extension picks what it needs; unused fields are ignored.
  */
 export type ExtensionConfigContext = {
-  omnirushServerClient?: OmniRushServerClient | null;
-  hostOmniRushServerClient?: OmniRushServerClient | null;
+  marsServerClient?: MarsServerClient | null;
+  hostMarsServerClient?: MarsServerClient | null;
   restartLocalServer?: () => Promise<boolean>;
   computerUse?: {
     connected: boolean;

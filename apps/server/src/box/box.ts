@@ -1,9 +1,9 @@
-// Ported from the CLI (omnirush-cli src/box/box.js, feat/local-box-backends);
+// Ported from the CLI (mars-cli src/box/box.js, feat/local-box-backends);
 // keep the two in step. Desktop differences, each marked "Desktop:": types;
 // what common.ts lists (the sidecars' helpers, the shell-desktop link, the
 // container-name prefix).
 //
-// OmniRush box: one persistent Linux box per project, opt-in. The engine,
+// Mars box: one persistent Linux box per project, opt-in. The engine,
 // the app and the model calls stay on this machine; the engine's shell tool
 // runs in the box (boxsh -> boxd). The project folder is mounted at the same
 // path (Windows: /c/Users/...), so the user's editor, git and files stay as
@@ -12,7 +12,7 @@
 // user resets it.
 //
 // What runs the box is a backend (backends/: bubblewrap, Apple container,
-// WSL containers, OmniRush's WSL distro, Docker, Podman and what speaks
+// WSL containers, Mars's WSL distro, Docker, Podman and what speaks
 // their CLIs), chosen per machine by backends/index.ts. Every backend runs
 // the same boxd from the same pinned image, so a box is the same
 // environment everywhere.
@@ -55,7 +55,7 @@ const H = HOME_IN_BOX;
 /** Never part of a turn's environment: runtime state, logs, download caches the ledger replays. */
 export const NOISE_PREFIXES = [
   "/run", "/proc", "/sys", "/dev", "/var/log", "/var/cache/apt", "/var/lib/apt/lists", "/var/cache/debconf/templates.dat-old",
-  "/opt/omnirush", "/usr/sbin/docker-init", "/sbin/docker-init", "/var/lib/dpkg/lock", "/var/lib/dpkg/lock-frontend", "/var/cache/ldconfig/aux-cache",
+  "/opt/mars", "/usr/sbin/docker-init", "/sbin/docker-init", "/var/lib/dpkg/lock", "/var/lib/dpkg/lock-frontend", "/var/cache/ldconfig/aux-cache",
   `${H}/.cache/pip`, `${H}/.cache/uv`, `${H}/.cache/pre-commit`, `${H}/.cache/yarn`, `${H}/.cache/go-build`, `${H}/.cache/pnpm`,
   `${H}/.npm/_cacache`, `${H}/.npm/_logs`, `${H}/.npm/_update-notifier-last-checked`, `${H}/.npm/_npx`,
   `${H}/.bun/install/cache`, `${H}/.yarn/berry/cache`, `${H}/.local/share/pnpm/store`, `${H}/.cargo/registry/cache`, "/usr/local/cargo/registry/cache",
@@ -69,7 +69,7 @@ export const NOISE_PREFIXES = [
  */
 export const KEEP_PREFIXES = [`${H}/.cache/node/corepack`, `${H}/.cache/ms-playwright`];
 export const NOISE_PATTERNS = [/(?:^|\/)__pycache__(?:\/|$)/, /\.py[co]$/, /(?:^|\/)\.(?:pytest|mypy|ruff)_cache(?:\/|$)/, /^\/tmp\/\.bun-[^/]+\.(?:node|so)$/, /^\/tmp\/\.X11-unix/];
-export const NOISE_FILES = new Set(["/etc/passwd", "/etc/group", "/etc/shadow", "/etc/gshadow", "/etc/passwd-", "/etc/group-", "/etc/.pwd.lock", "/etc/hostname", "/etc/hosts", "/etc/resolv.conf", "/etc/mtab", "/etc/sudoers.d/omnirush", "/etc/sudoers.d"]);
+export const NOISE_FILES = new Set(["/etc/passwd", "/etc/group", "/etc/shadow", "/etc/gshadow", "/etc/passwd-", "/etc/group-", "/etc/.pwd.lock", "/etc/hostname", "/etc/hosts", "/etc/resolv.conf", "/etc/mtab", "/etc/sudoers.d/mars", "/etc/sudoers.d"]);
 const CREDENTIAL_NAMES = new Set([".ssh", ".gnupg", ".aws", ".azure", ".kube", ".netrc", ".git-credentials", ".pypirc", ".password-store", ".vault-token", ".docker"]);
 const CREDENTIAL_SUBPATHS = [".config/gh", ".config/gcloud", ".config/hub", ".config/op", ".config/rclone", ".config/doctl"];
 const CREDENTIAL_FILE = /(?:^|\/)(?:id_(?:rsa|dsa|ecdsa|ed25519)(?:\.pub)?|[^/]+\.(?:pem|key|p12|pfx|kdbx|jks|keystore))$/i;
@@ -445,7 +445,7 @@ export class Box {
   /**
    * The install log's wrappers (phase 1) in front of the box's PATH and its
    * pip hook on PYTHONPATH; the per-run folder they note calls in comes with
-   * each call (OMNIRUSH_PKGLOG_DIR, forwarded by boxsh).
+   * each call (MARS_PKGLOG_DIR, forwarded by boxsh).
    */
   useInstallLog(pkglog: BoxInstallLog): void {
     const inBox = (p: string) => containerRoot(p, this.platform);
@@ -490,7 +490,7 @@ export class Box {
     const image = this.image();
     return {
       schema: RECORD_SCHEMA,
-      kind: "omnirush-box",
+      kind: "mars-box",
       box: { id: `box_${this.key}`, container: this.name, created_at: image.created_at ?? null },
       backend: this.runtime.backend ?? this.runtime.name,
       runtime: { name: this.runtime.name, version: this.runtime.version ?? null, flavor: this.runtime.flavor ?? "unknown", rootless: Boolean(this.runtime.rootless), os: "linux", arch: this.runtime.arch || null },
@@ -528,7 +528,7 @@ export class Box {
     return work;
   }
 
-  private async takeCheckpoint(dir: string, turn: number | null, { label: asked = null, leaf = false, sessionTurn = null, deps = this.env.OMNIRUSH_BOX_DEPS !== "off", tarMax = Number(this.env.OMNIRUSH_BOX_TAR_MAX) || TAR_MAX_BYTES, depsMax = Number(this.env.OMNIRUSH_BOX_DEPS_MAX) || DEPS_MAX_BYTES }: { label?: string | null; leaf?: boolean; sessionTurn?: number | null; deps?: boolean; tarMax?: number; depsMax?: number } = {}): Promise<Checkpoint> {
+  private async takeCheckpoint(dir: string, turn: number | null, { label: asked = null, leaf = false, sessionTurn = null, deps = this.env.MARS_BOX_DEPS !== "off", tarMax = Number(this.env.MARS_BOX_TAR_MAX) || TAR_MAX_BYTES, depsMax = Number(this.env.MARS_BOX_DEPS_MAX) || DEPS_MAX_BYTES }: { label?: string | null; leaf?: boolean; sessionTurn?: number | null; deps?: boolean; tarMax?: number; depsMax?: number } = {}): Promise<Checkpoint> {
     if (!this.ready || !this.endpoint) throw new Error(`the sandbox is ${this.state}`);
     const endpoint = this.endpoint;
     const t0 = Date.now();
@@ -705,7 +705,7 @@ export async function stopBox(runtime: BoxRuntime, root: string, { env = process
 /**
  * Remove boxes whose folder is gone or that were not used for `maxIdleDays`,
  * and box images no box uses that are not the current pins. Only boxes and
- * images labelled/named as OmniRush boxes are touched; nothing is pruned.
+ * images labelled/named as Mars boxes are touched; nothing is pruned.
  */
 export async function gcBoxes(runtime: BoxRuntime, { env = process.env, home = boxHome(env), run = runCommand, maxIdleDays = 30, pins = null, now = Date.now(), exists = existsSync }: { env?: Env; home?: string; run?: RunCommand; maxIdleDays?: number; pins?: ImagePins | null; now?: number; exists?: (file: string) => boolean } = {}): Promise<Removed> {
   const driver = driverFor(runtime);

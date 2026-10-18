@@ -20,9 +20,9 @@ import {
   INFERENCE_RESET_STRATEGY_BY_WINDOW_TYPE,
   INFERENCE_TIER_LIMITS,
   INFERENCE_WINDOW_DURATIONS_MS,
-} from "@omnirush/types/den/inference"
-import type { InferenceOrganizationMetadata, InferenceTier, InferenceWindowType } from "@omnirush/types/den/inference"
-import { assertManagedModelsAllowed, ManagedModelsPolicyError } from "@omnirush/types/den/managed-models-policy"
+} from "@mars/types/den/inference"
+import type { InferenceOrganizationMetadata, InferenceTier, InferenceWindowType } from "@mars/types/den/inference"
+import { assertManagedModelsAllowed, ManagedModelsPolicyError } from "@mars/types/den/managed-models-policy"
 import { db } from "./db.js"
 import { env } from "./env.js"
 import { assertOrganizationManagedModelsAllowed, updateOrganizationMetadata } from "./organization-metadata.js"

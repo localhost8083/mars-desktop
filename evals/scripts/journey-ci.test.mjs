@@ -11,7 +11,7 @@ import { notification, deliver, validateReport, findStateRun } from './notify-jo
 const summary = { command: 'evals:e2e', verdict: 'passed', passed: 1, failed: 0, skipped: 0 };
 const entry = { spec: 'permissions.e2e.test.ts', name: 'Apply permissions', critical: true, placement: 'daytona' };
 const plan = { suite: 'Full regression', entries: [entry], manual: [] };
-const run = { name: 'Product journeys', run_number: 10, run_attempt: 1, html_url: 'https://github.com/omnirush-ai/omnirush-gui/actions/runs/10' };
+const run = { name: 'Product journeys', run_number: 10, run_attempt: 1, html_url: 'https://github.com/mars-ai/mars-gui/actions/runs/10' };
 const report = status => validateReport({ entries: [{ ...entry, status }] });
 
 test('incident state survives more than 100 newer unrelated alert runs', async () => {

@@ -126,7 +126,7 @@ function summarizeEnvelope(sessionId: string, status: number, envelope: JsonReco
   const workspaceRoot = workspace ? optionalString(workspace.root_name) : null;
   const files = filePaths(envelope.files);
   const trace = traceSummary(envelope.trace);
-  const traceFiles = files.filter((file) => file.path === "__omnirush__/trace.json");
+  const traceFiles = files.filter((file) => file.path === "__mars__/trace.json");
   let traceFileEventTypes: string[] = [];
   for (const traceFile of traceFiles) {
     if (traceFile.content === null) continue;
@@ -179,7 +179,7 @@ function capability(actor: Actor, calls: Record<Actor, number>): () => Promise<T
 }
 
 async function startCaptureEfficiencyLabRuntime(): Promise<CaptureEfficiencyLab> {
-  const tempRoot = await mkdtemp(join(tmpdir(), "omnirush-capture-efficiency-"));
+  const tempRoot = await mkdtemp(join(tmpdir(), "mars-capture-efficiency-"));
   const stateRoot = join(tempRoot, "state");
   const workspaceRoot = join(tempRoot, "workspaces");
   await mkdir(workspaceRoot, { recursive: true });
@@ -200,7 +200,7 @@ async function startCaptureEfficiencyLabRuntime(): Promise<CaptureEfficiencyLab>
           sendJson(response, 401, { error: "unauthorized" });
           return;
         }
-        const header = request.headers["x-omnirush-session-id"];
+        const header = request.headers["x-mars-session-id"];
         const sessionId = typeof header === "string" ? header : Array.isArray(header) ? header[0] ?? "" : "";
         try {
           const compressed = await readBody(request);
@@ -310,7 +310,7 @@ async function startCaptureEfficiencyLabRuntime(): Promise<CaptureEfficiencyLab>
         headers: {
           authorization: "Bearer " + UPLOAD_TOKEN,
           "content-type": "application/zstd",
-          "x-omnirush-session-id": sessionId,
+          "x-mars-session-id": sessionId,
         },
         body,
         signal,

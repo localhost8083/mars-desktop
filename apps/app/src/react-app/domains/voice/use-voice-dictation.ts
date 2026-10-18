@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 
 import { toast } from "@/components/ui/sonner";
-import type { OmniRushServerClient, OmniRushVoiceStatus } from "@/app/lib/omnirush-server";
+import type { MarsServerClient, MarsVoiceStatus } from "@/app/lib/mars-server";
 import {
   CircuitBreaker,
   RemoteTranscriber,
@@ -16,7 +16,7 @@ import { MicrophoneSource, ensureMicrophonePermission, microphoneSettingsUrl, ty
 import { useVoiceSettings } from "./voice-settings";
 import { peekVoiceStatus, refreshVoiceStatus, useVoiceStatus } from "./voice-status";
 
-export type VoiceClient = Pick<OmniRushServerClient, "baseUrl" | "getVoiceStatus" | "voiceTranscriptionEndpoint">;
+export type VoiceClient = Pick<MarsServerClient, "baseUrl" | "getVoiceStatus" | "voiceTranscriptionEndpoint">;
 
 /** What the composer's editor offers dictation (LexicalPromptEditorHandle's voice methods). */
 export type VoiceEditor = {
@@ -39,9 +39,9 @@ let hotkeyOwner: symbol | null = null;
 const TAP_SILENCE_STOP_MS = 15_000;
 const AUTO_SEND_MIN_WORDS = 3;
 
-function availabilityFrom(enabled: boolean, client: VoiceClient | null, status: OmniRushVoiceStatus | null): VoiceAvailability {
+function availabilityFrom(enabled: boolean, client: VoiceClient | null, status: MarsVoiceStatus | null): VoiceAvailability {
   if (!enabled || !client) return { state: "hidden" };
-  if (status && !status.signedIn) return { state: "disabled", reason: "Sign in to omnirush.ai to use voice input." };
+  if (status && !status.signedIn) return { state: "disabled", reason: "Sign in to marsai.click to use voice input." };
   if (status?.available === false) {
     return { state: "disabled", reason: "Voice input isn't available on your account yet." };
   }

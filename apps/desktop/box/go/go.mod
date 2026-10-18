@@ -1,3 +1,3 @@
-module omnirush.ai/box
+module marsai.click/box
 
 go 1.22

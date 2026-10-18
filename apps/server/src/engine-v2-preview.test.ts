@@ -13,30 +13,30 @@ import {
   writeEngineV2PreviewState,
 } from "./engine-v2-preview.js";
 import type { ServerConfig } from "./types.js";
-import { buildOmniRushV2Instructions, waitForOmniRushV2Skills } from "./opencode-v2-instructions.js";
+import { buildMarsV2Instructions, waitForMarsV2Skills } from "./opencode-v2-instructions.js";
 
-const realV2Binary = process.env.OMNIRUSH_OPENCODE2_BIN?.trim()
+const realV2Binary = process.env.MARS_OPENCODE2_BIN?.trim()
   || join(resolve(import.meta.dir, "../../.."), "apps/desktop/resources/sidecars/opencode-x86_64-unknown-linux-gnu");
 const realV2Test = existsSync(realV2Binary) ? test : test.skip;
 
 test("v2 app guidance fits the native entry limit and uses the current native tools", () => {
   for (const connected of [true, false]) {
-    const value = buildOmniRushV2Instructions(connected);
+    const value = buildMarsV2Instructions(connected);
     expect(Buffer.byteLength(JSON.stringify(value), "utf8")).toBeLessThanOrEqual(7 * 1024);
     expect(value.operatingInstructions).not.toContain("Sub-agent swarms");
     expect(value.operatingInstructions).toContain("## Editing files");
-    expect(value.operatingInstructions).not.toContain("omnirush-cloud_search_capabilities");
-    expect(value.operatingInstructions).not.toContain("omnirush-cloud_execute_capability");
-    expect(value.operatingInstructions).toStartWith("You are omnirush.ai.");
+    expect(value.operatingInstructions).not.toContain("mars-cloud_search_capabilities");
+    expect(value.operatingInstructions).not.toContain("mars-cloud_execute_capability");
+    expect(value.operatingInstructions).toStartWith("You are MarsAI.");
     expect(value.connect.includes("not connected")).toBe(!connected);
   }
 });
 
 test("native plugin skills do not block workspace skill synchronization", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-v2-plugin-skills-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-v2-plugin-skills-"));
   try {
     let reads = 0;
-    await waitForOmniRushV2Skills(root, async () => {
+    await waitForMarsV2Skills(root, async () => {
       reads++;
       return { data: [{ name: "plugin-skill", description: "Plugin instructions", content: "Current plugin instructions",
         location: join(root, ".opencode", "plugins", "example", "SKILL.md") }] };
@@ -63,7 +63,7 @@ function testConfig(root: string): ServerConfig {
     port: 0,
     token: "client-token",
     hostToken: "host-token",
-    configPath: join(root, "omnirush-server.json"),
+    configPath: join(root, "mars-server.json"),
     approval: { mode: "manual", timeoutMs: 1_000 },
     corsOrigins: [],
     workspaces: [],
@@ -84,7 +84,7 @@ test("keeps persisted engine v2 preview state when the override is unset", () =>
 
 test("enables engine v2 preview and chat routing when the override is 1", () => {
   expect(resolveInitialEngineV2PreviewState(
-    { OMNIRUSH_ENGINE_V2_PREVIEW: "1" },
+    { MARS_ENGINE_V2_PREVIEW: "1" },
     { enabled: false, chatRouting: false },
   )).toEqual({ enabled: true, chatRouting: true });
 });
@@ -92,13 +92,13 @@ test("enables engine v2 preview and chat routing when the override is 1", () => 
 test("keeps persisted engine v2 preview state for an invalid override", () => {
   const persisted = { enabled: false, chatRouting: true };
   expect(resolveInitialEngineV2PreviewState(
-    { OMNIRUSH_ENGINE_V2_PREVIEW: "invalid" },
+    { MARS_ENGINE_V2_PREVIEW: "invalid" },
     persisted,
   )).toEqual(persisted);
 });
 
 test("round trips enabled and chat routing state and defaults corrupt state", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-engine-v2-preview-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-engine-v2-preview-"));
   const config = testConfig(root);
   try {
     await writeEngineV2PreviewState(config, { enabled: true, chatRouting: true });
@@ -112,7 +112,7 @@ test("round trips enabled and chat routing state and defaults corrupt state", as
 });
 
 test("persists chat routing and includes it in preview status without starting the engine", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-engine-v2-preview-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-engine-v2-preview-"));
   const config = testConfig(root);
   const preview = createEngineV2Preview({ config });
   try {
@@ -130,10 +130,10 @@ test("persists chat routing and includes it in preview status without starting t
 });
 
 realV2Test("removes a configured MCP from the real v2 engine before admission", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-engine-v2-mcp-ban-"));
-  const previousBinary = process.env.OMNIRUSH_OPENCODE2_BIN;
+  const root = await mkdtemp(join(tmpdir(), "mars-engine-v2-mcp-ban-"));
+  const previousBinary = process.env.MARS_OPENCODE2_BIN;
   await writeEngineV2PreviewState(testConfig(root), { enabled: true, chatRouting: false });
-  process.env.OMNIRUSH_OPENCODE2_BIN = realV2Binary;
+  process.env.MARS_OPENCODE2_BIN = realV2Binary;
   const config = testConfig(root);
   const preview = createEngineV2Preview({ config, deferStart: true });
 
@@ -174,8 +174,8 @@ realV2Test("removes a configured MCP from the real v2 engine before admission", 
     expect(after.data?.some((entry) => entry.name === "fixture")).toBe(false);
   } finally {
     await preview.stop();
-    if (previousBinary === undefined) delete process.env.OMNIRUSH_OPENCODE2_BIN;
-    else process.env.OMNIRUSH_OPENCODE2_BIN = previousBinary;
+    if (previousBinary === undefined) delete process.env.MARS_OPENCODE2_BIN;
+    else process.env.MARS_OPENCODE2_BIN = previousBinary;
     await rm(root, { recursive: true, force: true });
   }
 });
@@ -220,7 +220,7 @@ test("maps providers without an API key using the preview sentinel", () => {
     id: "noKey",
     name: "noKey",
     baseUrl: "https://example.test/v1",
-    apiKey: "omnirush-engine-v2-preview-unset",
+    apiKey: "mars-engine-v2-preview-unset",
     models: [],
   }]);
 });

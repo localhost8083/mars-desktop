@@ -133,7 +133,7 @@ func stageInit(args []string) error {
 	in := func(p string) string { return filepath.Join(m, p) }
 	// The command folders boxd and the launcher use. They are made once, in
 	// the upper layer, before boxd's first index, so they are no change.
-	for _, d := range []string{"proc", "dev", "sys", "tmp", "run", "opt/omnirush/bin"} {
+	for _, d := range []string{"proc", "dev", "sys", "tmp", "run", "opt/mars/bin"} {
 		if err := ensureDir(in(d)); err != nil {
 			return err
 		}
@@ -155,10 +155,10 @@ func stageInit(args []string) error {
 		// /sys is only read by a few tools: go on without it.
 		fmt.Fprintf(os.Stderr, "boxrun: %v\n", err)
 	}
-	if err := ensureFile(in("opt/omnirush/bin/boxd")); err != nil {
+	if err := ensureFile(in("opt/mars/bin/boxd")); err != nil {
 		return err
 	}
-	if err := bind(sp.Boxd, in("opt/omnirush/bin/boxd"), true, false); err != nil {
+	if err := bind(sp.Boxd, in("opt/mars/bin/boxd"), true, false); err != nil {
 		return err
 	}
 	for _, f := range []struct{ src, dst string }{{sp.Resolv, "etc/resolv.conf"}, {sp.Hosts, "etc/hosts"}} {
@@ -198,7 +198,7 @@ func stageInit(args []string) error {
 		// One uid is mapped (the user's, as root): apt cannot drop to _apt.
 		conf := in("etc/apt/apt.conf.d")
 		if fi, err := os.Stat(conf); err == nil && fi.IsDir() {
-			file := filepath.Join(conf, "00omnirush-box")
+			file := filepath.Join(conf, "00mars-box")
 			if _, err := os.Stat(file); err != nil {
 				_ = os.WriteFile(file, []byte("APT::Sandbox::User \"root\";\n"), 0o644)
 			}
@@ -222,5 +222,5 @@ func stageInit(args []string) error {
 	if err := os.Chdir("/"); err != nil {
 		return err
 	}
-	return syscall.Exec("/opt/omnirush/bin/boxd", []string{"boxd"}, sp.Env)
+	return syscall.Exec("/opt/mars/bin/boxd", []string{"boxd"}, sp.Env)
 }

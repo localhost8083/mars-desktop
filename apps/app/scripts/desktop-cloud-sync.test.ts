@@ -4,9 +4,9 @@ import {
   derivePendingCloudPluginChanges,
   readPendingCloudSyncChanges,
 } from "../src/app/cloud/desktop-cloud-sync";
-import type { OmniRushDesktopCloudSyncChange } from "../src/app/lib/omnirush-server";
+import type { MarsDesktopCloudSyncChange } from "../src/app/lib/mars-server";
 
-function change(input: Partial<OmniRushDesktopCloudSyncChange> & Pick<OmniRushDesktopCloudSyncChange, "id" | "kind" | "resourceKind">): OmniRushDesktopCloudSyncChange {
+function change(input: Partial<MarsDesktopCloudSyncChange> & Pick<MarsDesktopCloudSyncChange, "id" | "kind" | "resourceKind">): MarsDesktopCloudSyncChange {
   return {
     marketplaceId: undefined,
     pluginId: undefined,

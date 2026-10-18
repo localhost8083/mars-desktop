@@ -1,6 +1,6 @@
 import { expect } from "vitest";
-import type { Target } from "@omnirush/testkit";
-import { spec } from "@omnirush/testkit";
+import type { Target } from "@mars/testkit";
+import { spec } from "@mars/testkit";
 import { browserViewportWorld, CAPTURE_VIEWPORT } from "../worlds/browser-panel.ts";
 
 const test = spec.world(browserViewportWorld);

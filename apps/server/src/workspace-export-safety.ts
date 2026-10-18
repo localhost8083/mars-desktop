@@ -330,10 +330,10 @@ function readExportRecord(value: unknown): Record<string, unknown> | null {
 
 /**
  * Strips machine-local blueprint materialization state (session ids created on
- * one machine) from an omnirush config so exports stay portable.
+ * one machine) from an mars config so exports stay portable.
  */
-export function sanitizeOmniRushTemplateConfig(omnirush: Record<string, unknown> | null | undefined): Record<string, unknown> {
-  const next = cloneJson(omnirush ?? {});
+export function sanitizeMarsTemplateConfig(mars: Record<string, unknown> | null | undefined): Record<string, unknown> {
+  const next = cloneJson(mars ?? {});
   const blueprint = readExportRecord(next.blueprint);
   if (!blueprint) return next;
 

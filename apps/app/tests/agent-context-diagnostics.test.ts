@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { agentContextDiagnosticsRequestSchema } from "@omnirush/types/agent-context-diagnostics";
+import { agentContextDiagnosticsRequestSchema } from "@mars/types/agent-context-diagnostics";
 
 import {
   collectAgentContextDiagnosticObservations,
@@ -206,7 +206,7 @@ describe("organization connection diagnostic observations", () => {
     expect(agentContextDiagnosticsRequestSchema.safeParse(request).success).toBe(true);
   });
 
-  test("omits local organization topology from remote OmniRush.ai diagnostic requests", () => {
+  test("omits local organization topology from remote MarsAI diagnostic requests", () => {
     const request = collectAgentContextDiagnosticObservations({
       organizationConnections: [connection],
       organizationConnectionsProbe: {
@@ -373,14 +373,14 @@ describe("organization connection diagnostic observations", () => {
 });
 
 describe("agent diagnostics workspace trust", () => {
-  test("blocks explicit and legacy remote OpenCode while allowing local and remote OmniRush.ai", () => {
+  test("blocks explicit and legacy remote OpenCode while allowing local and remote MarsAI", () => {
     expect(isAgentContextDiagnosticsWorkspaceAllowed({
       workspaceType: "remote",
       remoteType: "opencode",
     })).toBe(false);
     expect(isAgentContextDiagnosticsWorkspaceAllowed({
       workspaceType: "remote",
-      remoteType: "omnirush",
+      remoteType: "mars",
     })).toBe(true);
     expect(isAgentContextDiagnosticsWorkspaceAllowed({
       workspaceType: "remote",

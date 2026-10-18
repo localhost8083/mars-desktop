@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { desktopExecutionPolicySchema, type DesktopExecutionPolicy } from "@omnirush/types/den/desktop-policies";
+import { desktopExecutionPolicySchema, type DesktopExecutionPolicy } from "@mars/types/den/desktop-policies";
 
 export function validateExecutionPolicy(value: DesktopExecutionPolicy): DesktopExecutionPolicy {
   const parsed = desktopExecutionPolicySchema.safeParse(value);

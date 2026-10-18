@@ -7,7 +7,7 @@ import { ADVANCED_SETTINGS_SECTIONS } from "../advanced-sections";
 import { Separator } from "@/components/ui/separator";
 
 import type { OpencodeConnectStatus } from "@/app/types";
-import type { EngineV2PreviewStatus, OmniRushCloudMcpHealth, OmniRushRuntimeConfigStatus, OmniRushServerStatus } from "@/app/lib/omnirush-server";
+import type { EngineV2PreviewStatus, MarsCloudMcpHealth, MarsRuntimeConfigStatus, MarsServerStatus } from "@/app/lib/mars-server";
 import { t } from "@/i18n";
 import { LayoutStack } from "../settings-layout";
 import type { useDenSession } from "../cloud/use-den-session";
@@ -42,17 +42,17 @@ export type AdvancedViewProps = {
   busy: boolean;
   clientConnected: boolean;
   opencodeConnectStatus: OpencodeConnectStatus | null;
-  omnirushServerStatus: OmniRushServerStatus;
+  marsServerStatus: MarsServerStatus;
   developerMode: boolean;
   toggleDeveloperMode: () => void;
   opencodeDevModeEnabled: boolean;
   openDebugDeepLink: (rawUrl: string) => Promise<{ ok: boolean; message: string }>;
   canInspectRuntimeConfig: boolean;
-  getRuntimeConfigStatus: () => Promise<OmniRushRuntimeConfigStatus>;
+  getRuntimeConfigStatus: () => Promise<MarsRuntimeConfigStatus>;
   organizationServer: AdvancedOrganizationServerSession;
   cloudMcpUrl: string | null;
-  cloudMcpHealth: OmniRushCloudMcpHealth | null;
-  refreshCloudMcpHealth: () => Promise<OmniRushCloudMcpHealth | null>;
+  cloudMcpHealth: MarsCloudMcpHealth | null;
+  refreshCloudMcpHealth: () => Promise<MarsCloudMcpHealth | null>;
   getEngineV2PreviewStatus: () => Promise<EngineV2PreviewStatus>;
   setEngineV2PreviewEnabled: (enabled: boolean) => Promise<EngineV2PreviewStatus>;
   setEngineV2PreviewChatRouting: (enabled: boolean) => Promise<EngineV2PreviewStatus>;
@@ -77,7 +77,7 @@ export function AdvancedView(props: AdvancedViewProps) {
     advancedLocalReducer,
     initialAdvancedLocalState,
   );
-  const [configStatus, setConfigStatus] = useState<OmniRushRuntimeConfigStatus | null>(null);
+  const [configStatus, setConfigStatus] = useState<MarsRuntimeConfigStatus | null>(null);
   const [configStatusBusy, setConfigStatusBusy] = useState(false);
   const [configStatusError, setConfigStatusError] = useState<string | null>(null);
   const {
@@ -101,8 +101,8 @@ export function AdvancedView(props: AdvancedViewProps) {
     return props.clientConnected ? "ready" : "neutral";
   })();
 
-  const omnirushStatusLabel = (() => {
-    switch (props.omnirushServerStatus) {
+  const marsStatusLabel = (() => {
+    switch (props.marsServerStatus) {
       case "connected":
         return t("config.status_connected");
       case "limited":
@@ -112,8 +112,8 @@ export function AdvancedView(props: AdvancedViewProps) {
     }
   })();
 
-  const omnirushTone: AdvancedStatusTone = (() => {
-    switch (props.omnirushServerStatus) {
+  const marsTone: AdvancedStatusTone = (() => {
+    switch (props.marsServerStatus) {
       case "connected":
         return "ready";
       case "limited":
@@ -124,13 +124,13 @@ export function AdvancedView(props: AdvancedViewProps) {
   })();
 
   const clientDetailLines = props.clientConnected
-    ? ["Chat and task creation can use the omnirush.ai engine for this workspace."]
+    ? ["Chat and task creation can use the marsai.click engine for this workspace."]
     : [
-      "Chat and task creation may fail until omnirush.ai restarts.",
+      "Chat and task creation may fail until marsai.click restarts.",
         "Runtime server config sources below can still be inspected.",
       ];
 
-  const omnirushDetailLines = props.omnirushServerStatus === "connected"
+  const marsDetailLines = props.marsServerStatus === "connected"
     ? ["Runtime DB, workspace config, and migration diagnostics are available."]
     : ["Runtime config diagnostics need the local server connection."];
 
@@ -196,9 +196,9 @@ export function AdvancedView(props: AdvancedViewProps) {
           clientStatusLabel={clientStatusLabel}
           clientTone={clientTone}
           clientDetailLines={clientDetailLines}
-          omnirushStatusLabel={omnirushStatusLabel}
-          omnirushTone={omnirushTone}
-          omnirushDetailLines={omnirushDetailLines}
+          marsStatusLabel={marsStatusLabel}
+          marsTone={marsTone}
+          marsDetailLines={marsDetailLines}
         />
 
         <AdvancedCloudMcpDiagnosticsSection

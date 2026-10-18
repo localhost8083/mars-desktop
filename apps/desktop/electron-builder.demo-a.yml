@@ -1,6 +1,6 @@
 extends: electron-builder.yml
-appId: ai.omnirush.desktop.demo.admin
-productName: OmniRush.ai Demo A
+appId: ai.marsai.desktop.demo.admin
+productName: MarsAI Demo A
 protocols: []
 directories:
   output: dist-electron-demo-a

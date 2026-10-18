@@ -1,4 +1,4 @@
-import type { EmailTemplate } from "@omnirush/email"
+import type { EmailTemplate } from "@mars/email"
 import type { Hono } from "hono"
 import { env } from "../../env.js"
 import { publicRoute } from "../../middleware/index.js"

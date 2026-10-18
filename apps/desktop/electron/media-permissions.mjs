@@ -1,11 +1,11 @@
 /**
- * Test switches for capture. OMNIRUSH_ELECTRON_FAKE_MEDIA gives Chromium a
- * fake microphone (a beep); OMNIRUSH_VOICE_INPUT_FILE (the voice-core test
+ * Test switches for capture. MARS_ELECTRON_FAKE_MEDIA gives Chromium a
+ * fake microphone (a beep); MARS_VOICE_INPUT_FILE (the voice-core test
  * hook) plays that WAV file through the fake microphone once, so voice
  * dictation runs end to end, AudioWorklet included, without a real device.
  */
 export function configureFakeMediaForTests(app, enabled, env = process.env) {
-  const audioFile = String(env.OMNIRUSH_VOICE_INPUT_FILE ?? "").trim();
+  const audioFile = String(env.MARS_VOICE_INPUT_FILE ?? "").trim();
   if (!enabled && !audioFile) return;
   app.commandLine.appendSwitch("use-fake-device-for-media-stream");
   if (!audioFile) return;

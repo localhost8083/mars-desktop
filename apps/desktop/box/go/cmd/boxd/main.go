@@ -1,6 +1,6 @@
 //go:build linux
 
-// boxd runs inside an OmniRush box (one persistent Linux container per
+// boxd runs inside an Mars box (one persistent Linux container per
 // project). It executes the agent's shell commands for the host-side shell
 // client (boxsh) over one TCP connection per command, so a tool call costs a
 // fork/exec instead of a `docker exec` round trip, and it reads the files a
@@ -45,7 +45,7 @@ import (
 	"syscall"
 	"time"
 
-	"omnirush.ai/box/proto"
+	"marsai.click/box/proto"
 )
 
 var version = "dev"
@@ -270,14 +270,14 @@ func prepareUser(cfg config, first bool) {
 	}
 	uid, gid := strconv.Itoa(cfg.uid), strconv.Itoa(cfg.gid)
 	if _, err := exec.LookPath("useradd"); err == nil {
-		_ = exec.Command("groupadd", "-o", "-g", gid, "omnirush").Run()
-		_ = exec.Command("useradd", "-o", "-u", uid, "-g", gid, "-M", "-d", cfg.home, "-s", "/bin/bash", "omnirush").Run()
+		_ = exec.Command("groupadd", "-o", "-g", gid, "mars").Run()
+		_ = exec.Command("useradd", "-o", "-u", uid, "-g", gid, "-M", "-d", cfg.home, "-s", "/bin/bash", "mars").Run()
 	}
-	ensureLine("/etc/group", ":"+gid+":", fmt.Sprintf("omnirush:x:%d:\n", cfg.gid))
-	ensureLine("/etc/passwd", ":"+uid+":", fmt.Sprintf("omnirush:x:%d:%d:omnirush:%s:/bin/bash\n", cfg.uid, cfg.gid, cfg.home))
-	if data, err := os.ReadFile("/etc/shadow"); err == nil && !strings.Contains(string(data), "\nomnirush:") && !strings.HasPrefix(string(data), "omnirush:") {
+	ensureLine("/etc/group", ":"+gid+":", fmt.Sprintf("mars:x:%d:\n", cfg.gid))
+	ensureLine("/etc/passwd", ":"+uid+":", fmt.Sprintf("mars:x:%d:%d:mars:%s:/bin/bash\n", cfg.uid, cfg.gid, cfg.home))
+	if data, err := os.ReadFile("/etc/shadow"); err == nil && !strings.Contains(string(data), "\nmars:") && !strings.HasPrefix(string(data), "mars:") {
 		if f, err := os.OpenFile("/etc/shadow", os.O_APPEND|os.O_WRONLY, 0); err == nil {
-			_, _ = f.WriteString("omnirush:*:20000:0:99999:7:::\n")
+			_, _ = f.WriteString("mars:*:20000:0:99999:7:::\n")
 			f.Close()
 		}
 	}
@@ -291,8 +291,8 @@ func prepareUser(cfg config, first bool) {
 		})
 	}
 	if _, err := os.Stat("/etc/sudoers.d"); err == nil {
-		rule := "omnirush ALL=(ALL) NOPASSWD:ALL\nDefaults:omnirush !secure_path\nDefaults:omnirush !requiretty\nDefaults:omnirush env_keep += \"PATH PYTHONPATH NODE_OPTIONS HOME OMNIRUSH_*\"\n"
-		_ = os.WriteFile("/etc/sudoers.d/omnirush", []byte(rule), 0o440)
+		rule := "mars ALL=(ALL) NOPASSWD:ALL\nDefaults:mars !secure_path\nDefaults:mars !requiretty\nDefaults:mars env_keep += \"PATH PYTHONPATH NODE_OPTIONS HOME MARS_*\"\n"
+		_ = os.WriteFile("/etc/sudoers.d/mars", []byte(rule), 0o440)
 	}
 }
 
@@ -495,7 +495,7 @@ func commandEnv(cfg config, extra map[string]string) []string {
 	set("HOME", cfg.home)
 	user := "root"
 	if cfg.uid != 0 {
-		user = "omnirush"
+		user = "mars"
 	}
 	set("USER", user)
 	set("LOGNAME", user)
@@ -746,10 +746,10 @@ func walkPaths(roots []string, max int) ([]proto.StatEntry, bool) {
 	return statPaths(paths), truncated
 }
 
-const baselineFile = "/opt/omnirush/state/baseline.gz"
+const baselineFile = "/opt/mars/state/baseline.gz"
 
 // Folders never walked for changes: kernel and runtime state, our own files.
-var walkSkip = []string{"/proc", "/sys", "/dev", "/run", "/opt/omnirush"}
+var walkSkip = []string{"/proc", "/sys", "/dev", "/run", "/opt/mars"}
 
 type sig struct {
 	Mt, Ct, Size int64

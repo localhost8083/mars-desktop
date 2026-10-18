@@ -4,10 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { createDesktopOmniRushAccountStore } from "./omnirush-account.mjs";
+import { createDesktopMarsAccountStore } from "./mars-account.mjs";
 import { parseAccountQuality, parseSessionStatus, parseSpinHistory, parseSpinResult, spinIdempotencyKey, spinRefusal } from "./quality.mjs";
 
-const GATEWAY = "http://localhost:8090/omnirush/v1";
+const GATEWAY = "http://127.0.0.1:8000/v1";
 const SEGMENTS = [
   { tokens: 250000, weight: 35 }, { tokens: 500000, weight: 30 }, { tokens: 1000000, weight: 20 },
   { tokens: 2000000, weight: 10 }, { tokens: 5000000, weight: 4 }, { tokens: 10000000, weight: 1 },
@@ -21,7 +21,7 @@ const QUALITY = {
   client_spins_available: 1,
   spins_expire_at: "2026-10-06T10:00:00Z",
   next_tier_hint: "Keep it up.",
-  tips: ["Start omnirush inside the project folder.", "", 7],
+  tips: ["Start mars inside the project folder.", "", 7],
   notice: { id: "spins-1", title: "You earned 2 spins", body: "Nice work." },
   notices: [{ id: "spins-1", kind: "spins", title: "You earned 2 spins", body: "Nice work." }],
   mode: "enforce",
@@ -50,12 +50,12 @@ function testStorage() {
 }
 
 async function signedInStore(fetchImpl, overrides = {}) {
-  const directory = await mkdtemp(path.join(os.tmpdir(), "omnirush-quality-"));
-  const store = createDesktopOmniRushAccountStore({
+  const directory = await mkdtemp(path.join(os.tmpdir(), "mars-quality-"));
+  const store = createDesktopMarsAccountStore({
     filePath: path.join(directory, "account.bin"),
     loadSafeStorage: () => testStorage(),
     platform: /** @type {NodeJS.Platform} */ ("linux"),
-    env: { OMNIRUSH_DEV_MODE: "1" },
+    env: { MARS_DEV_MODE: "1" },
     sleep: async () => undefined,
     execFileImpl: async (file) => { throw new Error(`unexpected ${file}`); },
     clientVersion: "3.2.0",
@@ -84,7 +84,7 @@ test("quality block parses every field, including revision 2", () => {
     clientSpinsAvailable: 1,
     spinsExpireAt: "2026-10-06T10:00:00Z",
     nextTierHint: "Keep it up.",
-    tips: ["Start omnirush inside the project folder."],
+    tips: ["Start mars inside the project folder."],
     notice: { id: "spins-1", kind: "spins", title: "You earned 2 spins", body: "Nice work." },
     notices: [{ id: "spins-1", kind: "spins", title: "You earned 2 spins", body: "Nice work." }],
     mode: "enforce",
@@ -146,7 +146,7 @@ test("the profile carries `quality` to the renderer, null when the server sends 
   assert.equal((await store.status()).quality, null);
 });
 
-test("spin: POST with the device credential, the click's key and X-OmniRush-Client", async () => {
+test("spin: POST with the device credential, the click's key and X-Mars-Client", async () => {
   const seen = [];
   const store = await signedInStore(async (url, init = {}) => {
     const headers = new Headers(init.headers);
@@ -154,7 +154,7 @@ test("spin: POST with the device credential, the click's key and X-OmniRush-Clie
       url: String(url),
       method: init.method,
       body: init.body ? JSON.parse(init.body) : null,
-      client: headers.get("x-omnirush-client"),
+      client: headers.get("x-mars-client"),
       authorization: headers.get("authorization"),
       contentType: headers.get("content-type"),
     });
@@ -164,7 +164,7 @@ test("spin: POST with the device credential, the click's key and X-OmniRush-Clie
   assert.equal(outcome.ok, true);
   assert.equal(outcome.spin.segmentIndex, 2);
   assert.deepEqual(seen, [{
-    url: "http://localhost:8090/omnirush/me/quality/spin",
+    url: "http://127.0.0.1:8000/me/quality/spin",
     method: "POST",
     body: { idempotency_key: "key-123" },
     client: "gui/3.2.0",
@@ -190,8 +190,8 @@ test("spin: a 401 refreshes once and retries with the same key", async () => {
   const spins = [];
   const store = await signedInStore(async (url, init = {}) => {
     const pathname = new URL(url).pathname;
-    if (pathname.endsWith("/device/refresh")) {
-      return Response.json({ access_token: "access-2", refresh_token: "refresh-2", gateway_url: GATEWAY });
+    if (pathname.endsWith("/oauth/token")) {
+      return Response.json({ access_token: "access-2", refresh_token: "refresh-2", api_base: GATEWAY });
     }
     const authorization = new Headers(init.headers).get("authorization");
     spins.push({ authorization, key: JSON.parse(init.body).idempotency_key });
@@ -206,13 +206,13 @@ test("spin: a 401 refreshes once and retries with the same key", async () => {
 });
 
 test("spin while signed out never calls the server", async () => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), "omnirush-quality-"));
+  const directory = await mkdtemp(path.join(os.tmpdir(), "mars-quality-"));
   let calls = 0;
-  const store = createDesktopOmniRushAccountStore({
+  const store = createDesktopMarsAccountStore({
     filePath: path.join(directory, "account.bin"),
     loadSafeStorage: () => testStorage(),
     platform: /** @type {NodeJS.Platform} */ ("linux"),
-    env: { OMNIRUSH_DEV_MODE: "1" },
+    env: { MARS_DEV_MODE: "1" },
     execFileImpl: async (file) => { throw new Error(`unexpected ${file}`); },
     fetchImpl: async () => { calls += 1; return Response.json({}); },
   });
@@ -222,7 +222,7 @@ test("spin while signed out never calls the server", async () => {
 
 test("quality details: segments, expected tokens and the sessions' reasons", async () => {
   const store = await signedInStore(async (url) => {
-    assert.equal(new URL(url).pathname, "/omnirush/me/quality");
+    assert.equal(new URL(url).pathname, "/me/quality");
     return Response.json({
       quality: QUALITY,
       sessions: [{ session_id: "ses_1", at: "2026-10-04T10:00:00Z", verdict: "review", why: "Edits outside the project.", fails: ["outside_path"], workspace: "my-app", spins: 0, counted: true,
@@ -256,16 +256,17 @@ test("quality details: segments, expected tokens and the sessions' reasons", asy
   assert.equal(await off.qualityDetails(), null);
 });
 
-test("the profile read names the open session: /device/me?session_id=", async () => {
+test("the OAuth profile read never names the open session", async () => {
   const seen = [];
   const store = await signedInStore(async (url) => {
-    seen.push(new URL(url).search);
+    seen.push({ pathname: new URL(url).pathname, search: new URL(url).search });
     return Response.json({ email: "person@example.com", status: "active", quality: QUALITY });
   });
   await store.status({ sessionId: "ses_abc123" });
   await store.status();
   await store.status({ sessionId: "../etc?x=1" });
-  assert.deepEqual(seen, ["?session_id=ses_abc123", "", ""]);
+  assert.deepEqual(seen.map((entry) => entry.pathname), ["/oauth/userinfo", "/oauth/userinfo", "/oauth/userinfo"]);
+  assert.deepEqual(seen.map((entry) => entry.search), ["", "", ""]);
 });
 
 test("spins history: totals and the last 10 spins, each marked when replay-ready", () => {
@@ -289,7 +290,7 @@ const SESSION_STATUS = {
   status: "at_risk",
   reasons: [{ code: "no_code", message: "No code has changed yet after 31 tool calls." }, { code: "x" }],
   message: "One step left.",
-  dock: { mode: "warn", stage: "surcharge", weight: 1.5, session_tokens: 5400000, surcharge_tokens: 300000, cap_at_tokens: null, capped: false, message: "Using tokens at 1.5x.", link: "https://omnirush.ai/console/sessions" },
+  dock: { mode: "warn", stage: "surcharge", weight: 1.5, session_tokens: 5400000, surcharge_tokens: 300000, cap_at_tokens: null, capped: false, message: "Using tokens at 1.5x.", link: "https://marsai.click/console/sessions" },
   verdict: { state: "pending", reasons: ["finished"], reward_weight: 2 },
   checklist: [
     { id: "project", state: "pass", label: "in a project", hint: "ok" },
@@ -336,7 +337,7 @@ test("session status: GET /me/sessions/{id}/status with the device credential; n
   });
   const status = await store.sessionStatus({ sessionId: "ses_abc" });
   assert.equal(status.sessionId, "ses_abc");
-  assert.deepEqual(seen, [{ path: "/omnirush/me/sessions/ses_abc/status", authorization: "Bearer access-1", signal: true }]);
+  assert.deepEqual(seen, [{ path: "/me/sessions/ses_abc/status", authorization: "Bearer access-1", signal: true }]);
   assert.equal(await store.sessionStatus({ sessionId: "../me" }), null);
   assert.equal(await store.sessionStatus({}), null);
   assert.equal(seen.length, 1, "bad ids never reach the server");
@@ -350,13 +351,13 @@ test("session status: GET /me/sessions/{id}/status with the device credential; n
   const garbage = await signedInStore(async () => new Response("not json", { status: 200 }));
   assert.equal(await garbage.sessionStatus({ sessionId: "ses_abc" }), null);
 
-  const directory = await mkdtemp(path.join(os.tmpdir(), "omnirush-quality-"));
+  const directory = await mkdtemp(path.join(os.tmpdir(), "mars-quality-"));
   let calls = 0;
-  const signedOut = createDesktopOmniRushAccountStore({
+  const signedOut = createDesktopMarsAccountStore({
     filePath: path.join(directory, "account.bin"),
     loadSafeStorage: () => testStorage(),
     platform: /** @type {NodeJS.Platform} */ ("linux"),
-    env: { OMNIRUSH_DEV_MODE: "1" },
+    env: { MARS_DEV_MODE: "1" },
     execFileImpl: async (file) => { throw new Error(`unexpected ${file}`); },
     fetchImpl: async () => { calls += 1; return Response.json(SESSION_STATUS); },
   });

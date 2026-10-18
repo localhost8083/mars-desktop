@@ -1,4 +1,4 @@
-import type { AutomationNeedsAttentionReason } from "@omnirush/types/automations"
+import type { AutomationNeedsAttentionReason } from "@mars/types/automations"
 
 export type CloudArtifactStateUpdate =
   | {

@@ -150,9 +150,9 @@ describeMaybe("revert on the bundled engine (mock provider, real files)", () => 
       env: {
         OPENCODE_CONFIG: configPath,
         OPENCODE_DISABLE_MODELS_FETCH: "1",
-        OMNIRUSH_SERVER_URL: base,
-        OMNIRUSH_POLICY_TOKEN: "policy",
-        OMNIRUSH_SERVER_TOKEN: "server",
+        MARS_SERVER_URL: base,
+        MARS_POLICY_TOKEN: "policy",
+        MARS_SERVER_TOKEN: "server",
         HOME: join(data, "home"),
         OPENCODE_TEST_HOME: join(data, "home"),
         XDG_DATA_HOME: join(data, "xdg-data"),

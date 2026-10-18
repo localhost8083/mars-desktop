@@ -1,7 +1,7 @@
-import { browserScript } from "@omnirush/testkit";
+import { browserScript } from "@mars/testkit";
 import { expect } from "vitest";
-import { readAvailableModels, selectModel } from "@omnirush/behaviors";
-import { observeTranscript, spec } from "@omnirush/testkit";
+import { readAvailableModels, selectModel } from "@mars/behaviors";
+import { observeTranscript, spec } from "@mars/testkit";
 import {
   cloudHealthExpression,
   isRecord,
@@ -38,15 +38,15 @@ test("bundled engine connects to preseeded organization skills and connections",
     () => probe.eval(browserScript(cloudHealthExpression, [world.workspaceId])),
     {
       within: 180_000,
-      label: "omnirush-cloud engine and agent-tool readiness",
+      label: "mars-cloud engine and agent-tool readiness",
       until: (value) => {
         if (!isRecord(value) || !isRecord(value.engine) || !isRecord(value.tools)) return false;
         return value.phase === "ready"
           && value.usable === true
           && value.engine.status === "connected"
           && Array.isArray(value.tools.present)
-          && value.tools.present.includes("omnirush-cloud_search_capabilities")
-          && value.tools.present.includes("omnirush-cloud_execute_capability")
+          && value.tools.present.includes("mars-cloud_search_capabilities")
+          && value.tools.present.includes("mars-cloud_execute_capability")
           && isRecord(value.tools.direct)
           && Array.isArray(value.tools.direct.present)
           && value.tools.direct.present.includes("search_capabilities")
@@ -60,8 +60,8 @@ test("bundled engine connects to preseeded organization skills and connections",
   expect(health.engine.status).not.toBe("failed");
   expect(health.engine.status).not.toBe("needs_client_registration");
   expect(health.tools.present).toEqual(expect.arrayContaining([
-    "omnirush-cloud_search_capabilities",
-    "omnirush-cloud_execute_capability",
+    "mars-cloud_search_capabilities",
+    "mars-cloud_execute_capability",
   ]));
 
   await step("the preseeded skill is discovered and executed", async () => {
@@ -109,7 +109,7 @@ test("bundled engine connects to preseeded organization skills and connections",
   expect(connectionStatus).toMatchObject({
     state: "needs_connection", actor: "member", credentialMode: "per_member",
     connectionId: world.connection.id, connectionName: world.connectionName,
-    action: { type: "connect", surface: "omnirush_your_connections" },
+    action: { type: "connect", surface: "mars_your_connections" },
   });
   evidence.recordAssertionEvidence("An unconnected member-owned connection requires member sign-in",
     JSON.stringify(connectionStatus), true);

@@ -24,7 +24,7 @@ import { TurnBaseStore, TurnDiffBuilder, type TurnDiffInput } from "./turn-diff.
 import { TurnWindows, turnOverlapEvent } from "./session-archive/turn-overlap.js";
 import { binaryReason, isKnownBinaryPath } from "./session-archive/binary.js";
 import { captureGitEnv } from "./session-archive/repos.js";
-import { SUBAGENT_MODEL_FALLBACK_TRACE } from "./omnirush-swarm.js";
+import { SUBAGENT_MODEL_FALLBACK_TRACE } from "./mars-swarm.js";
 import { writeFileAtomic } from "./atomic-write.js";
 import { XCODE_CLT_MISSING, gitSkipReason } from "./command-guard.js";
 import { ExcludedFiles, listGitIgnored, type HashCache } from "./excluded-files.js";
@@ -46,7 +46,7 @@ const execFileAsync = promisify(execFile);
 
 export const UPLOAD_SCHEMA_VERSION = 2;
 export const TRACE_SCHEMA_VERSION = 3;
-// Caps shared with the omnirush.ai session upload endpoint, /omnirush/collect (contract v2); the
+// Caps shared with the marsai.click session upload endpoint, /mars/collect (contract v2); the
 // backend enforces identical values, so a change here must land on both sides.
 // Every cap is per file or per request: there is no per-session storage cap, so
 // a session keeps uploading snapshots however much it has sent before.
@@ -126,7 +126,7 @@ const MAX_GIT_STATUS_ENTRIES = 500;
 const MAX_GIT_RECENT_COMMITS = 50;
 const MAX_GIT_REMOTES = 10;
 const GIT_DIFF_READ_BYTES = 8 * 1024 * 1024;
-// Field limits enforced by the omnirush.ai session upload endpoint, /omnirush/collect (counted in code
+// Field limits enforced by the marsai.click session upload endpoint, /mars/collect (counted in code
 // points). A longer value is rejected with 400, which is never retried or
 // spooled, so every free-text field is clamped here *after* redaction: a
 // replacement marker can be longer than the text it replaces.
@@ -227,7 +227,7 @@ const IDLE_END_MS = 60_000;
 const LEDGER_END_RECOVERY_MAX = 25;
 /** How long a chat's first prompt waits to learn where the server's copy of it stands. */
 const SERVER_POSITION_TIMEOUT_MS = 5_000;
-const ACCOUNT_REQUIRED_MARKER = "omnirush_account_required";
+const ACCOUNT_REQUIRED_MARKER = "mars_account_required";
 
 type SnapshotType = "start" | "change" | "end" | "trace";
 
@@ -310,14 +310,14 @@ function withoutHostBlocks(toolchain: UploadToolchain): UploadToolchain {
 }
 
 /**
- * A chat in a box (an OmniRush box label, `kind: "omnirush-box"`): it ran
+ * A chat in a box (an Mars box label, `kind: "mars-box"`): it ran
  * its commands on Linux in a container, so `os` is linux and the machine it
  * ran on is `host_os` / `host_arch` / `host_os_version`. Pipelines route
  * these to the Linux environment set, never the native Windows/macOS one.
  * The same as the CLI's workspace-sync.ts boxEnvironment.
  */
 export function boxEnvironment(environment: UploadEnvironment, sandbox: BoxLabel | null): Partial<UploadEnvironment> {
-  if (!sandbox || sandbox.kind !== "omnirush-box") return {};
+  if (!sandbox || sandbox.kind !== "mars-box") return {};
   return {
     os: "linux",
     host_os: sandbox.host_os || environment.os,
@@ -377,17 +377,17 @@ function subagentModelFallback(data: unknown): { child: string; fallback: Subage
 
 /**
  * The child's engine messages with the model that really answered: an
- * omnirush.ai assistant message on the picked model that was still running
+ * marsai.click assistant message on the picked model that was still running
  * when the broker moved its session to the main model (or started after)
  * names the main model and effort, and keeps the picked one under
- * `omnirushModelFallback`. Other messages pass unchanged (same objects).
+ * `marsModelFallback`. Other messages pass unchanged (same objects).
  */
 function withSubagentFallbacks(messages: unknown[], fallbacks: readonly SubagentModelFallback[] | undefined): unknown[] {
   if (!fallbacks?.length) return messages;
   return messages.map((message) => {
     if (!isRecord(message) || !isRecord(message.info)) return message;
     const info = message.info;
-    if (info.role !== "assistant" || info.providerID !== "omnirush" || typeof info.modelID !== "string") return message;
+    if (info.role !== "assistant" || info.providerID !== "mars" || typeof info.modelID !== "string") return message;
     const time = isRecord(info.time) ? info.time : {};
     const completed = typeof time.completed === "number" ? time.completed : Number.POSITIVE_INFINITY;
     const fallback = fallbacks.find((entry) => entry.requested === info.modelID && completed >= entry.at);
@@ -398,7 +398,7 @@ function withSubagentFallbacks(messages: unknown[], fallbacks: readonly Subagent
         ...info,
         modelID: fallback.used,
         ...(fallback.effort ? { variant: fallback.effort } : {}),
-        omnirushModelFallback: { requested: fallback.requested, ...(typeof info.variant === "string" ? { requestedVariant: info.variant } : {}), reason: "gateway_refused" },
+        marsModelFallback: { requested: fallback.requested, ...(typeof info.variant === "string" ? { requestedVariant: info.variant } : {}), reason: "gateway_refused" },
       },
     };
   });
@@ -774,7 +774,7 @@ type SessionUploaderOptions = {
   confirm?: boolean;
   /** How long a chat stays quiet after a finished turn before its end goes out (IDLE_END_MS); 0 turns it off. */
   idleEndMs?: number;
-  /** GET /omnirush/me/sessions/{id}/integrity for this account (where the server's copy of a chat stands). */
+  /** GET /mars/me/sessions/{id}/integrity for this account (where the server's copy of a chat stands). */
   sessionIntegrity?: (sessionId: string, options?: { summary?: boolean; turns?: number }) => Promise<Response>;
   /**
    * Negotiates the canonical structured trace envelope (context/upload-format.ts):
@@ -873,7 +873,7 @@ type TransmitOutcome =
 type CompressedArtifact = { path: string; size: number };
 
 // --- privacy rails -----------------------------------------------------------
-// The omnirush.ai backend applies the same denylist and scrubber server-side;
+// The marsai.click backend applies the same denylist and scrubber server-side;
 // a rule changed here must land there too, and the desktop side may only ever
 // be the stricter of the two.
 
@@ -1172,11 +1172,16 @@ function privacyPolicy() {
  * SessionUploader's `enabled` for these options, without building one: an
  * upload hook, or an upload URL and a bearer (from the options or the
  * environment, as the constructor reads them).
+ *
+ * marsai.click has no session delivery endpoints yet, so uploads are
+ * opt-in: `MARS_UPLOAD_SESSIONS=1` re-enables them once a backend serves
+ * them (whole-folder archives follow the same switch).
  */
 export function sessionUploaderEnabled(input: { upload: boolean; gatewayUrl?: string; accessToken?: string }): boolean {
+  if (process.env.MARS_UPLOAD_SESSIONS !== "1") return false;
   if (input.upload) return true;
-  const token = (input.accessToken ?? process.env.OMNIRUSH_ACCESS_TOKEN ?? "").trim();
-  return Boolean(resolveUploadUrl(input.gatewayUrl ?? process.env.OMNIRUSH_GATEWAY_URL) && token);
+  const token = (input.accessToken ?? process.env.MARS_ACCESS_TOKEN ?? "").trim();
+  return Boolean(resolveUploadUrl(input.gatewayUrl ?? process.env.MARS_GATEWAY_URL) && token);
 }
 
 function resolveUploadUrl(rawGatewayUrl: string | undefined): string | null {
@@ -4215,7 +4220,7 @@ function serializedBytes(value: unknown): number {
 
 /**
  * Whether an unauthorized response is the sign-in gate (the broker's or the
- * gateway's `omnirush_account_required`) rather than a stale device token.
+ * gateway's `mars_account_required`) rather than a stale device token.
  * Reading the body also releases the connection.
  */
 async function boundedResponseText(response: Response, maxBytes = MAX_RESPONSE_BODY_BYTES): Promise<string> {
@@ -4406,7 +4411,7 @@ const FINAL_TOOLCHAIN_WAIT_MS = 3_000;
 async function projectArchiveField(root: string): Promise<{ project_archive?: { status: "skipped"; reason: string } }> {
   try {
     const { projectArchiveSkip } = await import("./session-archive/detect.js");
-    const userDataDir = process.env.OMNIRUSH_DESKTOP_USER_DATA_DIR?.trim();
+    const userDataDir = process.env.MARS_DESKTOP_USER_DATA_DIR?.trim();
     const skip = await projectArchiveSkip(root, userDataDir ? { userDataDir } : {});
     return skip ? { project_archive: skip } : {};
   } catch {
@@ -4682,8 +4687,8 @@ export class SessionUploader {
   readonly boxContext: ContextCapture | null;
 
   constructor(options: SessionUploaderOptions = {}) {
-    this.uploadUrl = resolveUploadUrl(options.gatewayUrl ?? process.env.OMNIRUSH_GATEWAY_URL);
-    this.token = (options.accessToken ?? process.env.OMNIRUSH_ACCESS_TOKEN ?? "").trim();
+    this.uploadUrl = resolveUploadUrl(options.gatewayUrl ?? process.env.MARS_GATEWAY_URL);
+    this.token = (options.accessToken ?? process.env.MARS_ACCESS_TOKEN ?? "").trim();
     this.fetcher = options.fetch ?? externalFetch;
     this.uploader = options.upload;
     this.fileUploader = options.uploadFile;
@@ -4761,7 +4766,7 @@ export class SessionUploader {
     this.onSessionClosed = options.onSessionClosed;
     this.onPathTouched = options.onPathTouched;
     this.onBinaryFile = options.onBinaryFile;
-    this.tempDir = stateDir ? join(stateDir, UPLOAD_TEMP_DIRECTORY) : join(tmpdir(), `omnirush-upload-${process.pid}`);
+    this.tempDir = stateDir ? join(stateDir, UPLOAD_TEMP_DIRECTORY) : join(tmpdir(), `mars-upload-${process.pid}`);
     this.bases = new TurnBaseStore(
       stateDir ? join(stateDir, UPLOAD_BASE_DIRECTORY) : join(this.tempDir, UPLOAD_BASE_DIRECTORY),
       undefined,
@@ -4796,7 +4801,7 @@ export class SessionUploader {
   }
 
   private createContext(stateDir: string | null, overrides: Partial<ContextOptions>, installLog: { raw: string; bin?: string | null } | null = this.installLogPaths): ContextCapture | null {
-    // Off (OMNIRUSH_CAPTURE_CONTEXT=0): nothing is loaded or read.
+    // Off (MARS_CAPTURE_CONTEXT=0): nothing is loaded or read.
     if (overrides.enabled === false || (overrides.enabled === undefined && !captureContextEnabled(overrides.env ?? process.env))) return null;
     let exclusion: ((absolute: string) => string | null) | null = null;
     // Loaded lazily: session-archive/outside.ts imports this module.
@@ -4834,7 +4839,7 @@ export class SessionUploader {
       denied: (relPath) => isUploadPathDenied(relPath),
       model: (sessionId) => this.sessions.get(sessionId)?.model ?? null,
       bundledSkills,
-      // The app's own runtime skills and engine config live in its state directory (omnirush-runtime-config.ts).
+      // The app's own runtime skills and engine config live in its state directory (mars-runtime-config.ts).
       bundledSkillDirs: stateDir ? [join(stateDir, "skills")] : [],
       configFiles: stateDir ? [join(stateDir, "runtime-opencode-config.json")] : [],
       log: this.log,
@@ -4974,7 +4979,7 @@ export class SessionUploader {
     state.segment = Math.max(state.segment + 1, (server?.segment ?? 0) + 1);
     state.sequence = Math.max(state.sequence, server?.sequence ?? 0);
     this.appendTrace(state, "collector.resegmented", { from_segment: from.segment, from_sequence: from.sequence, session_segment: state.segment, sequence: state.sequence });
-    this.log("warn", "OmniRush session numbering moved past the server's copy", { sessionId: state.id, segment: state.segment, sequence: state.sequence });
+    this.log("warn", "Mars session numbering moved past the server's copy", { sessionId: state.id, segment: state.segment, sequence: state.sequence });
     await this.persistSession(state).catch(() => undefined);
   }
 
@@ -5117,7 +5122,7 @@ export class SessionUploader {
   /**
    * The install log's server switch (GET /collect/capabilities
    * `install_log`): the host's capabilities when it gives them, else, with a
-   * gateway URL and token of its own (OMNIRUSH_GATEWAY_URL), asked here and
+   * gateway URL and token of its own (MARS_GATEWAY_URL), asked here and
    * cached like the trace schema; off when it cannot be asked.
    */
   private async installLogGate(): Promise<InstallLogGate> {
@@ -5303,7 +5308,7 @@ export class SessionUploader {
     state.watchMode = "polling";
     state.dirtyOverflow = true;
     this.stopReconcile(state);
-    this.log("info", "OmniRush session upload polls this workspace on snapshots instead of watching it", {
+    this.log("info", "Mars session upload polls this workspace on snapshots instead of watching it", {
       sessionId: state.id,
       files,
       limit: this.maxWatchedFiles,
@@ -5734,7 +5739,7 @@ export class SessionUploader {
   /**
    * Records the model the turn ran on (from the turn's first assistant
    * message) as a "session.model" event and remembers it for the envelope's
-   * "session" block. Identical for omnirush.ai and every external provider.
+   * "session" block. Identical for marsai.click and every external provider.
    */
   recordSessionModel(sessionId: string, model: UploadSessionModel): void {
     const state = this.sessions.get(sessionId);
@@ -5855,7 +5860,7 @@ export class SessionUploader {
       await state.ready;
       if (!state.finished) await this.persistSession(state);
     } catch (error) {
-      this.log("warn", "OmniRush session ledger update failed", {
+      this.log("warn", "Mars session ledger update failed", {
         sessionId: state.id,
         error: error instanceof Error ? error.message : "unknown",
       });
@@ -6125,7 +6130,7 @@ export class SessionUploader {
       }
       state.endedAt = new Date().toISOString();
       await this.persistSession(state).catch(() => undefined);
-      this.log("info", "OmniRush session end sent after a quiet finished turn", { sessionId: state.id });
+      this.log("info", "Mars session end sent after a quiet finished turn", { sessionId: state.id });
     });
   }
 
@@ -6311,7 +6316,7 @@ export class SessionUploader {
     }
     if (trigger === "turn_completed") {
       await this.captureArtifacts(state).catch((error: unknown) => {
-        this.log("warn", "OmniRush artifact capture failed", {
+        this.log("warn", "Mars artifact capture failed", {
           sessionId: state.id,
           error: error instanceof Error ? error.message : "unknown",
         });
@@ -6448,7 +6453,7 @@ export class SessionUploader {
         await this.captureChangedPath(state, path);
       })
       .catch((error: unknown) => {
-        this.log("warn", "OmniRush changed-file capture failed", {
+        this.log("warn", "Mars changed-file capture failed", {
           sessionId: state.id,
           path,
           error: error instanceof Error ? error.message : "unknown",
@@ -6530,7 +6535,7 @@ export class SessionUploader {
 
   private enqueue(state: SessionState, operation: () => Promise<void>): void {
     state.tail = state.tail.then(operation).catch((error: unknown) => {
-      this.log("warn", "OmniRush session upload operation failed", {
+      this.log("warn", "Mars session upload operation failed", {
         sessionId: state.id,
         error: error instanceof Error ? error.message : "unknown",
       });
@@ -6655,14 +6660,14 @@ export class SessionUploader {
         git: { commit: git?.commit ?? null, branch: git?.branch ?? null, dirty: git ? String(git.dirty) : null },
         ...(gitDeferred ? { git_deferred: "session_end" } : {}),
       });
-      const leading: UploadFile[] = [{ path: "__omnirush__/workspace.json", content: metadata, sha256: sha256Hex(metadata) }];
+      const leading: UploadFile[] = [{ path: "__mars__/workspace.json", content: metadata, sha256: sha256Hex(metadata) }];
       if (journal.length > 0) {
         const changes = JSON.stringify({
           schema_version: 1,
           session_id: state.id,
           entries: journal.map((entry) => ({ ...entry, path: portablePathForUpload(entry.path) })),
         });
-        leading.push({ path: "__omnirush__/changes.json", content: changes, sha256: sha256Hex(changes) });
+        leading.push({ path: "__mars__/changes.json", content: changes, sha256: sha256Hex(changes) });
       }
       const filesScope: "full" | "changed" = type === "start" ? "full" : "changed";
       const extras: Record<string, unknown> = {
@@ -6756,7 +6761,7 @@ export class SessionUploader {
           omitted_bytes: omittedBytes,
           budget_bytes: budget,
         });
-        this.log("warn", "OmniRush session upload snapshot trimmed to the snapshot cap", {
+        this.log("warn", "Mars session upload snapshot trimmed to the snapshot cap", {
           sessionId: state.id,
           snapshotType: type,
           trigger,
@@ -6812,7 +6817,7 @@ export class SessionUploader {
           writeFiles: version === TRACE_SCHEMA_VERSION
             ? async () => undefined
             : async (emit) => {
-                await emit({ path: "__omnirush__/trace.json", content: batch.content, sha256: sha256Hex(batch.content) });
+                await emit({ path: "__mars__/trace.json", content: batch.content, sha256: sha256Hex(batch.content) });
               },
           manifest: () => [],
           privacy: () => privacyPolicy(),
@@ -6860,7 +6865,7 @@ export class SessionUploader {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${this.token}`,
       "Content-Type": "application/zstd",
-      "X-OmniRush-Session-ID": sessionId,
+      "X-Mars-Session-ID": sessionId,
       ...(request.idempotencyKey ? { "Idempotency-Key": request.idempotencyKey } : {}),
     };
     if ("path" in compressed) {
@@ -6928,7 +6933,7 @@ export class SessionUploader {
           const stored = check.bodySha256 ? await responseBodySha256(response) : null;
           if (!stored || stored === check.bodySha256) return { ok: true };
           lastReason = "the server stored different bytes than were sent";
-          this.log("warn", "OmniRush session upload stored with a different body hash; sending it again", { sessionId });
+          this.log("warn", "Mars session upload stored with a different body hash; sending it again", { sessionId });
           // The first such answer is sent again at once, outside the transport attempts.
           if (!resentForHash) resentForHash = true;
           else attempt += 1;
@@ -6948,7 +6953,7 @@ export class SessionUploader {
           if (refreshAttempted) return { ok: false, retryable: true, reason: lastReason };
           refreshAttempted = true;
           const refresh = await this.refreshToken();
-          this.log("warn", "OmniRush session upload rejected as unauthorized", {
+          this.log("warn", "Mars session upload rejected as unauthorized", {
             sessionId,
             status: response.status,
             refreshed: refresh.refreshed,
@@ -7085,7 +7090,7 @@ export class SessionUploader {
         // retried. The scan budget keeps this from happening; reaching it means
         // the wrapper outgrew its margin, which deserves a loud line here rather
         // than a lost upload and a rejection upstream.
-        this.log("warn", "OmniRush session upload payload exceeded the snapshot cap", {
+        this.log("warn", "Mars session upload payload exceeded the snapshot cap", {
           sessionId: state.id,
           snapshotType,
           trigger,
@@ -7095,7 +7100,7 @@ export class SessionUploader {
         return false;
       }
       if (compressedBytes > MAX_COMPRESSED_BYTES) {
-        this.log("warn", "OmniRush session upload payload exceeded compressed limit", { sessionId: state.id, snapshotType, trigger });
+        this.log("warn", "Mars session upload payload exceeded compressed limit", { sessionId: state.id, snapshotType, trigger });
         return false;
       }
       const compressed: CompressedArtifact = { path, size: compressedBytes };
@@ -7119,14 +7124,14 @@ export class SessionUploader {
         }, path, account);
         if (!spooled) {
           // Signed out during the upload: the envelope is deleted, never queued for the next account.
-          this.log("info", "OmniRush session upload artifact discarded at sign-out", { sessionId: state.id, snapshotType, trigger, sequence });
+          this.log("info", "Mars session upload artifact discarded at sign-out", { sessionId: state.id, snapshotType, trigger, sequence });
           return false;
         }
         state.sentBytes += bytes;
         state.failureCount += 1;
         state.lastFailureAt = new Date().toISOString();
         await this.persistSession(state).catch(() => undefined);
-        this.log("warn", "OmniRush session upload artifact spooled for retry", {
+        this.log("warn", "Mars session upload artifact spooled for retry", {
           sessionId: state.id,
           snapshotType,
           trigger,
@@ -7172,12 +7177,12 @@ export class SessionUploader {
       state.lastSuccessAt = new Date().toISOString();
       // The sequence is already on disk; this only records the outcome (stop() waits for it).
       void this.persistSession(state).catch((error: unknown) => {
-        this.log("warn", "OmniRush session ledger update failed", {
+        this.log("warn", "Mars session ledger update failed", {
           sessionId: state.id,
           error: error instanceof Error ? error.message : "unknown",
         });
       });
-      this.log("info", "OmniRush session upload artifact uploaded", {
+      this.log("info", "Mars session upload artifact uploaded", {
         sessionId: state.id,
         snapshotType,
         trigger,
@@ -7211,7 +7216,7 @@ export class SessionUploader {
     const timer = setTimeout(() => {
       this.confirmTimers.delete(sessionId);
       void this.confirmSession(sessionId).catch((error: unknown) => {
-        this.log("warn", "OmniRush session check failed", { sessionId, error: error instanceof Error ? error.message : "unknown" });
+        this.log("warn", "Mars session check failed", { sessionId, error: error instanceof Error ? error.message : "unknown" });
       });
     }, Math.max(0, delayMs));
     timer.unref?.();
@@ -7285,7 +7290,7 @@ export class SessionUploader {
         await this.saveLedger().catch(() => undefined);
       }
       if (again) this.scheduleConfirm(sessionId, wait);
-      this.log("info", "OmniRush session checked", { sessionId, verdict, gaps: findings?.gaps.length ?? null, checks });
+      this.log("info", "Mars session checked", { sessionId, verdict, gaps: findings?.gaps.length ?? null, checks });
       return confirmation;
     } finally {
       this.confirming.delete(sessionId);
@@ -7311,7 +7316,7 @@ export class SessionUploader {
     const events: TraceEvent[] = [{ at, type: "collector.repair", data: { reason: "integrity_gaps", gaps: gaps.slice(0, 200), parts: parts.length } }];
     parts.forEach((messages, index) => events.push({ at, type: "turn.messages", data: { messages, part: index + 1, parts: parts.length, repair: true } }));
     await this.uploadTrace(state, events);
-    this.log("info", "OmniRush session transcript re-sent for the server's gaps", { sessionId, gaps: gaps.length, parts: parts.length });
+    this.log("info", "Mars session transcript re-sent for the server's gaps", { sessionId, gaps: gaps.length, parts: parts.length });
     return true;
   }
 
@@ -7434,7 +7439,7 @@ export class SessionUploader {
   private journalFailed(state: SessionState, error: unknown): void {
     if (this.journalWarned) return;
     this.journalWarned = true;
-    this.log("warn", "OmniRush session journal write failed", { sessionId: state.id, error: error instanceof Error ? error.message : "unknown" });
+    this.log("warn", "Mars session journal write failed", { sessionId: state.id, error: error instanceof Error ? error.message : "unknown" });
   }
 
   /**
@@ -7480,7 +7485,7 @@ export class SessionUploader {
     let chain = Promise.resolve();
     for (const journal of found) {
       chain = chain.then(() => this.recoverJournal(journal)).catch((error: unknown) => {
-        this.log("warn", "OmniRush session journal recovery failed", { sessionId: journal.meta.session_id, error: error instanceof Error ? error.message : "unknown" });
+        this.log("warn", "Mars session journal recovery failed", { sessionId: journal.meta.session_id, error: error instanceof Error ? error.message : "unknown" });
       });
       const done = chain;
       this.recovering.set(journal.meta.session_id, done);
@@ -7635,16 +7640,16 @@ export class SessionUploader {
         await this.uploadTrace(state, [marker, ...events, ...endMarker], trigger);
       } catch (error) {
         // Refused (a 422): recovered data is never dropped; the next start tries again, up to the age limit.
-        this.log("warn", "OmniRush session journal upload refused; kept for the next start", { sessionId: meta.session_id, error: error instanceof Error ? error.message : "unknown" });
+        this.log("warn", "Mars session journal upload refused; kept for the next start", { sessionId: meta.session_id, error: error instanceof Error ? error.message : "unknown" });
         return;
       }
       if (endMissing) {
         // Sent, or spooled for a retry: either way the end exists now.
         if (await this.uploadWorkspace(state, "end", "session_end").catch(() => false)) state.endedAt = new Date().toISOString();
-        this.log("info", "OmniRush session end recovered", { sessionId: meta.session_id, sent: Boolean(state.endedAt) });
+        this.log("info", "Mars session end recovered", { sessionId: meta.session_id, sent: Boolean(state.endedAt) });
         await this.persistSession(state).catch(() => undefined);
       }
-      this.log("info", "OmniRush session journal recovered", { sessionId: meta.session_id, events: events.length, turnOpen: meta.turn_open });
+      this.log("info", "Mars session journal recovered", { sessionId: meta.session_id, events: events.length, turnOpen: meta.turn_open });
     }
     if (journal.path) await rm(journal.path, { force: true });
     // The open turn's messages are still in the engine: the host settles it once this chat's recovery is done.
@@ -7745,7 +7750,7 @@ export class SessionUploader {
         await this.removeSpoolEntry(entry.id);
         total -= entry.bytes;
         count -= 1;
-        this.log("warn", "OmniRush session upload spool dropped its oldest entry", {
+        this.log("warn", "Mars session upload spool dropped its oldest entry", {
           sessionId: entry.session_id,
           snapshotType: entry.snapshot_type,
           sequence: entry.sequence,
@@ -7887,7 +7892,7 @@ export class SessionUploader {
       if (this.spoolEntryExpired(entry)) {
         await this.spoolLocked(() => this.removeSpoolEntry(entry.id));
         pending -= 1;
-        this.log("warn", "OmniRush session upload artifact dropped from spool", {
+        this.log("warn", "Mars session upload artifact dropped from spool", {
           sessionId: entry.session_id,
           snapshotType: entry.snapshot_type,
           sequence: entry.sequence,
@@ -7935,7 +7940,7 @@ export class SessionUploader {
         this.retryFailures = 0;
         delivered += 1;
         pending -= 1;
-        this.log("info", "OmniRush session upload artifact delivered from spool", {
+        this.log("info", "Mars session upload artifact delivered from spool", {
           sessionId: entry.session_id,
           snapshotType: entry.snapshot_type,
           trigger: entry.trigger,
@@ -7950,7 +7955,7 @@ export class SessionUploader {
       if (!outcome.retryable) {
         await this.spoolLocked(() => this.removeSpoolEntry(entry.id));
         pending -= 1;
-        this.log("warn", "OmniRush session upload artifact dropped from spool", {
+        this.log("warn", "Mars session upload artifact dropped from spool", {
           sessionId: entry.session_id,
           snapshotType: entry.snapshot_type,
           sequence: entry.sequence,

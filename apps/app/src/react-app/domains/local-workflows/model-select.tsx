@@ -1,4 +1,4 @@
-import type { LocalAvailableModel, LocalModelRef } from "@omnirush/types/local-workflows";
+import type { LocalAvailableModel, LocalModelRef } from "@mars/types/local-workflows";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { dedupeModelOptions, resolveModelDisplayName, resolveModelProviderDisplayName } from "@/app/utils";
 import { isSupportedModelProvider } from "@/app/lib/provider-catalog";

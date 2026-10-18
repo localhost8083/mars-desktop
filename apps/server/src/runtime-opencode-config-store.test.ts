@@ -6,8 +6,8 @@ import { resolveApprovalMode } from "./approval-mode.js";
 import { managedDesktopPolicy } from "./managed-desktop-policy.js";
 import { policyRequestActions } from "./managed-policy-rules.js";
 import { listMcp } from "./mcp.js";
-import { buildOmniRushRuntimeConfig } from "./omnirush-runtime-config.js";
-import { readOmniRushWorkspaceConfig } from "./omnirush-workspace-config-store.js";
+import { buildMarsRuntimeConfig } from "./mars-runtime-config.js";
+import { readMarsWorkspaceConfig } from "./mars-workspace-config-store.js";
 import { addPlugin, listPlugins, removePlugin } from "./plugins.js";
 import {
   ENGINE_GLOBAL_RUNTIME_CONFIG_ID,
@@ -51,11 +51,11 @@ function serverConfig(root: string, dbPath: string): ServerConfig {
 }
 
 async function withWorkspace(fn: (input: { root: string; config: ServerConfig }) => Promise<void>) {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-runtime-config-"));
-  const previousDb = process.env.OMNIRUSH_RUNTIME_DB;
+  const root = await mkdtemp(join(tmpdir(), "mars-runtime-config-"));
+  const previousDb = process.env.MARS_RUNTIME_DB;
   const previousOpencodeConfigDir = process.env.OPENCODE_CONFIG_DIR;
   const dbPath = join(root, "runtime.sqlite");
-  process.env.OMNIRUSH_RUNTIME_DB = dbPath;
+  process.env.MARS_RUNTIME_DB = dbPath;
   // MCP listings merge the global OpenCode config layer, so point it at an
   // empty directory inside the fixture. Without this the assertions observe
   // whatever MCP servers the developer happens to have in ~/.config/opencode.
@@ -64,8 +64,8 @@ async function withWorkspace(fn: (input: { root: string; config: ServerConfig })
   try {
     await fn({ root, config: serverConfig(root, dbPath) });
   } finally {
-    if (previousDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-    else process.env.OMNIRUSH_RUNTIME_DB = previousDb;
+    if (previousDb === undefined) delete process.env.MARS_RUNTIME_DB;
+    else process.env.MARS_RUNTIME_DB = previousDb;
     if (previousOpencodeConfigDir === undefined) delete process.env.OPENCODE_CONFIG_DIR;
     else process.env.OPENCODE_CONFIG_DIR = previousOpencodeConfigDir;
     await rm(root, { recursive: true, force: true });
@@ -79,7 +79,7 @@ async function expectMissing(path: string): Promise<void> {
 describe("runtime OpenCode config store", () => {
   test("ordinary concurrent config writes preserve the verified policy in every workspace", async () => {
     await withWorkspace(async ({ config }) => {
-      const policy: import("@omnirush/types/den/desktop-policies").DesktopConfig = { allowManageExtensions: false, execution: { commands: "deny", blockedCommands: [], blockBrowserUploads: true } };
+      const policy: import("@mars/types/den/desktop-policies").DesktopConfig = { allowManageExtensions: false, execution: { commands: "deny", blockedCommands: [], blockBrowserUploads: true } };
       await writeManagedDesktopPolicy(config, policy);
       await Promise.all(Array.from({ length: 12 }, (_, index) => writeGlobalRuntimeOpencodeConfig(config, (current) => ({
         ...current, provider: { ...current.provider, [`provider-${index}`]: { name: `Provider ${index}` } },
@@ -143,7 +143,7 @@ describe("runtime OpenCode config store", () => {
       }));
 
       expect(await readFile(opencodePath, "utf8")).toBe(opencode);
-      await expectMissing(join(root, ".opencode", "omnirush.json"));
+      await expectMissing(join(root, ".opencode", "mars.json"));
       expect(result.changed).toBe(true);
       expect((await readRuntimeOpencodeConfig(config, WORKSPACE_ID)).mcp).toBeUndefined();
 
@@ -152,7 +152,7 @@ describe("runtime OpenCode config store", () => {
     });
   });
 
-  test("stores plugin changes in the OmniRush.ai runtime DB without rewriting workspace files", async () => {
+  test("stores plugin changes in the MarsAI runtime DB without rewriting workspace files", async () => {
     await withWorkspace(async ({ root, config }) => {
       const opencodePath = join(root, "opencode.jsonc");
       const opencode = '{\n  "plugin": ["project-plugin"]\n}\n';
@@ -163,14 +163,14 @@ describe("runtime OpenCode config store", () => {
       expect(await addPlugin(config, "runtime-plugin")).toBe(true);
 
       expect(await readFile(opencodePath, "utf8")).toBe(opencode);
-      await expectMissing(join(root, ".opencode", "omnirush.json"));
+      await expectMissing(join(root, ".opencode", "mars.json"));
       // Runtime plugins are engine-global so the injected file carries them.
       expect((await readGlobalRuntimeOpencodeConfig(config)).plugin).toEqual(["runtime-plugin"]);
 
       const result = await listPlugins(config, WORKSPACE_ID, root, false);
       expect(result.items.map((item) => item.spec)).toEqual(["project-plugin", "runtime-plugin"]);
 
-      const runtimeConfig = JSON.parse(await buildOmniRushRuntimeConfig(config)) as {
+      const runtimeConfig = JSON.parse(await buildMarsRuntimeConfig(config)) as {
         plugin?: string[];
         mcp?: Record<string, Record<string, unknown>>;
       };
@@ -193,7 +193,7 @@ describe("runtime OpenCode config store", () => {
     });
   });
 
-  test("stores OmniRush.ai-owned workspace config in the runtime DB without writing legacy files", async () => {
+  test("stores MarsAI-owned workspace config in the runtime DB without writing legacy files", async () => {
     await withWorkspace(async ({ root, config }) => {
       const server = await startServer(config) as Served;
       try {
@@ -201,7 +201,7 @@ describe("runtime OpenCode config store", () => {
           method: "PATCH",
           headers: { authorization: `Bearer ${config.token}`, "content-type": "application/json" },
           body: JSON.stringify({
-            omnirush: {
+            mars: {
               cloudImports: {
                 plugins: {
                   plugin_1: { pluginId: "plugin_1", name: "productivity", files: [] },
@@ -212,11 +212,11 @@ describe("runtime OpenCode config store", () => {
         });
         expect(response.status).toBe(200);
 
-        const legacyOmniRushPath = join(root, ".opencode", "omnirush.json");
-        const legacyOmniRush = await readFile(legacyOmniRushPath, "utf8").catch(() => "");
-        expect(legacyOmniRush).not.toContain("productivity");
-        expect(legacyOmniRush).not.toContain("cloudImports");
-        expect((await readOmniRushWorkspaceConfig(config, WORKSPACE_ID)).cloudImports).toEqual({
+        const legacyMarsPath = join(root, ".opencode", "mars.json");
+        const legacyMars = await readFile(legacyMarsPath, "utf8").catch(() => "");
+        expect(legacyMars).not.toContain("productivity");
+        expect(legacyMars).not.toContain("cloudImports");
+        expect((await readMarsWorkspaceConfig(config, WORKSPACE_ID)).cloudImports).toEqual({
           plugins: {
             plugin_1: { pluginId: "plugin_1", name: "productivity", files: [] },
           },
@@ -227,7 +227,7 @@ describe("runtime OpenCode config store", () => {
         });
         expect(configResponse.status).toBe(200);
         expect(await configResponse.json()).toMatchObject({
-          omnirush: {
+          mars: {
             cloudImports: {
               plugins: {
                 plugin_1: { pluginId: "plugin_1", name: "productivity", files: [] },
@@ -248,7 +248,7 @@ describe("runtime OpenCode config store", () => {
         disabled_providers: ["anthropic"],
         permission: { external_directory: { "/folders/a": "allow" } },
         provider: { "user-lmstudio": { npm: "@ai-sdk/openai-compatible", options: { baseURL: "https://a.example/v1" } }, local: { npm: "stale-copy" } },
-        default_agent: "omnirush",
+        default_agent: "mars",
       }));
       await Bun.sleep(2);
       await writeRuntimeOpencodeConfig(config, "ws_b", () => ({
@@ -288,7 +288,7 @@ describe("runtime OpenCode config store", () => {
       expect(workspaceA.permission).toBeUndefined();
       expect(workspaceA.provider).toBeUndefined();
       expect(workspaceA.mcp).toBeUndefined();
-      expect(workspaceA.default_agent).toBe("omnirush");
+      expect(workspaceA.default_agent).toBe("mars");
       expect(await readRuntimeOpencodeConfig(config, "ws_b")).toEqual({});
 
       const second = await migrateWorkspaceRuntimeConfigToEngineGlobal(config);
@@ -310,10 +310,10 @@ describe("runtime OpenCode config store", () => {
     });
   });
 
-  test("runtime config status tolerates malformed legacy OmniRush.ai metadata", async () => {
+  test("runtime config status tolerates malformed legacy MarsAI metadata", async () => {
     await withWorkspace(async ({ root, config }) => {
       await mkdir(join(root, ".opencode"), { recursive: true });
-      await writeFile(join(root, ".opencode", "omnirush.json"), "{ invalid\n", "utf8");
+      await writeFile(join(root, ".opencode", "mars.json"), "{ invalid\n", "utf8");
       const server = await startServer(config) as Served;
       try {
         const response = await fetch(`http://127.0.0.1:${server.port}/workspace/${WORKSPACE_ID}/runtime-config`, {
@@ -327,10 +327,10 @@ describe("runtime OpenCode config store", () => {
     });
   });
 
-  test("approval mode persists in the global row, OMNIRUSH_APPROVALS overrides it, and the engine plugin is told", async () => {
+  test("approval mode persists in the global row, MARS_APPROVALS overrides it, and the engine plugin is told", async () => {
     await withWorkspace(async ({ config }) => {
-      const previousMode = process.env.OMNIRUSH_APPROVALS;
-      delete process.env.OMNIRUSH_APPROVALS;
+      const previousMode = process.env.MARS_APPROVALS;
+      delete process.env.MARS_APPROVALS;
       const server = await startServer(config) as Served;
       const base = `http://127.0.0.1:${server.port}`;
       const headers = { authorization: `Bearer ${config.token}`, "content-type": "application/json" };
@@ -353,26 +353,26 @@ describe("runtime OpenCode config store", () => {
         // Workspace rows never carry the mode; the effective config inherits the global one.
         expect((await readEffectiveRuntimeOpencodeConfig(config, WORKSPACE_ID)).approvals).toEqual({ mode: "full" });
         // The injected engine config follows the row; the setting itself stays out of it.
-        const injected = JSON.parse(await buildOmniRushRuntimeConfig(config)) as { permission?: { bash?: Record<string, string> }; approvals?: unknown };
+        const injected = JSON.parse(await buildMarsRuntimeConfig(config)) as { permission?: { bash?: Record<string, string> }; approvals?: unknown };
         expect(injected.permission?.bash).toEqual({ "*": "allow" });
         expect(injected.approvals).toBeUndefined();
         // Every evaluate answer carries the mode, so the plugin needs no restart.
         expect(await evaluate()).toEqual({ allowed: true, approvalMode: "full" });
 
         // The environment wins over the setting; Settings shows the switch disabled.
-        process.env.OMNIRUSH_APPROVALS = "guarded";
+        process.env.MARS_APPROVALS = "guarded";
         expect(await readApprovals()).toEqual({ mode: "guarded", source: "environment", setting: "full" });
         expect(await evaluate()).toEqual({ allowed: true, approvalMode: "guarded" });
-        const guarded = JSON.parse(await buildOmniRushRuntimeConfig(config)) as { permission?: { bash?: Record<string, string> } };
+        const guarded = JSON.parse(await buildMarsRuntimeConfig(config)) as { permission?: { bash?: Record<string, string> } };
         expect(guarded.permission?.bash?.["*"]).toBeUndefined();
 
-        expect(resolveApprovalMode({ approvals: { mode: "guarded" } }, { OMNIRUSH_APPROVALS: " FULL " })).toEqual({ mode: "full", source: "environment", setting: "guarded" });
-        expect(resolveApprovalMode({}, { OMNIRUSH_APPROVALS: "yes" })).toEqual({ mode: "guarded", source: "default", setting: null });
+        expect(resolveApprovalMode({ approvals: { mode: "guarded" } }, { MARS_APPROVALS: " FULL " })).toEqual({ mode: "full", source: "environment", setting: "guarded" });
+        expect(resolveApprovalMode({}, { MARS_APPROVALS: "yes" })).toEqual({ mode: "guarded", source: "default", setting: null });
         // Organizations that lock settings lock the switch as well.
         expect(policyRequestActions("PUT", "/runtime-config/approvals")).toEqual(["settings"]);
       } finally {
-        if (previousMode === undefined) delete process.env.OMNIRUSH_APPROVALS;
-        else process.env.OMNIRUSH_APPROVALS = previousMode;
+        if (previousMode === undefined) delete process.env.MARS_APPROVALS;
+        else process.env.MARS_APPROVALS = previousMode;
         await server.stop(true);
       }
     });

@@ -183,7 +183,7 @@ export function UpdatesView(props: UpdatesViewProps) {
                       // A tar.gz install: the feed has no package for it.
                       <Button
                         variant="secondary"
-                        onClick={() => void window.__OMNIRUSH_ELECTRON__?.shell?.openExternal?.(downloadPageUrl)}
+                        onClick={() => void window.__MARS_ELECTRON__?.shell?.openExternal?.(downloadPageUrl)}
                         disabled={props.busy}
                       >
                         {t("settings.update_open_download_page_button")}
@@ -243,7 +243,7 @@ export function UpdatesView(props: UpdatesViewProps) {
                   <Button
                     variant="outline"
                     data-testid="update-install-failed-download"
-                    onClick={() => void window.__OMNIRUSH_ELECTRON__?.shell?.openExternal?.(downloadPageUrl)}
+                    onClick={() => void window.__MARS_ELECTRON__?.shell?.openExternal?.(downloadPageUrl)}
                   >
                     {t("settings.update_open_download_page_button")}
                   </Button>

@@ -1,5 +1,5 @@
 // The upload format (trace schema 2 or 3) the uploader sends, the same file in
-// omnirush-cli (assets/extensions/omnirush/capture/context/) and omnirush-gui
+// mars-cli (assets/extensions/mars/capture/context/) and mars-gui
 // (apps/server/src/context/), listed in PARITY.sha256.
 //
 // GET /collect/capabilities says whether the server takes schema 3. Its answer
@@ -105,7 +105,7 @@ export class UploadFormat<Answer extends UploadFormatAnswer = UploadFormatAnswer
     if (!stored.servers[server]) return;
     delete stored.servers[server];
     this.write(stored);
-    this.options.log?.("warn", "OmniRush session upload: the server refused schema 3; sending schema 2", { server });
+    this.options.log?.("warn", "Mars session upload: the server refused schema 3; sending schema 2", { server });
   }
 
   /** Asks again at the next upload (sign-out); what is remembered on disk stays. */
@@ -131,7 +131,7 @@ export class UploadFormat<Answer extends UploadFormatAnswer = UploadFormatAnswer
       // Remembered: schema 3. Nothing known: schema 3 too (an old server's 422 turns the batch back to 2).
       // Only a refusal this process saw keeps schema 2.
       const version: UploadSchema = this.remembers(server) || !this.refused.has(server) ? 3 : 2;
-      this.options.log?.("warn", "OmniRush session upload: the upload format check failed", {
+      this.options.log?.("warn", "Mars session upload: the upload format check failed", {
         error: error instanceof Error ? error.message : "unknown",
         schema: version,
       });

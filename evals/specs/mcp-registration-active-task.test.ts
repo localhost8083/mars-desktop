@@ -1,9 +1,9 @@
 import { expect } from "vitest";
-import { eventually, spec } from "@omnirush/testkit";
+import { eventually, spec } from "@mars/testkit";
 import { mcpRegistration } from "../worlds/mcp-registration.ts";
 
 // New boundary journey: an active task must retain its MCP client while
-// OmniRush.ai delivers runtime configuration to the real managed engine.
+// MarsAI delivers runtime configuration to the real managed engine.
 const test = spec.world(mcpRegistration, { needs: { commands: ["bun"] }, timeout: 180_000 });
 
 function isRecord(value: unknown): value is Record<string, unknown> {

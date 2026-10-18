@@ -1,9 +1,9 @@
 import { sanitizeCloudMcpHealthDiagnostic } from "../../../app/lib/diagnostic-sanitizer";
 import type {
-  OmniRushCloudMcpEngineRefresh,
-  OmniRushCloudMcpHealth,
-  OmniRushCloudMcpProbeTrace,
-} from "../../../app/lib/omnirush-server";
+  MarsCloudMcpEngineRefresh,
+  MarsCloudMcpHealth,
+  MarsCloudMcpProbeTrace,
+} from "../../../app/lib/mars-server";
 
 export type CloudMcpAdvancedRow = {
   label: string;
@@ -40,7 +40,7 @@ export function describeCloudMcpErrorDetail(error: unknown): string | null {
  * network/TLS failure surfaces as the bare "fetch failed"), so the raw string
  * matters on a support call even when it looks unhelpfully short.
  */
-export function cloudMcpEngineErrorText(health: OmniRushCloudMcpHealth | null): string | null {
+export function cloudMcpEngineErrorText(health: MarsCloudMcpHealth | null): string | null {
   return describeCloudMcpErrorDetail(health?.engine.error);
 }
 
@@ -79,7 +79,7 @@ function shortRevision(revision: string | null | undefined): string {
   return trimmed.length > 12 ? trimmed.slice(0, 12) : trimmed;
 }
 
-export function cloudMcpProbeTraceLines(trace: OmniRushCloudMcpProbeTrace | null | undefined): string[] {
+export function cloudMcpProbeTraceLines(trace: MarsCloudMcpProbeTrace | null | undefined): string[] {
   if (!trace) return [];
   return trace.steps.map((step) => {
     const parts = [
@@ -93,7 +93,7 @@ export function cloudMcpProbeTraceLines(trace: OmniRushCloudMcpProbeTrace | null
   });
 }
 
-export function cloudMcpEngineRefreshLines(refresh: OmniRushCloudMcpEngineRefresh | null | undefined): string[] {
+export function cloudMcpEngineRefreshLines(refresh: MarsCloudMcpEngineRefresh | null | undefined): string[] {
   if (!refresh) return [];
   const lines = refresh.steps.map((step) => {
     const label = step.step === "engine_disconnect" ? "engine disconnect" : step.step === "reapply" ? "re-register and verify" : step.step;
@@ -110,7 +110,7 @@ export function cloudMcpEngineRefreshLines(refresh: OmniRushCloudMcpEngineRefres
  * Support-call rows for the card's Advanced section. Everything here is
  * derived from the already-sanitized health payload; no secrets are present.
  */
-export function cloudMcpAdvancedRows(health: OmniRushCloudMcpHealth | null): CloudMcpAdvancedRow[] {
+export function cloudMcpAdvancedRows(health: MarsCloudMcpHealth | null): CloudMcpAdvancedRow[] {
   if (!health) return [];
   const rows: CloudMcpAdvancedRow[] = [];
   const failure = health.firstFailure;
@@ -138,7 +138,7 @@ export function cloudMcpAdvancedRows(health: OmniRushCloudMcpHealth | null): Clo
     if (inspection.cloudPresent === false) {
       rows.push({
         label: "Engine registration",
-        value: "omnirush-cloud is not registered in the engine (the dynamic entry is lost after an engine restart) — use Refresh engine connection",
+        value: "mars-cloud is not registered in the engine (the dynamic entry is lost after an engine restart) — use Refresh engine connection",
         tone: "error",
       });
     }
@@ -202,7 +202,7 @@ export function cloudMcpAdvancedRows(health: OmniRushCloudMcpHealth | null): Clo
   const compatibility = health.compatibility;
   rows.push({
     label: "Versions",
-    value: `app ${describeCloudMcpErrorDetail(compatibility.omnirush.app?.version) ?? "unknown"} · server ${compatibility.omnirush.serverVersion ?? "unknown"} · engine ${compatibility.opencode.actualVersion ?? "unknown"}${compatibility.opencode.expectedVersion ? ` (expected ${compatibility.opencode.expectedVersion})` : ""}`,
+    value: `app ${describeCloudMcpErrorDetail(compatibility.mars.app?.version) ?? "unknown"} · server ${compatibility.mars.serverVersion ?? "unknown"} · engine ${compatibility.opencode.actualVersion ?? "unknown"}${compatibility.opencode.expectedVersion ? ` (expected ${compatibility.opencode.expectedVersion})` : ""}`,
     tone: "muted",
   });
   rows.push({
@@ -218,8 +218,8 @@ export function cloudMcpAdvancedRows(health: OmniRushCloudMcpHealth | null): Clo
  * support engineer needs to line the report up with Den/server logs.
  */
 export function buildCloudMcpSupportBundle(input: {
-  health: OmniRushCloudMcpHealth | null;
-  refresh?: OmniRushCloudMcpEngineRefresh | null;
+  health: MarsCloudMcpHealth | null;
+  refresh?: MarsCloudMcpEngineRefresh | null;
   context?: {
     workspaceId?: string | null;
     orgId?: string | null;
@@ -229,7 +229,7 @@ export function buildCloudMcpSupportBundle(input: {
   capturedAt?: string;
 }): string {
   const bundle = {
-    kind: "omnirush-cloud-mcp-diagnostic",
+    kind: "mars-cloud-mcp-diagnostic",
     capturedAt: input.capturedAt ?? new Date().toISOString(),
     context: {
       workspaceId: input.context?.workspaceId ?? null,

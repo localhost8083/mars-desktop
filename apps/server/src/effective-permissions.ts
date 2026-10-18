@@ -3,16 +3,16 @@
  * which config layer decided it.
  *
  * The engine evaluates one flat ruleset per agent — its own defaults, then
- * the user's global opencode.json, OmniRush.ai's injected config, and the
+ * the user's global opencode.json, MarsAI's injected config, and the
  * workspace's opencode.json, deep-merged in that order and read last match
  * wins. This module asks the engine for that ruleset and, for the handful of
  * decisions users care about, reports the winning rule together with the
- * layer that wrote it. OmniRush.ai does not evaluate policy itself.
+ * layer that wrote it. MarsAI does not evaluate policy itself.
  */
 import { homedir } from "node:os";
 import type { EffectiveEnginePermissionAction, EffectiveEnginePermissionRule } from "./agent-context-engine-inspection.js";
 
-export type PermissionSource = "engine" | "global" | "omnirush" | "workspace";
+export type PermissionSource = "engine" | "global" | "mars" | "workspace";
 
 export type EffectivePermissionKey =
   | "shell"
@@ -38,8 +38,8 @@ export interface EffectivePermissionRow {
 export interface PermissionLayers {
   /** `permission` block of the user's global opencode.json, as written. */
   global: unknown;
-  /** `permission` block OmniRush.ai injects through OPENCODE_CONFIG. */
-  omnirush: unknown;
+  /** `permission` block MarsAI injects through OPENCODE_CONFIG. */
+  mars: unknown;
   /** `permission` block of the workspace's opencode.json, as written. */
   workspace: unknown;
 }
@@ -49,7 +49,7 @@ const PROBES: ReadonlyArray<{ key: EffectivePermissionKey; permission: string; p
   { key: "edit", permission: "edit", pattern: "*" },
   { key: "web", permission: "webfetch", pattern: "*" },
   // A tool name no config is expected to spell out, so only catch-all rules decide it.
-  { key: "mcp", permission: "omnirush_effective_mcp_probe", pattern: "*" },
+  { key: "mcp", permission: "mars_effective_mcp_probe", pattern: "*" },
   { key: "outside_folders", permission: "external_directory", pattern: "*" },
   { key: "env_files", permission: "read", pattern: "/workspace/.env" },
   { key: "doom_loop", permission: "doom_loop", pattern: "*" },
@@ -127,7 +127,7 @@ function layerContains(layerRules: EffectiveEnginePermissionRule[], rule: Effect
 export function attributeRule(rule: EffectiveEnginePermissionRule, layers: PermissionLayers, home = homedir()): PermissionSource {
   const ordered: Array<[PermissionSource, unknown]> = [
     ["workspace", layers.workspace],
-    ["omnirush", layers.omnirush],
+    ["mars", layers.mars],
     ["global", layers.global],
   ];
   for (const [source, block] of ordered) {
@@ -161,7 +161,7 @@ export function summarizeEffectivePermissions(
 /** Pick the agent whose ruleset governs new threads: the configured default, else the engine's build agent. */
 export function selectGoverningAgent<T extends { name: string }>(agents: T[], defaultAgent: string | null): T | null {
   return agents.find((agent) => agent.name === defaultAgent)
-    ?? agents.find((agent) => agent.name === "omnirush")
+    ?? agents.find((agent) => agent.name === "mars")
     ?? agents.find((agent) => agent.name === "build")
     ?? null;
 }

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import "./style.css";
 
 export const metadata = {
-  title: "OmniRush.ai Review",
+  title: "MarsAI Review",
   robots: { index: false, follow: false },
 };
 
@@ -12,7 +12,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       <body>
         <header className="masthead">
           <a href="/">
-            omnirush<span>/ review</span>
+            mars<span>/ review</span>
           </a>
           <span>Evidence, in context.</span>
         </header>

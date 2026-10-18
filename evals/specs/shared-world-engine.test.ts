@@ -3,8 +3,8 @@ import { access, mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { test } from "@omnirush/testkit";
-import { discoverWorlds, main } from "@omnirush/world";
+import { test } from "@mars/testkit";
+import { discoverWorlds, main } from "@mars/world";
 
 const REPO_ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const WORLDS_DIRECTORY = join(REPO_ROOT, "worlds");
@@ -46,7 +46,7 @@ function ownedResources(): string[] {
 }
 
 test("world discovery, list, and help label scripts without importing them", async ({ evidence }) => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-world-discovery-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-world-discovery-"));
   try {
     const worldsDirectory = join(root, "worlds");
     const receiptsDirectory = join(root, "receipts");
@@ -58,8 +58,8 @@ test("world discovery, list, and help label scripts without importing them", asy
       name: "unguarded",
       path: join(worldsDirectory, "unguarded.ts"),
     }]);
-    const previousReceiptsDirectory = process.env.OMNIRUSH_WORLD_SNAPSHOT_DIR;
-    process.env.OMNIRUSH_WORLD_SNAPSHOT_DIR = receiptsDirectory;
+    const previousReceiptsDirectory = process.env.MARS_WORLD_SNAPSHOT_DIR;
+    process.env.MARS_WORLD_SNAPSHOT_DIR = receiptsDirectory;
     try {
       for (const command of [["list"], ["help"]]) {
         const lines: string[] = [];
@@ -72,8 +72,8 @@ test("world discovery, list, and help label scripts without importing them", asy
         assert.match(lines.join("\n"), /unguarded/);
       }
     } finally {
-      if (previousReceiptsDirectory === undefined) delete process.env.OMNIRUSH_WORLD_SNAPSHOT_DIR;
-      else process.env.OMNIRUSH_WORLD_SNAPSHOT_DIR = previousReceiptsDirectory;
+      if (previousReceiptsDirectory === undefined) delete process.env.MARS_WORLD_SNAPSHOT_DIR;
+      else process.env.MARS_WORLD_SNAPSHOT_DIR = previousReceiptsDirectory;
     }
     await assert.rejects(access(receiptsDirectory));
 
@@ -104,14 +104,14 @@ test("every root world is an import-safe executable script module", async ({ evi
     })),
   );
 
-  const root = await mkdtemp(join(tmpdir(), "omnirush-world-imports-"));
-  const previousReceiptsDirectory = process.env.OMNIRUSH_WORLD_SNAPSHOT_DIR;
+  const root = await mkdtemp(join(tmpdir(), "mars-world-imports-"));
+  const previousReceiptsDirectory = process.env.MARS_WORLD_SNAPSHOT_DIR;
   const signalListeners = {
     sigint: process.listenerCount("SIGINT"),
     sigterm: process.listenerCount("SIGTERM"),
   };
   const resources = ownedResources();
-  process.env.OMNIRUSH_WORLD_SNAPSHOT_DIR = root;
+  process.env.MARS_WORLD_SNAPSHOT_DIR = root;
   try {
     for (const name of worldFileNames) {
       const load = worldImports[name];
@@ -130,8 +130,8 @@ test("every root world is an import-safe executable script module", async ({ evi
       true,
     );
   } finally {
-    if (previousReceiptsDirectory === undefined) delete process.env.OMNIRUSH_WORLD_SNAPSHOT_DIR;
-    else process.env.OMNIRUSH_WORLD_SNAPSHOT_DIR = previousReceiptsDirectory;
+    if (previousReceiptsDirectory === undefined) delete process.env.MARS_WORLD_SNAPSHOT_DIR;
+    else process.env.MARS_WORLD_SNAPSHOT_DIR = previousReceiptsDirectory;
     await rm(root, { recursive: true, force: true });
   }
 });
@@ -155,18 +155,18 @@ test("the retired definition, topology, adapter, and preset APIs are absent", as
   for (const path of deletedPaths) await assert.rejects(access(join(REPO_ROOT, path)));
 
   const [worldModule, envModule, testkitModule] = await Promise.all([
-    import("@omnirush/world"),
+    import("@mars/world"),
     import("../packages/env/src/index.ts"),
-    import("@omnirush/testkit"),
+    import("@mars/testkit"),
   ]);
   for (const name of ["createWorld" + "Definition", "defineHeadless" + "WebWorld", "createHeadless" + "WebAdapter"]) {
-    assert.equal(name in worldModule, false, `@omnirush/world must not export ${name}`);
+    assert.equal(name in worldModule, false, `@mars/world must not export ${name}`);
   }
   for (const name of ["define" + "World", "createEval" + "WorldAdapter", "parseUntrusted" + "Snapshot", "resume" + "World"]) {
-    assert.equal(name in envModule, false, `@omnirush/env must not export ${name}`);
+    assert.equal(name in envModule, false, `@mars/env must not export ${name}`);
   }
   for (const name of ["start" + "World", "define" + "World"]) {
-    assert.equal(name in testkitModule, false, `@omnirush/testkit must not export ${name}`);
+    assert.equal(name in testkitModule, false, `@mars/testkit must not export ${name}`);
   }
 
   evidence.recordAssertionEvidence(

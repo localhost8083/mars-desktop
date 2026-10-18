@@ -1,4 +1,4 @@
-import { browserScript } from "@omnirush/testkit";
+import { browserScript } from "@mars/testkit";
 import { expect } from "vitest";
 import {
   control,
@@ -8,9 +8,9 @@ import {
   selectModel,
   waitFor,
   writeComposerText,
-} from "@omnirush/behaviors";
-import { resolveEvalEngine } from "@omnirush/env";
-import { screenshot } from "@omnirush/test-evidence";
+} from "@mars/behaviors";
+import { resolveEvalEngine } from "@mars/env";
+import { screenshot } from "@mars/test-evidence";
 import {
   app,
   eventually,
@@ -20,23 +20,23 @@ import {
   needs,
   server,
   test,
-} from "@omnirush/testkit";
-import type { App } from "@omnirush/testkit";
+} from "@mars/testkit";
+import type { App } from "@mars/testkit";
 
 const providerId = "live-tool-switch-mock";
 const modelId = "live-tool-switch-model";
 const modelName = "Live tool switch model";
 const evalEngine = resolveEvalEngine();
 const shellToolName = evalEngine === "v2" ? "shell" : "bash";
-const e2eTestsEnabled = process.env.OMNIRUSH_EVAL_E2E_TESTS === "1";
-const daytonaEnabled = process.env.OMNIRUSH_EVAL_DAYTONA === "1";
-const configuredDen = Boolean(process.env.OMNIRUSH_EVAL_DEN_API_URL?.trim());
+const e2eTestsEnabled = process.env.MARS_EVAL_E2E_TESTS === "1";
+const daytonaEnabled = process.env.MARS_EVAL_DAYTONA === "1";
+const configuredDen = Boolean(process.env.MARS_EVAL_DEN_API_URL?.trim());
 const localServicesRequired = !daytonaEnabled && !configuredDen;
 const mysqlOpen = await localMysqlIsRunning();
 const redisOpen = await localRedisIsRunning();
 const runnable = e2eTestsEnabled && (!localServicesRequired || (mysqlOpen && redisOpen));
 const skipSuffix = !e2eTestsEnabled
-  ? " skipped — needs: set OMNIRUSH_EVAL_E2E_TESTS=1"
+  ? " skipped — needs: set MARS_EVAL_E2E_TESTS=1"
   : localServicesRequired && !mysqlOpen
     ? " skipped — needs MySQL on 127.0.0.1:3306"
     : localServicesRequired && !redisOpen
@@ -80,7 +80,7 @@ function parseVisibleToolFact(value: unknown): VisibleToolFact {
 
 async function configureWorkspaces(appSurface: App, workspaceIds: string[], baseUrl: string): Promise<void> {
   const result = await evalIn(appSurface, browserScript(async (workspaceIds, providerId, modelName, value, modelId, inputModelName, inputProviderId, inputModelId, inputValue) => {
-    const info = await window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("omnirushServerInfo");
+    const info = await window.__MARS_ELECTRON__?.invokeDesktop?.("marsServerInfo");
     if (!info?.running || !info.baseUrl) return "local_server_unavailable";
     const root = String(info.baseUrl).replace(/\/+$/, "");
     const headers = {
@@ -116,23 +116,23 @@ async function configureWorkspaces(appSurface: App, workspaceIds: string[], base
       });
       if (!reloaded.ok) return "reload:" + reloaded.status + ":" + (await reloaded.text()).slice(0, 300);
     }
-    const raw = localStorage.getItem("omnirush.preferences");
+    const raw = localStorage.getItem("mars.preferences");
     let preferences: Record<string, unknown> = {};
     try { preferences = raw ? JSON.parse(raw) : {}; } catch { preferences = {}; }
     if (!preferences || typeof preferences !== "object" || Array.isArray(preferences)) preferences = {};
-    localStorage.setItem("omnirush.preferences", JSON.stringify({
+    localStorage.setItem("mars.preferences", JSON.stringify({
       ...preferences,
       defaultModel: { providerID: inputProviderId, modelID: inputModelId },
       modelVariant: null,
       providerStepCompleted: true,
     }));
-    localStorage.setItem("omnirush.defaultModel", inputValue);
+    localStorage.setItem("mars.defaultModel", inputValue);
     return "ok";
   }, [workspaceIds, providerId, modelName, `${baseUrl}/v1`, modelId, modelName, providerId, modelId, `${providerId}/${modelId}`]), { awaitPromise: true, timeoutMs: 120_000 });
   expect(result).toBe("ok");
 
   await evalIn(appSurface, () => { location.reload(); return true; });
-  await waitFor(appSurface, () => (Boolean(window.__omnirushControl)), {
+  await waitFor(appSurface, () => (Boolean(window.__marsControl)), {
     timeoutMs: 60_000,
     label: "desktop restored after mock provider configuration",
   });
@@ -167,7 +167,7 @@ async function clickSessionRow(appSurface: App, workspaceId: string, sessionId: 
   await waitFor(appSurface, browserScript((sessionId, workspaceId) => {
     const surface = document.querySelector<HTMLElement>("[data-session-surface-id]");
     return surface?.getAttribute("data-session-surface-id") === sessionId
-      && (localStorage.getItem("omnirush.react.activeWorkspace") ?? "") === workspaceId;
+      && (localStorage.getItem("mars.react.activeWorkspace") ?? "") === workspaceId;
   }, [sessionId, workspaceId]), { timeoutMs: 60_000, label: `workspace ${workspaceId} session ${sessionId} visible after sidebar click` });
 }
 
@@ -262,7 +262,7 @@ test.skipIf(!runnable)(
   `a tool started while away is visible after returning to its chat${skipSuffix}`,
   { timeout: 12 * 60_000 },
   async ({ evidence, place }) => {
-    needs({ optIn: ["OMNIRUSH_EVAL_E2E_TESTS"] });
+    needs({ optIn: ["MARS_EVAL_E2E_TESTS"] });
     const runId = `${Date.now().toString(36)}-${process.pid}`;
     const promptMarker = `LIVE-TOOL-SWITCH-${runId}`;
     const firstMarker = `FIRST-${promptMarker}`;
@@ -311,13 +311,13 @@ test.skipIf(!runnable)(
     await using desktopApp = await app({ den, as: "member", place });
 
     const workspaceB = await createAndSelectWorkspace(desktopApp, {
-      path: `/tmp/omnirush-live-tool-switch-${runId}-b`,
+      path: `/tmp/mars-live-tool-switch-${runId}-b`,
     });
     const chatB = await createSession(desktopApp);
     await control(desktopApp, "session.rename", { sessionId: chatB, title: "Chat B" });
 
     const workspaceA = await createAndSelectWorkspace(desktopApp, {
-      path: `/tmp/omnirush-live-tool-switch-${runId}-a`,
+      path: `/tmp/mars-live-tool-switch-${runId}-a`,
     });
     await configureWorkspaces(desktopApp, [workspaceA.workspaceId, workspaceB.workspaceId], den.mocks.agent.url);
     const chatA = await createSession(desktopApp);

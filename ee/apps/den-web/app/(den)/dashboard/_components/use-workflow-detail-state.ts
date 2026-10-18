@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { WorkflowArtifactSnapshot, WorkflowDetail, WorkflowTestResult } from "@omnirush/types/workflows";
+import type { WorkflowArtifactSnapshot, WorkflowDetail, WorkflowTestResult } from "@mars/types/workflows";
 import { formFieldsFromSchema } from "./workflow-input-form";
 import {
   useDeleteWorkflowSnapshot,

@@ -29,9 +29,9 @@ function failure(error: unknown): DiagnosticsActionResult {
   return { ok: false, message: detail ? `${base}: ${detail}` : base };
 }
 
-/** File name for an exported bundle, e.g. omnirush-diagnostics-2026-09-24T08-32-30-000Z.json. */
+/** File name for an exported bundle, e.g. mars-diagnostics-2026-09-24T08-32-30-000Z.json. */
 export function diagnosticsExportFileName(date: Date): string {
-  return `omnirush-diagnostics-${date.toISOString().replace(/[:.]/g, "-")}.json`;
+  return `mars-diagnostics-${date.toISOString().replace(/[:.]/g, "-")}.json`;
 }
 
 export async function copyDiagnostics(deps: DiagnosticsActionDeps): Promise<DiagnosticsActionResult> {
@@ -92,7 +92,7 @@ export type DiagnosticsSectionProps = {
 /**
  * Settings > General > Diagnostics. The same sanitized bundle as the
  * command palette's "Copy diagnostics", plus a shortcut to the logs folder
- * that holds omnirush-server.log.
+ * that holds mars-server.log.
  */
 export function DiagnosticsSection(props: DiagnosticsSectionProps) {
   const [busy, setBusy] = useState<DiagnosticsAction | null>(null);

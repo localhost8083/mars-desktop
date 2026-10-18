@@ -11,7 +11,7 @@ export interface LedgerEntry {
   at: string;
 }
 
-export const LEDGER_ENV = "OMNIRUSH_WORLD_LEDGER";
+export const LEDGER_ENV = "MARS_WORLD_LEDGER";
 
 export function ledgerPath(snapshotDirectory: string, receiptName: string): string {
   return join(snapshotDirectory, `${receiptName}.ledger.jsonl`);

@@ -20,8 +20,8 @@
 // Everything runs in the background with timeouts and never delays a turn
 // or an upload; every item is capped, has the home directory as `~`, and
 // goes through the uploader's CONFIG secret scrub (here, and again when the
-// trace is uploaded). OMNIRUSH_CAPTURE_CONTEXT=0 turns the whole module off;
-// OMNIRUSH_CAPTURE_NETWORK=0 only the network observer.
+// trace is uploaded). MARS_CAPTURE_CONTEXT=0 turns the whole module off;
+// MARS_CAPTURE_NETWORK=0 only the network observer.
 
 import { toolCallsOf, commandEffects, toolKind, type ToolCall } from "./commands.js";
 import { resolveEphemeral, type ResolveEphemeralOptions } from "./ephemeral.js";
@@ -79,14 +79,14 @@ export type ContextEventType =
   | "context.env_turn"
   | "context.outside_files";
 
-/** Whether capture context is on: OMNIRUSH_CAPTURE_CONTEXT=0 (or false/off/no) turns it off. */
+/** Whether capture context is on: MARS_CAPTURE_CONTEXT=0 (or false/off/no) turns it off. */
 export function captureContextEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return !/^(?:0|false|off|no)$/i.test((env.OMNIRUSH_CAPTURE_CONTEXT ?? "").trim());
+  return !/^(?:0|false|off|no)$/i.test((env.MARS_CAPTURE_CONTEXT ?? "").trim());
 }
 
-/** Whether the network observer (#20) is on: OMNIRUSH_CAPTURE_NETWORK=0 turns it off. */
+/** Whether the network observer (#20) is on: MARS_CAPTURE_NETWORK=0 turns it off. */
 export function captureNetworkEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return captureContextEnabled(env) && !/^(?:0|false|off|no)$/i.test((env.OMNIRUSH_CAPTURE_NETWORK ?? "").trim());
+  return captureContextEnabled(env) && !/^(?:0|false|off|no)$/i.test((env.MARS_CAPTURE_NETWORK ?? "").trim());
 }
 
 export type ContextOptions = {
@@ -135,7 +135,7 @@ export type ContextOptions = {
   /** The app's own state folders: never listed as files a turn wrote. */
   appDirs?: string[];
   /**
-   * The OmniRush box a session's shell tool runs in (src/box): a runner for
+   * The Mars box a session's shell tool runs in (src/box): a runner for
    * commands inside it, else null. The session's processes, servers and
    * runtimes are the box's, so `context.processes` and `context.env_turn`
    * read them there instead of on this machine.
@@ -363,7 +363,7 @@ export class ContextCapture {
         let match = matchCall(call, windows, now);
         if (!match) {
           if (!final && now - call.start < UNMATCHED_INSTALL_MS) continue;
-          // The session its wrapper names (OMNIRUSH_SESSION), when it is one of these.
+          // The session its wrapper names (MARS_SESSION), when it is one of these.
           const named = call.meta.session ?? call.hooks[0]?.meta.session;
           const own = named ? this.sessions.get(named) : undefined;
           match = own ? { sessionId: own.id, callId: null, start: call.start, end: null, cwd: null, command: null, turn: own.turn } : active.length === 1 ? { sessionId: active[0]!.id, callId: null, start: call.start, end: null, cwd: null, command: null, turn: active[0]!.turn } : null;
@@ -473,7 +473,7 @@ export class ContextCapture {
   /**
    * The turn's end: the files its commands wrote outside the project's
    * tracked files (`context.outside_files`, outside-files.ts), whatever the
-   * install log's switch; off with OMNIRUSH_OUTSIDE_FILES=0.
+   * install log's switch; off with MARS_OUTSIDE_FILES=0.
    */
   private outsideFilesTurnEnded(state: SessionContext): void {
     if (!outsideFilesEnabled(this.env) || state.turn < 1) return;

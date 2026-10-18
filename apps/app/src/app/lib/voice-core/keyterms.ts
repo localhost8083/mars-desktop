@@ -1,6 +1,6 @@
 /** Coding vocabulary sent as a hint with every recording. */
 export const DEV_KEYTERMS = [
-  "OmniRush",
+  "Mars",
   "TypeScript",
   "JavaScript",
   "JSON",
@@ -85,7 +85,7 @@ const SPOKEN_FORMS: ReadonlyArray<[RegExp, string]> = [
   [/\bsub[ -]agent(s?)\b/gi, "subagent$1"],
   [/\bread[ -]me\b/gi, "README"],
   [/\bp[ -]?npm\b/gi, "pnpm"],
-  [/\bomni[ -]rush\b/gi, "OmniRush"],
+  [/\bomni[ -]rush\b/gi, "Mars"],
 ];
 
 const EXTENSIONS = "ts|tsx|js|jsx|mjs|cjs|py|rs|go|md|json|yaml|yml|toml|css|html|sh|sql|txt";
@@ -98,7 +98,7 @@ function escapeRegExp(value: string): string {
 /**
  * Light post-correction of a transcript: spoken dev terms to their written
  * form, "auth dot ts" to "auth.ts", and project terms with inner capitals
- * ("omni rush" / "omnirush" → "OmniRush") restored from the keyterms.
+ * ("omni rush" / "mars" → "Mars") restored from the keyterms.
  */
 export function applyKeyterms(text: string, keyterms: readonly string[] = []): string {
   let out = text;

@@ -1,9 +1,9 @@
 ---
 name: browser-setup
-description: Guide user through OmniRush.ai Browser automation setup
+description: Guide user through MarsAI Browser automation setup
 ---
 
 Help the user set up browser automation.
 
-Tell the user that OmniRush.ai Browser is built in and enabled by default.
+Tell the user that MarsAI Browser is built in and enabled by default.
 Keep the user prompt minimal, then use browser tools against the built-in browser target when they ask to browse.

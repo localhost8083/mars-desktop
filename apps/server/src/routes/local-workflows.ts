@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { createOpencodeClient } from "@opencode-ai/sdk/v2/client";
-import { localRoutingSettingsSchema, localWorkflowInputSchema, localModelRefSchema, localRouteCategorySchema } from "@omnirush/types/local-workflows";
+import { localRoutingSettingsSchema, localWorkflowInputSchema, localModelRefSchema, localRouteCategorySchema } from "@mars/types/local-workflows";
 import { ApiError } from "../errors.js";
 import { recordAudit } from "../audit.js";
 import { LocalWorkflowService, type LocalWorkflowPromptDispatcher } from "../local-workflows.js";

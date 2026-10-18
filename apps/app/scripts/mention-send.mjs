@@ -55,7 +55,7 @@ try {
 
   let sessionId = "";
   await step("session.create", async () => {
-    const session = await client.session.create({ title: "OmniRush.ai mention-send" });
+    const session = await client.session.create({ title: "MarsAI mention-send" });
     sessionId = session.id;
     assert.ok(sessionId);
     return { id: session.id };
@@ -88,7 +88,7 @@ try {
   await step("messages.initial", async () => messagesSummary("initial"));
 
   await step("prompt.invalidFilePart", async () => {
-    // Mirrors the bug in OmniRush.ai: sending a file mention with only {path}.
+    // Mirrors the bug in MarsAI: sending a file mention with only {path}.
     try {
       await client.session.prompt({
         sessionID: sessionId,

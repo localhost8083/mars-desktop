@@ -3,8 +3,8 @@
 import { app, BrowserWindow, desktopCapturer } from "electron";
 import { createInterface } from "node:readline";
 import { connect } from "node:net";
-const channel = connect({ host: "127.0.0.1", port: Number(process.env.OMNIRUSH_FIXTURE_PORT) });
-channel.on("connect", () => channel.write(JSON.stringify({ token: process.env.OMNIRUSH_FIXTURE_TOKEN }) + "\n"));
+const channel = connect({ host: "127.0.0.1", port: Number(process.env.MARS_FIXTURE_PORT) });
+channel.on("connect", () => channel.write(JSON.stringify({ token: process.env.MARS_FIXTURE_TOKEN }) + "\n"));
 import { checkComputerUsePermissions, getComputerUseMcpCommand, getComputerUseMcpEnvironment, getComputerUseState, computerUseAction } from "../../../../apps/desktop/electron/computer-use.mjs";
 app.setPath("userData", process.argv.at(-1));
 const ready = app.whenReady();

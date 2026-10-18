@@ -5,7 +5,7 @@ import {
   PluginConfigObjectTable,
   PluginTable,
 } from "@omnirush-ee/den-db/schema"
-import type { GeneratedArtifactView } from "@omnirush/types/workflows"
+import type { GeneratedArtifactView } from "@mars/types/workflows"
 import { db } from "./db.js"
 import { normalizeDenTypeId } from "@omnirush-ee/utils/typeid"
 import { getWorkflowDetail } from "./workflows.js"

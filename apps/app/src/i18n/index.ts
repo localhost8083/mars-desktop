@@ -9,7 +9,7 @@ import ca from "./locales/ca";
 import es from "./locales/es";
 import ru from "./locales/ru";
 import { displayRuntimeBrand } from "../lib/display-runtime-brand";
-export const LANGUAGE_PREF_KEY = "omnirush.language";
+export const LANGUAGE_PREF_KEY = "mars.language";
 
 /**
  * Supported languages

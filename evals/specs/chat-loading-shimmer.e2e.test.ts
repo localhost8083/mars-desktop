@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { arrangeControl, shimmerChat } from "../worlds/chat.ts";
 
 const test = spec.world(shimmerChat);
@@ -58,7 +58,7 @@ test("chat working and command activity use quiet shimmer without spinners", asy
         animationName: shimmer instanceof HTMLElement ? getComputedStyle(shimmer).animationName : "",
         sampledFrames,
         distinctPositions: positions.size,
-        isMac: document.documentElement.classList.contains("omnirush-platform-mac"),
+        isMac: document.documentElement.classList.contains("mars-platform-mac"),
         paneFilter: pane instanceof HTMLElement ? filterOf(pane) : "",
         headerFilter: header instanceof HTMLElement ? filterOf(header) : "",
         nestedFilters,

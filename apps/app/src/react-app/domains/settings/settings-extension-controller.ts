@@ -3,7 +3,7 @@ import { useCallback } from "react";
 
 import type { McpDirectoryInfo } from "../../../app/constants";
 import { evaluateEnablement, type EnablementContext } from "../../../app/enablement";
-import type { OmniRushServerClient } from "../../../app/lib/omnirush-server";
+import type { MarsServerClient } from "../../../app/lib/mars-server";
 import type { McpServerEntry } from "../../../app/types";
 import { getExtensionConfigSlot, type ExtensionConfigContext } from "./extension-registry";
 import type { LocalProviderInstallInput } from "./openai-image-extension";
@@ -14,8 +14,8 @@ type ProviderLike = {
 };
 
 type SettingsExtensionControllerInput = {
-  omnirushServerClient: OmniRushServerClient | null;
-  hostOmniRushServerClient: OmniRushServerClient | null;
+  marsServerClient: MarsServerClient | null;
+  hostMarsServerClient: MarsServerClient | null;
   enablementContext: EnablementContext;
   mcpServers: McpServerEntry[];
   mcpConnectingName: string | null;
@@ -44,15 +44,15 @@ type SettingsExtensionControllerInput = {
 function hasOpenAiEnv(input: Pick<SettingsExtensionControllerInput, "providers" | "providerConnectedIds" | "userEnvKeys">) {
   return input.userEnvKeys.includes("OPENAI_REALTIME_API_KEY") ||
     input.userEnvKeys.includes("OPENAI_API_KEY") ||
-    input.userEnvKeys.includes("OMNIRUSH_OPENAI_IMAGE_API_KEY") ||
+    input.userEnvKeys.includes("MARS_OPENAI_IMAGE_API_KEY") ||
     input.providers.some((provider) => provider.id === "openai" && provider.source === "env") ||
     input.providerConnectedIds.includes("openai");
 }
 
 export function useSettingsExtensionController(input: SettingsExtensionControllerInput) {
   const configContextForEntry = useCallback((entry: McpDirectoryInfo): ExtensionConfigContext => ({
-    omnirushServerClient: input.omnirushServerClient,
-    hostOmniRushServerClient: input.hostOmniRushServerClient,
+    marsServerClient: input.marsServerClient,
+    hostMarsServerClient: input.hostMarsServerClient,
     restartLocalServer: input.restartLocalServer,
     computerUse: {
       connected: input.enablementContext.mcpStatuses?.["computer-use"]?.status === "connected",

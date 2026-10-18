@@ -101,7 +101,7 @@ export async function pickAppTarget(
   const targets = await listTargets(baseUrl, { timeoutMs });
   const pages = targets.filter((target) => target.type === "page" && target.webSocketDebuggerUrl);
   const target =
-    pages.find((page) => page.title === "OmniRush.ai") ??
+    pages.find((page) => page.title === "MarsAI") ??
     pages.find(
       (page) =>
         page.url.includes("localhost") ||

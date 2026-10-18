@@ -30,7 +30,7 @@ const nextConfig = {
   reactStrictMode: true,
   skipTrailingSlashRedirect: true,
   poweredByHeader: false,
-  transpilePackages: ["@omnirush/ui", "@omnirush-ee/utils", "@omnirush-ee/telemetry-contracts"],
+  transpilePackages: ["@mars/ui", "@omnirush-ee/utils", "@omnirush-ee/telemetry-contracts"],
   outputFileTracingRoot: path.join(__dirname, "../../.."),
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];

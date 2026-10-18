@@ -1,10 +1,10 @@
 ---
 title: "Pricing and licensing"
-description: "OmniRush.ai's public pricing — Free, Team, and Enterprise — and how the MIT + OmniRush.ai EE License split works."
+description: "MarsAI's public pricing — Free, Team, and Enterprise — and how the MIT + MarsAI EE License split works."
 ---
 
 Our pricing is public, like the rest of our handbook. The same prices apply
-whether you use OmniRush.ai Cloud or self-host. There are no deployment fees, and
+whether you use MarsAI Cloud or self-host. There are no deployment fees, and
 support is included in every paid plan.
 
 ## Plans
@@ -12,20 +12,20 @@ support is included in every paid plan.
 | | Free | Team | Enterprise |
 | --- | --- | --- | --- |
 | **Price** | $0 | $20 per seat / month | $50 per user / month |
-| **Users** | Up to 5 | Up to 100 | Unlimited (volume pricing above 100 — [talk to sales](mailto:info@omnirush.ai)) |
+| **Users** | Up to 5 | Up to 100 | Unlimited (volume pricing above 100 — [talk to sales](mailto:info@marsai.click)) |
 | **Desktop app (MIT, open source)** | ✓ | ✓ | ✓ |
 | **Self-host the full platform** | ✓ | ✓ | ✓ |
 | **Usage and adoption analytics** | — | — | ✓ |
 | **SSO / SAML, SCIM, RBAC** | — | — | ✓ |
 | **Desktop policies and version controls** | — | — | ✓ |
 | **Internal white-labeling (your name, logo, branding)** | — | — | ✓ |
-| **OmniRush.ai Web** | — | — | ✓ |
+| **MarsAI Web** | — | — | ✓ |
 | **Spend observability** | — | — | ✓ |
 | **Support** | Community | Standard, included | Standard SLA, included |
 
 Analytics, SSO/SCIM, desktop policies, and white-labeling are the
 **Enterprise Features** — defined in the
-[subscription terms](https://github.com/omnirush-ai/omnirush-gui/blob/main/ee/apps/landing/app/terms/subscription/subscription-terms.md) and
+[subscription terms](https://github.com/mars-ai/mars-gui/blob/main/ee/apps/landing/app/terms/subscription/subscription-terms.md) and
 reserved for the Enterprise plan (and for evaluations and pilots, so you can
 test what you would buy).
 
@@ -35,14 +35,14 @@ separate written agreement.
 
 ## How licensing works
 
-The [repository](https://github.com/omnirush-ai/omnirush-gui) uses a
+The [repository](https://github.com/mars-ai/mars-gui) uses a
 directory-split license, similar to GitLab:
 
 - **Everything outside `ee/` is MIT.** The desktop app and core platform are
   open source and free for any use.
-- **Everything under `ee/` (OmniRush.ai Den, the org control plane) is
+- **Everything under `ee/` (MarsAI Den, the org control plane) is
   source-available under the
-  [OmniRush.ai EE License](https://github.com/omnirush-ai/omnirush-gui/blob/main/ee/LICENSE).**
+  [MarsAI EE License](https://github.com/mars-ai/mars-gui/blob/main/ee/LICENSE).**
   The code is public so your security team can audit exactly what you deploy.
 
 Under the EE License, no subscription is required for:
@@ -55,7 +55,7 @@ Under the EE License, no subscription is required for:
 3. **Development and testing.**
 
 Beyond those grants, production use requires a subscription per the
-[subscription terms](https://github.com/omnirush-ai/omnirush-gui/blob/main/ee/apps/landing/app/terms/subscription/subscription-terms.md). Every
+[subscription terms](https://github.com/mars-ai/mars-gui/blob/main/ee/apps/landing/app/terms/subscription/subscription-terms.md). Every
 `ee/` release additionally converts to MIT two years after publication.
 Versions released before the EE License was adopted remain under their
 original license (FSL-1.1-MIT), and each release is governed by the license
@@ -71,9 +71,9 @@ You can evaluate self-serve for free for 30 days. The [pull-only Docker Compose
 stack](/self-host/evaluate-with-docker-compose) is the quickest way to deploy
 the control plane in your own environment without cloning or building the
 repository. Need longer? Evaluation extensions are granted in writing —
-[ask us](mailto:info@omnirush.ai). If you want a supported pilot
+[ask us](mailto:info@marsai.click). If you want a supported pilot
 instead (a dedicated engineering contact, deployment guidance, and response
-targets), [talk to sales](mailto:info@omnirush.ai).
+targets), [talk to sales](mailto:info@marsai.click).
 
 ## Why the enterprise code is public
 

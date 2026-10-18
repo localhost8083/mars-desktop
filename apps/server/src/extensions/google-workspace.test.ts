@@ -20,7 +20,7 @@ import {
 function createTestConfig(): ServerConfig {
   const tempDir = join(
     tmpdir(),
-    `omnirush-google-workspace-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    `mars-google-workspace-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   );
   return {
     host: "127.0.0.1",
@@ -71,11 +71,11 @@ function decodeRawFromRequestBody(body: string): string {
 }
 
 const previousEnv = {
-  devMode: process.env.OMNIRUSH_DEV_MODE,
-  plaintextVault: process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT,
+  devMode: process.env.MARS_DEV_MODE,
+  plaintextVault: process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT,
   clientSecret: process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET,
-  legacyClientSecret: process.env.OMNIRUSH_GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET,
-  brokerUrl: process.env.OMNIRUSH_GOOGLE_WORKSPACE_TOKEN_BROKER_URL,
+  legacyClientSecret: process.env.MARS_GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET,
+  brokerUrl: process.env.MARS_GOOGLE_WORKSPACE_TOKEN_BROKER_URL,
 };
 const previousFetch = globalThis.fetch;
 
@@ -117,11 +117,11 @@ beforeEach(() => {
 
 afterEach(() => {
   dnsAnswers.clear();
-  restoreEnv("OMNIRUSH_DEV_MODE", previousEnv.devMode);
-  restoreEnv("OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT", previousEnv.plaintextVault);
+  restoreEnv("MARS_DEV_MODE", previousEnv.devMode);
+  restoreEnv("MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT", previousEnv.plaintextVault);
   restoreEnv("GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET", previousEnv.clientSecret);
-  restoreEnv("OMNIRUSH_GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET", previousEnv.legacyClientSecret);
-  restoreEnv("OMNIRUSH_GOOGLE_WORKSPACE_TOKEN_BROKER_URL", previousEnv.brokerUrl);
+  restoreEnv("MARS_GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET", previousEnv.legacyClientSecret);
+  restoreEnv("MARS_GOOGLE_WORKSPACE_TOKEN_BROKER_URL", previousEnv.brokerUrl);
   globalThis.fetch = previousFetch;
   setGmailAttachmentFetchForTests();
 });
@@ -129,16 +129,16 @@ afterEach(() => {
 describe("Google Workspace extension", () => {
   test("reports only the user-configurable OAuth secret as missing", async () => {
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_TOKEN_BROKER_URL = "";
+    process.env.MARS_GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "";
+    process.env.MARS_GOOGLE_WORKSPACE_TOKEN_BROKER_URL = "";
     const status = await googleWorkspaceStatus(createTestConfig());
     expect(status.configured).toBe(false);
     expect(status.missing).toEqual(["GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET"]);
   });
 
   test("reads multi-account vaults and exposes active account", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -155,8 +155,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("disconnect can remove one connected account", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     globalThis.fetch = Object.assign(
       async () => new Response("{}", { status: 200 }),
@@ -176,8 +176,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_list_messages rejects accounts without the gmail.readonly scope", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -192,8 +192,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_list_messages returns message summaries", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -241,8 +241,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_get_message decodes the plain text body", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -275,8 +275,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_download_attachment decodes attachment data", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -306,8 +306,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("drive_search_files escapes backslashes before apostrophes in query literals", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -330,8 +330,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_create_draft attaches local workspace files", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     const workspaceRoot = join(dirname(config.configPath ?? ""), "workspace");
@@ -363,7 +363,7 @@ describe("Google Workspace extension", () => {
         "the proposed commercial terms before our next call.",
         "",
         "Thanks,",
-        "OmniRush.ai",
+        "MarsAI",
       ].join("\n"),
       attachments: [{ path: "invoices/acme-invoice-2026-001.pdf" }],
     }, { directory: workspaceRoot });
@@ -380,7 +380,7 @@ describe("Google Workspace extension", () => {
     expect(decoded).toContain("Content-Type: multipart/alternative;");
     expect(decoded).toContain("Content-Type: text/html; charset=UTF-8");
     expect(decoded).toContain("MIME-Version: 1.0");
-    expect(decoded).toContain("Please find attached invoice ACME-2026-001 for PO-000123 and review the proposed commercial terms before our next call.\r\n\r\nThanks,\r\nOmniRush");
+    expect(decoded).toContain("Please find attached invoice ACME-2026-001 for PO-000123 and review the proposed commercial terms before our next call.\r\n\r\nThanks,\r\nMars");
     expect(decoded).toContain("Content-Type: application/pdf; name=\"acme-invoice-2026-001.pdf\"");
     expect(decoded).toContain("Content-Disposition: attachment; filename=\"acme-invoice-2026-001.pdf\"");
     expect(decoded).toContain(Buffer.from("%PDF-1.4\ninvoice bytes\n", "utf8").toString("base64"));
@@ -397,8 +397,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_create_draft strips conservative markdown from prose", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -447,8 +447,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_create_reply_draft rejects accounts without the gmail.readonly scope", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -463,8 +463,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_create_reply_draft creates a threaded reply all draft", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -543,8 +543,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_create_reply_draft quotes HTML-only originals in both parts", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -587,8 +587,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_create_reply_draft does not append a second quote when the body already includes one", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -637,8 +637,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_create_reply_draft rejects messages without thread metadata", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -661,8 +661,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_create_reply_draft attaches workspace files inside the threaded reply", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     const workspaceRoot = join(dirname(config.configPath ?? ""), "workspace");
@@ -717,8 +717,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_create_reply_draft folds long References headers", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -766,8 +766,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_create_reply_draft drops display-name fragments from unquoted commas", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -818,8 +818,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_create_draft encodes non-ASCII subjects", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -850,8 +850,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_create_draft neutralizes CRLF header injection", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -881,8 +881,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_create_draft attaches files downloaded from https URLs", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -924,8 +924,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_create_draft rejects non-https, private, and redirect-downgraded attachment urls", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const draftArgs = (attachment: Record<string, unknown>) => ({
       to: ["sam@acme.test"],
@@ -976,8 +976,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_create_draft enforces the attachment size cap on url downloads", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const draftArgs = {
       to: ["sam@acme.test"],
@@ -1011,8 +1011,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("gmail_create_draft rejects oversized and symlink-escaping path attachments", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     const workspaceRoot = join(dirname(config.configPath ?? ""), "workspace");
@@ -1036,8 +1036,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("calendar_create_event rejects accounts without the calendar.events scope", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -1052,8 +1052,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("calendar_create_event creates events when the scope is granted", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -1083,8 +1083,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("chat actions reject accounts without Google Chat scopes", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -1102,8 +1102,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("chat_send_message posts to the chat space when the scope is granted", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {
@@ -1138,8 +1138,8 @@ describe("Google Workspace extension", () => {
   });
 
   test("can update the active account", async () => {
-    process.env.OMNIRUSH_DEV_MODE = "1";
-    process.env.OMNIRUSH_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
+    process.env.MARS_DEV_MODE = "1";
+    process.env.MARS_GOOGLE_WORKSPACE_ALLOW_PLAINTEXT_VAULT = "1";
     process.env.GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET = "secret";
     const config = createTestConfig();
     await writePlaintextVault(config, {

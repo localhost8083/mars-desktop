@@ -63,7 +63,7 @@ YAML
 helm template omnirush-ee "$chart_dir" -f "$disabled_values" > "$disabled_rendered"
 cmp -s "$default_rendered" "$disabled_rendered"
 assert_not_contains "$default_rendered" 'name: NODE_EXTRA_CA_CERTS'
-assert_not_contains "$default_rendered" '/etc/omnirush/custom-ca'
+assert_not_contains "$default_rendered" '/etc/mars/custom-ca'
 assert_not_contains "$default_rendered" 'name: custom-ca'
 
 secret_values="$tmp_dir/secret-values.yaml"
@@ -71,19 +71,19 @@ secret_rendered="$tmp_dir/secret.yaml"
 cat > "$secret_values" <<'YAML'
 customCa:
   enabled: true
-  existingSecret: omnirush-ca-secret
+  existingSecret: mars-ca-secret
   key: corp-root.pem
 YAML
 helm template omnirush-ee "$chart_dir" -f "$secret_values" > "$secret_rendered"
 assert_count "$secret_rendered" 'name: NODE_EXTRA_CA_CERTS' 4
-assert_count "$secret_rendered" 'value: "/etc/omnirush/custom-ca/ca-bundle.pem"' 5
+assert_count "$secret_rendered" 'value: "/etc/mars/custom-ca/ca-bundle.pem"' 5
 assert_count "$secret_rendered" 'name: custom-ca' 8
-assert_count "$secret_rendered" 'secretName: "omnirush-ca-secret"' 4
+assert_count "$secret_rendered" 'secretName: "mars-ca-secret"' 4
 assert_count "$secret_rendered" 'key: "corp-root.pem"' 4
 assert_count "$secret_rendered" 'path: ca-bundle.pem' 4
-assert_count "$secret_rendered" 'mountPath: "/etc/omnirush/custom-ca"' 4
+assert_count "$secret_rendered" 'mountPath: "/etc/mars/custom-ca"' 4
 assert_not_contains "$secret_rendered" 'subPath:'
-assert_not_contains "$secret_rendered" 'name: "omnirush-ca-config"'
+assert_not_contains "$secret_rendered" 'name: "mars-ca-config"'
 assert_not_contains "$secret_rendered" 'name: omnirush-ee-inference'
 
 configmap_values="$tmp_dir/configmap-values.yaml"
@@ -93,7 +93,7 @@ inference:
   enabled: true
 customCa:
   enabled: true
-  existingConfigMap: omnirush-ca-config
+  existingConfigMap: mars-ca-config
   key: ca.crt
 YAML
 helm template omnirush-ee "$chart_dir" -f "$configmap_values" > "$configmap_rendered"
@@ -102,21 +102,21 @@ assert_contains "$configmap_rendered" 'name: omnirush-ee-den-web'
 assert_contains "$configmap_rendered" 'name: omnirush-ee-inference'
 assert_contains "$configmap_rendered" 'name: omnirush-ee-migrate'
 assert_count "$configmap_rendered" 'name: NODE_EXTRA_CA_CERTS' 5
-assert_count "$configmap_rendered" 'value: "/etc/omnirush/custom-ca/ca-bundle.pem"' 6
+assert_count "$configmap_rendered" 'value: "/etc/mars/custom-ca/ca-bundle.pem"' 6
 assert_count "$configmap_rendered" 'name: custom-ca' 10
-assert_count "$configmap_rendered" 'name: "omnirush-ca-config"' 5
+assert_count "$configmap_rendered" 'name: "mars-ca-config"' 5
 assert_count "$configmap_rendered" 'key: "ca.crt"' 5
 assert_count "$configmap_rendered" 'path: ca-bundle.pem' 5
-assert_count "$configmap_rendered" 'mountPath: "/etc/omnirush/custom-ca"' 5
+assert_count "$configmap_rendered" 'mountPath: "/etc/mars/custom-ca"' 5
 assert_not_contains "$configmap_rendered" 'subPath:'
-assert_not_contains "$configmap_rendered" 'secretName: "omnirush-ca-secret"'
+assert_not_contains "$configmap_rendered" 'secretName: "mars-ca-secret"'
 
 installer_values="$tmp_dir/installer-values.yaml"
 installer_rendered="$tmp_dir/installer.yaml"
 cat > "$installer_values" <<'YAML'
 customCa:
   enabled: true
-  existingSecret: omnirush-ca-secret
+  existingSecret: mars-ca-secret
 installerArtifacts:
   enabled: true
   existingClaim: installer-artifacts-pvc
@@ -124,7 +124,7 @@ YAML
 helm template omnirush-ee "$chart_dir" -f "$installer_values" > "$installer_rendered"
 assert_contains "$installer_rendered" 'name: installer-artifacts'
 assert_contains "$installer_rendered" 'claimName: "installer-artifacts-pvc"'
-assert_contains "$installer_rendered" 'name: OMNIRUSH_INSTALLER_ARTIFACTS_DIR'
+assert_contains "$installer_rendered" 'name: MARS_INSTALLER_ARTIFACTS_DIR'
 assert_contains "$installer_rendered" 'name: custom-ca'
 assert_contains "$installer_rendered" 'name: NODE_EXTRA_CA_CERTS'
 
@@ -139,8 +139,8 @@ multiple_sources_values="$tmp_dir/multiple-sources-values.yaml"
 cat > "$multiple_sources_values" <<'YAML'
 customCa:
   enabled: true
-  existingSecret: omnirush-ca-secret
-  existingConfigMap: omnirush-ca-config
+  existingSecret: mars-ca-secret
+  existingConfigMap: mars-ca-config
 YAML
 assert_failure "$multiple_sources_values" 'customCa.existingSecret and customCa.existingConfigMap are mutually exclusive when customCa.enabled=true'
 
@@ -148,7 +148,7 @@ empty_key_values="$tmp_dir/empty-key-values.yaml"
 cat > "$empty_key_values" <<'YAML'
 customCa:
   enabled: true
-  existingSecret: omnirush-ca-secret
+  existingSecret: mars-ca-secret
   key: ""
 YAML
 assert_failure "$empty_key_values" 'customCa.key is required when customCa.enabled=true'
@@ -157,7 +157,7 @@ den_api_conflict_values="$tmp_dir/den-api-conflict-values.yaml"
 cat > "$den_api_conflict_values" <<'YAML'
 customCa:
   enabled: true
-  existingSecret: omnirush-ca-secret
+  existingSecret: mars-ca-secret
 denApi:
   env:
     NODE_EXTRA_CA_CERTS: /already/set.pem
@@ -168,7 +168,7 @@ den_web_conflict_values="$tmp_dir/den-web-conflict-values.yaml"
 cat > "$den_web_conflict_values" <<'YAML'
 customCa:
   enabled: true
-  existingSecret: omnirush-ca-secret
+  existingSecret: mars-ca-secret
 denWeb:
   env:
     NODE_EXTRA_CA_CERTS: /already/set.pem
@@ -179,7 +179,7 @@ inference_conflict_values="$tmp_dir/inference-conflict-values.yaml"
 cat > "$inference_conflict_values" <<'YAML'
 customCa:
   enabled: true
-  existingSecret: omnirush-ca-secret
+  existingSecret: mars-ca-secret
 inference:
   env:
     NODE_EXTRA_CA_CERTS: /already/set.pem

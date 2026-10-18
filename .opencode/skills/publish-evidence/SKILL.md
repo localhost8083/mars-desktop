@@ -1,6 +1,6 @@
 ---
 name: publish-evidence
-description: Publish test evidence, publish all test runs, update PR verification, audit red evidence, prove a PR, or declare a PR verdict. Use after @omnirush/testkit runs.
+description: Publish test evidence, publish all test runs, update PR verification, audit red evidence, prove a PR, or declare a PR verdict. Use after @mars/testkit runs.
 ---
 
 # Skill: Publish Evidence
@@ -50,7 +50,7 @@ judges pending visual claims. If visual judging is needed, use the existing
 `pnpm --dir evals evidence:judge -- --test-run <dir|name>` command explicitly.
 Pending judgments remain visible and make the evidence `Incomplete`.
 
-Set `OMNIRUSH_REVIEW_URL` and `BLOB_READ_WRITE_TOKEN` to publish to the private
+Set `MARS_REVIEW_URL` and `BLOB_READ_WRITE_TOKEN` to publish to the private
 review app. Setup is documented in `apps/review/README.md`. Upload errors must
 be reported as publication failures, independently of the test verdict; report
 publication is not a required CI check or a release dependency.

@@ -1,9 +1,9 @@
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { expect } from "vitest";
 import { bestPracticesDesktop } from "../worlds/best-practices-desktop.ts";
 
 const test = spec.world(bestPracticesDesktop, {
-  needs: { commands: ["bun"], placement: "local", env: ["OMNIRUSH_OPENCODE_BIN", "OMNIRUSH_EVAL_ELECTRON_RESOURCES_PREPARED"] },
+  needs: { commands: ["bun"], placement: "local", env: ["MARS_OPENCODE_BIN", "MARS_EVAL_ELECTRON_RESOURCES_PREPARED"] },
   timeout: 240_000,
 });
 

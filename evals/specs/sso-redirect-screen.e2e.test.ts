@@ -1,8 +1,8 @@
 import { expect } from "vitest";
-import { browserScript, server, test } from "@omnirush/testkit";
-import { addInitScript, setViewport } from "@omnirush/cdp";
-import { chrome } from "@omnirush/hosts";
-import { clickText, evalIn, waitFor } from "@omnirush/behaviors";
+import { browserScript, server, test } from "@mars/testkit";
+import { addInitScript, setViewport } from "@mars/cdp";
+import { chrome } from "@mars/hosts";
+import { clickText, evalIn, waitFor } from "@mars/behaviors";
 
 declare global {
   interface Window {
@@ -90,7 +90,7 @@ test("SSO handoff keeps the shared status screen and supports manual navigation 
   const context = {
     callbackURL: `${origin}/join-org?invite=synthetic-invite&desktopAuth=1`,
     errorCallbackURL: `${origin}/?error=sso&webAuth=1`,
-    loginHint: "person+hint@omnirush.test",
+    loginHint: "person+hint@mars.test",
   };
   await navigate(`/sso/synthetic-team?${new URLSearchParams(context)}`);
   await pending();
@@ -117,9 +117,9 @@ test("SSO handoff keeps the shared status screen and supports manual navigation 
     await reply(0, failure.status, failure.body);
     await expectError(failure.message);
   }
-  await navigate("/sso/synthetic-team?desktopAuth=1&desktopScheme=omnirush&webAuth=1&webAuthReturn=%2Fweb&invite=token&intent=models&mode=sign-in&unrelated=drop");
+  await navigate("/sso/synthetic-team?desktopAuth=1&desktopScheme=mars&webAuth=1&webAuthReturn=%2Fweb&invite=token&intent=models&mode=sign-in&unrelated=drop");
   await pending();
-  expect(await requestBody(0)).toEqual({ organizationSlug: "synthetic-team", callbackURL: `${origin}/?mode=sign-in&desktopAuth=1&desktopScheme=omnirush&webAuth=1&webAuthReturn=%2Fweb&invite=token&intent=models` });
+  expect(await requestBody(0)).toEqual({ organizationSlug: "synthetic-team", callbackURL: `${origin}/?mode=sign-in&desktopAuth=1&desktopScheme=mars&webAuth=1&webAuthReturn=%2Fweb&invite=token&intent=models` });
   await evalIn(browser, () => window.ssoRequests[0].fail());
   await expectError("Network unavailable");
   evidence.recordAssertionEvidence("Failure handling stays intact", "Missing/non-string redirect URLs, non-JSON error responses and network failures expose retry but no identity-provider link or navigation; the default callback retains supported handoff parameters only.", true);
@@ -139,7 +139,7 @@ test("SSO handoff keeps the shared status screen and supports manual navigation 
     await navigate("/sso/synthetic-team");
     await pending();
     expect(await frame()).toEqual(sharedFrame);
-    await waitFor(browser, () => Boolean(document.querySelector<HTMLImageElement>('main img[src="/omnirush-mark.svg"]')?.naturalWidth));
+    await waitFor(browser, () => Boolean(document.querySelector<HTMLImageElement>('main img[src="/mars-mark.svg"]')?.naturalWidth));
     expect(await evalIn(browser, () => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     expect(await evalIn(browser, () => (document.querySelector('[data-testid="setup-frame"]') === null))).toBe(true);
   }

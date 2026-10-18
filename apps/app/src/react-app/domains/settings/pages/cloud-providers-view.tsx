@@ -71,7 +71,7 @@ export type CloudProvidersViewProps = {
   importedCloudProviders: Record<string, CloudImportedProvider>;
   importsUnavailable: boolean;
   lastSyncError: Record<string, CloudProviderSyncError>;
-  omnirushServerAvailable: boolean;
+  marsServerAvailable: boolean;
   onOpenAccount: () => void;
   refreshCloudOrgProviders: (options?: { force?: boolean }) => Promise<DenOrgLlmProvider[]>;
   runCloudProviderSync: (reason: "manual") => Promise<unknown>;
@@ -87,7 +87,7 @@ export function CloudProvidersView({
   importedCloudProviders,
   importsUnavailable,
   lastSyncError,
-  omnirushServerAvailable,
+  marsServerAvailable,
   onOpenAccount,
   refreshCloudOrgProviders,
   runCloudProviderSync,
@@ -119,7 +119,7 @@ export function CloudProvidersView({
         allowed,
         importsUnavailable,
         needsCredential: serverSync === null && !provider.hasApiKey && env.length > 0,
-        needsServer: serverSync === null && provider.hasApiKey && env.length > 1 && !omnirushServerAvailable,
+        needsServer: serverSync === null && provider.hasApiKey && env.length > 1 && !marsServerAvailable,
         syncError,
         skippedByServer: Boolean(serverSync?.skippedProviders[provider.id]),
         reloadPending: serverSync?.reloadPending === true,
@@ -155,7 +155,7 @@ export function CloudProvidersView({
     importedCloudProviders,
     importsUnavailable,
     lastSyncError,
-    omnirushServerAvailable,
+    marsServerAvailable,
     serverSync,
   ]);
 

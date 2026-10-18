@@ -73,7 +73,7 @@ function SandboxChip(props: { client: LinuxSandboxClient; workspaceId: string; o
             <Box className="size-4" aria-hidden />
             <span className="whitespace-nowrap">Use sandbox</span>
           </TooltipTrigger>
-          <TooltipContent>Your omnirush.ai server recommends running this project's commands in a Linux sandbox. Click to turn it on.</TooltipContent>
+          <TooltipContent>Your marsai.click server recommends running this project's commands in a Linux sandbox. Click to turn it on.</TooltipContent>
         </Tooltip>
         <button type="button" aria-label="Not now" className="mr-1 flex size-6 items-center justify-center rounded text-gray-9 hover:bg-gray-3 hover:text-gray-12" onClick={() => setOfferDismissed(true)}>
           <X className="size-3.5" aria-hidden />

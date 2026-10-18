@@ -2,7 +2,7 @@ import { readdir, readFile, writeFile, mkdir, rm } from "node:fs/promises";
 import type { Dirent } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { homedir } from "node:os";
-import { globalOpencodeConfigDir } from "@omnirush/paths";
+import { globalOpencodeConfigDir } from "@mars/paths";
 import type { SkillItem } from "./types.js";
 import { parseFrontmatter, buildFrontmatter } from "./frontmatter.js";
 import { exists } from "./utils.js";
@@ -28,7 +28,7 @@ function globalSkillConfigDir(): string {
   return globalOpencodeConfigDir({ env: process.env });
 }
 
-/** Home directory with the same env precedence @omnirush/paths uses (HOME / USERPROFILE first). */
+/** Home directory with the same env precedence @mars/paths uses (HOME / USERPROFILE first). */
 function resolveHomeDir(): string {
   const fromEnv = process.platform === "win32"
     ? process.env.USERPROFILE?.trim() || process.env.HOME?.trim()
@@ -107,7 +107,7 @@ async function parseSkillEntry(
   try {
     content = await readFile(skillPath, "utf8");
   } catch (error) {
-    console.warn("[omnirush:skills] Skipping unreadable skill file", {
+    console.warn("[mars:skills] Skipping unreadable skill file", {
       path: skillPath,
       entryName,
       scope,
@@ -129,7 +129,7 @@ async function parseSkillEntry(
     } catch {
       return null;
     }
-    console.warn("[omnirush:skills] Found invalid skill frontmatter", {
+    console.warn("[mars:skills] Found invalid skill frontmatter", {
       path: skillPath,
       entryName,
       scope,

@@ -10,7 +10,7 @@ const scanRoots = [
   "apps/desktop/electron",
   "apps/server/src",
   "apps/app/src",
-  "packages/omnirush-bootstrap/bin",
+  "packages/mars-bootstrap/bin",
 ];
 
 const requiredFields = ["host", "kind", "components", "purpose", "requirement", "blockedEffect", "override"];
@@ -62,7 +62,7 @@ function ignoredHostReason(host) {
   }
 
   // Standards/schema identifiers appear in manifests and XML/JSON metadata but
-  // are not fetched by OmniRush.ai at runtime.
+  // are not fetched by MarsAI at runtime.
   if (
     value === "w3.org" ||
     value.endsWith(".w3.org") ||
@@ -77,7 +77,7 @@ function ignoredHostReason(host) {
   }
 
   // Placeholder used in customer-facing self-hosted examples.
-  if (value === "omnirush.yourcompany.com") {
+  if (value === "mars.yourcompany.com") {
     return "customer placeholder hostname";
   }
 

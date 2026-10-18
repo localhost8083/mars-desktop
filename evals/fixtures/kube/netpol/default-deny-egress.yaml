@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: omnirush-den-default-deny-egress
+  name: mars-den-default-deny-egress
 spec:
   podSelector:
     matchLabels:

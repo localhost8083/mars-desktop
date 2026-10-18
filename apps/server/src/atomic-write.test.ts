@@ -12,13 +12,13 @@ import {
   writeFileAtomic,
   type AtomicWriteFs,
 } from "./atomic-write.js";
-import { readSubagentModelSetting, writeSubagentModelSetting } from "./omnirush-subagent-model.js";
+import { readSubagentModelSetting, writeSubagentModelSetting } from "./mars-subagent-model.js";
 import type { ServerConfig } from "./types.js";
 
 let root: string;
 
 beforeEach(async () => {
-  root = await mkdtemp(join(tmpdir(), "omnirush-atomic-write-"));
+  root = await mkdtemp(join(tmpdir(), "mars-atomic-write-"));
 });
 
 afterEach(async () => {
@@ -206,16 +206,16 @@ describe("the sub-agent picker's setting file", () => {
   let config: ServerConfig;
 
   beforeEach(async () => {
-    previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
-    process.env.OMNIRUSH_RUNTIME_DB = join(root, "runtime", "runtime.sqlite");
+    previousRuntimeDb = process.env.MARS_RUNTIME_DB;
+    process.env.MARS_RUNTIME_DB = join(root, "runtime", "runtime.sqlite");
     await mkdir(join(root, "runtime"), { recursive: true });
     config = { configPath: join(root, "server.json") } as unknown as ServerConfig;
   });
 
   afterEach(() => {
     Object.assign(atomicWriteFs, original);
-    if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-    else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
+    if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+    else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
   });
 
   test("survives Windows refusing the rename a few times", async () => {

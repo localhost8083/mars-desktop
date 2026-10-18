@@ -2,9 +2,9 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import { createServer, type ServerResponse } from "node:http";
 import { join, relative } from "node:path";
-import type { Seed } from "@omnirush/env";
+import type { Seed } from "@mars/env";
 import {
-  bootManagedOmniRushServer,
+  bootManagedMarsServer,
   bootServer,
   close,
   isRecord,
@@ -14,16 +14,16 @@ import {
   sendJson,
   sendStream,
   stopChild,
-  type ManagedOmniRushServer,
-} from "./omnirush-server-cli.ts";
+  type ManagedMarsServer,
+} from "./mars-server-cli.ts";
 
-export const BEST_PRACTICES_HEADING = "OmniRush Best practices";
+export const BEST_PRACTICES_HEADING = "Mars Best practices";
 export const PRIVATE_CANARY = "PRIVATE_CANARY_BEST_PRACTICES_7f62";
 export const USER_SKILL = "journey-user-guide";
 export const MOCK_REPLY = "BEST_PRACTICES_MOCK_OK";
 export const BUNDLED_SKILLS = [
-  "omnirush-setup", "omnirush-feature", "omnirush-debug", "omnirush-test",
-  "omnirush-refactor", "omnirush-performance", "omnirush-build", "omnirush-review", "omnirush-handoff",
+  "mars-setup", "mars-feature", "mars-debug", "mars-test",
+  "mars-refactor", "mars-performance", "mars-build", "mars-review", "mars-handoff",
 ];
 
 export interface ProviderRequest {
@@ -63,7 +63,7 @@ export async function bestPracticesAttached(seed: Seed) {
     ...inherited, HOME: home,
     XDG_CONFIG_HOME: join(home, ".config"), XDG_DATA_HOME: join(home, ".local", "share"),
     XDG_CACHE_HOME: join(home, ".cache"), XDG_STATE_HOME: join(home, ".local", "state"),
-    OMNIRUSH_DEV_MODE: "1", OMNIRUSH_SESSION_UPLOAD_OPTIONAL: "1",
+    MARS_DEV_MODE: "1", MARS_SESSION_UPLOAD_OPTIONAL: "1",
   }, token, workspace, () => undefined, ["--opencode-base-url", attachedUrl]);
   const dispose = async () => {
     await stopChild(launched.child);
@@ -173,12 +173,12 @@ export async function bestPractices(seed: Seed) {
   }, null, 2));
 
   const token = "best-practices-fixture-client";
-  let managed: ManagedOmniRushServer | undefined;
+  let managed: ManagedMarsServer | undefined;
   let output = "";
   const boot = async () => {
-    managed = await bootManagedOmniRushServer({
+    managed = await bootManagedMarsServer({
       scratch, workspace, token, sink: (chunk) => { output += chunk; }, isolatedEnv: true,
-      env: { OMNIRUSH_DEV_MODE: "1", OMNIRUSH_SESSION_UPLOAD_OPTIONAL: "1" },
+      env: { MARS_DEV_MODE: "1", MARS_SESSION_UPLOAD_OPTIONAL: "1" },
     });
   };
   const server = () => {
@@ -213,7 +213,7 @@ export async function bestPractices(seed: Seed) {
         const session = await server().engine("POST", "/session", { title: "Best practices witness" });
         if (!isRecord(session) || typeof session.id !== "string") throw new Error("Engine did not create a session.");
         return server().engine("POST", `/session/${encodeURIComponent(session.id)}/message`, {
-          agent: "omnirush", model: { providerID: "best-practices-mock", modelID: "mock" },
+          agent: "mars", model: { providerID: "best-practices-mock", modelID: "mock" },
           parts: [{ type: "text", text }],
         });
       },

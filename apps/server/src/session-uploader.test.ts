@@ -46,11 +46,11 @@ import {
 } from "./session-uploader.js";
 import { SESSION_UPLOAD_BUDGET, sessionUploadTimeoutMs, type SessionUploadBudget } from "./session-upload-budget.js";
 
-/** Schema 1/2 trace uploads carry their events only in files[0] (__omnirush__/trace.json): read them back as `trace`. */
+/** Schema 1/2 trace uploads carry their events only in files[0] (__mars__/trace.json): read them back as `trace`. */
 function withTraceEvents<T>(envelope: T): T {
   const record = envelope as Record<string, unknown>;
   if (record.trace !== undefined || !Array.isArray(record.files)) return envelope;
-  const file = (record.files as Array<{ path?: string; content?: string }>).find((item) => item.path === "__omnirush__/trace.json");
+  const file = (record.files as Array<{ path?: string; content?: string }>).find((item) => item.path === "__mars__/trace.json");
   if (!file?.content) return envelope;
   return { ...record, trace: (JSON.parse(file.content) as { events?: unknown[] }).events ?? [] } as T;
 }
@@ -82,7 +82,7 @@ describe("session uploader privacy", () => {
     }
     // A template's values are scrubbed as its .env's would be, under both rule sets.
     const filled = "PORT=3000\nAPI_TOKEN=abcdefgh123\nDATABASE_PASSWORD=Summer2024!\nJWT_SECRET=supersecretjwt\nAPI_KEY=<your-api-key>\n";
-    const policy = Symbol.for("omnirush.redactionPolicy");
+    const policy = Symbol.for("mars.redactionPolicy");
     const holder = globalThis as unknown as Record<symbol, unknown>;
     const before = holder[policy];
     try {
@@ -107,7 +107,7 @@ describe("session uploader privacy", () => {
     for (const path of ["src/env.ts", "prod.env.example", "environment.yml", "src/load.env.ts", "envs/readme.md"]) {
       expect(isUploadFileDenied(path)).toBe(false);
     }
-    const policy = Symbol.for("omnirush.redactionPolicy");
+    const policy = Symbol.for("mars.redactionPolicy");
     const holder = globalThis as unknown as Record<symbol, unknown>;
     const before = holder[policy];
     try {
@@ -144,7 +144,7 @@ describe("session uploader privacy", () => {
   });
 
   test("uploads correlated start, trace, and end artifacts without ignored or binary files", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-"));
     roots.push(root);
     await execFileAsync("git", ["init", "-q", root]);
     await writeFile(join(root, ".gitignore"), "ignored.txt\n");
@@ -186,7 +186,7 @@ describe("session uploader privacy", () => {
   });
 
   test("does not drop trace events recorded while an upload is in flight", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-race-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-race-"));
     roots.push(root);
     let release!: () => void;
     const blocked = new Promise<void>((resolve) => { release = resolve; });
@@ -224,7 +224,7 @@ describe("session uploader privacy", () => {
   });
 
   test("keeps oversized traces valid JSON and marks dropped events", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-truncate-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-truncate-"));
     roots.push(root);
     const uploads: Array<Record<string, unknown>> = [];
     const sessionUploader = new SessionUploader({
@@ -251,8 +251,8 @@ describe("session uploader privacy", () => {
   });
 
   test("every upload carries the Idempotency-Key of its session, segment, sequence and type, and its sequence is taken first", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-keys-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-keys-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-keys-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-keys-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "hello\n");
     const sent: Array<{ key: string | undefined; envelope: Record<string, unknown> }> = [];
@@ -282,8 +282,8 @@ describe("session uploader privacy", () => {
   });
 
   test("a chat the local ledger does not know continues after the server's segment and sequence", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-position-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-position-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-position-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-position-state-"));
     roots.push(root, stateDir);
     const envelopes: Array<Record<string, unknown>> = [];
     const asked: string[] = [];
@@ -311,8 +311,8 @@ describe("session uploader privacy", () => {
   });
 
   test("a new chat the server has never seen starts at segment 1; the lookup is skipped once the ledger knows it", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-newchat-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-newchat-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-newchat-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-newchat-state-"));
     roots.push(root, stateDir);
     const envelopes: Array<Record<string, unknown>> = [];
     let asked = 0;
@@ -340,8 +340,8 @@ describe("session uploader privacy", () => {
   });
 
   test("an Idempotency-Key the server holds with other bytes moves the chat past the server's numbering and sends the trace again once", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-reused-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-reused-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-reused-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-reused-state-"));
     roots.push(root, stateDir);
     const accepted: Array<Record<string, unknown>> = [];
     let lookups = 0;
@@ -386,8 +386,8 @@ describe("session uploader privacy", () => {
   });
 
   test("the ledger keeps far more than 512 chats, so an older one resumed continues its numbering; only the newest keep sub-agent detail", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-ledger-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-ledger-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-ledger-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-ledger-state-"));
     roots.push(root, stateDir);
     const sessions: Record<string, unknown> = {};
     for (let index = 0; index < 1_200; index += 1) {
@@ -398,7 +398,7 @@ describe("session uploader privacy", () => {
         childSessionIds: ["child-a"],
       };
     }
-    await writeFile(join(stateDir, "omnirush-upload-sessions.json"), JSON.stringify({ version: 1, sessions }));
+    await writeFile(join(stateDir, "mars-upload-sessions.json"), JSON.stringify({ version: 1, sessions }));
     const envelopes: Array<Record<string, unknown>> = [];
     const sessionUploader = new SessionUploader({
       stateDir,
@@ -412,14 +412,14 @@ describe("session uploader privacy", () => {
     sessionUploader.startSession("session-ledger-00000", "workspace-ledger", root);
     await sessionUploader.stop();
     expect(envelopes[0]).toMatchObject({ snapshot_type: "start", session_segment: 3, sequence: 41, session_resumed: true });
-    const ledger = JSON.parse(await readFile(join(stateDir, "omnirush-upload-sessions.json"), "utf8")) as { sessions: Record<string, { childSessionIds?: string[] }> };
+    const ledger = JSON.parse(await readFile(join(stateDir, "mars-upload-sessions.json"), "utf8")) as { sessions: Record<string, { childSessionIds?: string[] }> };
     expect(Object.keys(ledger.sessions)).toHaveLength(1_200);
     expect(Object.values(ledger.sessions).filter((record) => record.childSessionIds)).toHaveLength(512);
   });
 
   test("a crash mid-turn loses no trace event: the next start uploads the journal in its own segment, marked recovered, and settles the open turn", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-journal-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-journal-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-journal-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-journal-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "hello\n");
     const envelopes: Array<Record<string, unknown>> = [];
@@ -437,7 +437,7 @@ describe("session uploader privacy", () => {
     await new Promise((resolve) => setTimeout(resolve, 600));
     // The process dies here: no stop(), nothing flushed.
     expect(envelopes.map((item) => item.snapshot_type)).toEqual(["start"]);
-    const journals = await readdir(join(stateDir, "omnirush-upload-journal"));
+    const journals = await readdir(join(stateDir, "mars-upload-journal"));
     expect(journals).toHaveLength(1);
 
     const recoveredTurns: Array<{ sessionId: string; workspaceId: string; root: string }> = [];
@@ -453,7 +453,7 @@ describe("session uploader privacy", () => {
     expect(types.at(-1)).toBe("session.end_recovered");
     expect(envelopes[2]).toMatchObject({ snapshot_type: "end", session_segment: 1, sequence: 3, trigger: "session_end" });
     expect(recoveredTurns).toEqual([{ sessionId, workspaceId: "workspace-journal", root }]);
-    expect(await readdir(join(stateDir, "omnirush-upload-journal"))).toEqual([]);
+    expect(await readdir(join(stateDir, "mars-upload-journal"))).toEqual([]);
     // The chat's next segment starts after the recovered uploads.
     next.startSession(sessionId, "workspace-journal", root);
     await next.stop();
@@ -461,8 +461,8 @@ describe("session uploader privacy", () => {
   }, 20_000);
 
   test("a crash after a turn settled, while its trace is on its way, still sends the turn's end and every event at the next start", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-turnend-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-turnend-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-turnend-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-turnend-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "hello\n");
     const envelopes: Array<Record<string, unknown>> = [];
@@ -532,8 +532,8 @@ describe("session uploader privacy", () => {
 
   test("an upload on its way when the app died leaves no gap: the journal that holds its events goes out under its sequence", async () => {
     for (const serverKnows of [true, false]) {
-      const root = await mkdtemp(join(tmpdir(), "omnirush-upload-unsent-"));
-      const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-unsent-state-"));
+      const root = await mkdtemp(join(tmpdir(), "mars-upload-unsent-"));
+      const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-unsent-state-"));
       roots.push(root, stateDir);
       await writeFile(join(root, "app.txt"), "hello\n");
       const stored: Array<Record<string, unknown>> = [];
@@ -599,8 +599,8 @@ describe("session uploader privacy", () => {
 
   test("a recovered journal is a recovered segment when the server takes one, so a run killed before its start snapshot reads as such", async () => {
     for (const recoveredSegments of [true, false]) {
-      const root = await mkdtemp(join(tmpdir(), "omnirush-upload-recseg-"));
-      const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-recseg-state-"));
+      const root = await mkdtemp(join(tmpdir(), "mars-upload-recseg-"));
+      const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-recseg-state-"));
       roots.push(root, stateDir);
       await writeFile(join(root, "app.txt"), "hello\n");
       const envelopes: Array<Record<string, unknown>> = [];
@@ -641,8 +641,8 @@ describe("session uploader privacy", () => {
   }, 30_000);
 
   test("an app that went away after a finished turn: the next launch sends the chat's end (marked recovered), once", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-endrec-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-endrec-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-endrec-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-endrec-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "hello\n");
     const envelopes: Array<Record<string, unknown>> = [];
@@ -668,8 +668,8 @@ describe("session uploader privacy", () => {
     expect(end).toMatchObject({ session_id: sessionId, trigger: "session_end" });
     const marked = envelopes.filter((item) => item.snapshot_type === "trace").flatMap((item) => (item.trace as Array<{ type: string }>) ?? []).map((event) => event.type);
     expect(marked).toContain("session.end_recovered");
-    for (let waited = 0; waited < 3_000 && (await readdir(join(stateDir, "omnirush-upload-journal"))).length > 0; waited += 50) await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(await readdir(join(stateDir, "omnirush-upload-journal"))).toEqual([]);
+    for (let waited = 0; waited < 3_000 && (await readdir(join(stateDir, "mars-upload-journal"))).length > 0; waited += 50) await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(await readdir(join(stateDir, "mars-upload-journal"))).toEqual([]);
     await next.stop();
     // A third launch finds nothing to send.
     const count = envelopes.length;
@@ -680,8 +680,8 @@ describe("session uploader privacy", () => {
   }, 20_000);
 
   test("a chat left open after a finished turn sends its end once quiet; its next prompt reopens it and its close sends the next end", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-idleend-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-idleend-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-idleend-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-idleend-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "hello\n");
     const envelopes: Array<Record<string, unknown>> = [];
@@ -689,7 +689,7 @@ describe("session uploader privacy", () => {
       envelopes.push(withTraceEvents(JSON.parse(zstdDecompressSync(compressed).toString("utf8"))) as Record<string, unknown>);
       return Response.json({ ok: true }, { status: 201 });
     };
-    const ledger = async () => (JSON.parse(await readFile(join(stateDir, "omnirush-upload-sessions.json"), "utf8")) as { sessions: Record<string, { endedAt?: string; segment: number }> }).sessions;
+    const ledger = async () => (JSON.parse(await readFile(join(stateDir, "mars-upload-sessions.json"), "utf8")) as { sessions: Record<string, { endedAt?: string; segment: number }> }).sessions;
     const waitFor = async (check: () => boolean | Promise<boolean>) => {
       for (let waited = 0; waited < 5_000 && !(await check()); waited += 25) await new Promise((resolve) => setTimeout(resolve, 25));
     };
@@ -726,7 +726,7 @@ describe("session uploader privacy", () => {
   }, 20_000);
 
   test("a chat whose quiet end is its last state sends no second end at close; one with edits since does", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-idleend2-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-idleend2-"));
     roots.push(root);
     await writeFile(join(root, "app.txt"), "hello\n");
     const envelopes: Array<Record<string, unknown>> = [];
@@ -737,7 +737,7 @@ describe("session uploader privacy", () => {
     const uploader = new SessionUploader({ upload, fallbackScanMs: 60_000, idleEndMs: 200, changeDebounceMs: 10_000 });
     const quiet = "session-idleend-quiet";
     const edited = "session-idleend-edited";
-    const other = await mkdtemp(join(tmpdir(), "omnirush-upload-idleend3-"));
+    const other = await mkdtemp(join(tmpdir(), "mars-upload-idleend3-"));
     roots.push(other);
     await writeFile(join(other, "b.txt"), "b\n");
     uploader.startSession(quiet, "ws", root);
@@ -759,8 +759,8 @@ describe("session uploader privacy", () => {
   }, 20_000);
 
   test("a journal whose chat the ledger lost: the next launch sends its end, numbered after the server's copy", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-lostledger-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-lostledger-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-lostledger-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-lostledger-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "hello\n");
     const envelopes: Array<Record<string, unknown>> = [];
@@ -778,7 +778,7 @@ describe("session uploader privacy", () => {
     crashed.recordTrace(sessionId, "tool.call", { n: 2 });
     await new Promise((resolve) => setTimeout(resolve, 400));
     // Killed; and the ledger lost the chat.
-    await rm(join(stateDir, "omnirush-upload-sessions.json"), { force: true });
+    await rm(join(stateDir, "mars-upload-sessions.json"), { force: true });
     const top = Math.max(...envelopes.map((item) => item.sequence as number));
     const next = new SessionUploader({
       stateDir,
@@ -797,8 +797,8 @@ describe("session uploader privacy", () => {
   }, 20_000);
 
   test("a ledger record with no end and no journal (an older launch read it): the next launch sends the end the server lacks, once", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-ledgerend-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-ledgerend-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-ledgerend-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-ledgerend-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "hello\n");
     const envelopes: Array<Record<string, unknown>> = [];
@@ -818,7 +818,7 @@ describe("session uploader privacy", () => {
     }
     await new Promise((resolve) => setTimeout(resolve, 400));
     // Killed, then a launch of an older version read (and deleted) the journals.
-    await rm(join(stateDir, "omnirush-upload-journal"), { recursive: true, force: true });
+    await rm(join(stateDir, "mars-upload-journal"), { recursive: true, force: true });
     const asked: string[] = [];
     const make = () => new SessionUploader({
       stateDir,
@@ -851,8 +851,8 @@ describe("session uploader privacy", () => {
   }, 20_000);
 
   test("the base's outcome rides along (collector.project_archive, workspace.project_archive); two chats on one folder mark turn.overlap", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-gaps-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-gaps-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-gaps-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-gaps-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "hello\n");
     const envelopes: Array<Record<string, unknown>> = [];
@@ -884,8 +884,8 @@ describe("session uploader privacy", () => {
   }, 20_000);
 
   test("the journal holds only what is not yet handed to an upload, and is gone once the chat ends", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-journal2-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-journal2-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-journal2-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-journal2-state-"));
     roots.push(root, stateDir);
     const sessionUploader = new SessionUploader({
       stateDir,
@@ -900,7 +900,7 @@ describe("session uploader privacy", () => {
     sessionUploader.flushTrace(sessionId, { messages: [] });
     await sessionUploader.idle(sessionId);
     await new Promise((resolve) => setTimeout(resolve, 400));
-    const dir = join(stateDir, "omnirush-upload-journal");
+    const dir = join(stateDir, "mars-upload-journal");
     const [name] = await readdir(dir);
     const journal = parseJournal(await readFile(join(dir, name!), "utf8"));
     expect(journal?.meta).toMatchObject({ session_id: sessionId, turn_open: false, segment: 1 });
@@ -917,7 +917,7 @@ describe("session uploader privacy", () => {
   });
 
   test("a schema 2 trace upload carries its events in trace.json only; schema 3 in the top-level trace only", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-forms-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-forms-"));
     roots.push(root);
     for (const canonical of [false, true]) {
       const raw: Array<Record<string, unknown>> = [];
@@ -940,14 +940,14 @@ describe("session uploader privacy", () => {
         expect(files).toEqual([]);
       } else {
         expect("trace" in trace).toBe(false);
-        expect(files.map((file) => file.path)).toEqual(["__omnirush__/trace.json"]);
+        expect(files.map((file) => file.path)).toEqual(["__mars__/trace.json"]);
       }
     }
   });
 
   test("persists session segments and message checkpoints across a resume", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-resume-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-resume-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-state-"));
     roots.push(root, stateDir);
     const uploads: Array<Record<string, unknown>> = [];
     const makeUploader = () => new SessionUploader({
@@ -981,7 +981,7 @@ describe("session uploader privacy", () => {
   });
 
   test("captures changed files in a bounded journal before the next snapshot", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-changes-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-changes-"));
     roots.push(root);
     const uploads: Array<Record<string, unknown>> = [];
     const sessionUploader = new SessionUploader({
@@ -1003,14 +1003,14 @@ describe("session uploader privacy", () => {
 
     const change = uploads.find((item) => item.snapshot_type === "change");
     expect(change).toBeDefined();
-    const changeFile = (change?.files as Array<{ path: string; content: string }>).find((file) => file.path === "__omnirush__/changes.json");
+    const changeFile = (change?.files as Array<{ path: string; content: string }>).find((file) => file.path === "__mars__/changes.json");
     expect(changeFile).toBeDefined();
     expect(changeFile?.content).toContain('"path":"created.txt"');
     expect(changeFile?.content).not.toContain("jane@acme-mail.io");
   });
 
   test("records a privacy manifest and touched paths without uploading denied files", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-manifest-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-manifest-"));
     roots.push(root);
     await writeFile(join(root, "touched.ts"), "export const ok = true;");
     await writeFile(join(root, ".env.local"), "SECRET=do-not-upload");
@@ -1028,7 +1028,7 @@ describe("session uploader privacy", () => {
     sessionUploader.flushTrace(sessionId);
     await sessionUploader.stop();
     const start = uploads.find((item) => item.snapshot_type === "start");
-    const workspaceFile = (start?.files as Array<{ path: string; content: string }>).find((file) => file.path === "__omnirush__/workspace.json");
+    const workspaceFile = (start?.files as Array<{ path: string; content: string }>).find((file) => file.path === "__mars__/workspace.json");
     expect(workspaceFile?.content).toContain('"capture_policy":"consented_workspace_session"');
     expect(workspaceFile?.content).toContain('"touched_paths":["touched.ts"]');
     expect(JSON.stringify(uploads)).not.toContain("do-not-upload");
@@ -1036,7 +1036,7 @@ describe("session uploader privacy", () => {
 
   test("keeps paths outside the workspace root out of capture: parents, other Windows drives and UNC shares", async () => {
     // Windows: path.relative returns a path on another drive as it is, which a `../` check let through.
-    const windowsRoot = "C:\\Users\\dev\\omnirush.ai";
+    const windowsRoot = "C:\\Users\\dev\\marsai.click";
     for (const outside of [
       "D:\\data\\file.csv",
       "D:/data/file.csv",
@@ -1044,15 +1044,15 @@ describe("session uploader privacy", () => {
       "D:file.csv",
       "\\\\server\\share\\file.csv",
       "C:\\Users\\dev\\other\\file.csv",
-      "C:\\Users\\dev\\omnirush.ai-other\\file.csv",
+      "C:\\Users\\dev\\marsai.click-other\\file.csv",
       "..\\file.csv",
       "src\\..\\..\\file.csv",
       windowsRoot,
     ]) {
       expect([outside, workspaceRelativePath(windowsRoot, outside, win32)]).toEqual([outside, null]);
     }
-    expect(workspaceRelativePath(windowsRoot, "C:\\Users\\dev\\omnirush.ai\\src\\app.ts", win32)).toBe("src/app.ts");
-    expect(workspaceRelativePath(windowsRoot, "c:\\users\\dev\\omnirush.ai\\src\\app.ts", win32)).toBe("src/app.ts");
+    expect(workspaceRelativePath(windowsRoot, "C:\\Users\\dev\\marsai.click\\src\\app.ts", win32)).toBe("src/app.ts");
+    expect(workspaceRelativePath(windowsRoot, "c:\\users\\dev\\marsai.click\\src\\app.ts", win32)).toBe("src/app.ts");
     expect(workspaceRelativePath(windowsRoot, "src/app.ts", win32)).toBe("src/app.ts");
     // POSIX.
     for (const outside of ["/etc/hosts", "../ws-other/file.csv", "..", "/home/dev/ws"]) {
@@ -1062,7 +1062,7 @@ describe("session uploader privacy", () => {
     expect(workspaceRelativePath("/home/dev/ws", "src/app.ts", posix)).toBe("src/app.ts");
 
     // Through the session uploader: a tool naming a file outside the root reads nothing of it.
-    const base = await mkdtemp(join(tmpdir(), "omnirush-upload-outside-"));
+    const base = await mkdtemp(join(tmpdir(), "mars-upload-outside-"));
     roots.push(base);
     const root = join(base, "workspace");
     await mkdir(root);
@@ -1082,11 +1082,11 @@ describe("session uploader privacy", () => {
     expect(uploads.at(-1)?.touched_paths).toEqual(["inside.txt"]);
     const files = uploads.flatMap((envelope) => envelope.files);
     expect(files.some((file) => file.content.includes("OUTSIDE_FILE_MARKER"))).toBe(false);
-    expect(files.filter((file) => file.path === "__omnirush__/changes.json").map((file) => file.content).join()).not.toContain("outside.csv");
+    expect(files.filter((file) => file.path === "__mars__/changes.json").map((file) => file.content).join()).not.toContain("outside.csv");
   });
 
   test("reports every path the session touches inside the root to the project archive, denied names too, and none outside", async () => {
-    const base = await mkdtemp(join(tmpdir(), "omnirush-upload-touched-"));
+    const base = await mkdtemp(join(tmpdir(), "mars-upload-touched-"));
     roots.push(base);
     const root = join(base, "workspace");
     await mkdir(join(root, "docs"), { recursive: true });
@@ -1115,7 +1115,7 @@ describe("session uploader privacy", () => {
   });
 
   test("reports only what the session touches when its start snapshot was refused", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-touched-refused-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-touched-refused-"));
     roots.push(root);
     await mkdir(join(root, "private"));
     await writeFile(join(root, "private/ledger.csv"), "untouched\n");
@@ -1180,7 +1180,7 @@ async function git(root: string, ...args: string[]): Promise<string> {
 
 describe("session uploader envelope v2", () => {
   test("uploads a v2 envelope with trigger, environment, manifest, hashed files and privacy fields", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-v2-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-v2-"));
     roots.push(root);
     await writeFile(join(root, "app.ts"), "export const answer = 42;\n");
     await mkdir(join(root, "nested"));
@@ -1237,7 +1237,7 @@ describe("session uploader envelope v2", () => {
   });
 
   test("uses canonical trace schema 3, then retries the same batch as schema 2 on an explicit 422", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-trace-schema-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-trace-schema-"));
     roots.push(root);
     const attempts: Envelope[] = [];
     let capabilityCalls = 0;
@@ -1277,13 +1277,13 @@ describe("session uploader envelope v2", () => {
     const fallback = attempts[2]!;
     expect(rejected.files).toEqual([]);
     expect(rejected.trace?.map((event) => event.type)).toEqual(["client.launch", "engine.request"]);
-    expect(fallback.files.map((file) => file.path)).toEqual(["__omnirush__/trace.json"]);
+    expect(fallback.files.map((file) => file.path)).toEqual(["__mars__/trace.json"]);
     expect(fallback.trace?.map((event) => event.type)).toEqual(rejected.trace?.map((event) => event.type));
     expect(JSON.parse(fallback.files[0]!.content).events.map((event: { type: string }) => event.type)).toEqual(["client.launch", "engine.request"]);
   });
 
   test("summarises a git repository without shipping internals or remote credentials", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-git-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-git-"));
     roots.push(root);
     await git(root, "init", "-q");
     await git(root, "remote", "add", "origin", "https://oauth2:ghp_secrettoken123456@github.com/acme/widgets.git");
@@ -1349,7 +1349,7 @@ describe("session uploader envelope v2", () => {
   });
 
   test("caps the git diff and flags truncation", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-bigdiff-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-bigdiff-"));
     roots.push(root);
     await git(root, "init", "-q");
     await writeFile(join(root, "big.txt"), "seed\n");
@@ -1371,7 +1371,7 @@ describe("session uploader envelope v2", () => {
   });
 
   test("scopes the git block to a workspace nested inside a larger repository", async () => {
-    const repo = await mkdtemp(join(tmpdir(), "omnirush-upload-nested-"));
+    const repo = await mkdtemp(join(tmpdir(), "mars-upload-nested-"));
     roots.push(repo);
     await git(repo, "init", "-q");
     await mkdir(join(repo, "pkg-a"));
@@ -1429,7 +1429,7 @@ describe("session uploader envelope v2", () => {
   });
 
   test("clamps git metadata to the session uploader's field limits after redaction", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-limits-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-limits-"));
     roots.push(root);
     await git(root, "init", "-q");
     await git(root, "checkout", "-q", "-b", `feature/${Array.from({ length: 6 }, () => "x".repeat(100)).join("/")}`);
@@ -1455,7 +1455,7 @@ describe("session uploader envelope v2", () => {
   });
 
   test("a turn the user stopped carries outcome aborted on its collector.trigger and turn.completed events", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-aborted-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-aborted-"));
     roots.push(root);
     await writeFile(join(root, "a.txt"), "alpha\n");
     const { uploads, upload } = makeUploads();
@@ -1486,7 +1486,7 @@ describe("session uploader envelope v2", () => {
   });
 
   test("captures prompt and turn_completed snapshots only when the workspace changed", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-triggers-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-triggers-"));
     roots.push(root);
     await writeFile(join(root, "a.txt"), "alpha\n");
     await writeFile(join(root, "b.txt"), "beta\n");
@@ -1503,7 +1503,7 @@ describe("session uploader envelope v2", () => {
     await sessionUploader.idle(sessionId);
     expect(uploads.map((item) => [item.snapshot_type, item.trigger])).toEqual([["start", "session_start"], ["change", "turn_completed"]]);
     const change = uploads[1]!;
-    const changedPaths = change.files.map((file) => file.path).filter((path) => !path.startsWith("__omnirush__/"));
+    const changedPaths = change.files.map((file) => file.path).filter((path) => !path.startsWith("__mars__/"));
     expect(changedPaths).toEqual(["a.txt"]);
     expect(change.files.find((file) => file.path === "a.txt")?.sha256).toBe(sha256("alpha changed\n"));
     expect(change.manifest.map((entry) => entry.path).sort()).toEqual(["a.txt", "b.txt"]);
@@ -1525,14 +1525,14 @@ describe("session uploader envelope v2", () => {
       { trigger: "prompt", captured: false },
     ]);
     const end = uploads.find((item) => item.snapshot_type === "end")!;
-    expect(end.files.map((file) => file.path).filter((path) => !path.startsWith("__omnirush__/"))).toEqual([]);
+    expect(end.files.map((file) => file.path).filter((path) => !path.startsWith("__mars__/"))).toEqual([]);
   });
 });
 
 describe("session uploader durable retry", () => {
   test("spools failed uploads to disk with a failure ledger and delivers them once the gateway recovers", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-spool-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-spool-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-spool-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-spool-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "hello\n");
     const uploads: Envelope[] = [];
@@ -1556,8 +1556,8 @@ describe("session uploader durable retry", () => {
 
     expect(uploads).toHaveLength(0);
     expect(await sessionUploader.spoolStatus()).toMatchObject({ entries: 1 });
-    expect(warnings).toContain("OmniRush session upload artifact spooled for retry");
-    const spoolDir = join(stateDir, "omnirush-upload-spool");
+    expect(warnings).toContain("Mars session upload artifact spooled for retry");
+    const spoolDir = join(stateDir, "mars-upload-spool");
     const names = (await readdir(spoolDir)).sort();
     expect(names.some((name) => name.endsWith(".json"))).toBe(true);
     expect(names.some((name) => name.endsWith(".zst"))).toBe(true);
@@ -1565,7 +1565,7 @@ describe("session uploader durable retry", () => {
       for (const name of names) expect((await stat(join(spoolDir, name))).mode & 0o777).toBe(0o600);
       expect((await stat(spoolDir)).mode & 0o777).toBe(0o700);
     }
-    const ledger = JSON.parse(await readFile(join(stateDir, "omnirush-upload-sessions.json"), "utf8")) as { sessions: Record<string, Record<string, unknown>> };
+    const ledger = JSON.parse(await readFile(join(stateDir, "mars-upload-sessions.json"), "utf8")) as { sessions: Record<string, Record<string, unknown>> };
     expect(ledger.sessions[sessionId]).toMatchObject({ failureCount: 1, nextSequence: 1 });
     expect(typeof ledger.sessions[sessionId]?.lastFailureAt).toBe("string");
     expect(await sessionUploader.sessionDeliveryStatus(sessionId)).toMatchObject({ failureCount: 1, lastSuccessAt: null });
@@ -1577,14 +1577,14 @@ describe("session uploader durable retry", () => {
     await sessionUploader.stop();
     expect(uploads.map((item) => [item.snapshot_type, item.sequence])).toEqual([["start", 1], ["end", 2]]);
     expect(await sessionUploader.spoolStatus()).toEqual({ entries: 0, bytes: 0 });
-    const settled = JSON.parse(await readFile(join(stateDir, "omnirush-upload-sessions.json"), "utf8")) as { sessions: Record<string, Record<string, unknown>> };
+    const settled = JSON.parse(await readFile(join(stateDir, "mars-upload-sessions.json"), "utf8")) as { sessions: Record<string, Record<string, unknown>> };
     expect(typeof settled.sessions[sessionId]?.lastSuccessAt).toBe("string");
     expect(settled.sessions[sessionId]).toMatchObject({ failureCount: 1 });
   });
 
   test("retries spooled uploads with backoff on the next session uploader start", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-respool-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-respool-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-respool-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-respool-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "hello\n");
     const sessionId = "session-respool-1234";
@@ -1610,8 +1610,8 @@ describe("session uploader durable retry", () => {
   });
 
   test("a 507 on the end upload is spooled after one attempt, and the next start sends it", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-507-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-507-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-507-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-507-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "hello\n");
     const sessionId = "session-507-1234";
@@ -1632,7 +1632,7 @@ describe("session uploader durable retry", () => {
     await first.idle(sessionId);
     await first.stop();
     expect(sent.filter((type) => type === "end")).toHaveLength(1);
-    const spoolDir = join(stateDir, "omnirush-upload-spool");
+    const spoolDir = join(stateDir, "mars-upload-spool");
     const metas = await Promise.all((await readdir(spoolDir)).filter((name) => name.endsWith(".json"))
       .map(async (name) => JSON.parse(await readFile(join(spoolDir, name), "utf8")) as { snapshot_type: string }));
     expect(metas.map((meta) => meta.snapshot_type)).toEqual(["end"]);
@@ -1652,8 +1652,8 @@ describe("session uploader durable retry", () => {
     expect([507, 599, 501, 505].map((status) => isRetryableUploadStatus(status))).toEqual([true, true, false, false]);
     expect([isRetryableUploadStatus(413), isRetryableUploadStatus(413, 1_000)]).toEqual([false, true]);
     for (const [status, headers, spooled] of [[413, { "Retry-After": "3600" }, true], [429, { "Retry-After": "3600" }, true], [413, {}, false], [501, {}, false]] as const) {
-      const root = await mkdtemp(join(tmpdir(), "omnirush-upload-ra-"));
-      const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-ra-state-"));
+      const root = await mkdtemp(join(tmpdir(), "mars-upload-ra-"));
+      const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-ra-state-"));
       roots.push(root, stateDir);
       await writeFile(join(root, "app.txt"), "hello\n");
       let calls = 0;
@@ -1682,8 +1682,8 @@ describe("session uploader durable retry", () => {
   }, 20_000);
 
   test("bounds the spool, drops permanently rejected uploads and clears on request", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-spoolcap-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-spoolcap-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-spoolcap-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-spoolcap-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "v0\n");
     let status = 503;
@@ -1705,7 +1705,7 @@ describe("session uploader durable retry", () => {
       await sessionUploader.idle(sessionId);
     }
     expect(await sessionUploader.spoolStatus()).toMatchObject({ entries: 2 });
-    const spoolDir = join(stateDir, "omnirush-upload-spool");
+    const spoolDir = join(stateDir, "mars-upload-spool");
     const sequences = (await Promise.all((await readdir(spoolDir)).filter((name) => name.endsWith(".json"))
       .map(async (name) => (JSON.parse(await readFile(join(spoolDir, name), "utf8")) as { sequence: number }).sequence))).sort();
     expect(sequences).toEqual([3, 4]);
@@ -1742,7 +1742,7 @@ describe("session upload deadline and spool drain", () => {
 
   /** Writes one spool entry as a failed upload leaves it; ids sort in `index` order. */
   async function spoolEntry(stateDir: string, index: number, bytes: number, extra: Record<string, unknown> = {}): Promise<string> {
-    const spoolDir = join(stateDir, "omnirush-upload-spool");
+    const spoolDir = join(stateDir, "mars-upload-spool");
     await mkdir(spoolDir, { recursive: true, mode: 0o700 });
     const id = `${index.toString(16).padStart(12, "0")}-${index.toString(16).padStart(6, "0")}-0000000${index}`;
     const body = Buffer.alloc(bytes, index);
@@ -1762,11 +1762,11 @@ describe("session upload deadline and spool drain", () => {
   }
 
   async function spoolMeta(stateDir: string, id: string): Promise<{ attempts: number; last_attempt_at?: string }> {
-    return JSON.parse(await readFile(join(stateDir, "omnirush-upload-spool", `${id}.json`), "utf8")) as { attempts: number; last_attempt_at?: string };
+    return JSON.parse(await readFile(join(stateDir, "mars-upload-spool", `${id}.json`), "utf8")) as { attempts: number; last_attempt_at?: string };
   }
 
   async function drainState(): Promise<string> {
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-drain-state-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-drain-state-"));
     roots.push(stateDir);
     return stateDir;
   }
@@ -1858,7 +1858,7 @@ describe("session upload deadline and spool drain", () => {
     expect(attempts).toEqual([1, 2, 3]);
 
     // Once the backoff (the retry base after one failed drain) has passed, it is tried again...
-    const spoolDir = join(stateDir, "omnirush-upload-spool");
+    const spoolDir = join(stateDir, "mars-upload-spool");
     await writeFile(join(spoolDir, `${stuck}.json`), JSON.stringify({ ...failed, last_attempt_at: new Date(Date.now() - 61_000).toISOString() }));
     expect(await sessionUploader.drainSpool()).toEqual({ delivered: 0, pending: 1 });
     expect(attempts).toEqual([1, 2, 3, 1]);
@@ -1904,7 +1904,7 @@ describe("session upload deadline and spool drain", () => {
       spoolMaxAgeMs: 60 * 60_000,
     });
     expect(await sessionUploader.drainSpool()).toEqual({ delivered: 0, pending: 1 });
-    expect(warnings).toEqual(["OmniRush session upload artifact dropped from spool:expired"]);
+    expect(warnings).toEqual(["Mars session upload artifact dropped from spool:expired"]);
     expect(await sessionUploader.spoolStatus()).toEqual({ entries: 1, bytes: 512 });
     await sessionUploader.stop();
   });
@@ -1941,7 +1941,7 @@ describe("session upload deadline and spool drain", () => {
     const uploads = sessionUploader as unknown as { enforceSpoolBounds(): Promise<void> };
     await uploads.enforceSpoolBounds();
     // The oldest trace went for the trace budget; the snapshot did not touch either trace.
-    const left = (await readdir(join(stateDir, "omnirush-upload-spool"))).filter((name) => name.endsWith(".json")).sort();
+    const left = (await readdir(join(stateDir, "mars-upload-spool"))).filter((name) => name.endsWith(".json")).sort();
     expect(left.map((name) => name.slice(-6, -5))).toEqual(["2", "3"]);
     await sessionUploader.stop();
   });
@@ -2047,7 +2047,7 @@ describe("session upload deadline and spool drain", () => {
   });
 
   test("a sign-out aborts the live upload in flight and spools nothing it carried", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-signout-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-signout-"));
     roots.push(root);
     const stateDir = await drainState();
     await writeFile(join(root, "app.txt"), "hello\n");
@@ -2077,9 +2077,9 @@ describe("session upload deadline and spool drain", () => {
 
     expect(signals).toHaveLength(1);
     expect(signals[0]!.aborted).toBe(true);
-    expect(infos).toContain("OmniRush session upload artifact discarded at sign-out");
+    expect(infos).toContain("Mars session upload artifact discarded at sign-out");
     expect(await sessionUploader.spoolStatus()).toEqual({ entries: 0, bytes: 0 });
-    expect(await readdir(join(stateDir, "omnirush-upload-spool")).catch(() => [])).toEqual([]);
+    expect(await readdir(join(stateDir, "mars-upload-spool")).catch(() => [])).toEqual([]);
 
     // The next account's uploads are not cancelled by the earlier sign-out.
     const next = "session-signout-5678";
@@ -2093,7 +2093,7 @@ describe("session upload deadline and spool drain", () => {
   });
 
   test("spools a live upload once an attempt runs out its deadline, and still retries quick failures in band", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-deadline-live-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-deadline-live-"));
     roots.push(root);
     const stateDir = await drainState();
     await writeFile(join(root, "app.txt"), "v0\n");
@@ -2113,7 +2113,7 @@ describe("session upload deadline and spool drain", () => {
         throw new Error("network down");
       },
       log: (level, message, attributes) => {
-        if (level === "warn" && message === "OmniRush session upload artifact spooled for retry") spooled.push(attributes?.reason);
+        if (level === "warn" && message === "Mars session upload artifact spooled for retry") spooled.push(attributes?.reason);
       },
       uploadBudget: { baseMs: 50, bytesPerSecond: 128 * 1024 * 1000, maxSendMs: 900, responseMs: 100 },
       fallbackScanMs: 60_000,
@@ -2312,8 +2312,8 @@ describe("session uploader trace additions", () => {
   });
 
   test("keeps uploading every snapshot of a session that has already sent more than 512 MiB", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-nocap-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-nocap-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-nocap-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-nocap-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "v0\n");
     const sessionId = "session-nocap-1234";
@@ -2321,7 +2321,7 @@ describe("session uploader trace additions", () => {
     // it says 600 MiB were already accepted (past the 512 MiB per-session cap
     // the session uploader used to stop at) without any of that data being written.
     const sentBefore = 600 * 1024 * 1024;
-    await writeFile(join(stateDir, "omnirush-upload-sessions.json"), JSON.stringify({
+    await writeFile(join(stateDir, "mars-upload-sessions.json"), JSON.stringify({
       version: 1,
       sessions: { [sessionId]: { segment: 1, nextSequence: 40, sentBytes: sentBefore, lastSeenAt: new Date().toISOString() } },
     }));
@@ -2347,16 +2347,16 @@ describe("session uploader trace additions", () => {
     expect(uploads[1]!.files.find((file) => file.path === "app.txt")?.content).toBe("v1\n");
     expect(traceEvents(uploads).some((event) => event.type === "file.read")).toBe(true);
     for (const envelope of uploads) expect(envelope.privacy).not.toHaveProperty("max_session_bytes");
-    const metadata = JSON.parse(uploads[0]!.files.find((file) => file.path === "__omnirush__/workspace.json")!.content) as Record<string, unknown>;
+    const metadata = JSON.parse(uploads[0]!.files.find((file) => file.path === "__mars__/workspace.json")!.content) as Record<string, unknown>;
     expect(metadata).not.toHaveProperty("max_session_bytes");
     // The running total is still counted, for diagnostics only.
-    const ledger = JSON.parse(await readFile(join(stateDir, "omnirush-upload-sessions.json"), "utf8")) as { sessions: Record<string, { sentBytes: number }> };
+    const ledger = JSON.parse(await readFile(join(stateDir, "mars-upload-sessions.json"), "utf8")) as { sessions: Record<string, { sentBytes: number }> };
     expect(ledger.sessions[sessionId]!.sentBytes).toBeGreaterThan(sentBefore);
   });
 
   test("records the turn model and child sessions with checkpoints that survive a resume", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-children-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-children-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-children-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-children-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "hello\n");
     const { uploads, upload } = makeUploads();
@@ -2423,8 +2423,8 @@ describe("session uploader trace additions", () => {
   });
 
   test("child ids noted while the turn runs are listed at once, deduped, and kept across a restart without a transcript event", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-child-ids-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-child-ids-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-child-ids-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-child-ids-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "hello\n");
     const { uploads, upload } = makeUploads();
@@ -2456,7 +2456,7 @@ describe("session uploader trace additions", () => {
   });
 
   test("sub-agents on their own models keep them; a gateway fallback records the model that really answered", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-subagent-model-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-subagent-model-"));
     roots.push(root);
     await writeFile(join(root, "app.txt"), "hello\n");
     const { uploads, upload } = makeUploads();
@@ -2464,9 +2464,9 @@ describe("session uploader trace additions", () => {
     const sessionId = "session-subagent-model-1";
     sessionUploader.startSession(sessionId, "workspace-subagent-model", root);
     await sessionUploader.idle(sessionId);
-    sessionUploader.recordSessionModel(sessionId, { provider_id: "omnirush", model_id: "gpt-6-astra", variant: "max", agent: "omnirush" });
+    sessionUploader.recordSessionModel(sessionId, { provider_id: "mars", model_id: "gpt-6-astra", variant: "max", agent: "mars" });
     const assistant = (id: string, session: string, modelID: string, variant: string, completed: number) => ({
-      info: { id, role: "assistant", sessionID: session, providerID: "omnirush", modelID, variant, agent: "general", time: { created: completed - 10, completed } },
+      info: { id, role: "assistant", sessionID: session, providerID: "mars", modelID, variant, agent: "general", time: { created: completed - 10, completed } },
       parts: [{ type: "text", text: `answer ${id}` }],
     });
     // The gateway refused GPT 6 Sol for ses_sol at t=2000; ses_muse ran on Muse all along.
@@ -2490,17 +2490,17 @@ describe("session uploader trace additions", () => {
     const events = traceEvents(uploads);
     const child = (id: string) => events.find((event) => event.type === "session.child" && event.data?.child_session_id === id)?.data?.messages as Array<{ info: Record<string, unknown> }>;
     expect(child("ses_muse").map((message) => [message.info.modelID, message.info.variant])).toEqual([["meta-muse-spark", "xhigh"]]);
-    expect(child("ses_sol").map((message) => [message.info.modelID, message.info.variant, message.info.omnirushModelFallback ?? null])).toEqual([
+    expect(child("ses_sol").map((message) => [message.info.modelID, message.info.variant, message.info.marsModelFallback ?? null])).toEqual([
       ["gpt-6-sol", "high", null],
       ["gpt-6-astra", "high", { requested: "gpt-6-sol", requestedVariant: "high", reason: "gateway_refused" }],
     ]);
     expect(events.filter((event) => event.type === "subagent.model_fallback").map((event) => event.data?.kind)).toEqual(["gateway", "selection"]);
     // The main session's model is the main agent's own.
-    expect(uploads.at(-1)!.session).toMatchObject({ provider_id: "omnirush", model_id: "gpt-6-astra", variant: "max" });
+    expect(uploads.at(-1)!.session).toMatchObject({ provider_id: "mars", model_id: "gpt-6-astra", variant: "max" });
   });
 
   test("keeps only the newest 5,000 events across every push site", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-cap-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-cap-"));
     roots.push(root);
     await writeFile(join(root, "app.txt"), "hello\n");
     const { uploads, upload } = makeUploads();
@@ -2528,7 +2528,7 @@ describe("session uploader trace additions", () => {
   }, 20_000);
 
   test("traces browser visits with redacted, capped text and never local pages", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-web-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-web-"));
     roots.push(root);
     const { uploads, upload } = makeUploads();
     const sessionUploader = new SessionUploader({ upload, fallbackScanMs: 60_000 });
@@ -2558,7 +2558,7 @@ describe("session uploader trace additions", () => {
   });
 
   test("traces prompt attachments with redacted, capped text", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-attachments-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-attachments-"));
     roots.push(root);
     const { uploads, upload } = makeUploads();
     const sessionUploader = new SessionUploader({ upload, fallbackScanMs: 60_000 });
@@ -2585,7 +2585,7 @@ describe("session uploader trace additions", () => {
   });
 
   test("emits artifact events for untracked outputs a turn creates or modifies, gitignored ones outside the regenerable folders too", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-artifacts-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-artifacts-"));
     roots.push(root);
     await git(root, "init", "-q");
     await writeFile(join(root, ".gitignore"), "ignored/\nnode_modules/\n");
@@ -2651,7 +2651,7 @@ const GITHUB_TOKEN = sample("ghp_", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef0123");
 
 describe("session uploader secret rails", () => {
   test("drops the incident file by name and counts it in the privacy manifest", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-incident-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-incident-"));
     roots.push(root);
     await git(root, "init", "-q");
     await writeFile(join(root, "AWS master key"), `aws_access_key_id = AKIAIOSFODNN7EXAMPLE\naws_secret_access_key = ${AWS_SECRET}\n`);
@@ -2664,10 +2664,10 @@ describe("session uploader secret rails", () => {
     await sessionUploader.stop();
 
     const start = uploads.find((item) => item.snapshot_type === "start")!;
-    expect(start.files.map((file) => file.path).sort()).toEqual(["__omnirush__/workspace.json", "app.ts"]);
+    expect(start.files.map((file) => file.path).sort()).toEqual(["__mars__/workspace.json", "app.ts"]);
     expect(start.manifest.map((entry) => entry.path)).toEqual(["app.ts"]);
     expect(start.privacy.denied_file_count).toBe(1);
-    expect(start.files.find((file) => file.path === "__omnirush__/workspace.json")?.content).toContain('"denied_file_count":1');
+    expect(start.files.find((file) => file.path === "__mars__/workspace.json")?.content).toContain('"denied_file_count":1');
     // The denied name never reaches the snapshot, manifest or touched paths
     // (the raw tool argument in the trace event is the agent's own input).
     for (const envelope of uploads) {
@@ -2938,7 +2938,7 @@ describe("session uploader secret rails", () => {
   });
 
   test("keeps a source file named after a token but redacts the literal inside it", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-source-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-source-"));
     roots.push(root);
     await mkdir(join(root, "src", "token"), { recursive: true });
     await writeFile(join(root, "src", "token", "github-token.ts"), `export const token = "${GITHUB_TOKEN}";\nexport const aws = "${AWS_SECRET}";\n`);
@@ -2961,7 +2961,7 @@ describe("session uploader secret rails", () => {
   });
 
   test("scrubs the trace and .json files as JSON so escapes survive redaction", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-json-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-json-"));
     roots.push(root);
     await writeFile(join(root, "config.json"), '{\n  "note": "{\\"password\\":\\"hunter2abc\\"}",\n  "nested": {"apiKey": "abcdefghijkl", "author": "Jane <jane@acme-mail.io>"}\n}\n');
     await writeFile(join(root, "settings.json"), '// JSON with comments falls back to text scrubbing\n{"password": "hunter2abc"}\n');
@@ -3066,7 +3066,7 @@ describe("session uploader secret rails", () => {
 });
 
 // --- scrubber parity: the backend's second-sample refinements ---------------
-// Ported from the backend's tests/omnirush/test_collector.py (46ee95e) with the
+// Ported from the backend's tests/mars/test_collector.py (46ee95e) with the
 // same inputs and expected outputs; each test names the backend test it mirrors.
 
 // The excluded last segments added after the second production sample.
@@ -3174,7 +3174,7 @@ describe("session uploader scrubber parity: second-sample refinements", () => {
     expect(redactModeForPath("dist/bundle.js.map")).toBe("source");
     for (const path of [".env", ".env.local", ".bashrc", "Makefile", "Dockerfile", "index.", "a.tar.gz", "config.yml", "config.yaml", "pyproject.toml",
       "package.json", "setup.cfg", "app.ini", "nginx.conf", "app.properties", "notes.txt", "README.md", "infra/main.tf", "build.gradle.kts",
-      "schema.sql", "index.html", "__omnirush__/trace.jsonl"]) {
+      "schema.sql", "index.html", "__mars__/trace.jsonl"]) {
       expect(redactModeForPath(path)).toBe("config");
     }
   });
@@ -3399,7 +3399,7 @@ describe("session uploader scrubber parity: second-sample refinements", () => {
     expect(count).toBe(3);
 
     // The uploaded trace document gets the same rail.
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-trace-aws-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-trace-aws-"));
     roots.push(root);
     const { uploads, upload } = makeUploads();
     const sessionUploader = new SessionUploader({ upload, changeDebounceMs: 60_000, fallbackScanMs: 60_000 });
@@ -3444,7 +3444,7 @@ describe("session uploader scrubber parity: second-sample refinements", () => {
   });
 
   test("a .patch file is scrubbed as source, and the envelope's git diff with each file's own mode", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-patch-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-patch-"));
     roots.push(root);
     await git(root, "init", "-q");
     await mkdir(join(root, "app"), { recursive: true });
@@ -3478,8 +3478,8 @@ describe("session uploader gateway auth", () => {
   type Warning = { message: string; attributes?: Record<string, unknown> };
 
   async function authHarness(respond: (attempt: number) => Response, refresh?: () => Promise<string | null>) {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-auth-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-auth-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-auth-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-auth-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "hello\n");
     const uploads: Envelope[] = [];
@@ -3509,7 +3509,7 @@ describe("session uploader gateway auth", () => {
     const sessionId = "session-auth-1234";
     sessionUploader.startSession(sessionId, "workspace-auth", root);
     await sessionUploader.idle(sessionId);
-    const rejected = warnings.filter((warning) => warning.message === "OmniRush session upload rejected as unauthorized");
+    const rejected = warnings.filter((warning) => warning.message === "Mars session upload rejected as unauthorized");
     return { sessionUploader, sessionId, uploads, warnings, rejected, counters };
   }
 
@@ -3525,12 +3525,12 @@ describe("session uploader gateway auth", () => {
     expect(uploads.map((item) => [item.snapshot_type, item.sequence])).toEqual([["start", 1]]);
     expect(await sessionUploader.spoolStatus()).toEqual({ entries: 0, bytes: 0 });
     expect(await sessionUploader.sessionDeliveryStatus(sessionId)).toMatchObject({ failureCount: 0 });
-    expect(rejected).toEqual([{ message: "OmniRush session upload rejected as unauthorized", attributes: { sessionId, status: 401, refreshed: true } }]);
+    expect(rejected).toEqual([{ message: "Mars session upload rejected as unauthorized", attributes: { sessionId, status: 401, refreshed: true } }]);
     await sessionUploader.stop();
   });
 
   test("sends the refreshed bearer when retrying over the session upload endpoint", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-auth-fetch-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-auth-fetch-"));
     roots.push(root);
     await writeFile(join(root, "app.txt"), "hello\n");
     const bearers: string[] = [];
@@ -3560,7 +3560,7 @@ describe("session uploader gateway auth", () => {
     expect(await sessionUploader.spoolStatus()).toMatchObject({ entries: 1 });
     expect(await sessionUploader.sessionDeliveryStatus(sessionId)).toMatchObject({ failureCount: 1, lastSuccessAt: null });
     expect(rejected).toHaveLength(1);
-    expect(warnings.map((warning) => warning.message)).toContain("OmniRush session upload artifact spooled for retry");
+    expect(warnings.map((warning) => warning.message)).toContain("Mars session upload artifact spooled for retry");
     await sessionUploader.stop();
   });
 
@@ -3573,7 +3573,7 @@ describe("session uploader gateway auth", () => {
     expect(uploads).toHaveLength(0);
     expect(await sessionUploader.spoolStatus()).toMatchObject({ entries: 1 });
     expect(rejected).toEqual([{
-      message: "OmniRush session upload rejected as unauthorized",
+      message: "Mars session upload rejected as unauthorized",
       attributes: { sessionId, status: 401, refreshed: false, refreshError: "refresh endpoint unavailable" },
     }]);
     await sessionUploader.stop();
@@ -3591,7 +3591,7 @@ describe("session uploader gateway auth", () => {
   test("keeps the upload in the spool, without a refresh, while this device has no account (a sign-in the server retired)", async () => {
     for (const status of [403, 401]) {
       const { sessionUploader, sessionId, uploads, rejected, counters } = await authHarness(
-        () => unauthorized(status, { error: "omnirush_account_required" }),
+        () => unauthorized(status, { error: "mars_account_required" }),
         async () => "fresh-token",
       );
       expect(counters).toEqual({ attempts: 1, refreshes: 0 });
@@ -3615,7 +3615,7 @@ describe("session uploader snapshot cap", () => {
 
   /** Twenty files growing by 8 KiB each, 1.6 MiB in all: more than CAP leaves for content. */
   async function largeWorkspace(): Promise<string> {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-cap-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-cap-"));
     roots.push(root);
     const line = "alpha beta gamma delta\n";
     await Promise.all(NAMES.map((name, index) => writeFile(join(root, name), line.repeat(Math.ceil(((index + 1) * 8 * KIB) / line.length)))));
@@ -3649,7 +3649,7 @@ describe("session uploader snapshot cap", () => {
     await sessionUploader.stop();
     const start = uploads.find((item) => item.snapshot_type === "start")!;
     const startBytes = rawBytes[uploads.indexOf(start)]!;
-    const sent = start.files.map((file) => file.path).filter((path) => !path.startsWith("__omnirush__/"));
+    const sent = start.files.map((file) => file.path).filter((path) => !path.startsWith("__mars__/"));
     const manifestPaths = start.manifest.map((entry) => entry.path);
     const size = (path: string) => start.manifest.find((entry) => entry.path === path)!.size;
     const notes = uploads
@@ -3679,7 +3679,7 @@ describe("session uploader snapshot cap", () => {
       snapshot_cap_omitted_count: omitted.length,
       snapshot_cap_omitted_bytes: omitted.reduce((sum, path) => sum + size(path), 0),
     });
-    expect(warnings.filter((message) => message === "OmniRush session upload snapshot trimmed to the snapshot cap")).toHaveLength(1);
+    expect(warnings.filter((message) => message === "Mars session upload snapshot trimmed to the snapshot cap")).toHaveLength(1);
     expect(notes).toHaveLength(1);
     expect(notes[0]).toMatchObject({ data: { snapshot_type: "start", trigger: "session_start", omitted_count: omitted.length } });
     expect(notes[0]?.data?.budget_bytes).toBeLessThan(CAP);
@@ -3724,7 +3724,7 @@ describe("session uploader snapshot cap", () => {
     expect([...sent].sort()).toEqual(NAMES);
     expect(start.privacy).toMatchObject({ files_truncated: false, snapshot_cap_omitted_count: 0, snapshot_cap_omitted_bytes: 0 });
     expect(notes).toHaveLength(0);
-    expect(warnings).not.toContain("OmniRush session upload snapshot trimmed to the snapshot cap");
+    expect(warnings).not.toContain("Mars session upload snapshot trimmed to the snapshot cap");
   });
 });
 
@@ -3735,7 +3735,7 @@ describe("session uploader incremental snapshots", () => {
 
   /** A git workspace with tracked sources, a dependency tree and gitignored build output. */
   async function workspace(prefix: string, sourceFiles = 30): Promise<string> {
-    const root = await mkdtemp(join(tmpdir(), `omnirush-upload-${prefix}-`));
+    const root = await mkdtemp(join(tmpdir(), `mars-upload-${prefix}-`));
     roots.push(root);
     await git(root, "init", "-q");
     await writeFile(join(root, ".gitignore"), "dist/\nnode_modules/\n");
@@ -3753,7 +3753,7 @@ describe("session uploader incremental snapshots", () => {
     return root;
   }
 
-  const contentPaths = (envelope: Envelope) => envelope.files.map((file) => file.path).filter((path) => !path.startsWith("__omnirush__/"));
+  const contentPaths = (envelope: Envelope) => envelope.files.map((file) => file.path).filter((path) => !path.startsWith("__mars__/"));
   const changes = (uploads: Envelope[]) => uploads.filter((item) => item.snapshot_type === "change");
   const triggerEvents = (uploads: Envelope[]) => uploads
     .filter((item) => item.snapshot_type === "trace")
@@ -3954,7 +3954,7 @@ describe("session uploader incremental snapshots", () => {
 
   test("labels snapshot scope and re-sends changes the gateway never accepted", async () => {
     const root = await workspace("scope", 4);
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-scope-state-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-scope-state-"));
     roots.push(stateDir);
     let status = 201;
     const uploads: Envelope[] = [];
@@ -3994,7 +3994,7 @@ describe("session uploader incremental snapshots", () => {
     expect(end.changed_paths).toEqual([]);
     expect(uploads.find((item) => item.snapshot_type === "trace")?.files_scope).toBe("full");
     // Envelopes are streamed through a temp file that never outlives the upload.
-    expect((await readdir(join(stateDir, "omnirush-upload-tmp")).catch(() => [])).filter((name) => name.endsWith(".tmp"))).toEqual([]);
+    expect((await readdir(join(stateDir, "mars-upload-tmp")).catch(() => [])).filter((name) => name.endsWith(".tmp"))).toEqual([]);
     expect(sessionUploader.sessionDiagnostics(sessionId)).toBeNull();
   });
 
@@ -4073,7 +4073,7 @@ describe("session uploader incremental snapshots", () => {
 
   test("drops the files of a directory moved out of the workspace without rescanning the tree", async () => {
     const root = await workspace("moved", 10);
-    const outside = await mkdtemp(join(tmpdir(), "omnirush-upload-moved-out-"));
+    const outside = await mkdtemp(join(tmpdir(), "mars-upload-moved-out-"));
     roots.push(outside);
     const { uploads, upload } = makeUploads();
     const sessionUploader = new SessionUploader({ upload, changeDebounceMs: 60_000, fallbackScanMs: 60_000 });
@@ -4096,7 +4096,7 @@ describe("session uploader incremental snapshots", () => {
   });
 
   test("polls a workspace with more top-level directories than it watches", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-wide-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-wide-"));
     roots.push(root);
     for (let index = 0; index < 65; index += 1) {
       await mkdir(join(root, `dir${index}`));
@@ -4125,7 +4125,7 @@ describe("session uploader incremental snapshots", () => {
     await sessionUploader.idle(sessionId);
     const change = changes(uploads)[0]!;
     expect(contentPaths(change).sort()).toEqual(["src/large.txt", "src/small.txt"]);
-    const journal = change.files.find((file) => file.path === "__omnirush__/changes.json")!;
+    const journal = change.files.find((file) => file.path === "__mars__/changes.json")!;
     expect(journal.content).toContain('"path":"src/small.txt"');
     expect(journal.content).not.toContain("src/large.txt");
     await sessionUploader.stop();
@@ -4223,7 +4223,7 @@ describe("session uploader incremental snapshots", () => {
   });
 
   test("keeps gitignored files out of change snapshots and the journal in a workspace git does not manage", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-nogit-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-nogit-"));
     roots.push(root);
     await writeFile(join(root, ".gitignore"), "*.log\nbuild/\n");
     await mkdir(join(root, "src"));
@@ -4312,7 +4312,7 @@ describe("session uploader incremental snapshots", () => {
   });
 
   test.skipIf(process.platform === "win32")("a path git refuses to answer for (beyond a symlinked directory) neither changes the ignore answer for its batch nor gets read", async () => {
-    const base = await mkdtemp(join(tmpdir(), "omnirush-upload-symlink-"));
+    const base = await mkdtemp(join(tmpdir(), "mars-upload-symlink-"));
     roots.push(base);
     const root = join(base, "repo");
     const outside = join(base, "shared-lib");
@@ -4344,7 +4344,7 @@ describe("session uploader incremental snapshots", () => {
     // Capture v2: the symlink itself is listed with its target (never followed, nothing behind it read).
     expect(change.manifest.filter((entry) => entry.type !== "symlink").map((entry) => entry.path)).toEqual(["src/app.ts"]);
     expect(change.manifest.find((entry) => entry.path === "linked")).toMatchObject({ type: "symlink", target: "../shared-lib", broken: false });
-    expect(change.files.find((file) => file.path === "__omnirush__/changes.json")?.content).toContain('"path":"src/app.ts"');
+    expect(change.files.find((file) => file.path === "__mars__/changes.json")?.content).toContain('"path":"src/app.ts"');
     await sessionUploader.stop();
     const all = JSON.stringify(uploads);
     expect(all).not.toContain("salary negotiation");
@@ -4385,7 +4385,7 @@ describe("session uploader incremental snapshots", () => {
 
   test("a resumed session's start snapshot carries every file again, even when its earlier start never reached the backend", async () => {
     const root = await workspace("resume-full", 4);
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-upload-resume-full-state-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-upload-resume-full-state-"));
     roots.push(stateDir);
     const sessionId = "session-resume-full-1";
     // Offline: the start snapshot is only spooled, and sign-out then deletes the spool.
@@ -4441,7 +4441,7 @@ describe("session uploader incremental snapshots", () => {
     const second = start("session-texts-second");
     expect(content(second, "src/contact.txt")).toBe("mail [REDACTED_PII] about it\n");
     expect(content(second, "src/config.yml")).toBe("password: [REDACTED]\n");
-    expect(second.files.filter((file) => !file.path.startsWith("__omnirush__/"))).toEqual(first.files.filter((file) => !file.path.startsWith("__omnirush__/")));
+    expect(second.files.filter((file) => !file.path.startsWith("__mars__/"))).toEqual(first.files.filter((file) => !file.path.startsWith("__mars__/")));
     expect(second.manifest).toEqual(first.manifest);
 
     // New bytes are scrubbed again, never served from the text of the old ones.
@@ -4455,7 +4455,7 @@ describe("session uploader incremental snapshots", () => {
   });
 
   test("snapshots a 60 MiB workspace with peak RSS growth under 120 MB", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-memory-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-memory-"));
     roots.push(root);
     await mkdir(join(root, "src"));
     // Pseudo-random words so the content neither compresses away nor trips the scrubber.
@@ -4516,7 +4516,7 @@ describe("session uploader incremental snapshots", () => {
 
 describe("upload features", () => {
   test("without the backend's idempotency_key feature (or any capability answer) no Idempotency-Key is sent and no integrity read is made", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-upload-nofeat-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-upload-nofeat-"));
     roots.push(root);
     const keys: Array<string | undefined> = [];
     let integrity = 0;
@@ -4546,8 +4546,8 @@ describe("integrity confirmation", () => {
   const FEATURES = async () => ({ schema_versions: [1, 2], canonical_trace: false, idempotency_key: true, integrity: true, integrity_summary: true });
 
   async function endedChat(options: { refuseSecond?: boolean } = {}) {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-confirm-"));
-    const stateDir = await mkdtemp(join(tmpdir(), "omnirush-confirm-state-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-confirm-"));
+    const stateDir = await mkdtemp(join(tmpdir(), "mars-confirm-state-"));
     roots.push(root, stateDir);
     await writeFile(join(root, "app.txt"), "hello\n");
     let uploads = 0;
@@ -4586,7 +4586,7 @@ describe("integrity confirmation", () => {
     expect(await uploader.confirmSession("session-confirm-1234")).toMatchObject({ verdict: "good", checks: 1 });
     expect(calls).toBe(1);
     await uploader.stop();
-    const ledger = JSON.parse(await readFile(join(stateDir, "omnirush-upload-sessions.json"), "utf8")) as { sessions: Record<string, { confirmation?: { verdict: string; nextAt?: string } }> };
+    const ledger = JSON.parse(await readFile(join(stateDir, "mars-upload-sessions.json"), "utf8")) as { sessions: Record<string, { confirmation?: { verdict: string; nextAt?: string } }> };
     expect(ledger.sessions["session-confirm-1234"]?.confirmation).toMatchObject({ verdict: "good" });
     expect(ledger.sessions["session-confirm-1234"]?.confirmation?.nextAt).toBeUndefined();
   });
@@ -4646,7 +4646,7 @@ describe("integrity confirmation", () => {
 
   test("a gap a spooled upload will fill drains the spool instead of re-sending", async () => {
     const { stateDir } = await endedChat();
-    const spool = join(stateDir, "omnirush-upload-spool");
+    const spool = join(stateDir, "mars-upload-spool");
     await mkdir(spool, { recursive: true });
     const id = "000000000009-000009-00000009";
     await writeFile(join(spool, `${id}.zst`), Buffer.alloc(32, 9));
@@ -4677,7 +4677,7 @@ describe("integrity confirmation", () => {
 
   test("at launch, recent ended chats without a final verdict are checked; a judged one is not", async () => {
     const { stateDir } = await endedChat();
-    const ledgerPath = join(stateDir, "omnirush-upload-sessions.json");
+    const ledgerPath = join(stateDir, "mars-upload-sessions.json");
     const ledger = JSON.parse(await readFile(ledgerPath, "utf8")) as { version: 1; sessions: Record<string, Record<string, unknown>> };
     const record = ledger.sessions["session-confirm-1234"]!;
     ledger.sessions["session-judged-1234"] = { ...record, confirmation: { verdict: "not_good", checkedAt: new Date().toISOString(), checks: 1 } };
@@ -4706,7 +4706,7 @@ describe("integrity confirmation", () => {
   });
 
   test("keeps the Git baseline and defers only ordinary watched-edit metadata", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-git-review-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-git-review-"));
     roots.push(root);
     await writeFile(join(root, "note.txt"), "baseline\\n");
     await execFileAsync("git", ["init", "-q", "-b", "main", root]);

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, jest, setSystemTime, spyOn, test } from "bun:test";
 import type { SessionStatus } from "@opencode-ai/sdk/v2/client";
 
-import type { OmniRushSessionSnapshot } from "../src/app/lib/omnirush-server";
+import type { MarsSessionSnapshot } from "../src/app/lib/mars-server";
 import { markTaskRunStart, takeTaskRunStart } from "../src/app/lib/analytics";
 import * as notifications from "../src/react-app/shell/desktop-notifications";
 import { createClientV2, createV2EventTranslationState, translateV2Event } from "../src/app/lib/opencode-v2-adapter";
@@ -32,7 +32,7 @@ import { getReactQueryClient } from "../src/react-app/infra/query-client";
 type SyncInput = {
   workspaceId: string;
   baseUrl: string;
-  omnirushToken: string;
+  marsToken: string;
 };
 
 type Subscription = {
@@ -45,7 +45,7 @@ const sessionId = "session-run-status";
 const syncInputs: SyncInput[] = [];
 const subscriptions: Subscription[] = [];
 
-function createSnapshot(status: SessionStatus): OmniRushSessionSnapshot {
+function createSnapshot(status: SessionStatus): MarsSessionSnapshot {
   return {
     session: {
       id: sessionId,
@@ -66,7 +66,7 @@ function createSyncInput(): SyncInput {
   const input = {
     workspaceId,
     baseUrl: "https://run-status.example/opencode",
-    omnirushToken: "token",
+    marsToken: "token",
   };
   syncInputs.push(input);
   return input;
@@ -187,7 +187,7 @@ afterEach(() => {
 
 describe("native v2 run lifecycle", () => {
   function nativeSync() {
-    const input = { workspaceId, baseUrl: "https://run-status.example/opencode2", omnirushToken: "token" };
+    const input = { workspaceId, baseUrl: "https://run-status.example/opencode2", marsToken: "token" };
     syncInputs.push(input);
     __createWorkspaceSessionSyncForTest(input);
     trackWorkspaceSessionSync(input, sessionId);
@@ -273,7 +273,7 @@ describe("native v2 run lifecycle", () => {
   });
 
   test("terminal listeners cannot have a queued successor's tracking consumed", () => {
-    const input = { workspaceId, baseUrl: "https://run-status.example/opencode2", omnirushToken: "token",
+    const input = { workspaceId, baseUrl: "https://run-status.example/opencode2", marsToken: "token",
       onSessionStatus: ({ status }: { status: SessionStatus }) => { if (status.type === "idle") markTaskRunStart(sessionId); } };
     syncInputs.push(input);
     __createWorkspaceSessionSyncForTest(input);
@@ -356,7 +356,7 @@ describe("session run status ordering", () => {
     const input = {
       workspaceId,
       baseUrl: "https://run-status.example/opencode",
-      omnirushToken: "token",
+      marsToken: "token",
       onSessionStatus: (update: { sessionId: string; status: SessionStatus }) => {
         statusUpdates.push(update.status);
       },
@@ -831,7 +831,7 @@ describe("run status reconcile liveness health", () => {
     const input = {
       workspaceId,
       baseUrl: `https://run-status-health-${label}.example/opencode`,
-      omnirushToken: "token",
+      marsToken: "token",
     };
     syncInputs.push(input);
     const cleanup = __createWorkspaceSessionSyncForTest(input);
@@ -932,7 +932,7 @@ describe("run status reconcile liveness health", () => {
     const input = {
       workspaceId,
       baseUrl: "https://run-status-health-parked.example/opencode",
-      omnirushToken: "token",
+      marsToken: "token",
     };
     syncInputs.push(input);
     ensureWorkspaceSessionSync(input);
@@ -1026,7 +1026,7 @@ describe("run status reconcile liveness health", () => {
     const input = {
       workspaceId,
       baseUrl: "https://run-status-health-online.example/opencode",
-      omnirushToken: "token",
+      marsToken: "token",
     };
     syncInputs.push(input);
     ensureWorkspaceSessionSync(input);

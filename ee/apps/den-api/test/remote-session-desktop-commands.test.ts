@@ -6,7 +6,7 @@ import { createDenTypeId } from "@omnirush-ee/utils/typeid"
 import {
   automationDesktopRunnerRegistrationSchema,
   remoteSessionCommandCompleteRequestSchema,
-} from "@omnirush/types/automations"
+} from "@mars/types/automations"
 import { Hono } from "hono"
 import type {
   RemoteSessionExecuteDeps,

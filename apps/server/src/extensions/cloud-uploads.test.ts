@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import type { ServerConfig } from "../types.js";
-import { OMNIRUSH_CLOUD_UPLOAD_ACTIONS, callOmniRushCloudUploadAction } from "./cloud-uploads.js";
+import { MARS_CLOUD_UPLOAD_ACTIONS, callMarsCloudUploadAction } from "./cloud-uploads.js";
 
 const roots: string[] = [];
 
@@ -32,14 +32,14 @@ function cloudMcp() {
   return {
     type: "remote",
     enabled: true,
-    url: "https://api.omnirush.test/mcp/agent",
+    url: "https://api.mars.test/mcp/agent",
     headers: { Authorization: "Bearer member-token" },
     oauth: false,
   };
 }
 
 async function tempRoot() {
-  const root = join(tmpdir(), `omnirush-cloud-uploads-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const root = join(tmpdir(), `mars-cloud-uploads-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   roots.push(root);
   await mkdir(root, { recursive: true });
   return root;
@@ -59,7 +59,7 @@ afterEach(async () => {
 });
 
 test("cloud upload action schemas expose paths and metadata, never inline bytes", () => {
-  const fields = OMNIRUSH_CLOUD_UPLOAD_ACTIONS.flatMap((action) => Object.keys(action.inputSchema.properties));
+  const fields = MARS_CLOUD_UPLOAD_ACTIONS.flatMap((action) => Object.keys(action.inputSchema.properties));
 
   expect(fields.sort()).toEqual([
     "bcc",
@@ -82,7 +82,7 @@ test("drive upload sends exact workspace bytes and server-derived Office metadat
   const captured: { file?: File } = {};
   let capturedUrl = "";
 
-  const result = await callOmniRushCloudUploadAction(
+  const result = await callMarsCloudUploadAction(
     testConfig(root),
     "drive_upload_file",
     { path: "agreement.docx", filename: "changed.pdf", mimeType: "application/pdf" },
@@ -105,7 +105,7 @@ test("drive upload sends exact workspace bytes and server-derived Office metadat
   expect(result).toEqual({ ok: true, file: { id: "file_1" } });
   expect(payloadFieldNames(result).filter((field) => /base64|bytes|content|raw/i.test(field))).toEqual([]);
   expect(JSON.stringify(result)).not.toContain(bytes.toString("base64"));
-  expect(capturedUrl).toBe("https://api.omnirush.test/v1/direct-uploads/google-workspace/drive-files");
+  expect(capturedUrl).toBe("https://api.mars.test/v1/direct-uploads/google-workspace/drive-files");
   expect(captured.file?.name).toBe("agreement.docx");
   expect(captured.file?.type).toBe("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
   if (!captured.file) throw new Error("Expected captured file");
@@ -119,7 +119,7 @@ test("Gmail attachment action reuses the same direct multipart transport for mul
   let capturedFiles: File[] = [];
   let capturedPayload = "";
 
-  const result = await callOmniRushCloudUploadAction(
+  const result = await callMarsCloudUploadAction(
     testConfig(root),
     "gmail_create_draft_with_attachments",
     {
@@ -162,7 +162,7 @@ test("direct upload rejects files above the deployed 4 MiB transport ceiling bef
   await writeFile(join(root, "too-large.bin"), Buffer.alloc((4 * 1024 * 1024) + 1));
   let fetchCalled = false;
 
-  await expect(callOmniRushCloudUploadAction(
+  await expect(callMarsCloudUploadAction(
     testConfig(root),
     "drive_upload_file",
     { path: "too-large.bin" },
@@ -184,7 +184,7 @@ test("direct upload rejects aggregate attachment bytes above 4 MiB with no netwo
   await writeFile(join(root, "part-b.bin"), Buffer.alloc(2 * 1024 * 1024));
   let networkCalls = 0;
 
-  await expect(callOmniRushCloudUploadAction(
+  await expect(callMarsCloudUploadAction(
     testConfig(root),
     "gmail_create_draft_with_attachments",
     {
@@ -212,7 +212,7 @@ test("direct upload rejects symlinks that resolve outside authorized roots", asy
   await symlink(join(outside, "secret.txt"), join(root, "linked.txt"));
   let fetchCalled = false;
 
-  await expect(callOmniRushCloudUploadAction(
+  await expect(callMarsCloudUploadAction(
     testConfig(root),
     "drive_upload_file",
     { path: "linked.txt" },

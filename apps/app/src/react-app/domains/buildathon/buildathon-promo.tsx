@@ -11,7 +11,7 @@ import { ArrowRight, Loader2, Rocket, X } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 
-import { omnirushBuildathonJoin, openDesktopUrl } from "../../../app/lib/desktop";
+import { marsBuildathonJoin, openDesktopUrl } from "../../../app/lib/desktop";
 import {
   promoActive,
   readPromoIds,
@@ -22,7 +22,7 @@ import {
 import { BANNER_HEIGHT_PX, bannerShiftStyle } from "../../shell/update-gate";
 import posterThumb from "./buildathon-poster-thumb.webp";
 
-/** The event poster's colours (omnirush.ai/buildathon). */
+/** The event poster's colours (marsai.click/buildathon). */
 const BLUE = "#3A2DF5";
 const LIME = "#D8FC38";
 const INK = "#0B0630";
@@ -79,7 +79,7 @@ export async function runPromoCta(promo: BuildathonPromo, setBusy?: (busy: boole
   joining = true;
   setBusy?.(true);
   try {
-    const result = await omnirushBuildathonJoin().catch(() => ({ ok: false as const, error: "Could not join right now. Try again in a moment." }));
+    const result = await marsBuildathonJoin().catch(() => ({ ok: false as const, error: "Could not join right now. Try again in a moment." }));
     if (result.ok) {
       // The layer greets the new participant ("You're in") and opens My Buildathon.
       useBuildathonStore.getState().setStatus(result.status);

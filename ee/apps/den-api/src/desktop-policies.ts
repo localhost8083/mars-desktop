@@ -16,7 +16,7 @@ import {
   selectEffectiveOnboardingPromptConfig,
   type DesktopConfig,
   type DesktopPolicyValue,
-} from "@omnirush/types/den/desktop-policies"
+} from "@mars/types/den/desktop-policies"
 import { db } from "./db.js"
 import { matchingDesktopPolicyAssignmentRoles } from "./desktop-policy-role-assignments.js"
 

@@ -10,7 +10,7 @@ import {
   uniqueIndex,
   varchar,
 } from "drizzle-orm/mysql-core"
-import { INFERENCE_RESET_STRATEGIES, INFERENCE_WINDOW_TYPES } from "@omnirush/types/den/inference"
+import { INFERENCE_RESET_STRATEGIES, INFERENCE_WINDOW_TYPES } from "@mars/types/den/inference"
 import { denTypeIdColumn, encryptedTextColumn, timestamps } from "../columns"
 import { MemberTable, OrganizationTable } from "./org"
 

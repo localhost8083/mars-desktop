@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { signupWorkspace } from "../worlds/signup-workspace.ts";
 import { desktopOnboardingWorld } from "../../scenarios/onboarding/world.ts";
 
@@ -46,7 +46,7 @@ test("signup distinguishes joining, personal work, and restricted team setup wit
     return result.body.orgs.filter(isRecord);
   };
   const policyFor = async (id: string) => {
-    const result = await probe.api(world.den.admin, "/v1/desktop-policies", { headers: { "x-omnirush-org-id": id } });
+    const result = await probe.api(world.den.admin, "/v1/desktop-policies", { headers: { "x-mars-org-id": id } });
     expect(result.response.ok).toBe(true);
     if (!isRecord(result.body) || !Array.isArray(result.body.desktopPolicies)) throw new Error("Expected desktop policies");
     const policy = result.body.desktopPolicies.filter(isRecord).find((entry) => entry.isDefault === true);
@@ -55,13 +55,13 @@ test("signup distinguishes joining, personal work, and restricted team setup wit
   };
 
   const invitationsFor = async (id: string) => {
-    const result = await probe.api(world.den.admin, "/v1/org", { headers: { "x-omnirush-org-id": id } });
+    const result = await probe.api(world.den.admin, "/v1/org", { headers: { "x-mars-org-id": id } });
     expect(result.response.ok).toBe(true);
     if (!isRecord(result.body) || !Array.isArray(result.body.invitations)) throw new Error("Expected invitations");
     return result.body.invitations.filter(isRecord).map(({ email, role, status }) => ({ email, role, status }));
   };
   const connectionsFor = async (id: string) => {
-    const result = await probe.api(world.den.admin, "/v1/mcp-connections?scope=manageable", { headers: { "x-omnirush-org-id": id } });
+    const result = await probe.api(world.den.admin, "/v1/mcp-connections?scope=manageable", { headers: { "x-mars-org-id": id } });
     expect(result.response.ok).toBe(true);
     if (!isRecord(result.body) || !Array.isArray(result.body.connections)) throw new Error("Expected MCP connection list");
     return result.body.connections.filter(isRecord).map(({ id, name, authType, credentialMode, connectedForMe, access }) => ({
@@ -111,7 +111,7 @@ test("signup distinguishes joining, personal work, and restricted team setup wit
     await user.click({ text: "Join a team" });
     await user.type({ role: "textbox", label: /^Team invitation link/ }, "https://example.test/join-org?invite=not-valid");
     await user.click({ role: "button", label: "Review invitation" });
-    await user.see({ text: /Paste the invitation link for this OmniRush.ai Cloud/ });
+    await user.see({ text: /Paste the invitation link for this MarsAI Cloud/ });
     expect(await orgs()).toEqual([]);
     await user.type({ role: "textbox", label: /^Team invitation link/ }, new URL("/join-org?invite=missing-invitation", world.den.ref.webUrl).toString(), { replace: true });
     await user.click({ role: "button", label: "Review invitation" });
@@ -139,7 +139,7 @@ test("signup distinguishes joining, personal work, and restricted team setup wit
     personalPolicy = await policyFor(personalId);
     expect(personalPolicy.allowMultipleWorkspaces).toBe(true);
     expect(personalPolicy.allowManageExtensions).toBe(true);
-    const policies = await probe.api(world.den.admin, "/v1/desktop-policies", { headers: { "x-omnirush-org-id": personalId } });
+    const policies = await probe.api(world.den.admin, "/v1/desktop-policies", { headers: { "x-mars-org-id": personalId } });
     expect(policies.response.ok).toBe(true);
     if (!isRecord(policies.body) || !Array.isArray(policies.body.desktopPolicies)) throw new Error("Expected desktop policies");
     const defaultPolicy = policies.body.desktopPolicies.filter(isRecord).find((entry) => entry.isDefault === true);
@@ -156,7 +156,7 @@ test("signup distinguishes joining, personal work, and restricted team setup wit
     evidence.recordAssertionEvidence("Opening a legacy Restricted setup link never changes an existing flexible policy", "The personal workspace kept its complete original desktop policy after opening the legacy URL and reloading; navigation only resumed optional People onboarding.", true);
     expect(await invitationsFor(personalId)).toEqual([]);
     const outboxBeforeSkip = await inviteEmails();
-    await user.type({ role: "textbox", label: "Teammate email 1" }, "unsent@omnirush.test");
+    await user.type({ role: "textbox", label: "Teammate email 1" }, "unsent@mars.test");
     await user.click({ role: "button", label: "Do this later" });
     await user.see({ text: "Give your team a head start." }, { timeoutMs: 90_000 });
     await expectFocusedSetup();
@@ -168,9 +168,9 @@ test("signup distinguishes joining, personal work, and restricted team setup wit
     await expectFocusedSetup();
     expect(await connectionsFor(personalId)).toEqual(connectionsBeforeSkip);
     evidence.recordAssertionEvidence("Skipping optional tools does not save even a selected connection", "Notion was selected, then Do this later continued to Ready; the personal organization's connection inventory stayed empty.", true);
-    await user.notSee({ testId: "download-omnirush-card" });
+    await user.notSee({ testId: "download-mars-card" });
     await user.notSee({ text: "Other platforms and versions" });
-    await user.see({ testId: "onboarding-choice-omnirush-models" });
+    await user.see({ testId: "onboarding-choice-mars-models" });
     await user.see({ testId: "onboarding-choice-byok" });
     await user.looks(["The final setup screen focuses on optional model choices and a clear completion button, without a download or installation checklist"]);
     expect(await invitationsFor(personalId)).toEqual([]);
@@ -230,8 +230,8 @@ test("signup distinguishes joining, personal work, and restricted team setup wit
   await step("optional invitations reject duplicates and retry only an unsuccessful row", async () => {
     // Arrange a real server rejection for one row, without replacing product APIs.
     const limited = await seed.api(world.den.admin, "/v1/org", {
-      method: "PATCH", headers: { "x-omnirush-org-id": flexibleId },
-      body: JSON.stringify({ allowedEmailDomains: ["omnirush.test"] }),
+      method: "PATCH", headers: { "x-mars-org-id": flexibleId },
+      body: JSON.stringify({ allowedEmailDomains: ["mars.test"] }),
     });
     expect(limited.response.ok).toBe(true);
     expect(await invitationsFor(flexibleId)).toEqual([]);
@@ -256,7 +256,7 @@ test("signup distinguishes joining, personal work, and restricted team setup wit
       const invitations = await invitationsFor(flexibleId);
       throw new Error(`First invitation did not show success. Form: ${formText.slice(0, 3000)}\nPersisted invitations: ${JSON.stringify(invitations)}`, { cause: error });
     }
-    await user.see({ text: "This workspace only allows omnirush.test email addresses." });
+    await user.see({ text: "This workspace only allows mars.test email addresses." });
     await user.see({ role: "textbox", label: "Teammate email 2" }, { value: world.rejectedEmail, editable: true });
     expect(await invitationsFor(flexibleId)).toEqual([{ email: world.invitees[0], role: "member", status: "pending" }]);
     expect((await inviteEmails()).filter((email) => email === world.invitees[0])).toHaveLength(1);
@@ -341,7 +341,7 @@ test("signup distinguishes joining, personal work, and restricted team setup wit
     await expectFocusedSetup();
     expect(await world.pathname()).toMatch(/\/onboarding\/people$/);
     expect(await policyFor(team.id)).toEqual(saved);
-    const policies = await probe.api(world.den.admin, "/v1/desktop-policies", { headers: { "x-omnirush-org-id": team.id } });
+    const policies = await probe.api(world.den.admin, "/v1/desktop-policies", { headers: { "x-mars-org-id": team.id } });
     expect(policies.response.ok).toBe(true);
     if (!isRecord(policies.body) || !Array.isArray(policies.body.desktopPolicies)) throw new Error("Expected desktop policies");
     const defaultPolicy = policies.body.desktopPolicies.filter(isRecord).find((entry) => entry.isDefault === true);
@@ -394,9 +394,9 @@ test("signup distinguishes joining, personal work, and restricted team setup wit
     await mobileUser.see({ testId: "marketplace-onboarding" }, { timeoutMs: 90_000 });
     await mobileUser.reload();
     await mobileUser.see({ testId: "marketplace-onboarding" }, { timeoutMs: 90_000 });
-    await mobileUser.notSee({ testId: "download-omnirush-card" });
+    await mobileUser.notSee({ testId: "download-mars-card" });
     await mobileUser.notSee({ role: "button", label: "Email me the download link" });
-    await mobileUser.see({ testId: "onboarding-choice-omnirush-models" });
+    await mobileUser.see({ testId: "onboarding-choice-mars-models" });
     await mobileUser.see({ testId: "onboarding-choice-byok" });
     await expectNoHorizontalOverflow(probe.on(mobile));
     expect(await connectionsFor(flexibleId)).toEqual(toolsBefore);
@@ -427,7 +427,7 @@ const desktopTest = spec.world(desktopOnboardingWorld, { timeout: 600_000 });
 desktopTest("desktop-origin signup completes the questions before issuing a fresh grant, while returning members skip them", async ({ world, user, probe, seed, step, evidence }) => {
   const noHandoff = () => expect(world.handoff()).toEqual({ grants: 0, modelWrites: 0, returns: [] });
   const modelsOff = async () => {
-    const result = await probe.api(world.den.admin, "/v1/inference", { headers: { "x-omnirush-org-id": orgId } });
+    const result = await probe.api(world.den.admin, "/v1/inference", { headers: { "x-mars-org-id": orgId } });
     expect(result.response.ok).toBe(true);
     if (!isRecord(result.body) || !isRecord(result.body.inference)) throw new Error("Expected inference state");
     expect(result.body.inference.enabled).toBe(false);
@@ -461,15 +461,15 @@ desktopTest("desktop-origin signup completes the questions before issuing a fres
     if (!isRecord(org) || typeof org.id !== "string") throw new Error("Expected created org");
     orgId = org.id;
     noHandoff();
-    for (const desktopScheme of ["untrusted-app", "https", "omnirush-untrusted"]) {
+    for (const desktopScheme of ["untrusted-app", "https", "mars-untrusted"]) {
       const rejected = await seed.api(world.den.admin, "/v1/auth/desktop-handoff", {
         method: "POST", body: JSON.stringify({ desktopScheme }),
       });
       expect(rejected.response.status).toBe(400);
       expect(rejected.body).not.toHaveProperty("grant");
-      expect(rejected.body).not.toHaveProperty("omnirushUrl");
+      expect(rejected.body).not.toHaveProperty("marsUrl");
     }
-    evidence.recordAssertionEvidence("Untrusted desktop schemes cannot obtain a grant or return URL", "Direct authenticated grant requests for an arbitrary app, HTTPS, and an OmniRush.ai lookalike scheme all returned 400 without a grant or URL. The browser also began with an untrusted scheme query parameter; normal completion below must still dispatch only to omnirush.", true);
+    evidence.recordAssertionEvidence("Untrusted desktop schemes cannot obtain a grant or return URL", "Direct authenticated grant requests for an arbitrary app, HTTPS, and an MarsAI lookalike scheme all returned 400 without a grant or URL. The browser also began with an untrusted scheme query parameter; normal completion below must still dispatch only to mars.", true);
   });
 
   await step("resuming People and reloading Tools restore the setup org after a shared-session switch", async () => {
@@ -477,12 +477,12 @@ desktopTest("desktop-origin signup completes the questions before issuing a fres
     expect(created.response.ok).toBe(true);
     if (!isRecord(created.body) || !isRecord(created.body.organization) || typeof created.body.organization.id !== "string") throw new Error("Expected second workspace");
     const otherOrgId = created.body.organization.id;
-    const token = await probe.storage("omnirush:web:auth-token");
+    const token = await probe.storage("mars:web:auth-token");
     if (typeof token !== "string" || !token) throw new Error("Expected the browser's authenticated session");
     // Use the same session as the browser, not the separate API witness login.
     const browserSession = { ...world.den.admin, token };
     const setupWrites = async (id: string) => {
-      const headers = { "x-omnirush-org-id": id };
+      const headers = { "x-mars-org-id": id };
       const [org, connections] = await Promise.all([
         probe.api(world.den.admin, "/v1/org", { headers }),
         probe.api(world.den.admin, "/v1/mcp-connections?scope=manageable", { headers }),
@@ -512,10 +512,10 @@ desktopTest("desktop-origin signup completes the questions before issuing a fres
     await user.reload();
     await user.see({ text: "Bring your people." }, { timeoutMs: 90_000 });
     noHandoff();
-    await user.type({ role: "textbox", label: "Teammate email 1" }, "resumed-teammate@omnirush.test");
+    await user.type({ role: "textbox", label: "Teammate email 1" }, "resumed-teammate@mars.test");
     await user.click({ role: "button", label: "Send invitations" });
     await user.see({ text: "Invitation sent" }, { timeoutMs: 30_000 });
-    expect((await setupWrites(orgId)).invitations).toContainEqual(expect.objectContaining({ email: "resumed-teammate@omnirush.test", role: "member", status: "pending" }));
+    expect((await setupWrites(orgId)).invitations).toContainEqual(expect.objectContaining({ email: "resumed-teammate@mars.test", role: "member", status: "pending" }));
     expect(await setupWrites(otherOrgId)).toEqual(otherBefore);
     await user.click({ role: "button", label: "Continue" });
     await user.see({ text: "Give your team a head start." }, { timeoutMs: 90_000 });
@@ -534,7 +534,7 @@ desktopTest("desktop-origin signup completes the questions before issuing a fres
     await user.click({ role: "button", label: "Continue" });
     await user.see({ text: "Your workspace is ready" }, { timeoutMs: 90_000 });
     expect((await probe.dom("#setup-models-heading")).elements[0]?.focused).toBe(true);
-    await user.notSee({ testId: "download-omnirush-card" });
+    await user.notSee({ testId: "download-mars-card" });
     await user.notSee({ role: "button", label: "Email me the download link" });
     await user.see({ role: "button", label: "Complete and open the app" });
     noHandoff();
@@ -563,7 +563,7 @@ desktopTest("desktop-origin signup completes the questions before issuing a fres
     expect(handoff.grants).toBe(1);
     expect(handoff.modelWrites).toBe(0);
     const link = new URL(handoff.returns[0]);
-    expect(link.protocol).toBe("omnirush:");
+    expect(link.protocol).toBe("mars:");
     expect(link.hostname).toBe("den-auth");
     const grant = link.searchParams.get("grant");
     expect(grant).toBeTruthy();
@@ -574,7 +574,7 @@ desktopTest("desktop-origin signup completes the questions before issuing a fres
     expect(exchange.body.organization).toMatchObject({ id: orgId, name: "Desktop workspace" });
     expect(exchange.body.user).toMatchObject({ email: world.owner.email });
     await modelsOff();
-    evidence.recordAssertionEvidence("Completion returns a fresh browser-issued grant for the new workspace with models off", "The browser requested the OmniRush.ai protocol URL once; the mock OS recipient exchanged that exact grant for the intended user and organization. No model writes occurred and inference remained disabled.", true);
+    evidence.recordAssertionEvidence("Completion returns a fresh browser-issued grant for the new workspace with models off", "The browser requested the MarsAI protocol URL once; the mock OS recipient exchanged that exact grant for the intended user and organization. No model writes occurred and inference remained disabled.", true);
   });
 
   await step("an existing member returns directly even when the URL says sign-up", async () => {

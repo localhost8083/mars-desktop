@@ -4,17 +4,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { startServer } from "./server.js";
-import { omnirushRuntimeConfigFilePath, writeOmniRushRuntimeConfigFile } from "./omnirush-runtime-config.js";
+import { marsRuntimeConfigFilePath, writeMarsRuntimeConfigFile } from "./mars-runtime-config.js";
 import { writeRuntimeOpencodeConfig } from "./runtime-opencode-config-store.js";
 import type { ServerConfig } from "./types.js";
 
-// These tests dispatch prompts through a local workspace without an omnirush.ai
+// These tests dispatch prompts through a local workspace without an marsai.click
 // account. The server's sign-in gate refuses that unless both development
 // flags are set; the gate itself is covered by session-uploader.server.e2e.test.ts.
-const uploadGateEnv = { OMNIRUSH_DEV_MODE: process.env.OMNIRUSH_DEV_MODE, OMNIRUSH_SESSION_UPLOAD_OPTIONAL: process.env.OMNIRUSH_SESSION_UPLOAD_OPTIONAL };
+const uploadGateEnv = { MARS_DEV_MODE: process.env.MARS_DEV_MODE, MARS_SESSION_UPLOAD_OPTIONAL: process.env.MARS_SESSION_UPLOAD_OPTIONAL };
 beforeAll(() => {
-  process.env.OMNIRUSH_DEV_MODE = "1";
-  process.env.OMNIRUSH_SESSION_UPLOAD_OPTIONAL = "1";
+  process.env.MARS_DEV_MODE = "1";
+  process.env.MARS_SESSION_UPLOAD_OPTIONAL = "1";
 });
 afterAll(() => {
   for (const [name, value] of Object.entries(uploadGateEnv)) {
@@ -42,14 +42,14 @@ afterEach(async () => {
 });
 
 async function createWorkspaceRoot() {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-activate-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-activate-"));
   await mkdir(join(root, ".opencode"), { recursive: true });
   roots.push(root);
   return root;
 }
 
 function hostAuth(token: string) {
-  return { "X-OmniRush-Host-Token": token };
+  return { "X-Mars-Host-Token": token };
 }
 
 function clientAuth(token: string) {
@@ -199,7 +199,7 @@ function startMockOpencode() {
   };
 }
 
-function startMockRemoteOmniRush() {
+function startMockRemoteMars() {
   const requests: Array<{ pathname: string; authorization: string | null }> = [];
   const server = Bun.serve({
     hostname: "127.0.0.1",
@@ -225,7 +225,7 @@ function startMockRemoteOmniRush() {
   return { server, requests };
 }
 
-async function startOmniRushServerWithWorkspaces(input: {
+async function startMarsServerWithWorkspaces(input: {
   configPath: string;
   workspaces: ServerConfig["workspaces"];
   authorizedRoots: string[];
@@ -282,13 +282,13 @@ describe("workspace activation", () => {
         baseUrl: opencodeBaseUrl,
       },
     ];
-    const omnirush = await startOmniRushServerWithWorkspaces({
+    const mars = await startMarsServerWithWorkspaces({
       configPath: join(firstRoot, "server.json"),
       workspaces,
       authorizedRoots: [firstRoot, secondRoot],
     });
 
-    const base = `http://127.0.0.1:${omnirush.server.port}`;
+    const base = `http://127.0.0.1:${mars.server.port}`;
     const disposeCount = () => mock.requests.filter(
       (request) => request.method === "POST" && request.pathname === "/instance/dispose",
     ).length;
@@ -298,7 +298,7 @@ describe("workspace activation", () => {
 
     const response = await fetch(`${base}/workspaces/ws_2/activate`, {
       method: "POST",
-      headers: hostAuth(omnirush.hostToken),
+      headers: hostAuth(mars.hostToken),
     });
 
     expect(response.status).toBe(200);
@@ -311,7 +311,7 @@ describe("workspace activation", () => {
 
     const sameWorkspaceResponse = await fetch(`${base}/workspaces/ws_2/activate`, {
       method: "POST",
-      headers: hostAuth(omnirush.hostToken),
+      headers: hostAuth(mars.hostToken),
     });
 
     expect(sameWorkspaceResponse.status).toBe(200);
@@ -322,8 +322,8 @@ describe("workspace activation", () => {
   test("activation re-attaches the target workspace's runtime MCPs without any dispose", async () => {
     const firstRoot = await createWorkspaceRoot();
     const secondRoot = await createWorkspaceRoot();
-    const previousDb = process.env.OMNIRUSH_RUNTIME_DB;
-    process.env.OMNIRUSH_RUNTIME_DB = join(firstRoot, "runtime.sqlite");
+    const previousDb = process.env.MARS_RUNTIME_DB;
+    process.env.MARS_RUNTIME_DB = join(firstRoot, "runtime.sqlite");
     const mock = startMockOpencode();
     const opencodeBaseUrl = `http://127.0.0.1:${mock.server.port}`;
     const workspaces: ServerConfig["workspaces"] = [
@@ -331,21 +331,21 @@ describe("workspace activation", () => {
       { id: "ws_2", name: "Two", path: secondRoot, preset: "starter", workspaceType: "local", baseUrl: opencodeBaseUrl },
     ];
     try {
-      const omnirush = await startOmniRushServerWithWorkspaces({
+      const mars = await startMarsServerWithWorkspaces({
         configPath: join(firstRoot, "server.json"),
         workspaces,
         authorizedRoots: [firstRoot, secondRoot],
       });
-      await writeRuntimeOpencodeConfig(omnirush.config, "ws_2", (current) => ({
+      await writeRuntimeOpencodeConfig(mars.config, "ws_2", (current) => ({
         ...current,
         mcp: {
           posthog: { type: "remote", url: "https://mcp.posthog.com/mcp", enabled: true },
         },
       }));
 
-      const response = await fetch(`http://127.0.0.1:${omnirush.server.port}/workspaces/ws_2/activate`, {
+      const response = await fetch(`http://127.0.0.1:${mars.server.port}/workspaces/ws_2/activate`, {
         method: "POST",
-        headers: hostAuth(omnirush.hostToken),
+        headers: hostAuth(mars.hostToken),
       });
       expect(response.status).toBe(200);
 
@@ -362,16 +362,16 @@ describe("workspace activation", () => {
       // The runtime MCP reached the engine dynamically with no preceding dispose.
       expect(mock.requests.some((request) => request.pathname === "/instance/dispose")).toBe(false);
     } finally {
-      if (previousDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-      else process.env.OMNIRUSH_RUNTIME_DB = previousDb;
+      if (previousDb === undefined) delete process.env.MARS_RUNTIME_DB;
+      else process.env.MARS_RUNTIME_DB = previousDb;
     }
   });
 
   test("activation rewrites identical engine config file bytes", async () => {
     const firstRoot = await createWorkspaceRoot();
     const secondRoot = await createWorkspaceRoot();
-    const previousDb = process.env.OMNIRUSH_RUNTIME_DB;
-    process.env.OMNIRUSH_RUNTIME_DB = join(firstRoot, "runtime.sqlite");
+    const previousDb = process.env.MARS_RUNTIME_DB;
+    process.env.MARS_RUNTIME_DB = join(firstRoot, "runtime.sqlite");
     const mock = startMockOpencode();
     const opencodeBaseUrl = `http://127.0.0.1:${mock.server.port}`;
     const workspaces: ServerConfig["workspaces"] = [
@@ -379,27 +379,27 @@ describe("workspace activation", () => {
       { id: "ws_2", name: "Two", path: secondRoot, preset: "starter", workspaceType: "local", baseUrl: opencodeBaseUrl },
     ];
     try {
-      const omnirush = await startOmniRushServerWithWorkspaces({
+      const mars = await startMarsServerWithWorkspaces({
         configPath: join(firstRoot, "server.json"),
         workspaces,
         authorizedRoots: [firstRoot, secondRoot],
       });
       // Distinct per-workspace runtime MCP rows must not influence the file.
-      await writeRuntimeOpencodeConfig(omnirush.config, "ws_1", (current) => ({
+      await writeRuntimeOpencodeConfig(mars.config, "ws_1", (current) => ({
         ...current,
         mcp: { one: { type: "remote", url: "https://one.example/mcp", enabled: true } },
       }));
-      await writeRuntimeOpencodeConfig(omnirush.config, "ws_2", (current) => ({
+      await writeRuntimeOpencodeConfig(mars.config, "ws_2", (current) => ({
         ...current,
         mcp: { two: { type: "remote", url: "https://two.example/mcp", enabled: true } },
       }));
-      await writeOmniRushRuntimeConfigFile(omnirush.config);
-      const filePath = omnirushRuntimeConfigFilePath(omnirush.config);
+      await writeMarsRuntimeConfigFile(mars.config);
+      const filePath = marsRuntimeConfigFilePath(mars.config);
       const before = await readFile(filePath, "utf8");
 
-      const response = await fetch(`http://127.0.0.1:${omnirush.server.port}/workspaces/ws_2/activate`, {
+      const response = await fetch(`http://127.0.0.1:${mars.server.port}/workspaces/ws_2/activate`, {
         method: "POST",
-        headers: hostAuth(omnirush.hostToken),
+        headers: hostAuth(mars.hostToken),
       });
       expect(response.status).toBe(200);
 
@@ -413,21 +413,21 @@ describe("workspace activation", () => {
         await Bun.sleep(20);
       }
       expect(mcpPushed).toBe(true);
-      const rewritten = await writeOmniRushRuntimeConfigFile(omnirush.config);
+      const rewritten = await writeMarsRuntimeConfigFile(mars.config);
       expect(rewritten.changed).toBe(false);
       expect(await readFile(filePath, "utf8")).toBe(before);
       expect(mock.requests.some((request) => request.pathname === "/instance/dispose")).toBe(false);
     } finally {
-      if (previousDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-      else process.env.OMNIRUSH_RUNTIME_DB = previousDb;
+      if (previousDb === undefined) delete process.env.MARS_RUNTIME_DB;
+      else process.env.MARS_RUNTIME_DB = previousDb;
     }
   });
 
   test("returns without waiting for post-activation MCP registration", async () => {
     const firstRoot = await createWorkspaceRoot();
     const secondRoot = await createWorkspaceRoot();
-    const previousDb = process.env.OMNIRUSH_RUNTIME_DB;
-    process.env.OMNIRUSH_RUNTIME_DB = join(firstRoot, "runtime.sqlite");
+    const previousDb = process.env.MARS_RUNTIME_DB;
+    process.env.MARS_RUNTIME_DB = join(firstRoot, "runtime.sqlite");
     const mock = startMockOpencode();
     const opencodeBaseUrl = `http://127.0.0.1:${mock.server.port}`;
     const workspaces: ServerConfig["workspaces"] = [
@@ -436,21 +436,21 @@ describe("workspace activation", () => {
     ];
     const heldRegistration = mock.holdNextMcpRegistration();
     try {
-      const omnirush = await startOmniRushServerWithWorkspaces({
+      const mars = await startMarsServerWithWorkspaces({
         configPath: join(firstRoot, "server.json"),
         workspaces,
         authorizedRoots: [firstRoot, secondRoot],
       });
-      await writeRuntimeOpencodeConfig(omnirush.config, "ws_2", (current) => ({
+      await writeRuntimeOpencodeConfig(mars.config, "ws_2", (current) => ({
         ...current,
         mcp: {
           posthog: { type: "remote", url: "https://mcp.posthog.com/mcp", enabled: true },
         },
       }));
 
-      const activation = fetch(`http://127.0.0.1:${omnirush.server.port}/workspaces/ws_2/activate`, {
+      const activation = fetch(`http://127.0.0.1:${mars.server.port}/workspaces/ws_2/activate`, {
         method: "POST",
-        headers: hostAuth(omnirush.hostToken),
+        headers: hostAuth(mars.hostToken),
       });
       expect(await Promise.race([
         heldRegistration.reached.then(() => true),
@@ -475,8 +475,8 @@ describe("workspace activation", () => {
       expect((await activation).status).toBe(200);
     } finally {
       heldRegistration.release();
-      if (previousDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-      else process.env.OMNIRUSH_RUNTIME_DB = previousDb;
+      if (previousDb === undefined) delete process.env.MARS_RUNTIME_DB;
+      else process.env.MARS_RUNTIME_DB = previousDb;
     }
   });
 
@@ -489,24 +489,24 @@ describe("workspace activation", () => {
       { id: "ws_1", name: "One", path: firstRoot, preset: "starter", workspaceType: "local", baseUrl: opencodeBaseUrl },
       { id: "ws_2", name: "Two", path: secondRoot, preset: "starter", workspaceType: "local", baseUrl: opencodeBaseUrl },
     ];
-    const omnirush = await startOmniRushServerWithWorkspaces({
+    const mars = await startMarsServerWithWorkspaces({
       configPath: join(firstRoot, "server.json"),
       workspaces,
       authorizedRoots: [firstRoot, secondRoot],
     });
     mock.setBusy(firstRoot, true);
 
-    const base = `http://127.0.0.1:${omnirush.server.port}`;
+    const base = `http://127.0.0.1:${mars.server.port}`;
     const promptResponse = await fetch(`${base}/workspace/ws_2/opencode/session/ses_b/prompt_async`, {
       method: "POST",
-      headers: clientAuth(omnirush.token),
+      headers: clientAuth(mars.token),
       body: JSON.stringify({ parts: [{ type: "text", text: "Keep running" }] }),
     });
     expect(promptResponse.status).toBe(204);
 
     const response = await fetch(`${base}/workspaces/ws_2/activate`, {
       method: "POST",
-      headers: hostAuth(omnirush.hostToken),
+      headers: hostAuth(mars.hostToken),
     });
 
     expect(response.status).toBe(200);
@@ -544,16 +544,16 @@ describe("workspace activation", () => {
       `${JSON.stringify({ workspaces, authorizedRoots: [firstRoot, secondRoot] }, null, 2)}\n`,
       "utf8",
     );
-    const omnirush = await startOmniRushServerWithWorkspaces({
+    const mars = await startMarsServerWithWorkspaces({
       configPath,
       workspaces,
       authorizedRoots: [firstRoot, secondRoot],
     });
 
-    const base = `http://127.0.0.1:${omnirush.server.port}`;
+    const base = `http://127.0.0.1:${mars.server.port}`;
     const persistedResponse = await fetch(`${base}/workspaces/ws_2/activate?persist=true`, {
       method: "POST",
-      headers: hostAuth(omnirush.hostToken),
+      headers: hostAuth(mars.hostToken),
     });
     expect(persistedResponse.status).toBe(200);
     const persistedBody = await persistedResponse.json();
@@ -563,7 +563,7 @@ describe("workspace activation", () => {
 
     const volatileResponse = await fetch(`${base}/workspaces/ws_1/activate`, {
       method: "POST",
-      headers: hostAuth(omnirush.hostToken),
+      headers: hostAuth(mars.hostToken),
     });
     expect(volatileResponse.status).toBe(200);
     const volatileBody = await volatileResponse.json();
@@ -573,7 +573,7 @@ describe("workspace activation", () => {
 
     const bodyPersistedResponse = await fetch(`${base}/workspaces/ws_1/activate`, {
       method: "POST",
-      headers: { ...hostAuth(omnirush.hostToken), "Content-Type": "application/json" },
+      headers: { ...hostAuth(mars.hostToken), "Content-Type": "application/json" },
       body: JSON.stringify({ persist: true }),
     });
     expect(bodyPersistedResponse.status).toBe(200);
@@ -589,16 +589,16 @@ describe("workspace lifecycle registry", () => {
     const configRoot = await createWorkspaceRoot();
     const workspaceRoot = await createWorkspaceRoot();
     const configPath = join(configRoot, "server.json");
-    const omnirush = await startOmniRushServerWithWorkspaces({
+    const mars = await startMarsServerWithWorkspaces({
       configPath,
       workspaces: [],
       authorizedRoots: [],
     });
 
-    const base = `http://127.0.0.1:${omnirush.server.port}`;
+    const base = `http://127.0.0.1:${mars.server.port}`;
     const response = await fetch(`${base}/workspaces/local`, {
       method: "POST",
-      headers: { ...hostAuth(omnirush.hostToken), "Content-Type": "application/json" },
+      headers: { ...hostAuth(mars.hostToken), "Content-Type": "application/json" },
       body: JSON.stringify({ folderPath: workspaceRoot, name: "Persisted Local", preset: "starter" }),
     });
 
@@ -617,7 +617,7 @@ describe("workspace lifecycle registry", () => {
     const configRoot = await createWorkspaceRoot();
     const workspaceRoot = await createWorkspaceRoot();
     const configPath = join(configRoot, "server.json");
-    const omnirush = await startOmniRushServerWithWorkspaces({
+    const mars = await startMarsServerWithWorkspaces({
       configPath,
       workspaces: [],
       authorizedRoots: [],
@@ -626,10 +626,10 @@ describe("workspace lifecycle registry", () => {
       opencodePassword: "runtime-pass",
     });
 
-    const base = `http://127.0.0.1:${omnirush.server.port}`;
+    const base = `http://127.0.0.1:${mars.server.port}`;
     const response = await fetch(`${base}/workspaces/local`, {
       method: "POST",
-      headers: { ...hostAuth(omnirush.hostToken), "Content-Type": "application/json" },
+      headers: { ...hostAuth(mars.hostToken), "Content-Type": "application/json" },
       body: JSON.stringify({ folderPath: workspaceRoot, name: "Runtime Local", preset: "starter" }),
     });
     expect(response.status).toBe(201);
@@ -643,27 +643,27 @@ describe("workspace lifecycle registry", () => {
     expect(workspace?.opencodePassword).toBeUndefined();
   });
 
-  test("creates and persists remote OmniRush.ai workspace records", async () => {
+  test("creates and persists remote MarsAI workspace records", async () => {
     const workspaceRoot = await createWorkspaceRoot();
     const configPath = join(workspaceRoot, "server.json");
     await writeFile(configPath, `${JSON.stringify({ workspaces: [], authorizedRoots: [] }, null, 2)}\n`, "utf8");
-    const remote = startMockRemoteOmniRush();
-    const omnirush = await startOmniRushServerWithWorkspaces({
+    const remote = startMockRemoteMars();
+    const mars = await startMarsServerWithWorkspaces({
       configPath,
       workspaces: [],
       authorizedRoots: [],
     });
 
-    const base = `http://127.0.0.1:${omnirush.server.port}`;
+    const base = `http://127.0.0.1:${mars.server.port}`;
     const response = await fetch(`${base}/workspaces/remote`, {
       method: "POST",
-      headers: { ...hostAuth(omnirush.hostToken), "Content-Type": "application/json" },
+      headers: { ...hostAuth(mars.hostToken), "Content-Type": "application/json" },
       body: JSON.stringify({
         baseUrl: `http://127.0.0.1:${remote.server.port}`,
-        omnirushHostUrl: `http://127.0.0.1:${remote.server.port}`,
-        omnirushToken: "remote_token",
+        marsHostUrl: `http://127.0.0.1:${remote.server.port}`,
+        marsToken: "remote_token",
         directory: "/remote/project",
-        remoteType: "omnirush",
+        remoteType: "mars",
         sandboxRunId: "run_1",
       }),
     });
@@ -671,15 +671,15 @@ describe("workspace lifecycle registry", () => {
     expect(response.status).toBe(201);
     const body = await response.json();
     expect(body.activeId).toBe("rem_ws_remote");
-    expect(body.workspaces[0].omnirushWorkspaceId).toBe("ws_remote");
-    expect(body.workspaces[0].omnirushWorkspaceName).toBe("Remote Project");
+    expect(body.workspaces[0].marsWorkspaceId).toBe("ws_remote");
+    expect(body.workspaces[0].marsWorkspaceName).toBe("Remote Project");
     expect(remote.requests[0]).toEqual({ pathname: "/workspaces", authorization: "Bearer remote_token" });
 
     const persisted = await readPersistedConfig(configPath);
     const workspaces = workspacesFromConfig(persisted);
     expect(workspaces[0]?.id).toBe("rem_ws_remote");
     expect(workspaces[0]?.workspaceType).toBe("remote");
-    expect(workspaces[0]?.remoteType).toBe("omnirush");
+    expect(workspaces[0]?.remoteType).toBe("mars");
     expect(workspaces[0]?.sandboxRunId).toBe("run_1");
     expect(authorizedRootsFromConfig(persisted)).toEqual([]);
   });
@@ -694,9 +694,9 @@ describe("workspace lifecycle registry", () => {
         path: "/remote/one",
         preset: "remote",
         workspaceType: "remote",
-        remoteType: "omnirush",
+        remoteType: "mars",
         baseUrl: "http://127.0.0.1:9",
-        omnirushWorkspaceId: "ws_one",
+        marsWorkspaceId: "ws_one",
       },
       {
         id: "rem_ws_two",
@@ -704,22 +704,22 @@ describe("workspace lifecycle registry", () => {
         path: "/remote/two",
         preset: "remote",
         workspaceType: "remote",
-        remoteType: "omnirush",
+        remoteType: "mars",
         baseUrl: "http://127.0.0.1:9",
-        omnirushWorkspaceId: "ws_two",
+        marsWorkspaceId: "ws_two",
       },
     ];
     await writeFile(configPath, `${JSON.stringify({ workspaces, authorizedRoots: [] }, null, 2)}\n`, "utf8");
-    const omnirush = await startOmniRushServerWithWorkspaces({
+    const mars = await startMarsServerWithWorkspaces({
       configPath,
       workspaces,
       authorizedRoots: [],
     });
-    const base = `http://127.0.0.1:${omnirush.server.port}`;
+    const base = `http://127.0.0.1:${mars.server.port}`;
 
     const renameResponse = await fetch(`${base}/workspaces/rem_ws_one/display-name`, {
       method: "PATCH",
-      headers: { ...hostAuth(omnirush.hostToken), "Content-Type": "application/json" },
+      headers: { ...hostAuth(mars.hostToken), "Content-Type": "application/json" },
       body: JSON.stringify({ displayName: "Renamed One" }),
     });
     expect(renameResponse.status).toBe(200);
@@ -728,14 +728,14 @@ describe("workspace lifecycle registry", () => {
 
     const activateResponse = await fetch(`${base}/workspaces/rem_ws_two/activate?persist=true`, {
       method: "POST",
-      headers: hostAuth(omnirush.hostToken),
+      headers: hostAuth(mars.hostToken),
     });
     expect(activateResponse.status).toBe(200);
     expect(await readPersistedWorkspaceIds(configPath)).toEqual(["rem_ws_two", "rem_ws_one"]);
 
     const deleteResponse = await fetch(`${base}/workspaces/rem_ws_one`, {
       method: "DELETE",
-      headers: hostAuth(omnirush.hostToken),
+      headers: hostAuth(mars.hostToken),
     });
     expect(deleteResponse.status).toBe(200);
     persisted = await readPersistedConfig(configPath);

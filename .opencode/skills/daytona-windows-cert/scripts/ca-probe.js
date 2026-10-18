@@ -1,7 +1,7 @@
 const { X509Certificate } = require("node:crypto");
 const tls = require("node:tls");
 
-const needle = (process.env.OMNIRUSH_TLS_REPRO_CA_MATCH || "OmniRush.ai TLS Repro").toLowerCase();
+const needle = (process.env.MARS_TLS_REPRO_CA_MATCH || "MarsAI TLS Repro").toLowerCase();
 
 function countMatchingSubjects(certificates) {
   let count = 0;

@@ -1,5 +1,5 @@
-import { denFetch } from "@omnirush/behaviors";
-import type { DenSession } from "@omnirush/behaviors";
+import { denFetch } from "@mars/behaviors";
+import type { DenSession } from "@mars/behaviors";
 import type { LiteLlmHandle } from "./litellm.ts";
 
 interface ExampleProvisionerModule {
@@ -85,7 +85,7 @@ export async function liteLlmPerMemberProvider(
     headers: {
       ...auth(admin.token),
       "content-type": "application/json",
-      "x-omnirush-org-id": input.orgId,
+      "x-mars-org-id": input.orgId,
     },
     body: JSON.stringify({
       name,

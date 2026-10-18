@@ -1,4 +1,4 @@
-import { connectorCatalogSchema, type ConnectorCatalog } from "@omnirush/types/connection-action-app"
+import { connectorCatalogSchema, type ConnectorCatalog } from "@mars/types/connection-action-app"
 import { EXTERNAL_MCP_PRESETS } from "../capability-sources/external-mcp-presets.js"
 import { omnirushOrganizationConnectionsUrl } from "./connection-navigation.js"
 

@@ -1,16 +1,16 @@
-const ENV_FEEDBACK_URL = String(import.meta.env.VITE_OMNIRUSH_FEEDBACK_URL ?? "").trim();
-const ENV_APP_VERSION = String(import.meta.env.VITE_OMNIRUSH_APP_VERSION ?? "").trim();
+const ENV_FEEDBACK_URL = String(import.meta.env.VITE_MARS_FEEDBACK_URL ?? "").trim();
+const ENV_APP_VERSION = String(import.meta.env.VITE_MARS_APP_VERSION ?? "").trim();
 
 // Feedback lands in the public issue tracker unless a deployment provides its
 // own form; the query parameters below become context for the report.
 export const DEFAULT_FEEDBACK_URL =
-  ENV_FEEDBACK_URL || "https://github.com/omnirush-ai/omnirush-gui/issues/new";
+  ENV_FEEDBACK_URL || "https://github.com/mars-ai/mars-gui/issues/new";
 
 type FeedbackUrlOptions = {
   entrypoint: string;
   deployment?: string | null;
   appVersion?: string | null;
-  omnirushServerVersion?: string | null;
+  marsServerVersion?: string | null;
   opencodeVersion?: string | null;
 };
 
@@ -86,13 +86,13 @@ export function buildFeedbackUrl(options: FeedbackUrlOptions): string {
   const url = new URL(DEFAULT_FEEDBACK_URL);
   const osContext = parseClientOsContext();
 
-  url.searchParams.set("source", "omnirush-app");
+  url.searchParams.set("source", "mars-app");
   url.searchParams.set("entrypoint", options.entrypoint);
 
   const entries = {
     deployment: options.deployment?.trim() ?? "",
     appVersion: options.appVersion?.trim() || ENV_APP_VERSION,
-    omnirushServerVersion: options.omnirushServerVersion?.trim() ?? "",
+    marsServerVersion: options.marsServerVersion?.trim() ?? "",
     opencodeVersion: options.opencodeVersion?.trim() ?? "",
     osName: osContext.osName?.trim() ?? "",
     osVersion: osContext.osVersion?.trim() ?? "",

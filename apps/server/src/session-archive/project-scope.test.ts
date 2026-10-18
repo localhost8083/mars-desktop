@@ -36,7 +36,7 @@ function write(file: string, content: string | Buffer): Buffer {
 
 type Item = { path: string; type: string; reason: string; size?: number; sha256?: string; mtime?: number };
 function rig(policy: Record<string, unknown>) {
-  const stateDir = temp("omnirush-scope-state-");
+  const stateDir = temp("mars-scope-state-");
   const keyring = sealKeyring([randomBytes(32)]);
   const { publicRaw, kid } = [...keyring.values()][0]!;
   const created: Array<Record<string, unknown>> = [];
@@ -49,10 +49,10 @@ function rig(policy: Record<string, unknown>) {
   stops.push(() => archiver.stop({ budgetMs: 1000 }));
   const open = async (result: Awaited<ReturnType<SessionArchiver["captureBase"]>>) => {
     if (result.status !== "queued") throw new Error(`not queued: ${JSON.stringify(result)}`);
-    const sealed = readFileSync(join(stateDir, "omnirush-archive", "pending", `${result.archiveId}.orseal`));
+    const sealed = readFileSync(join(stateDir, "mars-archive", "pending", `${result.archiveId}.orseal`));
     const members = new Map(readTar(zstdDecompressSync(await openSealedBuffer(sealed, keyring))).map((member) => [member.name.replace(/\/$/, ""), member]));
     const json = (name: string) => JSON.parse(members.get(name)!.content.toString("utf8"));
-    return { members, manifest: json("__omnirush__/manifest.json"), state: json("__omnirush__/state.json") as { excluded: Item[]; excluded_truncated: boolean; excluded_truncated_count: number } };
+    return { members, manifest: json("__mars__/manifest.json"), state: json("__mars__/state.json") as { excluded: Item[]; excluded_truncated: boolean; excluded_truncated_count: number } };
   };
   return { archiver, open, created };
 }
@@ -64,14 +64,14 @@ describe("looksLikeProject", () => {
       ["services/api/go.mod", "services/api/go.mod"], ["x/App.csproj", "x/App.csproj"], ["build.gradle.kts", "build.gradle.kts"],
       ["Makefile", "Makefile"], ["CMakeLists.txt", "CMakeLists.txt"], ["web/Cargo.toml", "web/Cargo.toml"],
     ] as const) {
-      const root = temp("omnirush-project-");
+      const root = temp("mars-project-");
       write(join(root, file), "x");
       expect((await looksLikeProject(root))?.path).toBe(expected);
     }
-    const src = temp("omnirush-project-src-");
+    const src = temp("mars-project-src-");
     write(join(src, "src", "main.py"), "print(1)\n");
     expect(await looksLikeProject(src)).toEqual({ path: "src", kind: "src" });
-    const none = temp("omnirush-project-none-");
+    const none = temp("mars-project-none-");
     write(join(none, "a", "b", "c", "package.json"), "{}");
     write(join(none, "node_modules", "package.json"), "{}");
     write(join(none, ".cache", "package.json"), "{}");
@@ -81,7 +81,7 @@ describe("looksLikeProject", () => {
   });
 
   test("bounded on a big folder: 20,000 files without a manifest are judged in milliseconds", async () => {
-    const root = temp("omnirush-project-big-");
+    const root = temp("mars-project-big-");
     for (let bucket = 0; bucket < 40; bucket += 1) for (let n = 0; n < 500; n += 1) write(join(root, `bucket_${bucket}`, `f_${n}.txt`), `${bucket}/${n}\n`);
     const started = performance.now();
     expect(await looksLikeProject(root)).toBeNull();
@@ -91,7 +91,7 @@ describe("looksLikeProject", () => {
 
 describe("credential roots", () => {
   test("a session in ~/.aws (or inside it) is skipped with reason credential_root; a plain folder or a git repository is not", async () => {
-    const home = temp("omnirush-home-");
+    const home = temp("mars-home-");
     write(join(home, ".aws", "config"), "[default]\n");
     write(join(home, ".aws", "sso", "cache", "x.json"), "{}");
     write(join(home, "work", "notes.txt"), "hi");
@@ -114,7 +114,7 @@ describe("policy", () => {
 describe("a folder without git", () => {
   test("a project folder is archived whole with marker project: regenerable folders and credentials listed, no git block", async () => {
     const { archiver, open } = rig({ all_folders: false, touched_files: true, project_folders: true, capture_v2: true });
-    const root = temp("omnirush-scope-project-");
+    const root = temp("mars-scope-project-");
     write(join(root, "package.json"), '{"name":"demo"}\n');
     write(join(root, "src", "index.ts"), "export const x = 1;\n");
     for (let n = 0; n < 50; n += 1) write(join(root, "data", `row_${n}.csv`), `${n}\n`);
@@ -133,7 +133,7 @@ describe("a folder without git", () => {
   });
 
   test("a folder policy the server did not answer is a retry, not a refusal: now, from the kept outage, and from a 401", async () => {
-    const stateDir = temp("omnirush-scope-state-");
+    const stateDir = temp("mars-scope-state-");
     const keyring = sealKeyring([randomBytes(32)]);
     const { publicRaw, kid } = [...keyring.values()][0]!;
     let server: "on" | "down" | "unauthorized" | "off" = "down";
@@ -149,7 +149,7 @@ describe("a folder without git", () => {
     let clock = Date.now();
     const archiver = new SessionArchiver({ stateDir, request: request as never, excludedDirs: [stateDir], log: () => undefined, touchedFlushMs: 10, now: () => new Date(clock) });
     stops.push(() => archiver.stop({ budgetMs: 1000 }));
-    const root = temp("omnirush-scope-outage-");
+    const root = temp("mars-scope-outage-");
     write(join(root, "notes.txt"), "hello\n");
     const outage = { status: "skipped", reason: "unavailable", detail: "policy_unavailable" } as const;
     expect(await archiver.captureBase("ses_scope_outage", root, 0)).toEqual(outage);
@@ -173,14 +173,14 @@ describe("a folder without git", () => {
 
   test("without project_folders (an older backend) a project folder stays in touched scope", async () => {
     const { archiver } = rig({ all_folders: false, touched_files: true, capture_v2: true });
-    const root = temp("omnirush-scope-oldbackend-");
+    const root = temp("mars-scope-oldbackend-");
     write(join(root, "package.json"), "{}");
     expect(await archiver.captureBase("ses_scope_oldbackend", root, 0)).toMatchObject({ status: "skipped", reason: "unchanged" });
   });
 
   test("touched scope lists every file it does not archive with size and sha256 (a big one with its mtime), never silently", async () => {
     const { archiver, open } = rig({ all_folders: false, touched_files: true, project_folders: true, capture_v2: true });
-    const root = temp("omnirush-scope-touched-");
+    const root = temp("mars-scope-touched-");
     for (let n = 0; n < 30; n += 1) write(join(root, "bucket", `f_${n}.txt`), `file ${n}\n`);
     const huge = join(root, "huge.bin");
     write(huge, Buffer.alloc(0));
@@ -212,7 +212,7 @@ describe("a folder without git", () => {
 
   test("a non-project folder is not prescanned once the policy says touched scope", async () => {
     const { archiver } = rig({ all_folders: false, touched_files: true, project_folders: true, capture_v2: true });
-    const root = temp("omnirush-scope-noprescan-");
+    const root = temp("mars-scope-noprescan-");
     write(join(root, "a.txt"), "a\n");
     // The first session learns the policy; the next one's start gate takes no whole-folder scan.
     await archiver.captureBase("ses_scope_learn_1", root, 0);
@@ -222,7 +222,7 @@ describe("a folder without git", () => {
 
 describe("start upload", () => {
   test("a session in a credential store says why it has no project archive; a plain folder says nothing", async () => {
-    const parent = temp("omnirush-scope-upload-");
+    const parent = temp("mars-scope-upload-");
     const results: Record<string, unknown> = {};
     for (const name of [".aws", "plain"]) {
       const root = join(parent, name);

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { OmniRushBestPractices, OmniRushBestPracticesChange, OmniRushServerClient } from "@/app/lib/omnirush-server";
+import type { MarsBestPractices, MarsBestPracticesChange, MarsServerClient } from "@/app/lib/mars-server";
 
-export type BestPracticesClient = Pick<OmniRushServerClient, "getBestPractices" | "setBestPractices">;
+export type BestPracticesClient = Pick<MarsServerClient, "getBestPractices" | "setBestPractices">;
 
 export const BEST_PRACTICES_HELP = "Built-in guides help the agent plan, build, test, and fix your work. On by default. Saved on this server.";
 
-export function bestPracticesChangeMessage(result: OmniRushBestPracticesChange): string {
+export function bestPracticesChangeMessage(result: MarsBestPracticesChange): string {
   const choice = result.enabled ? "on" : "off";
   switch (result.engine.status) {
     case "applied":
@@ -22,7 +22,7 @@ export function bestPracticesChangeMessage(result: OmniRushBestPracticesChange):
 
 /** A failed apply keeps the server's saved choice visible, with its warning. */
 export function useBestPractices(client: BestPracticesClient | null) {
-  const [setting, setSetting] = useState<OmniRushBestPractices | null>(null);
+  const [setting, setSetting] = useState<MarsBestPractices | null>(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   // A GET begun before a PUT must not replace the newly saved choice.

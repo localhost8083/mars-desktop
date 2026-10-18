@@ -1,12 +1,12 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 
-const NATIVE_DEEP_LINK_EVENT = "omnirush:deep-link-native";
-const NATIVE_MENU_OPEN_SETTINGS_EVENT = "omnirush:native-menu:open-settings";
-const NATIVE_MENU_TOGGLE_SIDEBAR_EVENT = "omnirush:native-menu:toggle-sidebar";
-const NATIVE_MENU_CHECK_UPDATES_EVENT = "omnirush:native-menu:check-updates";
-const NATIVE_MENU_ZOOM_EVENT = "omnirush:native-menu:zoom";
-const AUTOMATION_RUNNER_CREDENTIAL_REJECTED_EVENT = "omnirush:automation-runner:credential-rejected";
-const FINISH_GUARD_EVENT = "omnirush:finish-guard:finish";
+const NATIVE_DEEP_LINK_EVENT = "mars:deep-link-native";
+const NATIVE_MENU_OPEN_SETTINGS_EVENT = "mars:native-menu:open-settings";
+const NATIVE_MENU_TOGGLE_SIDEBAR_EVENT = "mars:native-menu:toggle-sidebar";
+const NATIVE_MENU_CHECK_UPDATES_EVENT = "mars:native-menu:check-updates";
+const NATIVE_MENU_ZOOM_EVENT = "mars:native-menu:zoom";
+const AUTOMATION_RUNNER_CREDENTIAL_REJECTED_EVENT = "mars:automation-runner:credential-rejected";
+const FINISH_GUARD_EVENT = "mars:finish-guard:finish";
 
 function normalizePlatform(value) {
   if (value === "darwin" || value === "linux") return value;
@@ -19,14 +19,14 @@ function applyShellDocumentMarkers() {
     const root = document?.documentElement;
     if (!root) return false;
 
-    root.dataset.omnirushShell = "electron";
-    root.classList.add("omnirush-electron");
+    root.dataset.marsShell = "electron";
+    root.classList.add("mars-electron");
     if (process.platform === "darwin") {
-      root.classList.add("omnirush-platform-mac");
+      root.classList.add("mars-platform-mac");
     } else if (process.platform === "win32") {
-      root.classList.add("omnirush-platform-windows");
+      root.classList.add("mars-platform-windows");
     } else if (process.platform === "linux") {
-      root.classList.add("omnirush-platform-linux");
+      root.classList.add("mars-platform-linux");
     }
     return true;
   } catch {
@@ -35,7 +35,7 @@ function applyShellDocumentMarkers() {
 }
 
 function notifyMenuOverlayDismiss() {
-  ipcRenderer.send("omnirush:menu-overlay:dismiss");
+  ipcRenderer.send("mars:menu-overlay:dismiss");
 }
 
 function installMenuOverlayDismissListeners() {
@@ -63,7 +63,7 @@ window.addEventListener("contextmenu", (event) => {
   if (url.origin === location.origin && url.pathname === location.pathname && url.search === location.search) return;
   event.preventDefault();
   event.stopImmediatePropagation();
-  ipcRenderer.send("omnirush:browser:linkContextMenu", {
+  ipcRenderer.send("mars:browser:linkContextMenu", {
     url: url.href,
     point: { x: event.clientX, y: event.clientY },
     sessionId: anchor.closest("[data-session-surface-id]")?.getAttribute("data-session-surface-id") ?? null,
@@ -73,16 +73,16 @@ window.addEventListener("contextmenu", (event) => {
 let desktopBootstrap = null;
 let desktopDistribution = null;
 try {
-  desktopBootstrap = ipcRenderer.sendSync("omnirush:desktop-bootstrap-sync");
-  desktopDistribution = ipcRenderer.sendSync("omnirush:desktop-distribution-sync");
+  desktopBootstrap = ipcRenderer.sendSync("mars:desktop-bootstrap-sync");
+  desktopDistribution = ipcRenderer.sendSync("mars:desktop-distribution-sync");
 } catch {
   desktopBootstrap = null;
   desktopDistribution = null;
 }
 
-contextBridge.exposeInMainWorld("__OMNIRUSH_ELECTRON__", {
+contextBridge.exposeInMainWorld("__MARS_ELECTRON__", {
   invokeDesktop(command, ...args) {
-    return ipcRenderer.invoke("omnirush:desktop", command, ...args);
+    return ipcRenderer.invoke("mars:desktop", command, ...args);
   },
   automationRunner: {
     onCredentialRejected(callback) {
@@ -98,207 +98,207 @@ contextBridge.exposeInMainWorld("__OMNIRUSH_ELECTRON__", {
   },
   shell: {
     openExternal(url) {
-      return ipcRenderer.invoke("omnirush:shell:openExternal", url);
+      return ipcRenderer.invoke("mars:shell:openExternal", url);
     },
     relaunch() {
-      return ipcRenderer.invoke("omnirush:shell:relaunch");
+      return ipcRenderer.invoke("mars:shell:relaunch");
     },
   },
   system: {
     getArchitectureInfo() {
-      return ipcRenderer.invoke("omnirush:system:architecture");
+      return ipcRenderer.invoke("mars:system:architecture");
     },
     getMicrophoneStatus() {
-      return ipcRenderer.invoke("omnirush:system:microphoneStatus");
+      return ipcRenderer.invoke("mars:system:microphoneStatus");
     },
     askMicrophoneAccess() {
-      return ipcRenderer.invoke("omnirush:system:askMicrophoneAccess");
+      return ipcRenderer.invoke("mars:system:askMicrophoneAccess");
     },
   },
   migration: {
     readSnapshot() {
-      return ipcRenderer.invoke("omnirush:migration:read");
+      return ipcRenderer.invoke("mars:migration:read");
     },
     ackSnapshot() {
-      return ipcRenderer.invoke("omnirush:migration:ack");
+      return ipcRenderer.invoke("mars:migration:ack");
     },
   },
   brandIcon: {
     apply(url) {
-      return ipcRenderer.invoke("omnirush:desktop", "__applyBrandIcon", url ?? null);
+      return ipcRenderer.invoke("mars:desktop", "__applyBrandIcon", url ?? null);
     },
     getState() {
-      return ipcRenderer.invoke("omnirush:desktop", "__getBrandIconState");
+      return ipcRenderer.invoke("mars:desktop", "__getBrandIconState");
     },
   },
   dev: {
     evalRelaunch() {
-      return ipcRenderer.invoke("omnirush:desktop", "__evalRelaunch");
+      return ipcRenderer.invoke("mars:desktop", "__evalRelaunch");
     },
   },
   startup: {
     /** The window shows "couldn't start": one report per attempt, answered with the hint to show. */
     reportFailure(input) {
-      return ipcRenderer.invoke("omnirush:desktop", "startupReportFailure", input ?? {});
+      return ipcRenderer.invoke("mars:desktop", "startupReportFailure", input ?? {});
     },
     /** Clear read-only marks on the local databases, then restart. */
     repairStore() {
-      return ipcRenderer.invoke("omnirush:desktop", "startupRepairStore");
+      return ipcRenderer.invoke("mars:desktop", "startupRepairStore");
     },
     /** Move the local start state into a backup folder on restart, then restart. */
     resetAppData() {
-      return ipcRenderer.invoke("omnirush:desktop", "startupResetAppData");
+      return ipcRenderer.invoke("mars:desktop", "startupResetAppData");
     },
   },
   nuke: {
     preview(options) {
-      return ipcRenderer.invoke("omnirush:desktop", "nukeOmniRushAndOpencodeConfigPreview", options);
+      return ipcRenderer.invoke("mars:desktop", "nukeMarsAndOpencodeConfigPreview", options);
     },
     execute(options) {
-      return ipcRenderer.invoke("omnirush:desktop", "nukeOmniRushAndOpencodeConfigAndExit", options);
+      return ipcRenderer.invoke("mars:desktop", "nukeMarsAndOpencodeConfigAndExit", options);
     },
   },
   updater: {
     getChannel() {
-      return ipcRenderer.invoke("omnirush:updater:getChannel");
+      return ipcRenderer.invoke("mars:updater:getChannel");
     },
     setChannel(channel) {
-      return ipcRenderer.invoke("omnirush:updater:setChannel", channel);
+      return ipcRenderer.invoke("mars:updater:setChannel", channel);
     },
     check(channel, targetVersion) {
-      return ipcRenderer.invoke("omnirush:updater:check", channel, targetVersion);
+      return ipcRenderer.invoke("mars:updater:check", channel, targetVersion);
     },
     download() {
-      return ipcRenderer.invoke("omnirush:updater:download");
+      return ipcRenderer.invoke("mars:updater:download");
     },
     installAndRestart() {
-      return ipcRenderer.invoke("omnirush:updater:installAndRestart");
+      return ipcRenderer.invoke("mars:updater:installAndRestart");
     },
     /** Reveal a downloaded Linux package in the file manager. */
     showDownloaded() {
-      return ipcRenderer.invoke("omnirush:updater:showDownloaded");
+      return ipcRenderer.invoke("mars:updater:showDownloaded");
     },
     /** Subscribe to incremental download progress from electron-updater. */
     onDownloadProgress(callback) {
       const handler = (_event, data) => callback(data);
-      ipcRenderer.on("omnirush:updater:download-progress", handler);
+      ipcRenderer.on("mars:updater:download-progress", handler);
       return () => {
-        ipcRenderer.removeListener("omnirush:updater:download-progress", handler);
+        ipcRenderer.removeListener("mars:updater:download-progress", handler);
       };
     },
   },
   updateGate: {
     /** The mandatory-update state (update-gate.mjs): "none", "required" or "blocked". */
     get() {
-      return ipcRenderer.invoke("omnirush:update-gate:get");
+      return ipcRenderer.invoke("mars:update-gate:get");
     },
-    /** Reads /device/me again and resolves the state it leaves. */
+    /** Reads the account profile again and resolves the state it leaves. */
     refresh() {
-      return ipcRenderer.invoke("omnirush:update-gate:refresh");
+      return ipcRenderer.invoke("mars:update-gate:refresh");
     },
     onChange(callback) {
       const handler = (_event, state) => callback(state);
-      ipcRenderer.on("omnirush:update-gate:changed", handler);
+      ipcRenderer.on("mars:update-gate:changed", handler);
       return () => {
-        ipcRenderer.removeListener("omnirush:update-gate:changed", handler);
+        ipcRenderer.removeListener("mars:update-gate:changed", handler);
       };
     },
   },
   recovery: {
     recordHealthy() {
-      return ipcRenderer.invoke("omnirush:recovery:recordHealthy");
+      return ipcRenderer.invoke("mars:recovery:recordHealthy");
     },
     list(policy) {
-      return ipcRenderer.invoke("omnirush:recovery:list", policy);
+      return ipcRenderer.invoke("mars:recovery:list", policy);
     },
     restorePrevious() {
-      return ipcRenderer.invoke("omnirush:recovery:restorePrevious");
+      return ipcRenderer.invoke("mars:recovery:restorePrevious");
     },
     use(id) {
-      return ipcRenderer.invoke("omnirush:recovery:use", id);
+      return ipcRenderer.invoke("mars:recovery:use", id);
     },
   },
   browser: {
-    show(bounds, sessionId) { return ipcRenderer.invoke("omnirush:browser:show", bounds, sessionId); },
-    hide() { return ipcRenderer.invoke("omnirush:browser:hide"); },
-    openUrl(url, provider, options) { return ipcRenderer.invoke("omnirush:browser:openUrl", url, provider, options); },
-    setVisibleSession(sessionId) { return ipcRenderer.invoke("omnirush:browser:setVisibleSession", sessionId); },
-    navigate(url) { return ipcRenderer.invoke("omnirush:browser:navigate", url); },
-    back() { return ipcRenderer.invoke("omnirush:browser:back"); },
-    forward() { return ipcRenderer.invoke("omnirush:browser:forward"); },
-    reload() { return ipcRenderer.invoke("omnirush:browser:reload"); },
-    setBounds(bounds) { return ipcRenderer.invoke("omnirush:browser:bounds", bounds); },
-    getState() { return ipcRenderer.invoke("omnirush:browser:state"); },
-    createTab(url, sessionId) { return ipcRenderer.invoke("omnirush:browser:createTab", url, sessionId); },
-    closeTab(tabId) { return ipcRenderer.invoke("omnirush:browser:closeTab", tabId); },
-    suspendTab(tabId) { return ipcRenderer.invoke("omnirush:browser:suspendTab", tabId); },
-    restoreTab(tabId, sessionId) { return ipcRenderer.invoke("omnirush:browser:restoreTab", tabId, sessionId); },
-    releaseTab(tabId, sessionId) { return ipcRenderer.invoke("omnirush:browser:releaseTab", tabId, sessionId); },
-    closeAllTabs() { return ipcRenderer.invoke("omnirush:browser:closeAllTabs"); },
-    closeSessionTabs(sessionId) { return ipcRenderer.invoke("omnirush:browser:closeSessionTabs", sessionId); },
-    selectTab(tabId) { return ipcRenderer.invoke("omnirush:browser:selectTab", tabId); },
-    reorderTabs(tabIds) { return ipcRenderer.invoke("omnirush:browser:reorderTabs", tabIds); },
-    approve(tabId, approvalId, allowed) { return ipcRenderer.invoke("omnirush:browser:approve", tabId, approvalId, allowed); },
-    taskControl(tabId, action) { return ipcRenderer.invoke("omnirush:browser:taskControl", tabId, action); },
-    listTabs() { return ipcRenderer.invoke("omnirush:browser:listTabs"); },
-    listWebMcpTools(args) { return ipcRenderer.invoke("omnirush:browser:webmcpListTools", args); },
-    executeWebMcpTool(args) { return ipcRenderer.invoke("omnirush:browser:webmcpExecuteTool", args); },
-    setProxy(proxy) { return ipcRenderer.invoke("omnirush:browser:setProxy", proxy); },
-    getProxy() { return ipcRenderer.invoke("omnirush:browser:getProxy"); },
-    setControlEnabled(enabled) { return ipcRenderer.invoke("omnirush:browser:setControlEnabled", enabled); },
-    showTabContextMenu(tabId, point) { return ipcRenderer.invoke("omnirush:browser:tabContextMenu", tabId, point); },
-    destroy() { return ipcRenderer.invoke("omnirush:browser:destroy"); },
+    show(bounds, sessionId) { return ipcRenderer.invoke("mars:browser:show", bounds, sessionId); },
+    hide() { return ipcRenderer.invoke("mars:browser:hide"); },
+    openUrl(url, provider, options) { return ipcRenderer.invoke("mars:browser:openUrl", url, provider, options); },
+    setVisibleSession(sessionId) { return ipcRenderer.invoke("mars:browser:setVisibleSession", sessionId); },
+    navigate(url) { return ipcRenderer.invoke("mars:browser:navigate", url); },
+    back() { return ipcRenderer.invoke("mars:browser:back"); },
+    forward() { return ipcRenderer.invoke("mars:browser:forward"); },
+    reload() { return ipcRenderer.invoke("mars:browser:reload"); },
+    setBounds(bounds) { return ipcRenderer.invoke("mars:browser:bounds", bounds); },
+    getState() { return ipcRenderer.invoke("mars:browser:state"); },
+    createTab(url, sessionId) { return ipcRenderer.invoke("mars:browser:createTab", url, sessionId); },
+    closeTab(tabId) { return ipcRenderer.invoke("mars:browser:closeTab", tabId); },
+    suspendTab(tabId) { return ipcRenderer.invoke("mars:browser:suspendTab", tabId); },
+    restoreTab(tabId, sessionId) { return ipcRenderer.invoke("mars:browser:restoreTab", tabId, sessionId); },
+    releaseTab(tabId, sessionId) { return ipcRenderer.invoke("mars:browser:releaseTab", tabId, sessionId); },
+    closeAllTabs() { return ipcRenderer.invoke("mars:browser:closeAllTabs"); },
+    closeSessionTabs(sessionId) { return ipcRenderer.invoke("mars:browser:closeSessionTabs", sessionId); },
+    selectTab(tabId) { return ipcRenderer.invoke("mars:browser:selectTab", tabId); },
+    reorderTabs(tabIds) { return ipcRenderer.invoke("mars:browser:reorderTabs", tabIds); },
+    approve(tabId, approvalId, allowed) { return ipcRenderer.invoke("mars:browser:approve", tabId, approvalId, allowed); },
+    taskControl(tabId, action) { return ipcRenderer.invoke("mars:browser:taskControl", tabId, action); },
+    listTabs() { return ipcRenderer.invoke("mars:browser:listTabs"); },
+    listWebMcpTools(args) { return ipcRenderer.invoke("mars:browser:webmcpListTools", args); },
+    executeWebMcpTool(args) { return ipcRenderer.invoke("mars:browser:webmcpExecuteTool", args); },
+    setProxy(proxy) { return ipcRenderer.invoke("mars:browser:setProxy", proxy); },
+    getProxy() { return ipcRenderer.invoke("mars:browser:getProxy"); },
+    setControlEnabled(enabled) { return ipcRenderer.invoke("mars:browser:setControlEnabled", enabled); },
+    showTabContextMenu(tabId, point) { return ipcRenderer.invoke("mars:browser:tabContextMenu", tabId, point); },
+    destroy() { return ipcRenderer.invoke("mars:browser:destroy"); },
     onStateChange(callback) {
       const handler = (_event, state) => callback(state);
-      ipcRenderer.on("omnirush:browser:state", handler);
-      return () => ipcRenderer.removeListener("omnirush:browser:state", handler);
+      ipcRenderer.on("mars:browser:state", handler);
+      return () => ipcRenderer.removeListener("mars:browser:state", handler);
     },
     onPanelOpened(callback) {
       const handler = (_event, payload) => callback(payload);
-      ipcRenderer.on("omnirush:browser:panel-opened", handler);
-      return () => ipcRenderer.removeListener("omnirush:browser:panel-opened", handler);
+      ipcRenderer.on("mars:browser:panel-opened", handler);
+      return () => ipcRenderer.removeListener("mars:browser:panel-opened", handler);
     },
     onPanelClosed(callback) {
       const handler = (_event, payload) => callback(payload);
-      ipcRenderer.on("omnirush:browser:panel-closed", handler);
-      return () => ipcRenderer.removeListener("omnirush:browser:panel-closed", handler);
+      ipcRenderer.on("mars:browser:panel-closed", handler);
+      return () => ipcRenderer.removeListener("mars:browser:panel-closed", handler);
     },
   },
   browserLogins: {
-    disableForManagedContext() { return ipcRenderer.invoke("omnirush:browser-logins:disableForManagedContext"); },
-    sources() { return ipcRenderer.invoke("omnirush:browser-logins:sources"); },
-    preview(request) { return ipcRenderer.invoke("omnirush:browser-logins:preview", request); },
-    configure(request) { return ipcRenderer.invoke("omnirush:browser-logins:configure", request); },
-    state() { return ipcRenderer.invoke("omnirush:browser-logins:state"); },
-    syncNow() { return ipcRenderer.invoke("omnirush:browser-logins:syncNow"); },
-    pause() { return ipcRenderer.invoke("omnirush:browser-logins:pause"); },
-    resume() { return ipcRenderer.invoke("omnirush:browser-logins:resume"); },
-    stopSite(site) { return ipcRenderer.invoke("omnirush:browser-logins:stopSite", site); },
-    disconnect(request) { return ipcRenderer.invoke("omnirush:browser-logins:disconnect", request); },
-    signedInSites() { return ipcRenderer.invoke("omnirush:browser-logins:signedIn"); },
-    forgetSite(site) { return ipcRenderer.invoke("omnirush:browser-logins:forgetSite", site); },
-    forgetAll() { return ipcRenderer.invoke("omnirush:browser-logins:forgetAll"); },
-    ...(process.env.OMNIRUSH_EVAL_BROWSER_LOGIN_SYNC === "1" ? {
-      writeTestStore(request) { return ipcRenderer.invoke("omnirush:browser-logins:writeTestStore", request); },
-      testWitnessUrl() { return ipcRenderer.invoke("omnirush:browser-logins:testWitnessUrl"); },
+    disableForManagedContext() { return ipcRenderer.invoke("mars:browser-logins:disableForManagedContext"); },
+    sources() { return ipcRenderer.invoke("mars:browser-logins:sources"); },
+    preview(request) { return ipcRenderer.invoke("mars:browser-logins:preview", request); },
+    configure(request) { return ipcRenderer.invoke("mars:browser-logins:configure", request); },
+    state() { return ipcRenderer.invoke("mars:browser-logins:state"); },
+    syncNow() { return ipcRenderer.invoke("mars:browser-logins:syncNow"); },
+    pause() { return ipcRenderer.invoke("mars:browser-logins:pause"); },
+    resume() { return ipcRenderer.invoke("mars:browser-logins:resume"); },
+    stopSite(site) { return ipcRenderer.invoke("mars:browser-logins:stopSite", site); },
+    disconnect(request) { return ipcRenderer.invoke("mars:browser-logins:disconnect", request); },
+    signedInSites() { return ipcRenderer.invoke("mars:browser-logins:signedIn"); },
+    forgetSite(site) { return ipcRenderer.invoke("mars:browser-logins:forgetSite", site); },
+    forgetAll() { return ipcRenderer.invoke("mars:browser-logins:forgetAll"); },
+    ...(process.env.MARS_EVAL_BROWSER_LOGIN_SYNC === "1" ? {
+      writeTestStore(request) { return ipcRenderer.invoke("mars:browser-logins:writeTestStore", request); },
+      testWitnessUrl() { return ipcRenderer.invoke("mars:browser-logins:testWitnessUrl"); },
     } : {}),
   },
   terminal: {
-    shells() { return ipcRenderer.invoke("omnirush:terminal:shells"); },
-    create(options) { return ipcRenderer.invoke("omnirush:terminal:create", options); },
-    killWorkspace(workspaceId) { return ipcRenderer.invoke("omnirush:terminal:killWorkspace", workspaceId); },
-    write(terminalId, data) { return ipcRenderer.invoke("omnirush:terminal:write", terminalId, data); },
-    resize(terminalId, cols, rows) { return ipcRenderer.invoke("omnirush:terminal:resize", terminalId, cols, rows); },
-    kill(terminalId) { return ipcRenderer.invoke("omnirush:terminal:kill", terminalId); },
+    shells() { return ipcRenderer.invoke("mars:terminal:shells"); },
+    create(options) { return ipcRenderer.invoke("mars:terminal:create", options); },
+    killWorkspace(workspaceId) { return ipcRenderer.invoke("mars:terminal:killWorkspace", workspaceId); },
+    write(terminalId, data) { return ipcRenderer.invoke("mars:terminal:write", terminalId, data); },
+    resize(terminalId, cols, rows) { return ipcRenderer.invoke("mars:terminal:resize", terminalId, cols, rows); },
+    kill(terminalId) { return ipcRenderer.invoke("mars:terminal:kill", terminalId); },
     onData(callback) {
       const handler = (_event, payload) => callback(payload);
-      ipcRenderer.on("omnirush:terminal:data", handler);
-      return () => ipcRenderer.removeListener("omnirush:terminal:data", handler);
+      ipcRenderer.on("mars:terminal:data", handler);
+      return () => ipcRenderer.removeListener("mars:terminal:data", handler);
     },
     onExit(callback) {
       const handler = (_event, payload) => callback(payload);
-      ipcRenderer.on("omnirush:terminal:exit", handler);
-      return () => ipcRenderer.removeListener("omnirush:terminal:exit", handler);
+      ipcRenderer.on("mars:terminal:exit", handler);
+      return () => ipcRenderer.removeListener("mars:terminal:exit", handler);
     },
   },
   meta: {
@@ -307,20 +307,20 @@ contextBridge.exposeInMainWorld("__OMNIRUSH_ELECTRON__", {
     initialDeepLinks: [],
     platform: normalizePlatform(process.platform),
     version: process.versions.electron,
-    evalFatalBootstrapFailure: process.env.OMNIRUSH_EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE ?? null,
+    evalFatalBootstrapFailure: process.env.MARS_EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE ?? null,
   },
 });
 
 if (
-  process.env.OMNIRUSH_EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE
-  && (process.env.OMNIRUSH_EVAL_RECOVERY_CANDIDATES || process.env.OMNIRUSH_EVAL_RECOVERY_RELEASES)
+  process.env.MARS_EVAL_FATAL_DESKTOP_BOOTSTRAP_FAILURE
+  && (process.env.MARS_EVAL_RECOVERY_CANDIDATES || process.env.MARS_EVAL_RECOVERY_RELEASES)
 ) {
-  contextBridge.exposeInMainWorld("__omnirushRecoveryControl", {
+  contextBridge.exposeInMainWorld("__marsRecoveryControl", {
     snapshot() {
-      return ipcRenderer.invoke("omnirush:recovery:evalSnapshot");
+      return ipcRenderer.invoke("mars:recovery:evalSnapshot");
     },
     select(id) {
-      return ipcRenderer.invoke("omnirush:recovery:use", id);
+      return ipcRenderer.invoke("mars:recovery:use", id);
     },
   });
 }

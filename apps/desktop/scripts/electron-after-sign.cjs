@@ -4,7 +4,7 @@ const { notaryCredentials, notarizeFile, runWithRetry, staple } = require("./mac
 const { tmpdir } = require("node:os");
 const path = require("node:path");
 
-const computerUseHelperAppName = "OmniRush.ai Computer Use.app";
+const computerUseHelperAppName = "MarsAI Computer Use.app";
 
 function run(command, args) {
   const result = spawnSync(command, args, { stdio: "inherit" });
@@ -76,7 +76,7 @@ async function afterSign(context) {
   verifyComputerUseHelper(appPath, true);
 
   const credentials = notaryCredentials();
-  const notaryTempDir = mkdtempSync(path.join(tmpdir(), "omnirush-electron-notary-"));
+  const notaryTempDir = mkdtempSync(path.join(tmpdir(), "mars-electron-notary-"));
   const notaryZipPath = path.join(notaryTempDir, `${context.packager.appInfo.productFilename}.zip`);
   try {
     run("ditto", ["-c", "-k", "--keepParent", appPath, notaryZipPath]);

@@ -93,7 +93,7 @@ export function clearGithubInstallationTokenCache() {
   githubInstallationTokenRequests.clear()
 }
 
-// Overridable so @omnirush/testkit specs can point the connector at a mock GitHub witness.
+// Overridable so @mars/testkit specs can point the connector at a mock GitHub witness.
 function githubApiBase(): string {
   const override = process.env.GITHUB_CONNECTOR_API_BASE?.trim()
   return override ? override.replace(/\/+$/, "") : "https://api.github.com"

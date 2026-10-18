@@ -4,14 +4,14 @@ import { EnginePool, isEngineConnectionFailure, type EnginePoolHooks, type Engin
 import { createManagedProcessClose, type ManagedChildProcess, type ManagedOpencodeServer } from "./managed-opencode.js";
 import type { ServerConfig, WorkspaceInfo } from "./types.js";
 
-const previousSpawnInterval = process.env.OMNIRUSH_ENGINE_MIN_SPAWN_INTERVAL_MS;
-const previousProbeInterval = process.env.OMNIRUSH_ENGINE_RECOVERY_PROBE_INTERVAL_MS;
+const previousSpawnInterval = process.env.MARS_ENGINE_MIN_SPAWN_INTERVAL_MS;
+const previousProbeInterval = process.env.MARS_ENGINE_RECOVERY_PROBE_INTERVAL_MS;
 
 afterEach(() => {
-  if (previousSpawnInterval === undefined) delete process.env.OMNIRUSH_ENGINE_MIN_SPAWN_INTERVAL_MS;
-  else process.env.OMNIRUSH_ENGINE_MIN_SPAWN_INTERVAL_MS = previousSpawnInterval;
-  if (previousProbeInterval === undefined) delete process.env.OMNIRUSH_ENGINE_RECOVERY_PROBE_INTERVAL_MS;
-  else process.env.OMNIRUSH_ENGINE_RECOVERY_PROBE_INTERVAL_MS = previousProbeInterval;
+  if (previousSpawnInterval === undefined) delete process.env.MARS_ENGINE_MIN_SPAWN_INTERVAL_MS;
+  else process.env.MARS_ENGINE_MIN_SPAWN_INTERVAL_MS = previousSpawnInterval;
+  if (previousProbeInterval === undefined) delete process.env.MARS_ENGINE_RECOVERY_PROBE_INTERVAL_MS;
+  else process.env.MARS_ENGINE_RECOVERY_PROBE_INTERVAL_MS = previousProbeInterval;
 });
 
 function managedHandle(port: number) {
@@ -112,7 +112,7 @@ describe("managed engine self-heal", () => {
   });
 
   test("requires three consecutive connection failures and throttles later bursts", async () => {
-    process.env.OMNIRUSH_ENGINE_MIN_SPAWN_INTERVAL_MS = "30000";
+    process.env.MARS_ENGINE_MIN_SPAWN_INTERVAL_MS = "30000";
     const old = managedHandle(41001);
     const replacements = [managedHandle(41002), managedHandle(41003)];
     let spawnCalls = 0;
@@ -147,7 +147,7 @@ describe("managed engine self-heal", () => {
   });
 
   test("kills the old generation before spawn and schedules retry when replacement fails", async () => {
-    process.env.OMNIRUSH_ENGINE_MIN_SPAWN_INTERVAL_MS = "30000";
+    process.env.MARS_ENGINE_MIN_SPAWN_INTERVAL_MS = "30000";
     const old = managedHandle(42001);
     let oldAliveAtSpawn = true;
     const testFixture = fixture(async () => {
@@ -169,7 +169,7 @@ describe("managed engine self-heal", () => {
   });
 
   test("treats loopback connect timeouts as recoverable engine failures", async () => {
-    process.env.OMNIRUSH_ENGINE_MIN_SPAWN_INTERVAL_MS = "30000";
+    process.env.MARS_ENGINE_MIN_SPAWN_INTERVAL_MS = "30000";
     const old = managedHandle(43001);
     const replacement = managedHandle(43002);
     let spawnCalls = 0;
@@ -191,7 +191,7 @@ describe("managed engine self-heal", () => {
   });
 
   test("keeps a live primary that still answers its health check", async () => {
-    process.env.OMNIRUSH_ENGINE_MIN_SPAWN_INTERVAL_MS = "30000";
+    process.env.MARS_ENGINE_MIN_SPAWN_INTERVAL_MS = "30000";
     const old = managedHandle(44001);
     let spawnCalls = 0;
     let lost = 0;
@@ -215,8 +215,8 @@ describe("managed engine self-heal", () => {
   });
 
   test("replaces an unresponsive live primary only after every spaced probe fails", async () => {
-    process.env.OMNIRUSH_ENGINE_MIN_SPAWN_INTERVAL_MS = "30000";
-    process.env.OMNIRUSH_ENGINE_RECOVERY_PROBE_INTERVAL_MS = "1";
+    process.env.MARS_ENGINE_MIN_SPAWN_INTERVAL_MS = "30000";
+    process.env.MARS_ENGINE_RECOVERY_PROBE_INTERVAL_MS = "1";
     const old = managedHandle(45001);
     const replacement = managedHandle(45002);
     let probes = 0;
@@ -243,7 +243,7 @@ describe("managed engine self-heal", () => {
   });
 
   test("replaces a primary whose process already exited without probing it", async () => {
-    process.env.OMNIRUSH_ENGINE_MIN_SPAWN_INTERVAL_MS = "30000";
+    process.env.MARS_ENGINE_MIN_SPAWN_INTERVAL_MS = "30000";
     const old = managedHandle(46001);
     const replacement = managedHandle(46002);
     let probes = 0;

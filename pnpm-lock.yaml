@@ -147,6 +147,24 @@ importers:
       '@lexical/react':
         specifier: ^0.35.0
         version: 0.35.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(yjs@13.6.30)
+      '@mars/browser-logins':
+        specifier: workspace:*
+        version: link:../../packages/browser-logins
+      '@mars/browser-tabs':
+        specifier: workspace:*
+        version: link:../../packages/browser-tabs
+      '@mars/install-config':
+        specifier: workspace:*
+        version: link:../../packages/install-config
+      '@mars/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@mars/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@mars/workbook':
+        specifier: workspace:*
+        version: link:../../packages/workbook
       '@modelcontextprotocol/ext-apps':
         specifier: ^1.7.5
         version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(patch_hash=b9b29e6a319e94ea968476aa440eb8586b5da9db6b8011ce749c384d186f8a10)(zod@4.3.6))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.3.6)
@@ -156,24 +174,6 @@ importers:
       '@omnirush-ee/telemetry-contracts':
         specifier: workspace:*
         version: link:../../ee/packages/telemetry-contracts
-      '@omnirush/browser-logins':
-        specifier: workspace:*
-        version: link:../../packages/browser-logins
-      '@omnirush/browser-tabs':
-        specifier: workspace:*
-        version: link:../../packages/browser-tabs
-      '@omnirush/install-config':
-        specifier: workspace:*
-        version: link:../../packages/install-config
-      '@omnirush/types':
-        specifier: workspace:*
-        version: link:../../packages/types
-      '@omnirush/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
-      '@omnirush/workbook':
-        specifier: workspace:*
-        version: link:../../packages/workbook
       '@opencode-ai/sdk':
         specifier: ^1.18.15
         version: 1.18.18
@@ -331,30 +331,30 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@mars/browser-logins':
+        specifier: workspace:*
+        version: link:../../packages/browser-logins
+      '@mars/browser-tabs':
+        specifier: workspace:*
+        version: link:../../packages/browser-tabs
+      '@mars/enterprise-mcp-client':
+        specifier: workspace:*
+        version: link:../../packages/enterprise-mcp-client
+      '@mars/headless-threads':
+        specifier: workspace:*
+        version: link:../../packages/headless-threads
+      '@mars/paths':
+        specifier: workspace:*
+        version: link:../../packages/paths
+      '@mars/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@modelcontextprotocol/client':
         specifier: ^2.0.0
         version: 2.0.0(patch_hash=702e2000a3f78e99cfa6971ac4c90466d482174e49340634c0f5b1f346285c12)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(patch_hash=b9b29e6a319e94ea968476aa440eb8586b5da9db6b8011ce749c384d186f8a10)(zod@4.3.6)
-      '@omnirush/browser-logins':
-        specifier: workspace:*
-        version: link:../../packages/browser-logins
-      '@omnirush/browser-tabs':
-        specifier: workspace:*
-        version: link:../../packages/browser-tabs
-      '@omnirush/enterprise-mcp-client':
-        specifier: workspace:*
-        version: link:../../packages/enterprise-mcp-client
-      '@omnirush/headless-threads':
-        specifier: workspace:*
-        version: link:../../packages/headless-threads
-      '@omnirush/paths':
-        specifier: workspace:*
-        version: link:../../packages/paths
-      '@omnirush/types':
-        specifier: workspace:*
-        version: link:../../packages/types
       '@opencode-ai/sdk':
         specifier: ^1.18.32
         version: 1.18.32
@@ -419,7 +419,7 @@ importers:
 
   apps/review:
     dependencies:
-      '@omnirush/review':
+      '@mars/review':
         specifier: workspace:*
         version: link:../../packages/review
       next:
@@ -447,18 +447,18 @@ importers:
 
   apps/server:
     dependencies:
+      '@mars/enterprise-mcp-client':
+        specifier: workspace:*
+        version: link:../../packages/enterprise-mcp-client
+      '@mars/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@modelcontextprotocol/client':
         specifier: ^2.0.0
         version: 2.0.0(patch_hash=702e2000a3f78e99cfa6971ac4c90466d482174e49340634c0f5b1f346285c12)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(patch_hash=b9b29e6a319e94ea968476aa440eb8586b5da9db6b8011ce749c384d186f8a10)(zod@4.3.6)
-      '@omnirush/enterprise-mcp-client':
-        specifier: workspace:*
-        version: link:../../packages/enterprise-mcp-client
-      '@omnirush/types':
-        specifier: workspace:*
-        version: link:../../packages/types
       '@opencode-ai/sdk':
         specifier: ^1.18.32
         version: 1.18.32
@@ -490,13 +490,13 @@ importers:
       '@hyzyla/pdfium':
         specifier: 2.1.13
         version: 2.1.13
-      '@omnirush/headless-threads':
+      '@mars/headless-threads':
         specifier: workspace:*
         version: link:../../packages/headless-threads
-      '@omnirush/paths':
+      '@mars/paths':
         specifier: workspace:*
         version: link:../../packages/paths
-      '@omnirush/workbook':
+      '@mars/workbook':
         specifier: workspace:*
         version: link:../../packages/workbook
       '@types/better-sqlite3':
@@ -526,7 +526,7 @@ importers:
 
   apps/ui-demo:
     dependencies:
-      '@omnirush/ui':
+      '@mars/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       react:
@@ -584,6 +584,33 @@ importers:
       '@hono/swagger-ui':
         specifier: ^0.6.1
         version: 0.6.1(hono@4.12.34)
+      '@mars/automations':
+        specifier: workspace:*
+        version: link:../../../packages/automations
+      '@mars/codemode':
+        specifier: workspace:*
+        version: link:../../../packages/codemode
+      '@mars/connect-link':
+        specifier: workspace:*
+        version: link:../../../packages/connect-link
+      '@mars/email':
+        specifier: workspace:*
+        version: link:../../../packages/email
+      '@mars/enterprise-mcp-client':
+        specifier: workspace:*
+        version: link:../../../packages/enterprise-mcp-client
+      '@mars/headless-threads':
+        specifier: workspace:*
+        version: link:../../../packages/headless-threads
+      '@mars/install-config':
+        specifier: workspace:*
+        version: link:../../../packages/install-config
+      '@mars/mcp-apps':
+        specifier: workspace:*
+        version: link:../../../packages/mcp-apps
+      '@mars/types':
+        specifier: workspace:*
+        version: link:../../../packages/types
       '@modelcontextprotocol/ext-apps':
         specifier: ^1.7.5
         version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(patch_hash=b9b29e6a319e94ea968476aa440eb8586b5da9db6b8011ce749c384d186f8a10)(zod@4.3.6))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.3.6)
@@ -605,33 +632,6 @@ importers:
       '@omnirush-ee/utils':
         specifier: workspace:*
         version: link:../../packages/utils
-      '@omnirush/automations':
-        specifier: workspace:*
-        version: link:../../../packages/automations
-      '@omnirush/codemode':
-        specifier: workspace:*
-        version: link:../../../packages/codemode
-      '@omnirush/connect-link':
-        specifier: workspace:*
-        version: link:../../../packages/connect-link
-      '@omnirush/email':
-        specifier: workspace:*
-        version: link:../../../packages/email
-      '@omnirush/enterprise-mcp-client':
-        specifier: workspace:*
-        version: link:../../../packages/enterprise-mcp-client
-      '@omnirush/headless-threads':
-        specifier: workspace:*
-        version: link:../../../packages/headless-threads
-      '@omnirush/install-config':
-        specifier: workspace:*
-        version: link:../../../packages/install-config
-      '@omnirush/mcp-apps':
-        specifier: workspace:*
-        version: link:../../../packages/mcp-apps
-      '@omnirush/types':
-        specifier: workspace:*
-        version: link:../../../packages/types
       '@opentelemetry/api':
         specifier: 1.9.1
         version: 1.9.1
@@ -811,18 +811,18 @@ importers:
 
   ee/apps/den-web:
     dependencies:
+      '@mars/types':
+        specifier: workspace:*
+        version: link:../../../packages/types
+      '@mars/ui':
+        specifier: workspace:*
+        version: link:../../../packages/ui
       '@omnirush-ee/telemetry-contracts':
         specifier: workspace:*
         version: link:../../packages/telemetry-contracts
       '@omnirush-ee/utils':
         specifier: workspace:*
         version: link:../../packages/utils
-      '@omnirush/types':
-        specifier: workspace:*
-        version: link:../../../packages/types
-      '@omnirush/ui':
-        specifier: workspace:*
-        version: link:../../../packages/ui
       '@opentelemetry/api':
         specifier: 1.9.1
         version: 1.9.1
@@ -911,7 +911,7 @@ importers:
 
   ee/apps/diagnostics:
     dependencies:
-      '@omnirush/types':
+      '@mars/types':
         specifier: workspace:*
         version: link:../../../packages/types
       next:
@@ -942,7 +942,7 @@ importers:
       '@hono/node-server':
         specifier: 2.0.12
         version: 2.0.12(hono@4.12.34)
-      '@omnirush/enterprise-mcp-mock-server':
+      '@mars/enterprise-mcp-mock-server':
         specifier: workspace:*
         version: link:../../../packages/enterprise-mcp-mock-server
       hono:
@@ -967,6 +967,9 @@ importers:
       '@hono/node-server':
         specifier: 2.0.12
         version: 2.0.12(hono@4.12.34)
+      '@mars/types':
+        specifier: workspace:*
+        version: link:../../../packages/types
       '@omnirush-ee/den-db':
         specifier: workspace:*
         version: link:../../packages/den-db
@@ -976,9 +979,6 @@ importers:
       '@omnirush-ee/utils':
         specifier: workspace:*
         version: link:../../packages/utils
-      '@omnirush/types':
-        specifier: workspace:*
-        version: link:../../../packages/types
       '@sentry/hono':
         specifier: ^10.65.0
         version: 10.65.0(@hono/node-server@2.0.12(hono@4.12.34))(@sentry/node@10.65.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.220.0(@opentelemetry/api@1.9.1)))(hono@4.12.34)
@@ -1010,10 +1010,10 @@ importers:
 
   ee/apps/landing:
     dependencies:
-      '@omnirush/email':
+      '@mars/email':
         specifier: workspace:*
         version: link:../../../packages/email
-      '@omnirush/ui':
+      '@mars/ui':
         specifier: workspace:*
         version: link:../../../packages/ui
       botid:
@@ -1086,12 +1086,12 @@ importers:
 
   ee/packages/den-db:
     dependencies:
+      '@mars/types':
+        specifier: workspace:*
+        version: link:../../../packages/types
       '@omnirush-ee/utils':
         specifier: workspace:*
         version: link:../utils
-      '@omnirush/types':
-        specifier: workspace:*
-        version: link:../../../packages/types
       '@planetscale/database':
         specifier: ^1.19.0
         version: 1.19.0
@@ -1183,7 +1183,7 @@ importers:
 
   packages/automations:
     dependencies:
-      '@omnirush/types':
+      '@mars/types':
         specifier: workspace:*
         version: link:../types
       zod:
@@ -1245,7 +1245,7 @@ importers:
 
   packages/connect-link:
     dependencies:
-      '@omnirush/types':
+      '@mars/types':
         specifier: workspace:*
         version: link:../types
       zod:
@@ -1380,14 +1380,25 @@ importers:
         specifier: ^5.6.3
         version: 5.9.3
 
+  packages/mars-bootstrap: {}
+
+  packages/mars-ui-mcp:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.29.0
+        version: 1.29.0(patch_hash=b9b29e6a319e94ea968476aa440eb8586b5da9db6b8011ce749c384d186f8a10)(zod@3.25.76)
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
+
   packages/mcp-apps:
     dependencies:
+      '@mars/types':
+        specifier: workspace:*
+        version: link:../types
       '@modelcontextprotocol/ext-apps':
         specifier: ^1.7.5
         version: 1.7.5(@modelcontextprotocol/sdk@1.29.0(patch_hash=b9b29e6a319e94ea968476aa440eb8586b5da9db6b8011ce749c384d186f8a10)(zod@4.3.6))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.3.6)
-      '@omnirush/types':
-        specifier: workspace:*
-        version: link:../types
       react:
         specifier: 'catalog:'
         version: 19.2.8
@@ -1416,17 +1427,6 @@ importers:
       vite-plugin-singlefile:
         specifier: ^2.3.0
         version: 2.3.3(rollup@4.62.2)(vite@6.4.3(@types/node@25.6.0)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.23.1)(yaml@2.9.0))
-
-  packages/omnirush-bootstrap: {}
-
-  packages/omnirush-ui-mcp:
-    dependencies:
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
-        version: 1.29.0(patch_hash=b9b29e6a319e94ea968476aa440eb8586b5da9db6b8011ce749c384d186f8a10)(zod@3.25.76)
-      zod:
-        specifier: ^3.25.76
-        version: 3.25.76
 
   packages/paths:
     devDependencies:
@@ -1518,7 +1518,7 @@ importers:
 
   packages/world:
     dependencies:
-      '@omnirush/paths':
+      '@mars/paths':
         specifier: workspace:*
         version: link:../paths
     devDependencies:

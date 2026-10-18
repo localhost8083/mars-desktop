@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { pluginEditorWithConnector } from "../worlds/library.ts";
 
 type ConnectionFact = {

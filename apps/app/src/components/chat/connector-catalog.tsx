@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { ArrowUpRight, Search } from "lucide-react"
-import type { ConnectorCatalog } from "@omnirush/types/connection-action-app"
+import type { ConnectorCatalog } from "@mars/types/connection-action-app"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { openDesktopUrl } from "@/app/lib/desktop"
@@ -56,7 +56,7 @@ export function ConnectorCatalogCard({ catalog }: { catalog: ConnectorCatalog })
       const expected = new URL("/dashboard/mcp-connections", readDenSettings().baseUrl)
       expected.searchParams.set("quickAdd", entry.id)
       // The model cannot supply a new setup destination or extra query parameters.
-      if (entry.setupUrl !== expected.toString()) throw new Error("Your omnirush.ai server changed. Search for this connector again.")
+      if (entry.setupUrl !== expected.toString()) throw new Error("Your marsai.click server changed. Search for this connector again.")
       await openDesktopUrl(expected.toString())
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not open setup.") }
   }

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createServer, request as httpRequest } from "node:http";
 import test from "node:test";
-import { denFetch } from "@omnirush/behaviors";
+import { denFetch } from "@mars/behaviors";
 import type { Place } from "../src/place.ts";
 import { faultProxy } from "../src/faults.ts";
 import type { Server } from "node:http";

@@ -69,7 +69,7 @@ test("a Secret Service provider on the bus selects gnome-libsecret (gnome-keyrin
   const { app, appended } = fakeApp();
   const logs = [];
   const { calls, listBusNames } = busWith("org.freedesktop.secrets");
-  const store = await applyLinuxPasswordStore({ app, platform: "linux", env: HYPRLAND, argv: ["omnirush"], listBusNames, log: (line) => logs.push(line) });
+  const store = await applyLinuxPasswordStore({ app, platform: "linux", env: HYPRLAND, argv: ["mars"], listBusNames, log: (line) => logs.push(line) });
   assert.equal(store, "gnome-libsecret");
   assert.deepEqual(appended, [["password-store", "gnome-libsecret"]]);
   assert.equal(calls.length, 1);
@@ -100,7 +100,7 @@ test("no keyring on the bus leaves Chromium's choice (the private-file fallback 
 });
 
 test("the switch is not appended when the user passed --password-store", async () => {
-  for (const [argv, switches] of [[["omnirush", "--password-store=basic"], []], [["omnirush"], ["password-store"]]]) {
+  for (const [argv, switches] of [[["mars", "--password-store=basic"], []], [["mars"], ["password-store"]]]) {
     const { app, appended } = fakeApp(switches);
     const { calls, listBusNames } = busWith("org.freedesktop.secrets");
     assert.equal(await applyLinuxPasswordStore({ app, platform: "linux", env: HYPRLAND, argv, listBusNames, log: () => undefined }), null);
@@ -163,7 +163,7 @@ test("listSessionBusNames parses dbus-send, falls back to busctl, and never auto
 
   let ran = false;
   const noBus = await listSessionBusNames({
-    env: { XDG_RUNTIME_DIR: "/nonexistent-omnirush-runtime-dir" },
+    env: { XDG_RUNTIME_DIR: "/nonexistent-mars-runtime-dir" },
     timeoutMs: 300,
     runCommand: async () => { ran = true; return { stdout: "" }; },
   });
@@ -208,18 +208,18 @@ test("listSessionBusNames reports activatable names when ListNames fails and sta
 });
 
 test("the store that sealed the sign-in stays chosen on a launch where the probe finds nothing", async () => {
-  const userData = await mkdtemp(path.join(os.tmpdir(), "omnirush-password-store-"));
+  const userData = await mkdtemp(path.join(os.tmpdir(), "mars-password-store-"));
   try {
-    assert.equal(await recordLinuxPasswordStore({ userDataPath: userData, fileName: "omnirush-account.bin", backend: "gnome_libsecret" }), true);
-    assert.equal(await recordLinuxPasswordStore({ userDataPath: userData, fileName: "omnirush-account.bin", backend: "gnome_libsecret" }), false);
-    assert.equal(await recordLinuxPasswordStore({ userDataPath: userData, fileName: "omnirush-account.bin", backend: "basic_text" }), false);
+    assert.equal(await recordLinuxPasswordStore({ userDataPath: userData, fileName: "mars-account.bin", backend: "gnome_libsecret" }), true);
+    assert.equal(await recordLinuxPasswordStore({ userDataPath: userData, fileName: "mars-account.bin", backend: "gnome_libsecret" }), false);
+    assert.equal(await recordLinuxPasswordStore({ userDataPath: userData, fileName: "mars-account.bin", backend: "basic_text" }), false);
     assert.equal((await stat(path.join(userData, "linux-password-store.json"))).mode & 0o777, 0o600);
-    assert.deepEqual(JSON.parse(await readFile(path.join(userData, "linux-password-store.json"), "utf8")), { stores: { "omnirush-account.bin": "gnome-libsecret" } });
+    assert.deepEqual(JSON.parse(await readFile(path.join(userData, "linux-password-store.json"), "utf8")), { stores: { "mars-account.bin": "gnome-libsecret" } });
 
     // No sealed file: the record alone does not pin the store.
     assert.equal(recordedLinuxPasswordStore(userData), null);
-    await writeFile(path.join(userData, "omnirush-account.bin"), "sealed");
-    assert.deepEqual(recordedLinuxPasswordStore(userData), { store: "gnome-libsecret", file: "omnirush-account.bin" });
+    await writeFile(path.join(userData, "mars-account.bin"), "sealed");
+    assert.deepEqual(recordedLinuxPasswordStore(userData), { store: "gnome-libsecret", file: "mars-account.bin" });
 
     // The keyring is neither running nor activatable on this launch.
     const nothing = busWith();
@@ -229,7 +229,7 @@ test("the store that sealed the sign-in stays chosen on a launch where the probe
     assert.equal(store, "gnome-libsecret");
     assert.deepEqual(appended, [["password-store", "gnome-libsecret"]]);
     assert.equal(nothing.calls.length, 0);
-    assert.match(logs[0], /omnirush-account\.bin is sealed with it/);
+    assert.match(logs[0], /mars-account\.bin is sealed with it/);
 
     // It also holds on a desktop Chromium names (a KDE user who signed in from sway).
     const kde = fakeApp();
@@ -247,7 +247,7 @@ test("the store that sealed the sign-in stays chosen on a launch where the probe
     }
 
     // Once the sealed file is gone (signed out) the probe decides again.
-    await rm(path.join(userData, "omnirush-account.bin"));
+    await rm(path.join(userData, "mars-account.bin"));
     const after = fakeApp();
     assert.equal(await applyLinuxPasswordStore({ app: after.app, platform: "linux", env: HYPRLAND, argv: [], userDataPath: userData, listBusNames: nothing.listBusNames, log: () => undefined }), null);
   } finally {

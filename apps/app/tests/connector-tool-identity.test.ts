@@ -35,7 +35,7 @@ describe("connector tool identity", () => {
   test("recognizes native connector capabilities with a first-class local brand icon", () => {
     const identities = buildConnectorToolIdentities({ mcpServers: [], orgConnections: [] });
     const identity = resolveConnectorToolIdentity(
-      completedPart("omnirush-cloud_execute_capability", {
+      completedPart("mars-cloud_execute_capability", {
         name: "getCapabilitiesGoogleWorkspaceCalendarEvents",
       }),
       identities,
@@ -51,7 +51,7 @@ describe("connector tool identity", () => {
       orgConnections: [granolaConnection],
     });
     const identity = resolveConnectorToolIdentity(
-      completedPart("omnirush-cloud_execute_capability", {
+      completedPart("mars-cloud_execute_capability", {
         name: "mcp:emc_granola:ask_about_meetings",
       }),
       identities,

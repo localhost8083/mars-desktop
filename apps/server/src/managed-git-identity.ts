@@ -4,7 +4,7 @@
  * Git silently invents `user@host` when user.name / user.email are unset, or
  * refuses the commit outright. When the engine is about to record a commit in
  * a repository without an identity, the managed-policy plugin asks the server
- * (action "git_identity"). With an omnirush.ai account connected, the account's
+ * (action "git_identity"). With an marsai.click account connected, the account's
  * display name and email are written to that repository only (`git config
  * --local`, never `--global`); otherwise the request fails with a message that
  * tells the agent exactly what to ask the user.
@@ -36,10 +36,10 @@ export interface WorkspaceGitIdentity {
 export type EnsureGitIdentityResult =
   | { status: "not_a_repository" }
   | { status: "configured"; name: string; email: string }
-  | { status: "applied"; name: string; email: string; source: "omnirush_account" };
+  | { status: "applied"; name: string; email: string; source: "mars_account" };
 
 export const GIT_IDENTITY_REQUIRED_MESSAGE =
-  "Git identity is not configured for this repository (user.name and user.email are unset) and no omnirush.ai account is connected to supply one. "
+  "Git identity is not configured for this repository (user.name and user.email are unset) and no marsai.click account is connected to supply one. "
   + "Ask the user which name and email to commit with, then set them for this repository only: "
   + 'git config user.name "<name>" && git config user.email "<email>" (never --global).';
 
@@ -85,7 +85,7 @@ export function accountIdentityFromProfile(profile: unknown): AccountIdentity | 
   const record = profile as Record<string, unknown>;
   const email = trimmed(record.email);
   if (!email) return null;
-  const name = trimmed(record.displayName) ?? trimmed(record.display_name) ?? displayNameFromEmail(email) ?? email;
+  const name = trimmed(record.displayName) ?? trimmed(record.display_name) ?? trimmed(record.name) ?? displayNameFromEmail(email) ?? email;
   return { name, email };
 }
 
@@ -93,7 +93,7 @@ function controlPlaneProfileUrl(gatewayUrl: string): string | null {
   try {
     const url = new URL(gatewayUrl);
     if (url.protocol !== "https:" && !(url.protocol === "http:" && ["127.0.0.1", "localhost", "::1"].includes(url.hostname))) return null;
-    url.pathname = url.pathname.replace(/\/+$/, "").replace(/\/v1$/, "") + "/device/me";
+    url.pathname = url.pathname.replace(/\/+$/, "").replace(/\/v1$/, "") + "/oauth/userinfo";
     url.search = "";
     url.hash = "";
     return url.toString();
@@ -105,7 +105,7 @@ function controlPlaneProfileUrl(gatewayUrl: string): string | null {
 const profileCache = new WeakMap<ServerConfig, { value: AccountIdentity | null; expires: number }>();
 
 /**
- * The connected omnirush.ai account's name and email. The desktop app answers
+ * The connected marsai.click account's name and email. The desktop app answers
  * through the credential bundle's `profile` callback; a standalone server with
  * environment credentials reads the control plane directly. Null when no
  * account is connected or the lookup fails.
@@ -124,7 +124,7 @@ export function forgetAccountIdentity(config: ServerConfig): void {
 }
 
 async function lookupAccountIdentity(config: ServerConfig, deps: GitIdentityDependencies): Promise<AccountIdentity | null> {
-  const credentials = config.omnirushGatewayCredentials;
+  const credentials = config.marsGatewayCredentials;
   if (credentials?.profile) {
     try {
       return accountIdentityFromProfile(await credentials.profile());
@@ -133,8 +133,8 @@ async function lookupAccountIdentity(config: ServerConfig, deps: GitIdentityDepe
     }
   }
   const env = deps.env ?? process.env;
-  const gatewayUrl = credentials?.gatewayUrl ?? env.OMNIRUSH_GATEWAY_URL?.trim();
-  const accessToken = credentials?.accessToken ?? env.OMNIRUSH_ACCESS_TOKEN?.trim();
+  const gatewayUrl = credentials?.gatewayUrl ?? env.MARS_GATEWAY_URL?.trim();
+  const accessToken = credentials?.accessToken ?? env.MARS_ACCESS_TOKEN?.trim();
   if (!gatewayUrl || !accessToken) return null;
   const url = controlPlaneProfileUrl(gatewayUrl);
   if (!url) return null;
@@ -166,7 +166,7 @@ export async function readWorkspaceGitIdentity(directory: string, deps: GitIdent
 /**
  * Make sure commits in `directory` carry an identity. Throws
  * `git_identity_required` (HTTP 412) when neither the repository nor a
- * connected omnirush.ai account provides one.
+ * connected marsai.click account provides one.
  */
 export async function ensureWorkspaceGitIdentity(
   config: ServerConfig,
@@ -193,5 +193,5 @@ export async function ensureWorkspaceGitIdentity(
     const result = await runGit(["-C", directory, "config", "--local", "user.email", account.email]);
     if (result.code !== 0) throw new ApiError(500, "git_identity_write_failed", "Could not write user.email to the repository configuration.");
   }
-  return { status: "applied", name: name ?? account.name, email: email ?? account.email, source: "omnirush_account" };
+  return { status: "applied", name: name ?? account.name, email: email ?? account.email, source: "mars_account" };
 }

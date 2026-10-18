@@ -1,13 +1,13 @@
 import type {
   AutomationAction,
-} from "@omnirush/types/automations"
+} from "@mars/types/automations"
 import type {
   WorkflowArtifactSnapshot,
   WorkflowDetail,
   WorkflowRunPreview,
   WorkflowVersion,
-} from "@omnirush/types/workflows"
-import { WorkflowGraph } from "@omnirush/codemode"
+} from "@mars/types/workflows"
+import { WorkflowGraph } from "@mars/codemode"
 import { and, asc, desc, eq, gt, inArray, isNotNull, isNull } from "@omnirush-ee/den-db/drizzle"
 import {
   AutomationRevisionTable,

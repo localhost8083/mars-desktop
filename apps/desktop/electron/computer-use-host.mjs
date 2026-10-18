@@ -54,7 +54,7 @@ export async function createComputerUseHost({ profile, executable }) {
       while ((end = outgoing.indexOf("\n")) >= 0) {
         const line = outgoing.slice(0, end); outgoing = outgoing.slice(end + 1);
         let message; try { message = JSON.parse(line); } catch { close(); return; }
-        if (message.method === "omnirush/ui") {
+        if (message.method === "mars/ui") {
           if (message.params?.phase === "closed") entry.state = null;
           else if (message.params && typeof message.params.id === "string") entry.state = { ...entry.state, ...message.params, connectionId, helperPid: child.pid };
         } else socket.write(`${line}\n`);
@@ -70,7 +70,7 @@ export async function createComputerUseHost({ profile, executable }) {
       if (!value || typeof value.connectionId !== "string" || typeof value.id !== "string" || !["approve", "deny", "resume", "stop", "hide", "show"].includes(value.action)) throw new Error("Invalid Computer Use control.");
       const entry = connections.get(value.connectionId);
       if (!entry?.state || entry.state.id !== value.id) throw new Error("This Computer Use request has ended.");
-      entry.child.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", method: "omnirush/ui", params: { id: value.id, action: value.action, windowId: value.windowId } })}\n`);
+      entry.child.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", method: "mars/ui", params: { id: value.id, action: value.action, windowId: value.windowId } })}\n`);
     },
     close() { for (const entry of connections.values()) entry.close(); server.close(); },
   };

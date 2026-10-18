@@ -1,4 +1,4 @@
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { expect } from "vitest";
 import { agentUiContext, MOCK_REPLY } from "../worlds/agent-ui-context.ts";
 
@@ -29,7 +29,7 @@ function completedContextOutput(value: unknown): string | null {
   for (const message of value) {
     if (!isRecord(message) || !Array.isArray(message.parts)) continue;
     for (const part of message.parts) {
-      if (!isRecord(part) || part.type !== "tool" || part.tool !== "omnirush_context" || !isRecord(part.state)) continue;
+      if (!isRecord(part) || part.type !== "tool" || part.tool !== "mars_context" || !isRecord(part.state)) continue;
       if (part.state.status === "completed" && typeof part.state.output === "string") return part.state.output;
     }
   }
@@ -42,8 +42,8 @@ function parseOutput(output: string): Record<string, unknown> {
   return parsed;
 }
 
-test("the in-app agent reads renderer context through omnirush-server and gets an explicit result without a window", async ({ world, probe, step, evidence }) => {
-  await step("without a connected window the tool reports that no OmniRush.ai window is connected and the turn completes", async () => {
+test("the in-app agent reads renderer context through mars-server and gets an explicit result without a window", async ({ world, probe, step, evidence }) => {
+  await step("without a connected window the tool reports that no MarsAI window is connected and the turn completes", async () => {
     const sessionId = sessionIdOf(await world.engine("POST", "/session", { title: "agent context without window" }));
     const result = await world.engine("POST", `/session/${encodeURIComponent(sessionId)}/message`, {
       model: { providerID: "mock", modelID: "mock" },
@@ -53,23 +53,23 @@ test("the in-app agent reads renderer context through omnirush-server and gets a
       async () => completedContextOutput(await world.engine("GET", `/session/${encodeURIComponent(sessionId)}/message`)),
       {
         within: 30_000,
-        label: "completed omnirush_context tool without a window",
+        label: "completed mars_context tool without a window",
         until: (value) => value !== null,
       },
     );
-    if (output === null) throw new Error("omnirush_context did not complete");
+    if (output === null) throw new Error("mars_context did not complete");
     const parsed = parseOutput(output);
     const ui = isRecord(parsed.ui) ? parsed.ui : null;
     const error = ui && typeof ui.error === "string" ? ui.error : "";
 
     expect(parsed.context).toBeNull();
     expect(ui?.ok).toBe(false);
-    expect(error).toContain("No OmniRush.ai window is connected");
+    expect(error).toContain("No MarsAI window is connected");
     expect(error).not.toContain("desktop app may not be running");
     expect(replyText(result)).toBe(MOCK_REPLY);
     evidence.recordAssertionEvidence(
-      "Without a polling OmniRush.ai window, the agent receives the server's explicit no-window result and still completes its turn",
-      `omnirush_context returned context=null and ui.error=${JSON.stringify(error)}; the model's reply was ${JSON.stringify(replyText(result))}.`,
+      "Without a polling MarsAI window, the agent receives the server's explicit no-window result and still completes its turn",
+      `mars_context returned context=null and ui.error=${JSON.stringify(error)}; the model's reply was ${JSON.stringify(replyText(result))}.`,
       true,
     );
   });
@@ -98,11 +98,11 @@ test("the in-app agent reads renderer context through omnirush-server and gets a
         async () => completedContextOutput(await world.engine("GET", `/session/${encodeURIComponent(sessionId)}/message`)),
         {
           within: 30_000,
-          label: "completed omnirush_context tool with a connected window",
+          label: "completed mars_context tool with a connected window",
           until: (value) => value !== null,
         },
       );
-      if (output === null) throw new Error("omnirush_context did not complete");
+      if (output === null) throw new Error("mars_context did not complete");
       const parsed = parseOutput(output);
       const context = isRecord(parsed.context) ? parsed.context : null;
       const conversations = context && isRecord(context.conversations) ? context.conversations : null;
@@ -120,7 +120,7 @@ test("the in-app agent reads renderer context through omnirush-server and gets a
       expect(providerRequests[1]?.toolResults.some((content) => content.includes("ses_right"))).toBe(true);
       expect(replyText(result)).toBe(MOCK_REPLY);
       evidence.recordAssertionEvidence(
-        "A renderer window's split layout crosses omnirush-server into the agent tool result and the model's follow-up request",
+        "A renderer window's split layout crosses mars-server into the agent tool result and the model's follow-up request",
         `The fake window handled one context request; the transcript and provider tool result both contained secondarySessionId=ses_right, and the turn replied ${JSON.stringify(replyText(result))}.`,
         true,
       );
@@ -131,7 +131,7 @@ test("the in-app agent reads renderer context through omnirush-server and gets a
 
   await step("only authenticated clients can exchange requests, and each command is delivered once", async () => {
     const headers = { authorization: `Bearer ${world.token}`, "content-type": "application/json" };
-    const hostHeaders = { ...headers, "x-omnirush-host-token": world.hostToken };
+    const hostHeaders = { ...headers, "x-mars-host-token": world.hostToken };
     const requestPath = `${world.base}/experimental/ui-control/request`;
     const pendingPath = `${world.base}/experimental/ui-control/pending`;
     for (const [path, init] of [

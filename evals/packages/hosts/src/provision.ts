@@ -192,11 +192,11 @@ export function desktopSandboxName(name: string): string {
   // flags as polynomial ReDoS. This form cannot backtrack and also collapses
   // internal runs, so "a_-_b" yields "a-b" instead of "a---b".
   const safeName = name.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).join("-") || "surface";
-  return `omnirush-connector-${safeName}-${sandboxTimestamp()}-${process.pid}-${randomBytes(4).toString("hex")}`;
+  return `mars-connector-${safeName}-${sandboxTimestamp()}-${process.pid}-${randomBytes(4).toString("hex")}`;
 }
 
 export function serverSandboxName(): string {
-  return `omnirush-server-${sandboxTimestamp()}-${process.pid}-${randomBytes(4).toString("hex")}`;
+  return `mars-server-${sandboxTimestamp()}-${process.pid}-${randomBytes(4).toString("hex")}`;
 }
 
 async function waitForExecReady(exec: DaytonaExec, sandbox: string): Promise<void> {
@@ -229,7 +229,7 @@ export async function provisionDesktopSandbox(options: DesktopSandboxOptions & P
     if (reused) {
       await exec(["sandbox", "start", reused], { timeoutMs: 60_000 });
     } else {
-      const snapshot = options.snapshot ?? "omnirush-eval-vnc";
+      const snapshot = options.snapshot ?? "mars-eval-vnc";
       const listed = await checkedExec(exec, ["snapshot", "list", "-f", "json"], "snapshot gate", { timeoutMs: 60_000 });
       const id = snapshotId(listed.stdout, snapshot);
       if (!id) {
@@ -242,7 +242,7 @@ export async function provisionDesktopSandbox(options: DesktopSandboxOptions & P
           "create",
           "--name", sandbox,
           "--snapshot", id,
-          ...(options.secrets === true ? ["--volume", "omnirush-eval-secrets:/daytona-secrets"] : []),
+          ...(options.secrets === true ? ["--volume", "mars-eval-secrets:/daytona-secrets"] : []),
           "--auto-stop", "60",
           "--public",
           "--target", "us",
@@ -279,7 +279,7 @@ export async function provisionDesktopSandbox(options: DesktopSandboxOptions & P
     await execInSandbox(
       exec,
       sandbox,
-      "cd /workspace; pnpm install --store-dir /workspace/.omnirush-daytona/pnpm-store",
+      "cd /workspace; pnpm install --store-dir /workspace/.mars-daytona/pnpm-store",
       { timeoutMs: INSTALL_TIMEOUT_MS, context: `install gate for ${sandbox}` },
     );
   });
@@ -288,7 +288,7 @@ export async function provisionDesktopSandbox(options: DesktopSandboxOptions & P
     const result = await execInSandbox(
       exec,
       sandbox,
-      "rm -rf /workspace/.omnirush-daytona/profiles /tmp/omnirush-* 2>/dev/null; df -P /workspace | tail -1",
+      "rm -rf /workspace/.mars-daytona/profiles /tmp/mars-* 2>/dev/null; df -P /workspace | tail -1",
       { timeoutMs: 60_000, context: `cleanup and disk gate for ${sandbox}` },
     );
     const dfLine = lastNonemptyLine(result.stdout);
@@ -301,7 +301,7 @@ export async function provisionDesktopSandbox(options: DesktopSandboxOptions & P
       const sizes = await execInSandbox(
         exec,
         sandbox,
-        "du -sh /workspace/node_modules /workspace/.omnirush-daytona/pnpm-store 2>&1 || true",
+        "du -sh /workspace/node_modules /workspace/.mars-daytona/pnpm-store 2>&1 || true",
         { timeoutMs: 60_000, context: `disk usage detail for ${sandbox}` },
       );
       throw new Error(`Cleanup and disk gate failed for ${sandbox}: workspace is ${useField} used. df: ${dfLine}\n${outputTail(sizes)}`);
@@ -363,14 +363,14 @@ echo detached`;
 
   await timedStep(log, "first boot gate", async () => {
     // A sandbox's first Electron boot pays sidecar prepare, the
-    // omnirush-server tsc build, and the engine cold start. Paid INSIDE a
+    // mars-server tsc build, and the engine cold start. Paid INSIDE a
     // spec, that bill starved the tool-call phase past its window while every
     // UI assertion still passed. Boot once into a throwaway profile, wait for
     // CDP, tear it down — after this the room behaves like a warm machine.
     const detachScript = `python3 - <<PYEOF
 import subprocess
 log = open("/tmp/warmup-electron.log", "ab", buffering=0)
-subprocess.Popen(["bash", "-lc", "cd /workspace && env OMNIRUSH_ELECTRON_USERDATA=/tmp/warmup-profile OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT=9825 bash .devcontainer/start-daytona-electron.sh"], stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, start_new_session=True, close_fds=True)
+subprocess.Popen(["bash", "-lc", "cd /workspace && env MARS_ELECTRON_USERDATA=/tmp/warmup-profile MARS_ELECTRON_REMOTE_DEBUG_PORT=9825 bash .devcontainer/start-daytona-electron.sh"], stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, start_new_session=True, close_fds=True)
 PYEOF
 echo detached`;
     await execInSandbox(exec, sandbox, detachScript, { timeoutMs: 30_000, context: `first boot detach for ${sandbox}` });
@@ -502,9 +502,9 @@ export function encodeDenExtraEnv(env: Record<string, string>): string {
 
 function runDenProvisionScript(ref: string, repoRoot: string, bootstrapAdminEmail: string | undefined, extraEnv: Record<string, string> | undefined, log: (line: string) => void, urlsFile: string): Promise<LocalProcessResult> {
   return new Promise((resolve, reject) => {
-    const env: NodeJS.ProcessEnv = { ...process.env, OMNIRUSH_DEN_URLS_FILE: urlsFile };
+    const env: NodeJS.ProcessEnv = { ...process.env, MARS_DEN_URLS_FILE: urlsFile };
     if (bootstrapAdminEmail) env.DEN_BOOTSTRAP_ADMIN_EMAILS = bootstrapAdminEmail;
-    if (extraEnv && Object.keys(extraEnv).length > 0) env.OMNIRUSH_DEN_EXTRA_ENV_B64 = encodeDenExtraEnv(extraEnv);
+    if (extraEnv && Object.keys(extraEnv).length > 0) env.MARS_DEN_EXTRA_ENV_B64 = encodeDenExtraEnv(extraEnv);
     const child = spawn("bash", [".devcontainer/test-server-on-daytona.sh", ref, "--seed", "--name", serverSandboxName()], {
       cwd: repoRoot,
       env,
@@ -607,8 +607,8 @@ async function previewUrl(exec: DaytonaExec, sandbox: string, port: number): Pro
 }
 
 async function proveDenSeed(apiUrl: string, webUrl: string, sandbox: string, reused: boolean): Promise<void> {
-  const email = process.env.OMNIRUSH_EVAL_DEMO_EMAIL?.trim() || "alex@acme.test";
-  const password = process.env.OMNIRUSH_EVAL_DEMO_PASSWORD ?? "OmniRushDemo123!";
+  const email = process.env.MARS_EVAL_DEMO_EMAIL?.trim() || "alex@acme.test";
+  const password = process.env.MARS_EVAL_DEMO_PASSWORD ?? "MarsDemo123!";
   const url = `${apiUrl.replace(/\/+$/, "")}/api/auth/sign-in/email`;
   // A freshly-booted stack was observed answering public sign-in with bare
   // 403s for its first ~minute, then recovering on its own — so the window is
@@ -667,7 +667,7 @@ export async function provisionDenSandbox(options: DenSandboxOptions & Provision
     // different hostname, while the sandbox's baked DEN_*_PUBLIC_URL is the
     // Den's OAuth issuer and MCP resource identity. RFC 9728 validating MCP
     // clients (opencode) refuse a Den reached through a mismatched host.
-    const urlsDir = await mkdtemp(path.join(os.tmpdir(), "omnirush-den-urls-"));
+    const urlsDir = await mkdtemp(path.join(os.tmpdir(), "mars-den-urls-"));
     const urlsFile = path.join(urlsDir, "den-urls.env");
     try {
       const result = await timedStep(log, "Den provisioning script", () => runDenProvisionScript(
@@ -776,7 +776,7 @@ export async function startFaultProxyOnSandbox(options: FaultProxyOnSandboxOptio
     await execInSandbox(
       exec,
       options.sandbox,
-      "pkill -f omnirush-fault-proxy || true",
+      "pkill -f mars-fault-proxy || true",
       { timeoutMs: 30_000, context: `fault proxy process cleanup for ${options.sandbox}` },
     ).catch(() => undefined);
   });
@@ -786,7 +786,7 @@ export async function startFaultProxyOnSandbox(options: FaultProxyOnSandboxOptio
     await execInSandbox(
       exec,
       options.sandbox,
-      `printf %s ${encoded} | base64 -d > /tmp/omnirush-fault-proxy.mjs`,
+      `printf %s ${encoded} | base64 -d > /tmp/mars-fault-proxy.mjs`,
       { timeoutMs: 30_000, context: `fault proxy script upload for ${options.sandbox}` },
     );
   });
@@ -794,8 +794,8 @@ export async function startFaultProxyOnSandbox(options: FaultProxyOnSandboxOptio
   await timedStep(log, "fault proxy process detach", async () => {
     const detachScript = `python3 - <<PYEOF
 import subprocess
-log = open("/tmp/omnirush-fault-proxy.log", "ab", buffering=0)
-subprocess.Popen(["bash", "-lc", "env PORT=${port} UPSTREAM=http://127.0.0.1:${upstreamPort} ISSUER=${url} CONTROL_TOKEN=${token} node /tmp/omnirush-fault-proxy.mjs"], stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, start_new_session=True, close_fds=True)
+log = open("/tmp/mars-fault-proxy.log", "ab", buffering=0)
+subprocess.Popen(["bash", "-lc", "env PORT=${port} UPSTREAM=http://127.0.0.1:${upstreamPort} ISSUER=${url} CONTROL_TOKEN=${token} node /tmp/mars-fault-proxy.mjs"], stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, start_new_session=True, close_fds=True)
 PYEOF
 echo detached`;
     await execInSandbox(exec, options.sandbox, detachScript, { timeoutMs: 30_000, context: `fault proxy process detach for ${options.sandbox}` });
@@ -808,7 +808,7 @@ echo detached`;
       let body: unknown = null;
       let responseOk = false;
       try {
-        const response = await fetchImpl(`${url}/__omnirush_faults/health`, { signal: AbortSignal.timeout(5_000) });
+        const response = await fetchImpl(`${url}/__mars_faults/health`, { signal: AbortSignal.timeout(5_000) });
         body = await response.json();
         responseOk = response.ok;
         if (!response.ok) last = `HTTP ${response.status}`;
@@ -825,7 +825,7 @@ echo detached`;
     const proxyLog = await execInSandbox(
       exec,
       options.sandbox,
-      "tail -80 /tmp/omnirush-fault-proxy.log 2>&1 || true",
+      "tail -80 /tmp/mars-fault-proxy.log 2>&1 || true",
       { timeoutMs: 30_000, context: `fault proxy health log for ${options.sandbox}` },
     );
     throw new Error(`Fault proxy health gate failed at ${url}. Last: ${last}. Log tail:\n${outputTail(proxyLog)}`);
@@ -838,7 +838,7 @@ echo detached`;
       await execInSandbox(
         exec,
         options.sandbox,
-        "pkill -f omnirush-fault-proxy.mjs || true",
+        "pkill -f mars-fault-proxy.mjs || true",
         { timeoutMs: 30_000, context: `fault proxy stop for ${options.sandbox}` },
       ).catch(() => undefined);
     },
@@ -904,14 +904,14 @@ export function renderConnectorE2eTestEnv(facts: ConnectorE2eTestEnv): string {
   return [
     `${ENV_HEADER_PREFIX} — generated ${new Date().toISOString()}${ENV_REF_MARKER}${facts.ref}`,
     `${ENV_CREATED_PREFIX}${facts.created.join(",")}`,
-    "OMNIRUSH_EVAL_E2E_TESTS=1",
-    "OMNIRUSH_EVAL_CONNECTOR_E2E_TEST=1",
-    `OMNIRUSH_EVAL_DEN_API_URL=${shellQuote(facts.denApiUrl)}`,
-    `OMNIRUSH_EVAL_DEN_WEB_URL=${shellQuote(facts.denWebUrl)}`,
-    `OMNIRUSH_EVAL_DAYTONA_SANDBOX_A=${shellQuote(facts.sandboxA)}`,
-    `OMNIRUSH_EVAL_DAYTONA_SANDBOX_B=${shellQuote(facts.sandboxB)}`,
-    `OMNIRUSH_EVAL_CONNECTOR_MOCK_PUBLIC_URL=${shellQuote(facts.mockUrl)}`,
-    "OMNIRUSH_EVAL_MODEL=big-pickle",
+    "MARS_EVAL_E2E_TESTS=1",
+    "MARS_EVAL_CONNECTOR_E2E_TEST=1",
+    `MARS_EVAL_DEN_API_URL=${shellQuote(facts.denApiUrl)}`,
+    `MARS_EVAL_DEN_WEB_URL=${shellQuote(facts.denWebUrl)}`,
+    `MARS_EVAL_DAYTONA_SANDBOX_A=${shellQuote(facts.sandboxA)}`,
+    `MARS_EVAL_DAYTONA_SANDBOX_B=${shellQuote(facts.sandboxB)}`,
+    `MARS_EVAL_CONNECTOR_MOCK_PUBLIC_URL=${shellQuote(facts.mockUrl)}`,
+    "MARS_EVAL_MODEL=big-pickle",
     "",
   ].join("\n");
 }
@@ -929,9 +929,9 @@ export function parseConnectorE2eTestEnv(content: string): ConnectorE2eTestEnv {
     return value;
   }
 
-  required("OMNIRUSH_EVAL_E2E_TESTS");
-  required("OMNIRUSH_EVAL_CONNECTOR_E2E_TEST");
-  required("OMNIRUSH_EVAL_MODEL");
+  required("MARS_EVAL_E2E_TESTS");
+  required("MARS_EVAL_CONNECTOR_E2E_TEST");
+  required("MARS_EVAL_MODEL");
   // Header comments are read by line scan, not regex: `.*` before a literal
   // backtracks polynomially on adversarial input (CodeQL js/polynomial-redos).
   const header = commentLine(content, ENV_HEADER_PREFIX);
@@ -943,11 +943,11 @@ export function parseConnectorE2eTestEnv(content: string): ConnectorE2eTestEnv {
   if (createdText === null) throw new Error("Missing provision-created in connector spec env header.");
 
   return {
-    denApiUrl: required("OMNIRUSH_EVAL_DEN_API_URL"),
-    denWebUrl: required("OMNIRUSH_EVAL_DEN_WEB_URL"),
-    sandboxA: required("OMNIRUSH_EVAL_DAYTONA_SANDBOX_A"),
-    sandboxB: required("OMNIRUSH_EVAL_DAYTONA_SANDBOX_B"),
-    mockUrl: required("OMNIRUSH_EVAL_CONNECTOR_MOCK_PUBLIC_URL"),
+    denApiUrl: required("MARS_EVAL_DEN_API_URL"),
+    denWebUrl: required("MARS_EVAL_DEN_WEB_URL"),
+    sandboxA: required("MARS_EVAL_DAYTONA_SANDBOX_A"),
+    sandboxB: required("MARS_EVAL_DAYTONA_SANDBOX_B"),
+    mockUrl: required("MARS_EVAL_CONNECTOR_MOCK_PUBLIC_URL"),
     ref,
     created: createdText.split(",").map((id) => id.trim()).filter(Boolean),
   };

@@ -1,4 +1,4 @@
-import { OmniRushRoadmap } from "@omnirush/ui/react";
+import { OmniRushRoadmap } from "@mars/ui/react";
 import { SiteFooter } from "./site-footer";
 import { SiteNav } from "./site-nav";
 

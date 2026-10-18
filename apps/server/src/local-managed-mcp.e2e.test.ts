@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { EnterpriseMcpClientError } from "@omnirush/enterprise-mcp-client";
+import { EnterpriseMcpClientError } from "@mars/enterprise-mcp-client";
 
 import { ApiError } from "./errors.js";
 import {
@@ -256,14 +256,14 @@ function clientHeaders(token: string): HeadersInit {
 async function connectGateway(runtimeConfig: Record<string, unknown>): Promise<Client> {
   const url = new URL(String(runtimeConfig.url));
   const headers = runtimeConfig.headers as Record<string, string>;
-  const client = new Client({ name: "omnirush-managed-mcp-test", version: "1.0.0" }, { capabilities: {} });
+  const client = new Client({ name: "mars-managed-mcp-test", version: "1.0.0" }, { capabilities: {} });
   await client.connect(new StreamableHTTPClientTransport(url, { requestInit: { headers } }));
   return client;
 }
 
-describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
+describe("MarsAI-managed local MCP OAuth gateway", () => {
   test("leaves ordinary MCP fallbacks usable when no managed vault exists", async () => {
-    const workspaceRoot = await mkdtemp(join(tmpdir(), "omnirush-local-managed-mcp-fallback-"));
+    const workspaceRoot = await mkdtemp(join(tmpdir(), "mars-local-managed-mcp-fallback-"));
     roots.push(workspaceRoot);
     const config = createConfig({
       port: await freePort(),
@@ -282,12 +282,12 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
   });
 
   test("rolls back a new managed connection when the initial OAuth handshake fails", async () => {
-    const previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
-    const previousDevMode = process.env.OMNIRUSH_DEV_MODE;
-    const workspaceRoot = await mkdtemp(join(tmpdir(), "omnirush-local-managed-mcp-rollback-"));
+    const previousRuntimeDb = process.env.MARS_RUNTIME_DB;
+    const previousDevMode = process.env.MARS_DEV_MODE;
+    const workspaceRoot = await mkdtemp(join(tmpdir(), "mars-local-managed-mcp-rollback-"));
     roots.push(workspaceRoot);
-    process.env.OMNIRUSH_RUNTIME_DB = join(workspaceRoot, "runtime.sqlite");
-    process.env.OMNIRUSH_DEV_MODE = "1";
+    process.env.MARS_RUNTIME_DB = join(workspaceRoot, "runtime.sqlite");
+    process.env.MARS_DEV_MODE = "1";
 
     try {
       const engine = startMockOpencode();
@@ -300,9 +300,9 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       });
       const server = await startServer(config);
       stops.push(() => server.stop());
-      const omnirushBaseUrl = `http://127.0.0.1:${server.port}`;
+      const marsBaseUrl = `http://127.0.0.1:${server.port}`;
 
-      const created = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp/managed`, {
+      const created = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp/managed`, {
         method: "POST",
         headers: clientHeaders(config.token),
         body: JSON.stringify({
@@ -314,33 +314,33 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       expect(created.status).toBe(502);
       expect(await created.json()).toMatchObject({
         code: "managed_mcp_connection_failed",
-        message: "OmniRush.ai could not connect to this MCP server. Check its OAuth settings and availability, then try again.",
+        message: "MarsAI could not connect to this MCP server. Check its OAuth settings and availability, then try again.",
       });
 
       const status = await fetch(
-        `${omnirushBaseUrl}/workspace/ws_managed/mcp/unreachable-oauth/managed`,
+        `${marsBaseUrl}/workspace/ws_managed/mcp/unreachable-oauth/managed`,
         { headers: clientHeaders(config.token) },
       );
       expect(status.status).toBe(404);
       expect(await readRuntimeMcpConfig(config, "ws_managed", "unreachable-oauth")).toBeNull();
     } finally {
-      if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-      else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
-      if (previousDevMode === undefined) delete process.env.OMNIRUSH_DEV_MODE;
-      else process.env.OMNIRUSH_DEV_MODE = previousDevMode;
+      if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+      else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
+      if (previousDevMode === undefined) delete process.env.MARS_DEV_MODE;
+      else process.env.MARS_DEV_MODE = previousDevMode;
     }
   });
 
   test("returns safe connection errors for DCR and protocol negotiation failures", async () => {
-    const previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
-    const previousDevMode = process.env.OMNIRUSH_DEV_MODE;
-    const previousTelemetry = globalThis.__omnirushDesktopTelemetry;
-    const workspaceRoot = await mkdtemp(join(tmpdir(), "omnirush-local-managed-mcp-handshake-errors-"));
+    const previousRuntimeDb = process.env.MARS_RUNTIME_DB;
+    const previousDevMode = process.env.MARS_DEV_MODE;
+    const previousTelemetry = globalThis.__marsDesktopTelemetry;
+    const workspaceRoot = await mkdtemp(join(tmpdir(), "mars-local-managed-mcp-handshake-errors-"));
     roots.push(workspaceRoot);
-    process.env.OMNIRUSH_RUNTIME_DB = join(workspaceRoot, "runtime.sqlite");
-    process.env.OMNIRUSH_DEV_MODE = "1";
+    process.env.MARS_RUNTIME_DB = join(workspaceRoot, "runtime.sqlite");
+    process.env.MARS_DEV_MODE = "1";
     const captured: unknown[] = [];
-    globalThis.__omnirushDesktopTelemetry = {
+    globalThis.__marsDesktopTelemetry = {
       captureException: (error) => {
         captured.push(error);
         return true;
@@ -357,8 +357,8 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       });
       const server = await startServer(config);
       stops.push(() => server.stop());
-      const omnirushBaseUrl = `http://127.0.0.1:${server.port}`;
-      const expectedMessage = "OmniRush.ai could not connect to this MCP server. Check its OAuth settings and availability, then try again.";
+      const marsBaseUrl = `http://127.0.0.1:${server.port}`;
+      const expectedMessage = "MarsAI could not connect to this MCP server. Check its OAuth settings and availability, then try again.";
 
       const registrationProvider = startHandshakeFailureProvider("oauth-client-registration");
       await createLocalManagedMcpConnection(config, {
@@ -368,7 +368,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
         oauth: { applicationType: "native", requestedScopes: ["mcp:read"] },
       });
       const reconnect = await fetch(
-        `${omnirushBaseUrl}/workspace/ws_managed/mcp/registration-failure/managed/connect`,
+        `${marsBaseUrl}/workspace/ws_managed/mcp/registration-failure/managed/connect`,
         { method: "POST", headers: clientHeaders(config.token) },
       );
       expect(reconnect.status).toBe(502);
@@ -379,7 +379,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       });
       expect(JSON.stringify(reconnectBody)).not.toContain("oauth-client-registration-nested-secret");
       const reconnectStatus = await fetch(
-        `${omnirushBaseUrl}/workspace/ws_managed/mcp/registration-failure/managed`,
+        `${marsBaseUrl}/workspace/ws_managed/mcp/registration-failure/managed`,
         { headers: clientHeaders(config.token) },
       );
       expect(await reconnectStatus.json()).toMatchObject({
@@ -396,7 +396,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
         oauth: { applicationType: "native", requestedScopes: ["mcp:read"] },
       });
       const started = await fetch(
-        `${omnirushBaseUrl}/workspace/ws_managed/mcp/initialize-failure/managed/connect`,
+        `${marsBaseUrl}/workspace/ws_managed/mcp/initialize-failure/managed/connect`,
         { method: "POST", headers: clientHeaders(config.token) },
       );
       expect(started.status).toBe(200);
@@ -417,7 +417,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       });
       expect(JSON.stringify(callbackBody)).not.toContain("mcp-initialize-nested-secret");
       const callbackStatus = await fetch(
-        `${omnirushBaseUrl}/workspace/ws_managed/mcp/initialize-failure/managed`,
+        `${marsBaseUrl}/workspace/ws_managed/mcp/initialize-failure/managed`,
         { headers: clientHeaders(config.token) },
       );
       expect(await callbackStatus.json()).toMatchObject({
@@ -434,7 +434,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
         oauth: { applicationType: "native", requestedScopes: ["mcp:read"] },
       });
       const discoveryStarted = await fetch(
-        `${omnirushBaseUrl}/workspace/ws_managed/mcp/discovery-failure/managed/connect`,
+        `${marsBaseUrl}/workspace/ws_managed/mcp/discovery-failure/managed/connect`,
         { method: "POST", headers: clientHeaders(config.token) },
       );
       expect(discoveryStarted.status).toBe(200);
@@ -454,7 +454,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       });
       expect(JSON.stringify(discoveryCallbackBody)).not.toContain("mcp-discovery-nested-secret");
       const discoveryStatus = await fetch(
-        `${omnirushBaseUrl}/workspace/ws_managed/mcp/discovery-failure/managed`,
+        `${marsBaseUrl}/workspace/ws_managed/mcp/discovery-failure/managed`,
         { headers: clientHeaders(config.token) },
       );
       expect(await discoveryStatus.json()).toMatchObject({
@@ -472,7 +472,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
         oauth: { applicationType: "native", requestedScopes: ["mcp:read"] },
       });
       const internalFailure = await fetch(
-        `${omnirushBaseUrl}/workspace/ws_managed/mcp/unexpected-sdk-failure/managed/connect`,
+        `${marsBaseUrl}/workspace/ws_managed/mcp/unexpected-sdk-failure/managed/connect`,
         { method: "POST", headers: clientHeaders(config.token) },
       );
       expect(internalFailure.status).toBe(500);
@@ -488,23 +488,23 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
         requestPhase: "mcp-discovery",
       });
     } finally {
-      globalThis.__omnirushDesktopTelemetry = previousTelemetry;
-      if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-      else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
-      if (previousDevMode === undefined) delete process.env.OMNIRUSH_DEV_MODE;
-      else process.env.OMNIRUSH_DEV_MODE = previousDevMode;
+      globalThis.__marsDesktopTelemetry = previousTelemetry;
+      if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+      else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
+      if (previousDevMode === undefined) delete process.env.MARS_DEV_MODE;
+      else process.env.MARS_DEV_MODE = previousDevMode;
     }
   }, 30_000);
 
   test("returns actionable input errors without persisting managed connections", async () => {
-    const previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
-    const previousDevMode = process.env.OMNIRUSH_DEV_MODE;
-    const previousAllowPrivateUrls = process.env.OMNIRUSH_ALLOW_PRIVATE_MCP_URLS;
-    const workspaceRoot = await mkdtemp(join(tmpdir(), "omnirush-local-managed-mcp-input-errors-"));
+    const previousRuntimeDb = process.env.MARS_RUNTIME_DB;
+    const previousDevMode = process.env.MARS_DEV_MODE;
+    const previousAllowPrivateUrls = process.env.MARS_ALLOW_PRIVATE_MCP_URLS;
+    const workspaceRoot = await mkdtemp(join(tmpdir(), "mars-local-managed-mcp-input-errors-"));
     roots.push(workspaceRoot);
-    process.env.OMNIRUSH_RUNTIME_DB = join(workspaceRoot, "runtime.sqlite");
-    delete process.env.OMNIRUSH_DEV_MODE;
-    delete process.env.OMNIRUSH_ALLOW_PRIVATE_MCP_URLS;
+    process.env.MARS_RUNTIME_DB = join(workspaceRoot, "runtime.sqlite");
+    delete process.env.MARS_DEV_MODE;
+    delete process.env.MARS_ALLOW_PRIVATE_MCP_URLS;
 
     try {
       const engine = startMockOpencode();
@@ -516,7 +516,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       });
       const server = await startServer(config);
       stops.push(() => server.stop());
-      const omnirushBaseUrl = `http://127.0.0.1:${server.port}`;
+      const marsBaseUrl = `http://127.0.0.1:${server.port}`;
       const cases = [
         { name: "malformed-url", url: "not-a-url", code: "managed_mcp_url_invalid", message: "not-a-url" },
         { name: "http-url", url: "http://example.com/mcp", code: "managed_mcp_url_not_allowed", message: "HTTPS" },
@@ -529,7 +529,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       ];
 
       for (const input of cases) {
-        const created = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp/managed`, {
+        const created = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp/managed`, {
           method: "POST",
           headers: clientHeaders(config.token),
           body: JSON.stringify({ name: input.name, url: input.url, oauth: { applicationType: "native" } }),
@@ -540,51 +540,51 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
           message: expect.stringContaining(input.message),
         });
 
-        const list = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp`, {
+        const list = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp`, {
           headers: clientHeaders(config.token),
         });
         expect(list.status).toBe(200);
         expect(JSON.stringify(await list.json())).not.toContain(`"name":"${input.name}"`);
-        const status = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp/${input.name}/managed`, {
+        const status = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp/${input.name}/managed`, {
           headers: clientHeaders(config.token),
         });
         expect(status.status).toBe(404);
       }
     } finally {
-      if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-      else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
-      if (previousDevMode === undefined) delete process.env.OMNIRUSH_DEV_MODE;
-      else process.env.OMNIRUSH_DEV_MODE = previousDevMode;
-      if (previousAllowPrivateUrls === undefined) delete process.env.OMNIRUSH_ALLOW_PRIVATE_MCP_URLS;
-      else process.env.OMNIRUSH_ALLOW_PRIVATE_MCP_URLS = previousAllowPrivateUrls;
+      if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+      else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
+      if (previousDevMode === undefined) delete process.env.MARS_DEV_MODE;
+      else process.env.MARS_DEV_MODE = previousDevMode;
+      if (previousAllowPrivateUrls === undefined) delete process.env.MARS_ALLOW_PRIVATE_MCP_URLS;
+      else process.env.MARS_ALLOW_PRIVATE_MCP_URLS = previousAllowPrivateUrls;
     }
   });
 
   test("owns OAuth, exposes provider tools to OpenCode, refreshes, survives restart, and disconnects", async () => {
-    const previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
-    const previousDevMode = process.env.OMNIRUSH_DEV_MODE;
-    const workspaceRoot = await mkdtemp(join(tmpdir(), "omnirush-local-managed-mcp-"));
+    const previousRuntimeDb = process.env.MARS_RUNTIME_DB;
+    const previousDevMode = process.env.MARS_DEV_MODE;
+    const workspaceRoot = await mkdtemp(join(tmpdir(), "mars-local-managed-mcp-"));
     roots.push(workspaceRoot);
-    process.env.OMNIRUSH_RUNTIME_DB = join(workspaceRoot, "runtime.sqlite");
-    process.env.OMNIRUSH_DEV_MODE = "1";
+    process.env.MARS_RUNTIME_DB = join(workspaceRoot, "runtime.sqlite");
+    process.env.MARS_DEV_MODE = "1";
 
     try {
       const engine = startMockOpencode();
       const providerPort = await freePort();
       const providerBaseUrl = await startOAuthProvider(providerPort);
-      const omnirushPort = await freePort();
+      const marsPort = await freePort();
       const vaultKey = randomBytes(32);
       const config = createConfig({
-        port: omnirushPort,
+        port: marsPort,
         workspaceRoot,
         engineBaseUrl: `http://127.0.0.1:${engine.server.port}`,
         vaultKey,
       });
       const server = await startServer(config);
       stops.push(() => server.stop());
-      const omnirushBaseUrl = `http://127.0.0.1:${server.port}`;
+      const marsBaseUrl = `http://127.0.0.1:${server.port}`;
 
-      const created = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp/managed`, {
+      const created = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp/managed`, {
         method: "POST",
         headers: clientHeaders(config.token),
         body: JSON.stringify({
@@ -601,11 +601,11 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       const authorization = await fetch(started.authorizeUrl!, { redirect: "manual" });
       expect(authorization.status).toBe(302);
       const callbackUrl = authorization.headers.get("location");
-      expect(callbackUrl).toStartWith(`${omnirushBaseUrl}/mcp/oauth/callback`);
+      expect(callbackUrl).toStartWith(`${marsBaseUrl}/mcp/oauth/callback`);
       const callback = await fetch(callbackUrl!);
       expect(callback.status).toBe(200);
 
-      const status = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp/mock-oauth/managed`, {
+      const status = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp/mock-oauth/managed`, {
         headers: clientHeaders(config.token),
       });
       expect(status.status).toBe(200);
@@ -613,7 +613,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
 
       const firstRuntimeConfig = await readRuntimeMcpConfig(config, "ws_managed", "mock-oauth");
       expect(firstRuntimeConfig).toMatchObject({ type: "remote", enabled: true, oauth: false });
-      expect(String(firstRuntimeConfig?.url)).toStartWith(`${omnirushBaseUrl}/mcp/managed/ws_managed/mock-oauth`);
+      expect(String(firstRuntimeConfig?.url)).toStartWith(`${marsBaseUrl}/mcp/managed/ws_managed/mock-oauth`);
       expect(JSON.stringify(firstRuntimeConfig)).not.toContain(providerBaseUrl);
       expect(JSON.stringify(firstRuntimeConfig)).not.toContain("mock-access-");
       const unauthorizedGateway = await fetch(String(firstRuntimeConfig?.url), {
@@ -627,10 +627,10 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
 
       const firstClient = await connectGateway(firstRuntimeConfig!);
       expect((await firstClient.listTools()).tools.map((tool) => tool.name)).toContain("mock_echo");
-      expect(await firstClient.callTool({ name: "mock_echo", arguments: { text: "through OmniRush.ai" } }))
-        .toMatchObject({ content: [{ type: "text", text: "through OmniRush.ai" }] });
+      expect(await firstClient.callTool({ name: "mock_echo", arguments: { text: "through MarsAI" } }))
+        .toMatchObject({ content: [{ type: "text", text: "through MarsAI" }] });
       await expect(firstClient.callTool({ name: "mock_provider_error", arguments: {} })).rejects.toThrow();
-      const providerErrorStatus = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp/mock-oauth/managed`, {
+      const providerErrorStatus = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp/mock-oauth/managed`, {
         headers: clientHeaders(config.token),
       });
       expect(await providerErrorStatus.json()).toMatchObject({ status: "connected", hasCredential: true });
@@ -649,7 +649,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       await server.stop();
       stops.pop();
       const restartedConfig = createConfig({
-        port: omnirushPort,
+        port: marsPort,
         workspaceRoot,
         engineBaseUrl: `http://127.0.0.1:${engine.server.port}`,
         vaultKey,
@@ -675,12 +675,12 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       const revokedClient = await connectGateway(restartedRuntimeConfig!);
       await expect(revokedClient.listTools()).rejects.toThrow();
       await revokedClient.close();
-      const revokedStatus = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp/mock-oauth/managed`, {
+      const revokedStatus = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp/mock-oauth/managed`, {
         headers: clientHeaders(restartedConfig.token),
       });
       expect(await revokedStatus.json()).toMatchObject({ status: "reconnect_required", hasCredential: false });
 
-      const disconnected = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp/mock-oauth/auth`, {
+      const disconnected = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp/mock-oauth/auth`, {
         method: "DELETE",
         headers: clientHeaders(restartedConfig.token),
       });
@@ -688,52 +688,52 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       expect(await readRuntimeMcpConfig(restartedConfig, "ws_managed", "mock-oauth"))
         .toMatchObject({ enabled: false, oauth: false });
 
-      const reconnect = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp/mock-oauth/managed/connect`, {
+      const reconnect = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp/mock-oauth/managed/connect`, {
         method: "POST",
         headers: clientHeaders(restartedConfig.token),
       });
       expect(reconnect.status).toBe(200);
       expect(await reconnect.json()).toMatchObject({ status: "needs_auth" });
-      const reconnectStatus = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp/mock-oauth/managed`, {
+      const reconnectStatus = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp/mock-oauth/managed`, {
         headers: clientHeaders(restartedConfig.token),
       });
       expect(await reconnectStatus.json()).toMatchObject({ status: "needs_auth", enabled: true, hasCredential: false });
       expect(await readRuntimeMcpConfig(restartedConfig, "ws_managed", "mock-oauth"))
         .toMatchObject({ enabled: true, oauth: false });
       expect((await readdir(runtimeStorageDir(restartedConfig)))
-        .some((entry) => entry.includes(".omnirush-backup-"))).toBe(false);
+        .some((entry) => entry.includes(".mars-backup-"))).toBe(false);
     } finally {
-      if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-      else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
-      if (previousDevMode === undefined) delete process.env.OMNIRUSH_DEV_MODE;
-      else process.env.OMNIRUSH_DEV_MODE = previousDevMode;
+      if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+      else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
+      if (previousDevMode === undefined) delete process.env.MARS_DEV_MODE;
+      else process.env.MARS_DEV_MODE = previousDevMode;
     }
   }, 60_000);
 
   test("quarantines and rebuilds the vault after a secure-storage key change, then reconnects", async () => {
-    const previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
-    const previousDevMode = process.env.OMNIRUSH_DEV_MODE;
-    const workspaceRoot = await mkdtemp(join(tmpdir(), "omnirush-local-managed-mcp-rotation-"));
+    const previousRuntimeDb = process.env.MARS_RUNTIME_DB;
+    const previousDevMode = process.env.MARS_DEV_MODE;
+    const workspaceRoot = await mkdtemp(join(tmpdir(), "mars-local-managed-mcp-rotation-"));
     roots.push(workspaceRoot);
-    process.env.OMNIRUSH_RUNTIME_DB = join(workspaceRoot, "runtime.sqlite");
-    process.env.OMNIRUSH_DEV_MODE = "1";
+    process.env.MARS_RUNTIME_DB = join(workspaceRoot, "runtime.sqlite");
+    process.env.MARS_DEV_MODE = "1";
 
     try {
       const engine = startMockOpencode();
       const providerBaseUrl = await startOAuthProvider(await freePort());
-      const omnirushPort = await freePort();
+      const marsPort = await freePort();
       const config = createConfig({
-        port: omnirushPort,
+        port: marsPort,
         workspaceRoot,
         engineBaseUrl: `http://127.0.0.1:${engine.server.port}`,
         vaultKey: randomBytes(32),
       });
       const server = await startServer(config);
       stops.push(() => server.stop());
-      const omnirushBaseUrl = `http://127.0.0.1:${server.port}`;
+      const marsBaseUrl = `http://127.0.0.1:${server.port}`;
 
       for (const name of ["mock-oauth", "mock-oauth-b"]) {
-        const created = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp/managed`, {
+        const created = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp/managed`, {
           method: "POST",
           headers: clientHeaders(config.token),
           body: JSON.stringify({
@@ -754,7 +754,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       stops.pop();
 
       const rotatedConfig = createConfig({
-        port: omnirushPort,
+        port: marsPort,
         workspaceRoot,
         engineBaseUrl: `http://127.0.0.1:${engine.server.port}`,
         vaultKey: randomBytes(32),
@@ -784,7 +784,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       expect(safeList.recovery).toMatchObject({ reason: "secure_storage_changed" });
 
       const backups = (await readdir(storageDir))
-        .filter((entry) => entry.startsWith("local-managed-mcp-vault.json.omnirush-backup-"));
+        .filter((entry) => entry.startsWith("local-managed-mcp-vault.json.mars-backup-"));
       expect(backups).toHaveLength(1);
       expect(safeList.recovery?.quarantinedTo).toBe(backups[0]!);
       const backupValue = JSON.parse(await readFile(join(storageDir, backups[0]!), "utf8")) as {
@@ -804,7 +804,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       const recoveredGatewayClient = await connectGateway(preReconnectRuntimeConfig!);
       await expect(recoveredGatewayClient.listTools()).rejects.toThrow();
       await recoveredGatewayClient.close();
-      const afterDiscoveryFailure = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp/mock-oauth/managed`, {
+      const afterDiscoveryFailure = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp/mock-oauth/managed`, {
         headers: clientHeaders(rotatedConfig.token),
       });
       expect(await afterDiscoveryFailure.json()).toMatchObject({
@@ -816,7 +816,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       expect(safeListAfterDiscoveryFailure.connections
         .find((connection) => connection.name === "mock-oauth")?.lastError).toBe(reconnectCopy);
 
-      const reconnect = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp/mock-oauth/managed/connect`, {
+      const reconnect = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp/mock-oauth/managed/connect`, {
         method: "POST",
         headers: clientHeaders(rotatedConfig.token),
       });
@@ -827,14 +827,14 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       const reauthorization = await fetch(restarted.authorizeUrl!, { redirect: "manual" });
       expect(reauthorization.status).toBe(302);
       const callbackUrl = reauthorization.headers.get("location");
-      expect(callbackUrl).toStartWith(`${omnirushBaseUrl}/mcp/oauth/callback`);
+      expect(callbackUrl).toStartWith(`${marsBaseUrl}/mcp/oauth/callback`);
       expect((await fetch(callbackUrl!)).status).toBe(200);
 
-      const reconnected = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp/mock-oauth/managed`, {
+      const reconnected = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp/mock-oauth/managed`, {
         headers: clientHeaders(rotatedConfig.token),
       });
       expect(await reconnected.json()).toMatchObject({ status: "connected", hasCredential: true, enabled: true });
-      const second = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp/mock-oauth-b/managed`, {
+      const second = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp/mock-oauth-b/managed`, {
         headers: clientHeaders(rotatedConfig.token),
       });
       expect(await second.json()).toMatchObject({
@@ -848,7 +848,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       expect((await gatewayClient.listTools()).tools.map((tool) => tool.name)).toContain("mock_echo");
       await gatewayClient.close();
 
-      const workspaceMcp = await fetch(`${omnirushBaseUrl}/workspace/ws_managed/mcp`, {
+      const workspaceMcp = await fetch(`${marsBaseUrl}/workspace/ws_managed/mcp`, {
         headers: clientHeaders(rotatedConfig.token),
       });
       expect(workspaceMcp.status).toBe(200);
@@ -861,22 +861,22 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
 
       await scanVaultForSecrets();
       expect((await readdir(storageDir))
-        .filter((entry) => entry.startsWith("local-managed-mcp-vault.json.omnirush-backup-"))).toHaveLength(1);
+        .filter((entry) => entry.startsWith("local-managed-mcp-vault.json.mars-backup-"))).toHaveLength(1);
     } finally {
-      if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-      else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
-      if (previousDevMode === undefined) delete process.env.OMNIRUSH_DEV_MODE;
-      else process.env.OMNIRUSH_DEV_MODE = previousDevMode;
+      if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+      else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
+      if (previousDevMode === undefined) delete process.env.MARS_DEV_MODE;
+      else process.env.MARS_DEV_MODE = previousDevMode;
     }
   }, 60_000);
 
   test("serves the plaintext index read-only while secure storage is unavailable", async () => {
-    const previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
-    const previousDevMode = process.env.OMNIRUSH_DEV_MODE;
-    const workspaceRoot = await mkdtemp(join(tmpdir(), "omnirush-local-managed-mcp-unavailable-"));
+    const previousRuntimeDb = process.env.MARS_RUNTIME_DB;
+    const previousDevMode = process.env.MARS_DEV_MODE;
+    const workspaceRoot = await mkdtemp(join(tmpdir(), "mars-local-managed-mcp-unavailable-"));
     roots.push(workspaceRoot);
-    process.env.OMNIRUSH_RUNTIME_DB = join(workspaceRoot, "runtime.sqlite");
-    process.env.OMNIRUSH_DEV_MODE = "1";
+    process.env.MARS_RUNTIME_DB = join(workspaceRoot, "runtime.sqlite");
+    process.env.MARS_DEV_MODE = "1";
 
     try {
       const config = createConfig({
@@ -915,27 +915,27 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       });
 
       expect((await readdir(runtimeStorageDir(unavailableConfig)))
-        .some((entry) => entry.includes(".omnirush-backup-"))).toBe(false);
+        .some((entry) => entry.includes(".mars-backup-"))).toBe(false);
 
       const failure = await setLocalManagedMcpEnabled(unavailableConfig, "ws_managed", "offline-vault", false)
         .then(() => null, (error: unknown) => error);
       expect(failure).toBeInstanceOf(ApiError);
       expect(failure).toMatchObject({ status: 503, code: "managed_mcp_secure_storage_unavailable" });
     } finally {
-      if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-      else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
-      if (previousDevMode === undefined) delete process.env.OMNIRUSH_DEV_MODE;
-      else process.env.OMNIRUSH_DEV_MODE = previousDevMode;
+      if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+      else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
+      if (previousDevMode === undefined) delete process.env.MARS_DEV_MODE;
+      else process.env.MARS_DEV_MODE = previousDevMode;
     }
   });
 
   test("quarantines a legacy v1 vault it cannot decrypt and prunes orphaned gateway runtime entries", async () => {
-    const previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
-    const previousDevMode = process.env.OMNIRUSH_DEV_MODE;
-    const workspaceRoot = await mkdtemp(join(tmpdir(), "omnirush-local-managed-mcp-v1-"));
+    const previousRuntimeDb = process.env.MARS_RUNTIME_DB;
+    const previousDevMode = process.env.MARS_DEV_MODE;
+    const workspaceRoot = await mkdtemp(join(tmpdir(), "mars-local-managed-mcp-v1-"));
     roots.push(workspaceRoot);
-    process.env.OMNIRUSH_RUNTIME_DB = join(workspaceRoot, "runtime.sqlite");
-    process.env.OMNIRUSH_DEV_MODE = "1";
+    process.env.MARS_RUNTIME_DB = join(workspaceRoot, "runtime.sqlite");
+    process.env.MARS_DEV_MODE = "1";
 
     try {
       const config = createConfig({
@@ -950,7 +950,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       const oldKey = randomBytes(32);
       const iv = randomBytes(12);
       const cipher = createCipheriv("aes-256-gcm", oldKey, iv);
-      cipher.setAAD(Buffer.from("omnirush-local-managed-mcp-v1", "utf8"));
+      cipher.setAAD(Buffer.from("mars-local-managed-mcp-v1", "utf8"));
       const payload = JSON.stringify({
         schemaVersion: 1,
         connections: {
@@ -987,7 +987,7 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       expect(safeList.recovery).toMatchObject({ reason: "secure_storage_changed" });
 
       const backups = (await readdir(storageDir))
-        .filter((entry) => entry.startsWith("local-managed-mcp-vault.json.omnirush-backup-"));
+        .filter((entry) => entry.startsWith("local-managed-mcp-vault.json.mars-backup-"));
       expect(backups).toHaveLength(1);
       expect(safeList.recovery?.quarantinedTo).toBe(backups[0]!);
       expect(JSON.parse(await readFile(join(storageDir, backups[0]!), "utf8"))).toMatchObject({
@@ -1007,10 +1007,10 @@ describe("OmniRush.ai-managed local MCP OAuth gateway", () => {
       expect(await readRuntimeMcpConfig(config, "ws_managed", "legacy-managed")).toBeNull();
       expect(await readRuntimeMcpConfig(config, "ws_managed", "keep-remote")).toMatchObject({ type: "remote" });
     } finally {
-      if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-      else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
-      if (previousDevMode === undefined) delete process.env.OMNIRUSH_DEV_MODE;
-      else process.env.OMNIRUSH_DEV_MODE = previousDevMode;
+      if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+      else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
+      if (previousDevMode === undefined) delete process.env.MARS_DEV_MODE;
+      else process.env.MARS_DEV_MODE = previousDevMode;
     }
   });
 });

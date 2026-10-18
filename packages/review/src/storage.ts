@@ -28,7 +28,7 @@ export async function uploadReview(
   if (referenced.some((item) => !names.has(item.asset)))
     throw new Error("A referenced review asset is missing.");
   const id = randomUUID().replaceAll("-", "");
-  const localDir = options.localDir ?? process.env.OMNIRUSH_REVIEW_LOCAL_DIR;
+  const localDir = options.localDir ?? process.env.MARS_REVIEW_LOCAL_DIR;
   const signal = AbortSignal.timeout(60_000);
   if (localDir) await mkdir(join(localDir, id), { recursive: false });
   async function write(name: string, body: Uint8Array | string) {
@@ -69,7 +69,7 @@ export async function readReviewAsset(
     !assetNameSchema.safeParse(name).success
   )
     return null;
-  const localDir = process.env.OMNIRUSH_REVIEW_LOCAL_DIR;
+  const localDir = process.env.MARS_REVIEW_LOCAL_DIR;
   const contentType = name.endsWith(".png") ? "image/png" : "application/json";
   if (localDir) {
     try {

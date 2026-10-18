@@ -9,7 +9,7 @@ import type {
   AutomationUsage,
   CreateAutomationDefinition,
   UpdateAutomation,
-} from "@omnirush/types/automations"
+} from "@mars/types/automations"
 
 export type Awaitable<T> = T | Promise<T>
 

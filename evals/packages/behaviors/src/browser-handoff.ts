@@ -1,10 +1,10 @@
-import { browserScript } from "@omnirush/cdp";
+import { browserScript } from "@mars/cdp";
 import { chmod, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { timed } from "@omnirush/timeline";
+import { timed } from "@mars/timeline";
 import { control, evalIn, waitFor } from "./desktop.ts";
-import type { Surface } from "@omnirush/cdp";
+import type { Surface } from "@mars/cdp";
 
 /**
  * The desktop signs in by opening the system browser and finishing there. To
@@ -26,7 +26,7 @@ export interface UrlCapture {
 }
 
 export async function captureOpenedUrls(): Promise<UrlCapture> {
-  const dir = await mkdtemp(join(tmpdir(), "omnirush-open-external-"));
+  const dir = await mkdtemp(join(tmpdir(), "mars-open-external-"));
   const logPath = join(dir, "opened-urls.log");
   await writeFile(logPath, "", "utf8");
   const shim = join(dir, "xdg-open");
@@ -101,11 +101,11 @@ export async function signInInBrowser(
     // Signed in means the outcome page, not a submit in flight ("Working...").
     await waitFor(browser, () => {
       const text = document.body?.innerText ?? "";
-      // Plain web sign-in redirects into the dashboard; handoff shows "signed in" or the omnirush:// code.
+      // Plain web sign-in redirects into the dashboard; handoff shows "signed in" or the mars:// code.
       if (location.pathname.startsWith("/dashboard")) return true;
       if (/signed in/i.test(text)) return true;
       return [...document.querySelectorAll("input")]
-        .some((input) => (input.value ?? "").startsWith("omnirush://"));
+        .some((input) => (input.value ?? "").startsWith("mars://"));
     }, { timeoutMs: 60_000, label: "den sign-in outcome" });
   }, credentials.email);
 }
@@ -113,10 +113,10 @@ export async function signInInBrowser(
 /**
  * Read the deep link the browser is handed once sign-in completes.
  *
- * Observed shape: the app opens `<den>/?mode=sign-up&desktopAuth=1&desktopScheme=omnirush`,
+ * Observed shape: the app opens `<den>/?mode=sign-up&desktopAuth=1&desktopScheme=mars`,
  * the person signs in there, and Den shows "You're signed in" with an
- * "Open OmniRush.ai" button plus a readonly input holding the sign-in code —
- * the full `omnirush://den-auth?grant=…&denBaseUrl=…` URL a person would
+ * "Open MarsAI" button plus a readonly input holding the sign-in code —
+ * the full `mars://den-auth?grant=…&denBaseUrl=…` URL a person would
  * copy-paste into the app. Reading that input keeps the grant the real one
  * Den issued for this session.
  */
@@ -124,13 +124,13 @@ export async function readHandoffDeepLink(browser: Surface, { timeoutMs = 60_000
   const found = await waitFor(browser, () => {
     const fromInput = [...document.querySelectorAll("input")]
       .map((input) => input.value)
-      .find((value) => typeof value === "string" && value.startsWith("omnirush://") && value.includes("grant="));
+      .find((value) => typeof value === "string" && value.startsWith("mars://") && value.includes("grant="));
     if (fromInput) return fromInput;
-    const fromAnchor = [...document.querySelectorAll<HTMLElement>('a[href^="omnirush://"]')]
+    const fromAnchor = [...document.querySelectorAll<HTMLElement>('a[href^="mars://"]')]
       .map((anchor) => anchor.getAttribute("href"))
       .find((href) => typeof href === "string" && href.includes("grant="));
     if (fromAnchor) return fromAnchor;
-    const inText = (document.body?.innerText ?? "").match(/omnirush:\/\/[^\s"']+grant=[^\s"']+/);
+    const inText = (document.body?.innerText ?? "").match(/mars:\/\/[^\s"']+grant=[^\s"']+/);
     return inText ? inText[0] : false;
   }, { timeoutMs, label: "handoff deep link in the browser" });
   if (typeof found !== "string") throw new Error("Could not read a handoff deep link from the browser page.");
@@ -140,7 +140,7 @@ export async function readHandoffDeepLink(browser: Surface, { timeoutMs = 60_000
 /**
  * Complete the hop back into the desktop.
  *
- * A real OS dispatches `omnirush://den-auth?grant=…` to the app. A container has
+ * A real OS dispatches `mars://den-auth?grant=…` to the app. A container has
  * no protocol handler registered, so we hand the grant to the product's own
  * documented entry point for exactly this situation (`auth.exchange-grant`,
  * described in-product as signing in with a handoff grant). The grant itself is

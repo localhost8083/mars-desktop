@@ -2,7 +2,7 @@ import {
   egressDiagnosticConfigurationSchema,
   egressDiagnosticRunSchema,
   type EgressDiagnosticConfiguration,
-} from "@omnirush/types/den/egress-diagnostics"
+} from "@mars/types/den/egress-diagnostics"
 import { eq } from "@omnirush-ee/den-db/drizzle"
 import { OrganizationDiagnosticCredentialTable } from "@omnirush-ee/den-db/schema"
 import type { Hono } from "hono"

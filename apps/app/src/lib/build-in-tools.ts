@@ -392,21 +392,21 @@ export function isTaskToolPart(part: ToolUIPart | DynamicToolUIPart): part is Ta
 
 /**
  * The sub-agent session a task tool call runs in. Forwarded from the engine's
- * task metadata by session sync (`callProviderMetadata.omnirush.childSessionId`).
+ * task metadata by session sync (`callProviderMetadata.mars.childSessionId`).
  */
 export function taskChildSessionId(part: TaskToolPart): string | null {
-  const value = part.callProviderMetadata?.omnirush?.childSessionId;
+  const value = part.callProviderMetadata?.mars?.childSessionId;
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 /**
  * The model a finished task's sub-agent ran on, and the model it was meant to
- * run on when it fell back to the main one (`callProviderMetadata.omnirush`).
+ * run on when it fell back to the main one (`callProviderMetadata.mars`).
  */
 export function taskSubagentModel(part: TaskToolPart): { model: string; fallbackFrom: string | null } | null {
-  const omnirush = part.callProviderMetadata?.omnirush as Record<string, unknown> | undefined;
-  const model = omnirush?.subagentModel;
+  const mars = part.callProviderMetadata?.mars as Record<string, unknown> | undefined;
+  const model = mars?.subagentModel;
   if (typeof model !== "string" || !model.trim()) return null;
-  const fallback = omnirush?.subagentModelFallback as { requested?: unknown } | undefined;
+  const fallback = mars?.subagentModelFallback as { requested?: unknown } | undefined;
   return { model: model.trim(), fallbackFrom: typeof fallback?.requested === "string" ? fallback.requested : null };
 }

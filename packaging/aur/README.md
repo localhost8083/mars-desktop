@@ -1,6 +1,6 @@
 # Arch Linux package
 
-OmniRush.ai installs on Arch Linux (`x86_64` and `aarch64`) in two ways.
+MarsAI installs on Arch Linux (`x86_64` and `aarch64`) in two ways.
 
 ## 1. The `.pacman` package from a release (quickest)
 
@@ -9,21 +9,21 @@ electron-builder next to the `.deb` and `.AppImage`:
 
 ```bash
 # x86_64 (electron-builder names this file x64; the package inside is x86_64)
-sudo pacman -U https://github.com/omnirush-ai/omnirush-gui/releases/download/v<version>/omnirush-linux-x64-<version>.pacman
+sudo pacman -U https://github.com/mars-ai/mars-gui/releases/download/v<version>/mars-linux-x64-<version>.pacman
 # aarch64
-sudo pacman -U https://github.com/omnirush-ai/omnirush-gui/releases/download/v<version>/omnirush-linux-aarch64-<version>.pacman
+sudo pacman -U https://github.com/mars-ai/mars-gui/releases/download/v<version>/mars-linux-aarch64-<version>.pacman
 ```
 
-It installs the app under `/opt/omnirush`, like the `.deb`, and pacman pulls
+It installs the app under `/opt/mars`, like the `.deb`, and pacman pulls
 in the runtime dependencies (the list is `pacman.depends` in
 `apps/desktop/electron-builder.base.yml`).
 
 ## 2. The PKGBUILD in this directory (AUR)
 
-`PKGBUILD` repackages the release tarball (`omnirush-linux-x64-<version>.tar.gz`
-or `omnirush-linux-arm64-<version>.tar.gz`) under `/opt/omnirush`, and adds
-`/usr/bin/omnirush`, a desktop entry, the icons and the license. Both
-packages are named `omnirush`, so either replaces the other.
+`PKGBUILD` repackages the release tarball (`mars-linux-x64-<version>.tar.gz`
+or `mars-linux-arm64-<version>.tar.gz`) under `/opt/mars`, and adds
+`/usr/bin/mars`, a desktop entry, the icons and the license. Both
+packages are named `mars`, so either replaces the other.
 
 The committed `PKGBUILD` and `.SRCINFO` are templates (`pkgver=0.0.0`, zero
 checksums). Render them for a release first:
@@ -35,7 +35,7 @@ makepkg -si                            # build and install
 ```
 
 Do not commit the rendered files. `scripts/aur/publish-aur.sh` pushes them to
-the AUR repository `omnirush` (needs `AUR_SSH_PRIVATE_KEY`); the
+the AUR repository `mars` (needs `AUR_SSH_PRIVATE_KEY`); the
 `aur-validate` workflow builds and checks them in an Arch container first.
 
 Prerequisites: `sudo pacman -S --needed base-devel curl`.
@@ -47,6 +47,6 @@ change to this packaging, installs the `.pacman` and a `makepkg` build of this
 PKGBUILD on Arch Linux of the same CPU, and launches the app headless.
 
 ```bash
-pacman -Ql omnirush    # what the package installed
-omnirush               # start the app
+pacman -Ql mars    # what the package installed
+mars               # start the app
 ```

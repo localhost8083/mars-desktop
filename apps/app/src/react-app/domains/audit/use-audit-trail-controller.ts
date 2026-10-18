@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import type { OmniRushServerClient, OmniRushSessionSnapshot, OmniRushAuditEntry } from "@/app/lib/omnirush-server";
+import type { MarsServerClient, MarsSessionSnapshot, MarsAuditEntry } from "@/app/lib/mars-server";
 import { getReactQueryClient } from "@/react-app/infra/query-client";
 import { snapshotKey } from "@/react-app/domains/session/sync/session-sync";
 import { normalizeWorkspaceAuditEntries } from "./normalize-workspace-audit";
@@ -12,11 +12,11 @@ export type AuditTrailControllerOptions = {
   workspaceId: string;
   sessionId: string | null;
   workspacePath?: string;
-  client?: OmniRushServerClient | null;
+  client?: MarsServerClient | null;
   open: boolean;
 };
 
-const EMPTY_SNAPSHOT: OmniRushSessionSnapshot | null = null;
+const EMPTY_SNAPSHOT: MarsSessionSnapshot | null = null;
 
 /** Connects the sidebar trail to existing session and workspace caches. */
 export function useAuditTrailController(options: AuditTrailControllerOptions) {
@@ -32,10 +32,10 @@ export function useAuditTrailController(options: AuditTrailControllerOptions) {
     });
   }, [queryClient, workspaceId, sessionId]);
   const currentSnapshot = sessionId
-    ? queryClient.getQueryData<OmniRushSessionSnapshot>(snapshotKey(workspaceId, sessionId)) ?? EMPTY_SNAPSHOT
+    ? queryClient.getQueryData<MarsSessionSnapshot>(snapshotKey(workspaceId, sessionId)) ?? EMPTY_SNAPSHOT
     : EMPTY_SNAPSHOT;
 
-  const auditQuery = useQuery<{ items: OmniRushAuditEntry[] }>({
+  const auditQuery = useQuery<{ items: MarsAuditEntry[] }>({
     queryKey: ["audit-trail-workspace", workspaceId],
     queryFn: () => client?.listAudit(workspaceId, 50) ?? Promise.resolve({ items: [] }),
     enabled: open && Boolean(client && workspaceId),

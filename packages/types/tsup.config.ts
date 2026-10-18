@@ -4,9 +4,9 @@ export default defineConfig({
   entry: {
     index: "src/index.ts",
     "agent-context-diagnostics": "src/agent-context-diagnostics.ts",
-    "omnirush-affordance": "src/omnirush-affordance.ts",
-    "omnirush-context": "src/omnirush-context.ts",
-    "omnirush-provider": "src/omnirush-provider.ts",
+    "mars-affordance": "src/mars-affordance.ts",
+    "mars-context": "src/mars-context.ts",
+    "mars-provider": "src/mars-provider.ts",
     "automations": "src/automations.ts",
     workflows: "src/workflows.ts",
     "local-workflows": "src/local-workflows.ts",

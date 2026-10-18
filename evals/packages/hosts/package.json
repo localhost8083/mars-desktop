@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/hosts",
+  "name": "@mars/hosts",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -36,8 +36,8 @@
     }
   },
   "dependencies": {
-    "@omnirush/cdp": "workspace:*",
-    "@omnirush/paths": "link:../../../packages/paths",
-    "@omnirush/timeline": "workspace:*"
+    "@mars/cdp": "workspace:*",
+    "@mars/paths": "link:../../../packages/paths",
+    "@mars/timeline": "workspace:*"
   }
 }

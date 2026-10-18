@@ -3,8 +3,8 @@ import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { createConnection } from "mysql2/promise";
-import { allocateFreePort } from "@omnirush/cdp";
-import { startInferenceWitness } from "@omnirush/labs";
+import { allocateFreePort } from "@mars/cdp";
+import { startInferenceWitness } from "@mars/labs";
 import type { Place } from "./place.ts";
 import { ephemeralDatabaseName, localMysqlIsRunning } from "./place.ts";
 import { SkipError } from "./needs.ts";
@@ -24,7 +24,7 @@ function encrypted(value: string) {
 /** Real HTTP service with disposable baseline SQL for auth; generation is local. */
 export async function managedInference(place: Place) {
   if (place.kind !== "local") throw new SkipError("managed inference fixture requires a local MySQL service and loopback provider");
-  if (!await localMysqlIsRunning()) throw new SkipError("MySQL is not reachable at OMNIRUSH_EVAL_MYSQL_URL or the default local port");
+  if (!await localMysqlIsRunning()) throw new SkipError("MySQL is not reachable at MARS_EVAL_MYSQL_URL or the default local port");
   const stack = new AsyncDisposableStack();
   try {
     const database = stack.use(await place.db(ephemeralDatabaseName("inference_eval")));
@@ -39,7 +39,7 @@ export async function managedInference(place: Place) {
     const child = spawn(process.execPath, ["--conditions=development", "--import", "tsx", "src/server.ts"], {
       cwd: `${root}/ee/apps/inference`, stdio: ["ignore", "pipe", "pipe"],
       env: {
-        PATH: process.env.PATH, HOME: process.env.HOME, NODE_ENV: "test", OMNIRUSH_DEV_MODE: "1",
+        PATH: process.env.PATH, HOME: process.env.HOME, NODE_ENV: "test", MARS_DEV_MODE: "1",
         PORT: String(port), DB_MODE: "mysql", DATABASE_URL: database.url,
         DEN_DB_ENCRYPTION_KEY: encryptionSecret, OPENROUTER_UPSTREAM_URL: witness.url,
         INFERENCE_WEBHOOK_SECRET: "fixture-webhook-secret", INFERENCE_UPSTREAM_TIMEOUT_MS: "1000", INFERENCE_STREAM_IDLE_MS: "1000",

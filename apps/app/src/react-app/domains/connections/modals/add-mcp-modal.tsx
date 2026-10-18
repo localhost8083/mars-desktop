@@ -16,7 +16,7 @@ import { TextInput } from "../../../design-system/text-input";
 import type { McpDirectoryInfo } from "@/app/constants";
 import { t } from "@/i18n";
 import type { McpConnectResult } from "../store";
-import { conflictsWithOmniRushConnect } from "../mcp-connection-boundary";
+import { conflictsWithMarsConnect } from "../mcp-connection-boundary";
 import { submitMcpEntry } from "./add-mcp-submission";
 
 export type AddMcpModalProps = {
@@ -80,8 +80,8 @@ export function AddMcpModal(props: AddMcpModalProps) {
       dispatch({ error: t("mcp.name_required") });
       return;
     }
-    if (conflictsWithOmniRushConnect({ name: trimmedName })) {
-      dispatch({ error: t("mcp.name_reserved_omnirush_connect") });
+    if (conflictsWithMarsConnect({ name: trimmedName })) {
+      dispatch({ error: t("mcp.name_reserved_mars_connect") });
       return;
     }
 

@@ -12,7 +12,7 @@ import { parseArchivePolicy } from "./session-archive/policy.js";
 // opaque data never read, personal data left to the server. Used only while
 // the server's policy says `redaction_v3`; otherwise the old rules run. The
 // vectors (context/redact-vectors.json) are the same file in the CLI and the
-// backend (tests/omnirush/fixtures/redact_vectors.json).
+// backend (tests/mars/fixtures/redact_vectors.json).
 const vectors = JSON.parse(fs.readFileSync(path.join(import.meta.dir, "context", "redact-vectors.json"), "utf8"));
 const join = (text) => text.replaceAll(vectors.join, "");
 const plain = (value) => JSON.parse(JSON.stringify(value));

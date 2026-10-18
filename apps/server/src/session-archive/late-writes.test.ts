@@ -25,7 +25,7 @@ import { readTar } from "./test-helpers.js";
 import { toolStartTime, watchToolStarts } from "./tool-start.js";
 import { turnWriters } from "./turn-writers.js";
 
-// Turn boundaries, the desktop's side of omnirush-cli's late-writes test: a
+// Turn boundaries, the desktop's side of mars-cli's late-writes test: a
 // turn's start is taken from the workspace as its first tool call found it,
 // after the turn before's background processes finished writing; what they
 // wrote after that turn ended is marked late; and the files the root session
@@ -60,7 +60,7 @@ type Entry = { path: string };
 type Opened = { manifest: { reason?: string; files: Entry[] }; state: { state: { kind: string; turn: number; reason?: string } } };
 
 function rig() {
-  const stateDir = temp("omnirush-late-state-");
+  const stateDir = temp("mars-late-state-");
   const keyring = sealKeyring([randomBytes(32)]);
   const { publicRaw, kid } = [...keyring.values()][0]!;
   const request = async (route: string) => route === "archives/key"
@@ -70,10 +70,10 @@ function rig() {
   stops.push(() => archiver.stop({ budgetMs: 1000 }));
   const open = async (result: CaptureResult): Promise<Opened> => {
     if (result.status !== "queued") throw new Error(`not queued: ${JSON.stringify(result)}`);
-    const sealed = readFileSync(join(stateDir, "omnirush-archive", "pending", `${result.archiveId}.orseal`));
+    const sealed = readFileSync(join(stateDir, "mars-archive", "pending", `${result.archiveId}.orseal`));
     const members = readTar(zstdDecompressSync(await openSealedBuffer(sealed, keyring)));
     const json = (name: string) => JSON.parse(members.find((member) => member.name === name)!.content.toString("utf8"));
-    return { manifest: json("__omnirush__/manifest.json"), state: json("__omnirush__/state.json") };
+    return { manifest: json("__mars__/manifest.json"), state: json("__mars__/state.json") };
   };
   return { archiver, open };
 }
@@ -101,7 +101,7 @@ type Message = { info: Record<string, unknown>; parts: unknown[] };
 describe("late writes: the archive", () => {
   test("a pre_tool state is the folder as the first tool call found it: late writes in, marked; the tool's own writes out", async () => {
     const { archiver, open } = rig();
-    const root = temp("omnirush-late-ws-");
+    const root = temp("mars-late-ws-");
     write(join(root, "a.txt"), "turn one\n");
     write(join(root, "edit.txt"), "v1\n");
     git(root, "init", "-q");
@@ -132,7 +132,7 @@ describe("late writes: the archive", () => {
 
   test("a pre_tool state with no late write carries no reason", async () => {
     const { archiver, open } = rig();
-    const root = temp("omnirush-late-ws-");
+    const root = temp("mars-late-ws-");
     write(join(root, "a.txt"), "x\n");
     const sessionId = "ses_late_none";
     await archiver.startManifest(sessionId, root);
@@ -292,8 +292,8 @@ function orphan(cwd: string, script: string): number {
 
 describe("late writes: the processes", () => {
   test.skipIf(!linux)("late writers: the turn's background processes in the workspace, waited for until they exit, never past the cap", async () => {
-    const root = temp("omnirush-late-proc-");
-    const outside = temp("omnirush-late-out-");
+    const root = temp("mars-late-proc-");
+    const outside = temp("mars-late-out-");
     const since = Date.now() - 1_000;
     const job = spawn("sh", ["-c", "sleep 1.2; echo late > late.txt"], { cwd: root, detached: true, stdio: "ignore" });
     const elsewhere = spawn("sh", ["-c", "sleep 5"], { cwd: outside, detached: true, stdio: "ignore" });
@@ -452,7 +452,7 @@ describe("late writes: the observer", () => {
   test("a settled turn whose sub-agent wrote files records who wrote what (turn.writers)", async () => {
     const engine = startEngine();
     const clock = stepClock();
-    const root = temp("omnirush-late-writers-");
+    const root = temp("mars-late-writers-");
     const tool = (name: string, filePath: string, start: number) => ({ type: "tool", tool: name, state: { status: "completed", input: { filePath }, time: { start, end: start + 1 } } });
     engine.control.status = "idle";
     engine.control.messages = [
@@ -474,7 +474,7 @@ describe("late writes: the observer", () => {
 
 /** A capture host with an upload hook that accepts everything; its traces are recorded. */
 function captureHost() {
-  const stateDir = temp("omnirush-late-host-");
+  const stateDir = temp("mars-late-host-");
   const host = new CaptureHost({
     stateDir,
     appVersion: "test",
@@ -505,7 +505,7 @@ async function untilIdleSeen(host: CaptureHost): Promise<void> {
 describe("late writes: the prompt hold", () => {
   test.skipIf(!linux)("a prompt after the turn before ended waits for that turn's background job, then goes out", async () => {
     const engine = startEngine();
-    const root = temp("omnirush-late-hold-");
+    const root = temp("mars-late-hold-");
     const { host, traces } = captureHost();
     host.startSession(SESSION, "ws", root);
     await host.archiveStartGate(SESSION, root, { exclude: [] });
@@ -528,7 +528,7 @@ describe("late writes: the prompt hold", () => {
 
   test.skipIf(!linux)("a prompt typed into a running turn, or held without the gate (a sandbox), waits for nothing", async () => {
     const engine = startEngine();
-    const root = temp("omnirush-late-hold-");
+    const root = temp("mars-late-hold-");
     const { host, traces } = captureHost();
     host.startSession(SESSION, "ws", root);
     await host.archiveStartGate(SESSION, root, { exclude: [] });

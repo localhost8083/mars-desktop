@@ -25,10 +25,10 @@ import {
 } from "./server.js";
 import { ensureLocalWorkspaceFiles } from "./workspace-init.js";
 import { findManagedEngineWorkspace } from "./workspaces.js";
-import { keepOmniRushRuntimeConfigFileFresh, writeOmniRushRuntimeConfigFile } from "./omnirush-runtime-config.js";
-import { migrateOmniRushCloudMcpRuntimeConfig } from "./cloud-mcp-health.js";
+import { keepMarsRuntimeConfigFileFresh, writeMarsRuntimeConfigFile } from "./mars-runtime-config.js";
+import { migrateMarsCloudMcpRuntimeConfig } from "./cloud-mcp-health.js";
 import { migrateWorkspaceRuntimeConfigToEngineGlobal } from "./runtime-opencode-config-store.js";
-import { migrateLegacyOmniRushUiMcpCommand } from "./omnirush-ui-mcp-migration.js";
+import { migrateLegacyMarsUiMcpCommand } from "./mars-ui-mcp-migration.js";
 import { resolveOpencodeModelsEnv } from "./opencode-models-url.js";
 import { assertOpencodeConfigCompat } from "./opencode-config-compat.js";
 import { adoptOpencodeCredentials, startEngine2SessionImport } from "./engine2/import.js";
@@ -57,49 +57,49 @@ let enginePool: EnginePool | null = null;
 if (!config.readOnly) {
   await ensureLocalWorkspaceFiles(config.workspaces);
   // A standalone server has no bundled UI-control MCP: remove any persisted
-  // `npx -y omnirush-ui-mcp` entry rather than letting the engine resolve it.
-  // First among the runtime-DB migrations (see migrateLegacyOmniRushUiMcpCommand).
-  await migrateLegacyOmniRushUiMcpCommand(config, null);
-  await migrateOmniRushCloudMcpRuntimeConfig(config);
+  // `npx -y mars-ui-mcp` entry rather than letting the engine resolve it.
+  // First among the runtime-DB migrations (see migrateLegacyMarsUiMcpCommand).
+  await migrateLegacyMarsUiMcpCommand(config, null);
+  await migrateMarsCloudMcpRuntimeConfig(config);
   await migrateWorkspaceRuntimeConfigToEngineGlobal(config);
 }
 
 // Bind the HTTP server before spawning the engine: serve-node may fall back
 // to an OS-assigned port on EADDRINUSE, and the engine's spawn-time env
-// (OMNIRUSH_SERVER_URL) must point at the port that actually bound, not the
+// (MARS_SERVER_URL) must point at the port that actually bound, not the
 // requested one.
 // The Linux sandbox's helpers ship beside the engine (sidecars/box/): known before the server plans any box.
-if (process.env.OMNIRUSH_OPENCODE_BIN?.trim()) setToolsRoot(dirname(process.env.OMNIRUSH_OPENCODE_BIN.trim()));
+if (process.env.MARS_OPENCODE_BIN?.trim()) setToolsRoot(dirname(process.env.MARS_OPENCODE_BIN.trim()));
 const server = await startServer(config);
 config.port = server.port;
 const serverUrl = `http://${config.host === "0.0.0.0" ? "127.0.0.1" : config.host}:${server.port}`;
 const workerActivityHeartbeat = startWorkerActivityHeartbeat(config, logger);
 
-if (!config.opencodeBaseUrl && process.env.OMNIRUSH_MANAGE_OPENCODE === "1") {
+if (!config.opencodeBaseUrl && process.env.MARS_MANAGE_OPENCODE === "1") {
   const workspace = findManagedEngineWorkspace(config.workspaces);
   if (workspace) {
     // Reap engines recorded by servers that died without cleanup. Best
     // effort: a failed reap must never block startup.
     await reapOrphanEngineInstances(config, { logger }).catch(() => undefined);
     // Server-managed config file: the engine re-reads it from disk on every
-    // instance rebuild, and keepOmniRushRuntimeConfigFileFresh synchronizes it
+    // instance rebuild, and keepMarsRuntimeConfigFileFresh synchronizes it
     // on every runtime-DB write — so disposes always pick up current state.
-    const { path: runtimeConfigPath } = await writeOmniRushRuntimeConfigFile(config);
-    keepOmniRushRuntimeConfigFileFresh(config);
-    const managedOpencodeCwd = process.env.OMNIRUSH_MANAGED_OPENCODE_CWD?.trim() || workspace.path;
+    const { path: runtimeConfigPath } = await writeMarsRuntimeConfigFile(config);
+    keepMarsRuntimeConfigFileFresh(config);
+    const managedOpencodeCwd = process.env.MARS_MANAGED_OPENCODE_CWD?.trim() || workspace.path;
     await mkdir(managedOpencodeCwd, { recursive: true });
     const opencodeModelsEnv = await resolveOpencodeModelsEnv();
     const engineEnv: Record<string, string | undefined> = {
-      ...(process.env.OMNIRUSH_DEV_MODE ? { OMNIRUSH_DEV_MODE: process.env.OMNIRUSH_DEV_MODE } : {}),
-      ...(process.env.OMNIRUSH_UI_CONTROL_DISCOVERY ? { OMNIRUSH_UI_CONTROL_DISCOVERY: process.env.OMNIRUSH_UI_CONTROL_DISCOVERY } : {}),
-      OMNIRUSH_SERVER_URL: serverUrl,
-      OMNIRUSH_SERVER_TOKEN: config.token,
-      OMNIRUSH_POLICY_TOKEN: managedDesktopPolicy(config).evaluationToken,
+      ...(process.env.MARS_DEV_MODE ? { MARS_DEV_MODE: process.env.MARS_DEV_MODE } : {}),
+      ...(process.env.MARS_UI_CONTROL_DISCOVERY ? { MARS_UI_CONTROL_DISCOVERY: process.env.MARS_UI_CONTROL_DISCOVERY } : {}),
+      MARS_SERVER_URL: serverUrl,
+      MARS_SERVER_TOKEN: config.token,
+      MARS_POLICY_TOKEN: managedDesktopPolicy(config).evaluationToken,
       OPENCODE_CONFIG: runtimeConfigPath,
       ...opencodeModelsEnv,
     };
     const engineSpawnTemplate: EngineSpawnTemplate = {
-      bin: process.env.OMNIRUSH_OPENCODE_BIN,
+      bin: process.env.MARS_OPENCODE_BIN,
       cwd: managedOpencodeCwd,
       runtimeConfigPath,
       env: engineEnv,
@@ -119,14 +119,14 @@ if (!config.opencodeBaseUrl && process.env.OMNIRUSH_MANAGE_OPENCODE === "1") {
     });
     adoptOpencodeCredentials({ ...process.env, ...engineEnv }, (level, message, attributes) => logger.log(level, message, attributes));
     managedOpencode = await createManagedOpencodeServer({
-      bin: process.env.OMNIRUSH_OPENCODE_BIN,
+      bin: process.env.MARS_OPENCODE_BIN,
       cwd: managedOpencodeCwd,
       excludedPorts: [config.port],
       env: engineEnv,
     });
-    // Sessions the 2.x engine of OmniRush.ai 2.2.0 – 3.x stored: copied once into this engine's store.
+    // Sessions the 2.x engine of MarsAI 2.2.0 – 3.x stored: copied once into this engine's store.
     void startEngine2SessionImport({
-      bin: process.env.OMNIRUSH_OPENCODE_BIN?.trim() || "opencode",
+      bin: process.env.MARS_OPENCODE_BIN?.trim() || "opencode",
       env: { ...process.env, ...engineEnv },
       log: (level, message, attributes) => logger.log(level, message, attributes),
     });
@@ -163,7 +163,7 @@ if (!config.opencodeBaseUrl && process.env.OMNIRUSH_MANAGE_OPENCODE === "1") {
         serverRunId: managedOpencodeIdentity,
         ownerPid: process.pid,
         authProbe: buildEngineAuthProbeHeader(managedOpencode.username, managedOpencode.password),
-        bin: process.env.OMNIRUSH_OPENCODE_BIN?.trim() || "opencode",
+        bin: process.env.MARS_OPENCODE_BIN?.trim() || "opencode",
       }).catch(() => undefined);
     }
     enginePool = createEnginePoolForConfig({
@@ -174,7 +174,7 @@ if (!config.opencodeBaseUrl && process.env.OMNIRUSH_MANAGE_OPENCODE === "1") {
       registryId: managedEngineRecordId,
       trustedIdentity: managedOpencodeIdentity,
     });
-    logger.log("info", `Managed OmniRush listening on ${managedOpencode.url}`);
+    logger.log("info", `Managed Mars listening on ${managedOpencode.url}`);
   }
 }
 
@@ -191,7 +191,7 @@ if (managedOpencode) {
 }
 
 const url = `http://${config.host}:${server.port}`;
-logger.log("info", `OmniRush.ai server listening on ${url}`);
+logger.log("info", `MarsAI server listening on ${url}`);
 
 if (config.tokenSource === "generated") {
   logger.log("info", `Client token: ${config.token}`);

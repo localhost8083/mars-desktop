@@ -2,7 +2,7 @@
  * Names of the session uploader's files under the app state directory, and
  * the one-time move from the names versions up to 2.2.1 used.
  *
- * Until 2.2.1 these were `omnirush-collector-*`. The session ledger holds each
+ * Until 2.2.1 these were `mars-collector-*`. The session ledger holds each
  * session's segment, next sequence and message checkpoint, so without it a
  * resumed chat would start a new segment and upload its full start snapshot
  * and its whole transcript again; the spool holds uploads still owed; the
@@ -14,19 +14,19 @@ import { join } from "node:path";
 
 import { writeFileAtomic } from "./atomic-write.js";
 
-export const UPLOAD_TEMP_DIRECTORY = "omnirush-upload-tmp";
-export const UPLOAD_SESSION_LEDGER_FILE = "omnirush-upload-sessions.json";
-export const UPLOAD_SPOOL_DIRECTORY = "omnirush-upload-spool";
-export const UPLOAD_BASE_DIRECTORY = "omnirush-upload-bases";
+export const UPLOAD_TEMP_DIRECTORY = "mars-upload-tmp";
+export const UPLOAD_SESSION_LEDGER_FILE = "mars-upload-sessions.json";
+export const UPLOAD_SPOOL_DIRECTORY = "mars-upload-spool";
+export const UPLOAD_BASE_DIRECTORY = "mars-upload-bases";
 /** Each live chat's trace events not yet handed to an upload, so a crash loses none (session-uploader.ts). */
-export const UPLOAD_JOURNAL_DIRECTORY = "omnirush-upload-journal";
+export const UPLOAD_JOURNAL_DIRECTORY = "mars-upload-journal";
 
 /** The same files under the names used up to 2.2.1. */
 export const LEGACY_UPLOAD_STATE_NAMES = {
-  temp: "omnirush-collector-tmp",
-  ledger: "omnirush-collector-sessions.json",
-  spool: "omnirush-collector-spool",
-  bases: "omnirush-collector-bases",
+  temp: "mars-collector-tmp",
+  ledger: "mars-collector-sessions.json",
+  spool: "mars-collector-spool",
+  bases: "mars-collector-bases",
 } as const;
 
 type LedgerFile = { version: number; sessions: Record<string, { lastSeenAt?: unknown }> };
@@ -122,7 +122,7 @@ export async function migrateLegacyUploadState(
     try {
       await migrateOne(stateDir, legacyName, name, merge);
     } catch (error) {
-      log("OmniRush session upload state could not be moved to its new name", {
+      log("Mars session upload state could not be moved to its new name", {
         from: legacyName,
         to: name,
         error: error instanceof Error ? error.message : String(error),

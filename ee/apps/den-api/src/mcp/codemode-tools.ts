@@ -1,4 +1,4 @@
-import { Tool, toolError } from "@omnirush/codemode"
+import { Tool, toolError } from "@mars/codemode"
 import { normalizeDenTypeId } from "@omnirush-ee/utils/typeid"
 import { Effect } from "effect"
 import type { Hono } from "hono"

@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { backgroundUpdateWorld } from "../worlds/first-run.ts";
 import { restartUpdateTaskWorld } from "../worlds/chat.ts";
 
@@ -21,7 +21,7 @@ test("updates download outside Settings and offer a persistent, optional restart
     within: 15_000, label: "background download without opening Settings",
     until: (value) => typeof value === "object" && value !== null && Reflect.get(value, "downloads") === 1,
   });
-  expect(await world.snapshot()).toMatchObject({ checks: 4, downloads: 1, installs: 0, sidebarName: "OmniRush.ai" });
+  expect(await world.snapshot()).toMatchObject({ checks: 4, downloads: 1, installs: 0, sidebarName: "MarsAI" });
   await user.notSee({ text: "Restart to update" });
   await world.returnToApp();
   expect(await world.snapshot()).toMatchObject({ checks: 4, downloads: 1, installs: 0 });
@@ -30,20 +30,20 @@ test("updates download outside Settings and offer a persistent, optional restart
   await user.notSee({ text: "Ready when you are." });
   await world.openSettings();
   await user.see({ text: "Restart to update" });
-  await world.omniRushspace();
+  await world.marsspace();
   await world.returnToApp();
   await user.see({ text: "Restart to update" });
   expect(await world.snapshot()).toMatchObject({ checks: 4, downloads: 1, installs: 0, updateInTitlebar: true, updateInSidebar: false });
   await user.looks([
     "A compact neutral Restart to update button sits in the titlebar with the app's other controls",
-    "The OmniRush.ai name remains above the sidebar navigation and no update card or banner covers the workspace",
+    "The MarsAI name remains above the sidebar navigation and no update card or banner covers the workspace",
   ]);
   await user.click("Restart to update");
   await user.notSee({ text: "Ready when you are." });
-  await user.see({ text: "Restart OmniRush.ai?" });
+  await user.see({ text: "Restart MarsAI?" });
   await user.see({ text: /Eligible running tasks resume gradually after restart/ });
   await user.click("Keep working");
-  await user.notSee({ text: "Restart OmniRush.ai?" });
+  await user.notSee({ text: "Restart MarsAI?" });
   expect(await world.snapshot()).toMatchObject({ installs: 0 });
 
   await world.setCustomBranding();
@@ -126,7 +126,7 @@ recoveryTest("a confirmed update relaunch resumes only the unfinished task on it
     await user.click({ role: "button", text: "Check now" });
     await user.see({ text: "Restart to update" }, { timeoutMs: 30_000 });
     await user.click({ text: "Restart to update" });
-    await user.see({ text: "Restart OmniRush.ai?" });
+    await user.see({ text: "Restart MarsAI?" });
     await user.click("Restart & update");
   });
   await step("a new renderer continues once without touching stopped or completed work", async () => {

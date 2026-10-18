@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "bun:test";
-import type { WorkflowArtifactSnapshot } from "@omnirush/types/workflows";
+import type { WorkflowArtifactSnapshot } from "@mars/types/workflows";
 import { WorkflowArtifactResult } from "../app/(den)/dashboard/_components/workflow-artifact-result";
 
 const value = {

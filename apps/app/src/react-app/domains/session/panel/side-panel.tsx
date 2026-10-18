@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useDragControls } from "motion/react";
 
-import type { OmniRushServerClient } from "@/app/lib/omnirush-server";
+import type { MarsServerClient } from "@/app/lib/mars-server";
 import { PanelTab, PanelTabClose, PanelTabItem, PanelTabList } from "@/components/panel-tabs";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
@@ -34,7 +34,7 @@ import {
   useActivePanelTab,
   useSessionPanelState,
 } from "./panel-tab-store";
-import { useControlAction, type OmniRushControlAction } from "../../../shell/control/control-provider";
+import { useControlAction, type MarsControlAction } from "../../../shell/control/control-provider";
 import type { OpenTarget } from "../artifacts/open-target";
 import { useSidePanelTabs } from "./use-side-panel-tabs";
 import { handlePanelEscape, PanelEmpty } from "./panel-empty";
@@ -49,7 +49,7 @@ import { LoginSyncCard } from "../../browser-logins/login-sync-card";
 
 type SidePanelProps = {
   sessionId: string;
-  client: OmniRushServerClient | null;
+  client: MarsServerClient | null;
   workspaceId: string | null;
   workspaceRoot: string;
   isRemoteWorkspace?: boolean;
@@ -67,7 +67,7 @@ if (import.meta.hot) {
 
 const MARKDOWN_PRIMITIVE_ARTIFACT_CONTENT = `# Artifact Markdown Proof
 
-The artifact preview keeps **outside-chat Markdown** readable with inline \`surface renderer\`, a fenced code block, and [omnirush.ai](https://omnirush.ai).
+The artifact preview keeps **outside-chat Markdown** readable with inline \`surface renderer\`, a fenced code block, and [marsai.click](https://marsai.click).
 
 \`\`\`ts
 const surface = "shared markdown primitive";
@@ -346,7 +346,7 @@ function BrowserPanelContent({
             {tab.browserTask?.status === "paused" ? "You have control · resume when finished" : tab.browserTask?.status === "running" ? browserOperationLabels[tab.browserTask.operation ?? ""] ?? "Working on this page" : tab.browserTask?.status === "needs_attention" ? browserOperationLabels[tab.browserTask.operation ?? ""] ?? "Review this page" : "This conversation's tab"}
           </span>
           <Button variant="outline" size="sm" className="h-6 px-2 text-xs"
-            onClick={() => { void window.__OMNIRUSH_ELECTRON__?.browser?.taskControl?.(tab.id, tab.browserTask?.status === "paused" ? "resume" : "pause"); }}>
+            onClick={() => { void window.__MARS_ELECTRON__?.browser?.taskControl?.(tab.id, tab.browserTask?.status === "paused" ? "resume" : "pause"); }}>
             {tab.browserTask?.status === "paused" ? "Resume browser" : "Take over"}
           </Button>
         </div>
@@ -522,8 +522,8 @@ function BrowserPanelContent({
             <p className="font-medium">{tab.browserApproval.message}</p>
             <p className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap break-words text-muted-foreground">{tab.browserApproval.detail}</p>
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => { if (tab.browserApproval) void window.__OMNIRUSH_ELECTRON__?.browser?.approve?.(tab.id, tab.browserApproval.id, true); }}>{tab.browserApproval.approveLabel ?? "Allow once"}</Button>
-              <Button size="sm" variant="outline" onClick={() => { if (tab.browserApproval) void window.__OMNIRUSH_ELECTRON__?.browser?.approve?.(tab.id, tab.browserApproval.id, false); }}>Deny</Button>
+              <Button size="sm" onClick={() => { if (tab.browserApproval) void window.__MARS_ELECTRON__?.browser?.approve?.(tab.id, tab.browserApproval.id, true); }}>{tab.browserApproval.approveLabel ?? "Allow once"}</Button>
+              <Button size="sm" variant="outline" onClick={() => { if (tab.browserApproval) void window.__MARS_ELECTRON__?.browser?.approve?.(tab.id, tab.browserApproval.id, false); }}>Deny</Button>
             </div>
           </div>
         ) : null}
@@ -556,7 +556,7 @@ export function SidePanel({
 
   const { createTab, closeTab, selectTab, reorderTabs } = useSidePanelTabs(sessionId);
 
-  const seedArtifactOverflowControlAction = React.useMemo<OmniRushControlAction | null>(() => {
+  const seedArtifactOverflowControlAction = React.useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
 
     return {
@@ -585,7 +585,7 @@ export function SidePanel({
         for (let index = 1; index <= count; index += 1) {
           const padded = String(index).padStart(2, "0");
           const baseName = longNameLast && index === count
-            ? `omnirush-self-managed-subscription-and-licensing-overview-very-long-${padded}`
+            ? `mars-self-managed-subscription-and-licensing-overview-very-long-${padded}`
             : `overflow-tab-${padded}`;
           const value = `artifacts/${baseName}.md`;
           const label = `${baseName}.md`;
@@ -623,7 +623,7 @@ export function SidePanel({
   }, [client, sessionId, workspaceId]);
   useControlAction(seedArtifactOverflowControlAction);
 
-  const seedMarkdownPrimitiveArtifactControlAction = React.useMemo<OmniRushControlAction | null>(() => {
+  const seedMarkdownPrimitiveArtifactControlAction = React.useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
 
     return {
@@ -668,7 +668,7 @@ export function SidePanel({
   }, [client, sessionId, workspaceId]);
   useControlAction(seedMarkdownPrimitiveArtifactControlAction);
 
-  const seedPdfArtifactControlAction = React.useMemo<OmniRushControlAction | null>(() => {
+  const seedPdfArtifactControlAction = React.useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
 
     return {
@@ -680,7 +680,7 @@ export function SidePanel({
       execute: async () => {
         if (!client || !workspaceId) return { ok: false, error: "Workspace client is not ready." };
 
-        // Minimal single-page PDF that draws "omnirush.ai PDF" — base64 encoded.
+        // Minimal single-page PDF that draws "marsai.click PDF" — base64 encoded.
         const pdfBase64 =
           "JVBERi0xLjQKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PgplbmRvYmoKMiAwIG9iago8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PgplbmRvYmoKMyAwIG9iago8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL01lZGlhQm94WzAgMCAzMDAgMTQ0XS9SZXNvdXJjZXM8PC9Gb250PDwvRjEgNCAwIFI+Pj4+L0NvbnRlbnRzIDUgMCBSPj4KZW5kb2JqCjQgMCBvYmoKPDwvVHlwZS9Gb250L1N1YnR5cGUvVHlwZTEvQmFzZUZvbnQvSGVsdmV0aWNhPj4KZW5kb2JqCjUgMCBvYmoKPDwvTGVuZ3RoIDQ0Pj4Kc3RyZWFtCkJUCi9GMSAyNCBUZgo3MiA3MCBUZAooT3BlbldvcmsgUERGKSBUagpFVAplbmRzdHJlYW0KZW5kb2JqCnhyZWYKMCA2CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDU4IDAwMDAwIG4gCjAwMDAwMDAxMTUgMDAwMDAgbiAKMDAwMDAwMDI0MSAwMDAwMCBuIAowMDAwMDAwMzEyIDAwMDAwIG4gCnRyYWlsZXIKPDwvU2l6ZSA2L1Jvb3QgMSAwIFI+PgpzdGFydHhyZWYKNDA2CiUlRU9G";
         const binary = atob(pdfBase64);

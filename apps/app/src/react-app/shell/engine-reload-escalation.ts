@@ -8,14 +8,14 @@
 // here: the server reports it while a dispose is still tearing down, and
 // restarting mid-teardown would kill the very sessions being drained.
 import { engineRestart } from "@/app/lib/desktop";
-import { OmniRushServerError, type OmniRushServerClient } from "@/app/lib/omnirush-server";
+import { MarsServerError, type MarsServerClient } from "@/app/lib/mars-server";
 import { isDesktopRuntime } from "@/app/lib/runtime-env";
 
 const UNREACHABLE_RETRY_DELAY_MS = 1500;
 
 export function canRestartDesktopForReloadError(error: unknown) {
   return (
-    error instanceof OmniRushServerError &&
+    error instanceof MarsServerError &&
     (error.code === "opencode_engine_unreachable" || error.code === "opencode_unconfigured")
   );
 }
@@ -58,7 +58,7 @@ export type ReloadEngineFallbackOptions = {
  * (it reports `restartDeferred`), so this never ends live runs by itself.
  */
 export async function reloadEngineWithDesktopFallback(
-  client: Pick<OmniRushServerClient, "reloadEngine">,
+  client: Pick<MarsServerClient, "reloadEngine">,
   workspaceId: string,
   options?: ReloadEngineFallbackOptions,
 ): Promise<ReloadEngineFallbackResult> {

@@ -2,11 +2,11 @@ import { afterEach, describe, expect, test } from "bun:test";
 
 import {
   differentialCloudVerdict,
-  probeOmniRushCloudCatalog,
+  probeMarsCloudCatalog,
   type CloudCatalogProbe,
   type CloudCatalogProbeCode,
   type CloudCatalogProbeFetch,
-  type ProbeOmniRushCloudCatalogInput,
+  type ProbeMarsCloudCatalogInput,
 } from "./agent-context-cloud-probe.js";
 
 const TOKEN = "Bearer ow_diagnostics_token_abcdefghijklmnopqrstuvwxyz";
@@ -15,16 +15,16 @@ const DEN_ORIGIN = "https://den.example.com";
 const ENDPOINT = `${DEN_ORIGIN}/api/den/mcp/agent`;
 /** Retired hosted Den origins that used to be trusted as built-ins. */
 const RETIRED_HOSTED_ORIGINS = [
-  "https://app.omnirushlabs.com",
-  "https://api.omnirushlabs.com",
-  "https://api.app.omnirushlabs.com",
-  "https://app.omnirush.software",
-  "https://api.omnirush.software",
+  "https://app.marslabs.com",
+  "https://api.marslabs.com",
+  "https://api.app.marslabs.com",
+  "https://app.mars.software",
+  "https://api.mars.software",
 ];
 const SESSION_ID = "diagnostics-session-id";
 const PROTOCOL_VERSION = "2025-06-18";
 
-function input(overrides: Partial<ProbeOmniRushCloudCatalogInput> = {}): ProbeOmniRushCloudCatalogInput {
+function input(overrides: Partial<ProbeMarsCloudCatalogInput> = {}): ProbeMarsCloudCatalogInput {
   const { fetchImpl, ...values } = overrides;
   return {
     workspaceId: "ws_diagnostics",
@@ -86,7 +86,7 @@ function requestPayload(init?: RequestInit): Record<string, unknown> {
 function initializeResponse(extraHeaders: Record<string, string> = {}): Response {
   return new Response(JSON.stringify({
     jsonrpc: "2.0",
-    id: "omnirush-agent-diagnostics-initialize",
+    id: "mars-agent-diagnostics-initialize",
     result: {
       capabilities: {},
       protocolVersion: PROTOCOL_VERSION,
@@ -123,10 +123,10 @@ async function waitUntil(predicate: () => boolean): Promise<void> {
 }
 
 afterEach(() => {
-  delete process.env.OMNIRUSH_AGENT_DIAGNOSTICS_TRUSTED_ORIGINS;
+  delete process.env.MARS_AGENT_DIAGNOSTICS_TRUSTED_ORIGINS;
 });
 
-describe("OmniRush.ai Cloud catalog probe", () => {
+describe("MarsAI Cloud catalog probe", () => {
   test("performs initialize, initialized notification, bounded tools/list, and session cleanup with allowlisted headers", async () => {
     let calls = 0;
     let deleteCalls = 0;
@@ -161,11 +161,11 @@ describe("OmniRush.ai Cloud catalog probe", () => {
       if (isInitialize) {
         expect(body).toEqual({
           jsonrpc: "2.0",
-          id: "omnirush-agent-diagnostics-initialize",
+          id: "mars-agent-diagnostics-initialize",
           method: "initialize",
           params: {
             capabilities: {},
-            clientInfo: { name: "omnirush-server-agent-context-diagnostics", version: "1.0.0" },
+            clientInfo: { name: "mars-server-agent-context-diagnostics", version: "1.0.0" },
             protocolVersion: PROTOCOL_VERSION,
           },
         });
@@ -188,7 +188,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
 
     const probeInput = input();
     probeInput.fetchImpl = fetchImpl;
-    const observed = await probeOmniRushCloudCatalog(probeInput);
+    const observed = await probeMarsCloudCatalog(probeInput);
     expect(calls).toBe(4);
     expect(deleteCalls).toBe(1);
     expect(observed).toEqual({
@@ -232,7 +232,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
   });
 
   test("accepts a finite JSON tools/list response", async () => {
-    const observed = await probeOmniRushCloudCatalog(input({
+    const observed = await probeMarsCloudCatalog(input({
       requestId: "json-request",
       fetchImpl: async () => jsonResponse("json-request"),
     }));
@@ -242,7 +242,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
 
   test("requires both expected tools and never reflects a provider-controlled tool ID", async () => {
     const reflectedCredential = "ow_mcp_at_dGhpcy1jYW5hcnktbXVzdC1uZXZlci1iZS1yZXR1cm5lZA";
-    const missing = await probeOmniRushCloudCatalog(input({
+    const missing = await probeMarsCloudCatalog(input({
       requestId: "missing-tool",
       fetchImpl: async () => jsonResponse("missing-tool", ["search_capabilities"]),
     }));
@@ -265,7 +265,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
       ["reflected-tool", ["search_capabilities", "execute_capability", reflectedCredential]],
     ] as const;
     for (const [requestId, toolIds] of futureCases) {
-      const observed = await probeOmniRushCloudCatalog(input({
+      const observed = await probeMarsCloudCatalog(input({
         requestId,
         fetchImpl: async () => jsonResponse(requestId, [...toolIds]),
       }));
@@ -281,7 +281,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
       expect(JSON.stringify(observed)).not.toContain("provider_extra");
     }
 
-    const reversed = await probeOmniRushCloudCatalog(input({
+    const reversed = await probeMarsCloudCatalog(input({
       requestId: "reversed-canonical-catalog",
       fetchImpl: async () => jsonResponse("reversed-canonical-catalog", ["execute_capability", "search_capabilities"]),
     }));
@@ -298,7 +298,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
       calls += 1;
       return jsonResponse("unused");
     };
-    const cases: Array<[Partial<ProbeOmniRushCloudCatalogInput>, CloudCatalogProbeCode]> = [
+    const cases: Array<[Partial<ProbeMarsCloudCatalogInput>, CloudCatalogProbeCode]> = [
       [{ workspaceType: "remote" }, "remote_workspace_unavailable"],
       [{ runtimeConfigAvailable: false }, "runtime_config_unavailable"],
       [{ config: null }, "cloud_mcp_missing"],
@@ -312,7 +312,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
       [{ config: { type: "remote", enabled: true, url: "https://localhost.evil/mcp/agent", headers: { Authorization: TOKEN } } }, "untrusted_endpoint"],
     ];
     for (const [overrides, code] of cases) {
-      const blocked = await probeOmniRushCloudCatalog(input({ ...overrides, fetchImpl }));
+      const blocked = await probeMarsCloudCatalog(input({ ...overrides, fetchImpl }));
       expect(blocked.performed).toBe(false);
       expect(blocked.status).toBe("not-performed");
       expect(blocked.stage).toBe("eligibility");
@@ -326,7 +326,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     const statuses = ["failed", "disabled", "needs-auth", "needs-client-registration", "not-recorded"] as const;
     for (const status of statuses) {
       let calls = 0;
-      const observed = await probeOmniRushCloudCatalog(input({
+      const observed = await probeMarsCloudCatalog(input({
         requestId: `despite-${status}`,
         engineRegistration: { status, source: "engine_status", recordAgeMs: 2_000 },
         fetchImpl: async () => {
@@ -355,7 +355,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     for (const activatedEnterpriseOrigin of [null, DEN_ORIGIN]) {
       for (const origin of RETIRED_HOSTED_ORIGINS) {
         for (const path of ["/mcp/agent", "/api/den/mcp/agent"]) {
-          const blocked = await probeOmniRushCloudCatalog(input({
+          const blocked = await probeMarsCloudCatalog(input({
             requestId: "retired-origin",
             activatedEnterpriseOrigin,
             config: { type: "remote", enabled: true, url: `${origin}${path}`, headers: { Authorization: TOKEN } },
@@ -376,7 +376,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
 
   test("allows exact loopback and explicitly configured HTTPS origins only", async () => {
     let blockedCalls = 0;
-    const blocked = await probeOmniRushCloudCatalog(input({
+    const blocked = await probeMarsCloudCatalog(input({
       config: {
         type: "remote",
         enabled: true,
@@ -395,7 +395,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     });
     expect(blockedCalls).toBe(0);
 
-    const loopback = await probeOmniRushCloudCatalog(input({
+    const loopback = await probeMarsCloudCatalog(input({
       config: {
         type: "remote",
         enabled: true,
@@ -407,8 +407,8 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     }));
     expect(loopback.status).toBe("observed");
 
-    process.env.OMNIRUSH_AGENT_DIAGNOSTICS_TRUSTED_ORIGINS = "https://den.customer.example";
-    const trusted = await probeOmniRushCloudCatalog(input({
+    process.env.MARS_AGENT_DIAGNOSTICS_TRUSTED_ORIGINS = "https://den.customer.example";
+    const trusted = await probeMarsCloudCatalog(input({
       config: {
         type: "remote",
         enabled: true,
@@ -427,7 +427,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
       calls += 1;
       return jsonResponse("unused");
     };
-    const duplicate = await probeOmniRushCloudCatalog(input({
+    const duplicate = await probeMarsCloudCatalog(input({
       config: {
         type: "remote",
         enabled: true,
@@ -438,7 +438,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     }));
     expect(duplicate.code).toBe("duplicate_authorization");
 
-    const injected = await probeOmniRushCloudCatalog(input({
+    const injected = await probeMarsCloudCatalog(input({
       config: {
         type: "remote",
         enabled: true,
@@ -452,7 +452,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
   });
 
   test("rejects redirects and cancels a response that exceeds 64 KiB", async () => {
-    const redirected = await probeOmniRushCloudCatalog(input({
+    const redirected = await probeMarsCloudCatalog(input({
       requestId: "redirect-request",
       fetchImpl: async () => new Response(null, { status: 302, headers: { location: "https://evil.example/mcp/agent" } }),
     }));
@@ -470,7 +470,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
         cancelled = true;
       },
     });
-    const tooLarge = await probeOmniRushCloudCatalog(input({
+    const tooLarge = await probeMarsCloudCatalog(input({
       requestId: "large-request",
       fetchImpl: async () => new Response(oversized, { headers: { "content-type": "text/event-stream" } }),
     }));
@@ -498,7 +498,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     });
     redirectTarget = `http://127.0.0.1:${server.port}/redirect-target/mcp/agent`;
     try {
-      const redirected = await probeOmniRushCloudCatalog(input({
+      const redirected = await probeMarsCloudCatalog(input({
         workspaceId: "ws_real_redirect",
         requestId: "real-redirect",
         config: {
@@ -532,7 +532,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
       },
     });
     const startedAt = Date.now();
-    const timedOut = await probeOmniRushCloudCatalog(input({
+    const timedOut = await probeMarsCloudCatalog(input({
       requestId: "stalled-body-request",
       timeoutMs: 15,
       fetchImpl: async () => new Response(stalled, {
@@ -551,7 +551,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
   });
 
   test("classifies abort-aware fetch and body failures as deadline timeouts", async () => {
-    const fetchTimedOut = await probeOmniRushCloudCatalog(input({
+    const fetchTimedOut = await probeMarsCloudCatalog(input({
       workspaceId: "ws_abort_aware_fetch",
       requestId: "abort-aware-fetch",
       timeoutMs: 15,
@@ -568,7 +568,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
       httpStatus: null,
     });
 
-    const bodyTimedOut = await probeOmniRushCloudCatalog(input({
+    const bodyTimedOut = await probeMarsCloudCatalog(input({
       workspaceId: "ws_abort_aware_body",
       requestId: "abort-aware-body",
       timeoutMs: 15,
@@ -601,7 +601,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     const controller = new AbortController();
     controller.abort();
     let calls = 0;
-    const cancelled = await probeOmniRushCloudCatalog(input({
+    const cancelled = await probeMarsCloudCatalog(input({
       signal: controller.signal,
       fetchImpl: async () => {
         calls += 1;
@@ -624,7 +624,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     const fetchStarted = new Promise<void>((resolve) => {
       markFetchStarted = resolve;
     });
-    const pending = probeOmniRushCloudCatalog(input({
+    const pending = probeMarsCloudCatalog(input({
       workspaceId: "ws_parent_abort_fetch",
       requestId: "parent-abort-fetch",
       signal: controller.signal,
@@ -662,7 +662,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
         cancelled = true;
       },
     }, { highWaterMark: 0 });
-    const pending = probeOmniRushCloudCatalog(input({
+    const pending = probeMarsCloudCatalog(input({
       workspaceId: "ws_parent_abort_body",
       requestId: "parent-abort-body",
       signal: controller.signal,
@@ -693,7 +693,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
       ["unsafe", payload("unsafe", ["search_capabilities\r\nspoof"]), "invalid_catalog", "catalog_validation"],
     ];
     for (const [requestId, body, code, stage] of cases) {
-      const observed = await probeOmniRushCloudCatalog(input({
+      const observed = await probeMarsCloudCatalog(input({
         workspaceId: `ws_${requestId}`,
         requestId,
         fetchImpl: async () => new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } }),
@@ -714,8 +714,8 @@ describe("OmniRush.ai Cloud catalog probe", () => {
       const requestId = JSON.parse(String(init?.body)).id as string;
       return new Promise<Response>((resolve) => deferred.push({ requestId, release: resolve }));
     };
-    const first = probeOmniRushCloudCatalog(input({ requestId: "single-flight-one", fetchImpl }));
-    const joined = probeOmniRushCloudCatalog(input({ requestId: "single-flight-two", fetchImpl }));
+    const first = probeMarsCloudCatalog(input({ requestId: "single-flight-one", fetchImpl }));
+    const joined = probeMarsCloudCatalog(input({ requestId: "single-flight-two", fetchImpl }));
     await waitUntil(() => calls === 2 && deferred.length === 2);
     expect(calls).toBe(2);
     expect(deferred).toHaveLength(2);
@@ -723,7 +723,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     expect((await first).status).toBe("observed");
     expect((await joined).status).toBe("observed");
 
-    const afterSettlement = await probeOmniRushCloudCatalog(input({
+    const afterSettlement = await probeMarsCloudCatalog(input({
       requestId: "single-flight-three",
       fetchImpl: async () => {
         calls += 1;
@@ -740,19 +740,19 @@ describe("OmniRush.ai Cloud catalog probe", () => {
       const requestId = JSON.parse(String(init?.body)).id as string;
       return new Promise<Response>((resolve) => pending.push({ requestId, resolve }));
     };
-    const active = Array.from({ length: 16 }, (_, index) => probeOmniRushCloudCatalog(input({
+    const active = Array.from({ length: 16 }, (_, index) => probeMarsCloudCatalog(input({
       workspaceId: `ws_busy_${index}`,
       requestId: `busy-${index}`,
       fetchImpl,
     })));
     await waitUntil(() => pending.length === 16);
     expect(pending).toHaveLength(16);
-    const sameFingerprintBusy = await probeOmniRushCloudCatalog(input({
+    const sameFingerprintBusy = await probeMarsCloudCatalog(input({
       workspaceId: "ws_busy_0",
       requestId: "busy-joined",
       fetchImpl,
     }));
-    const busy = await probeOmniRushCloudCatalog(input({
+    const busy = await probeMarsCloudCatalog(input({
       workspaceId: "ws_busy_overflow",
       requestId: "busy-overflow",
       fetchImpl,
@@ -764,7 +764,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
   });
 
   test("returns only a safe network code when fetch throws a secret-bearing error", async () => {
-    const failed = await probeOmniRushCloudCatalog(input({
+    const failed = await probeMarsCloudCatalog(input({
       fetchImpl: async () => { throw new Error(`Bearer hidden ${ENDPOINT}?token=private /Users/private/file`); },
     }));
     expect(failed).toMatchObject({ performed: true, status: "failed", code: "network_error", httpStatus: null });
@@ -791,7 +791,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
       ["EUNKNOWNISH", "network_error", "UNKNOWN_NETWORK_ERROR", "tools_list_request", false],
     ];
     for (const [causeCode, expectedCode, expectedNetworkCode, expectedStage, expectedRetryable] of cases) {
-      const failed = await probeOmniRushCloudCatalog(input({
+      const failed = await probeMarsCloudCatalog(input({
         requestId: `network-${causeCode}`,
         fetchImpl: async () => {
           throw new Error("RAW_NETWORK_SECRET", { cause: { code: causeCode } });
@@ -821,7 +821,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
       [500, "http_error", false],
     ];
     for (const [status, expectedCode, expectedRetryable] of cases) {
-      const failed = await probeOmniRushCloudCatalog(input({
+      const failed = await probeMarsCloudCatalog(input({
         requestId: `http-${status}`,
         fetchImpl: async () => new Response(null, { status }),
       }));
@@ -841,7 +841,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     const initFails: CloudCatalogProbeFetch = async () => new Response(null, { status: 401 });
     const probeInput = input();
     probeInput.fetchImpl = initFails;
-    const failed = await probeOmniRushCloudCatalog(probeInput);
+    const failed = await probeMarsCloudCatalog(probeInput);
     expect(failed).toMatchObject({
       performed: true,
       status: "failed",
@@ -875,7 +875,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     const probeInput = input({ requestId: "retry-transient-401" });
     probeInput.fetchImpl = fetchImpl;
 
-    const observed = await probeOmniRushCloudCatalog(probeInput);
+    const observed = await probeMarsCloudCatalog(probeInput);
 
     expect(initializeCalls).toBe(2);
     expect(observed.status).toBe("observed");
@@ -895,13 +895,13 @@ describe("OmniRush.ai Cloud catalog probe", () => {
       if (body.method !== "initialize") throw new Error("Unexpected JSON-RPC method");
       return new Response(JSON.stringify({
         jsonrpc: "2.0",
-        id: "omnirush-agent-diagnostics-initialize",
+        id: "mars-agent-diagnostics-initialize",
         result: { capabilities: {}, protocolVersion: "2024-11-05", serverInfo: { name: "old", version: "0.1.0" } },
       }), { status: 200, headers: { "content-type": "application/json" } });
     };
     const probeInput = input();
     probeInput.fetchImpl = fetchImpl;
-    const failed = await probeOmniRushCloudCatalog(probeInput);
+    const failed = await probeMarsCloudCatalog(probeInput);
     expect(failed).toMatchObject({
       performed: true,
       status: "failed",
@@ -913,7 +913,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
   });
 
   test("splits invalid UTF-8, invalid JSON, and malformed envelopes into distinct codes", async () => {
-    const utf8 = await probeOmniRushCloudCatalog(input({
+    const utf8 = await probeMarsCloudCatalog(input({
       requestId: "bad-utf8",
       fetchImpl: async () => new Response(new Uint8Array([0xff, 0xfe, 0xfd]), {
         status: 200,
@@ -922,13 +922,13 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     }));
     expect(utf8).toMatchObject({ code: "invalid_utf8", stage: "tools_list_protocol" });
 
-    const json = await probeOmniRushCloudCatalog(input({
+    const json = await probeMarsCloudCatalog(input({
       requestId: "bad-json",
       fetchImpl: async () => new Response("{not json", { status: 200, headers: { "content-type": "application/json" } }),
     }));
     expect(json).toMatchObject({ code: "invalid_json", stage: "tools_list_protocol" });
 
-    const envelope = await probeOmniRushCloudCatalog(input({
+    const envelope = await probeMarsCloudCatalog(input({
       requestId: "bad-envelope",
       fetchImpl: async () => new Response(JSON.stringify({ jsonrpc: "1.0", id: "bad-envelope", result: {} }), {
         status: 200,
@@ -952,7 +952,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     };
     const probeInput = input({ requestId: "cleanup-fails" });
     probeInput.fetchImpl = fetchImpl;
-    const observed = await probeOmniRushCloudCatalog(probeInput);
+    const observed = await probeMarsCloudCatalog(probeInput);
     expect(deleteCalls).toBe(1);
     expect(observed).toMatchObject({
       status: "observed",
@@ -974,7 +974,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
       if (body.method === "initialize") {
         return new Response(JSON.stringify({
           jsonrpc: "2.0",
-          id: "omnirush-agent-diagnostics-initialize",
+          id: "mars-agent-diagnostics-initialize",
           result: { capabilities: {}, protocolVersion: PROTOCOL_VERSION, serverInfo: { name: "t", version: "1" } },
         }), { status: 200, headers: { "content-type": "application/json" } });
       }
@@ -983,7 +983,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     };
     const probeInput = input({ requestId: "no-session" });
     probeInput.fetchImpl = fetchImpl;
-    const observed = await probeOmniRushCloudCatalog(probeInput);
+    const observed = await probeMarsCloudCatalog(probeInput);
     expect(deleteCalls).toBe(0);
     expect(observed).toMatchObject({
       status: "observed",
@@ -994,7 +994,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
   });
 
   test("exports a reference ID only from a strictly validated safe header", async () => {
-    const safe = await probeOmniRushCloudCatalog(input({
+    const safe = await probeMarsCloudCatalog(input({
       requestId: "with-reference",
       fetchImpl: async () => {
         const response = jsonResponse("with-reference");
@@ -1004,7 +1004,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     }));
     expect(safe.referenceId).toBe("req-1234.abc:z");
 
-    const unsafe = await probeOmniRushCloudCatalog(input({
+    const unsafe = await probeMarsCloudCatalog(input({
       requestId: "with-unsafe-reference",
       fetchImpl: async () => {
         const response = jsonResponse("with-unsafe-reference");
@@ -1017,7 +1017,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
   });
 
   test("reports boolean-only proxy and extra-CA posture from the environment seam", async () => {
-    const configured = await probeOmniRushCloudCatalog(input({
+    const configured = await probeMarsCloudCatalog(input({
       requestId: "env-posture",
       env: {
         HTTPS_PROXY: "http://proxy.corp.example:8080",
@@ -1095,7 +1095,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
 
     // Every request must go to the operator's own configured Den endpoint.
     // The built-in origins are a membership allowlist, never a destination,
-    // so an on-prem probe must never contact OmniRush.ai-hosted Cloud.
+    // so an on-prem probe must never contact MarsAI-hosted Cloud.
     const requestedUrls: string[] = [];
     const activatedInput = input({
       requestId: "enterprise-activated",
@@ -1110,7 +1110,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
       if (body.method === "notifications/initialized") return new Response(null, { status: 202 });
       return jsonResponse("enterprise-activated");
     };
-    const activated = await probeOmniRushCloudCatalog(activatedInput);
+    const activated = await probeMarsCloudCatalog(activatedInput);
     expect(requestedUrls).toEqual([
       enterpriseEndpoint,
       enterpriseEndpoint,
@@ -1129,7 +1129,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     // Activated against a different control plane than the configured MCP:
     // the mismatch must stay fail-closed but remain distinguishable.
     let mismatchCalls = 0;
-    const mismatch = await probeOmniRushCloudCatalog(input({
+    const mismatch = await probeMarsCloudCatalog(input({
       requestId: "enterprise-mismatch",
       config: enterpriseConfig,
       activatedEnterpriseOrigin: "https://den.other.example",
@@ -1147,7 +1147,7 @@ describe("OmniRush.ai Cloud catalog probe", () => {
     });
 
     let unactivatedCalls = 0;
-    const unactivated = await probeOmniRushCloudCatalog(input({
+    const unactivated = await probeMarsCloudCatalog(input({
       requestId: "enterprise-absent",
       config: enterpriseConfig,
       activatedEnterpriseOrigin: null,

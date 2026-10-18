@@ -7,13 +7,13 @@ declare const expect: (value: unknown) => {
 import { platformCapabilities } from "./platform-capabilities";
 
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
-const originalElectron = Object.getOwnPropertyDescriptor(globalThis, "__OMNIRUSH_ELECTRON__");
+const originalElectron = Object.getOwnPropertyDescriptor(globalThis, "__MARS_ELECTRON__");
 
 function setElectronRuntime(enabled: boolean) {
   if (!originalWindow && typeof window === "undefined") {
     Object.defineProperty(globalThis, "window", { value: globalThis, configurable: true });
   }
-  Object.defineProperty(globalThis, "__OMNIRUSH_ELECTRON__", {
+  Object.defineProperty(globalThis, "__MARS_ELECTRON__", {
     value: enabled ? {} : undefined,
     configurable: true,
   });
@@ -21,9 +21,9 @@ function setElectronRuntime(enabled: boolean) {
 
 function restoreRuntime() {
   if (originalElectron) {
-    Object.defineProperty(globalThis, "__OMNIRUSH_ELECTRON__", originalElectron);
+    Object.defineProperty(globalThis, "__MARS_ELECTRON__", originalElectron);
   } else {
-    Object.defineProperty(globalThis, "__OMNIRUSH_ELECTRON__", { value: undefined, configurable: true });
+    Object.defineProperty(globalThis, "__MARS_ELECTRON__", { value: undefined, configurable: true });
   }
   if (originalWindow) {
     Object.defineProperty(globalThis, "window", originalWindow);

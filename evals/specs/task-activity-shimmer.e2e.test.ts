@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { taskActivity } from "../worlds/chat.ts";
 
 const test = spec.world(taskActivity);

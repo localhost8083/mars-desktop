@@ -1,10 +1,10 @@
-import { screenshot } from "@omnirush/test-evidence";
-import { reload } from "@omnirush/cdp";
-import { browserScript } from "@omnirush/testkit";
+import { screenshot } from "@mars/test-evidence";
+import { reload } from "@mars/cdp";
+import { browserScript } from "@mars/testkit";
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { computerUseWorld, toolState } from "../worlds/computer-use.ts";
-import { createAndSelectWorkspace, evalIn, waitFor } from "@omnirush/behaviors";
+import { createAndSelectWorkspace, evalIn, waitFor } from "@mars/behaviors";
 // Mirrors COMPUTER_USE_PAUSED in apps/app/src/app/constants.ts and apps/desktop/electron/computer-use.mjs.
 const COMPUTER_USE_PAUSED = true;
 
@@ -15,7 +15,7 @@ const test = spec.world(computerUseWorld, { timeout: 180_000 });
 test.skipIf(COMPUTER_USE_PAUSED)("Computer Use respects window consent, fresh observations and the person's Stop control (skipped while Computer Use is paused)", async ({ world, step }) => {
   await step("Discovery exposes identities without window content or input access", async () => {
     const discovery = toolState(await world.call("computer_discover"));
-    expect(discovery.protocol).toBe("omnirush.computer-use/1");
+    expect(discovery.protocol).toBe("mars.computer-use/1");
     expect(discovery.apps).toEqual(expect.arrayContaining([expect.objectContaining({ app_id: world.appId })]));
     expect(JSON.stringify(discovery)).not.toContain("Initial draft");
     const unapproved = await world.call("computer_observe", { session_id: "invented" });
@@ -270,7 +270,7 @@ test.skipIf(COMPUTER_USE_PAUSED)("Computer Use enables workspace tools from the 
     expect(await evalIn(app, () => ([...document.querySelectorAll("button")].some(b => /^(Enable|Reconnect) Computer Use$/.test(b.textContent.trim()))))).toBe(false);
   });
   const workspaceMcp = (body?: unknown) => evalIn(app, browserScript(async (id, body) => {
-    const server = await window.__OMNIRUSH_ELECTRON__.invokeDesktop("omnirushServerInfo");
+    const server = await window.__MARS_ELECTRON__.invokeDesktop("marsServerInfo");
     if (!server.running || !server.baseUrl || !server.clientToken) throw new Error("Isolated workspace server is not running");
     const response = await fetch(`${server.baseUrl}/workspace/${id}/mcp`, {
       method: body === null ? "GET" : "POST",
@@ -288,7 +288,7 @@ test.skipIf(COMPUTER_USE_PAUSED)("Computer Use enables workspace tools from the 
     return computer.config.command;
   };
   const command = await configuredCommand();
-  expect(command).toEqual(await evalIn(app, () => window.__OMNIRUSH_ELECTRON__.invokeDesktop("getComputerUseMcpCommand")));
+  expect(command).toEqual(await evalIn(app, () => window.__MARS_ELECTRON__.invokeDesktop("getComputerUseMcpCommand")));
   await using computer = await world.hostedClient(command);
   const observeWhenQuiet = async (sessionId: unknown) => {
     const deadline = Date.now() + 5_000;
@@ -301,14 +301,14 @@ test.skipIf(COMPUTER_USE_PAUSED)("Computer Use enables workspace tools from the 
     }
   };
   const session = await step("Main-app approval starts the selected window without a second Continue", async () => {
-    const pending = computer.call("computer_open_session", { app_id: world.appId, pid: world.appPid, mode: "control", purpose: "Use the disposable workspace from OmniRush.ai." });
+    const pending = computer.call("computer_open_session", { app_id: world.appId, pid: world.appPid, mode: "control", purpose: "Use the disposable workspace from MarsAI." });
     await Promise.race([
       waitFor(app, () => Boolean(document.querySelector('select[aria-label="Window to allow"]')), { timeoutMs: 15_000 }).catch(async (error) => {
-        throw new Error(`${String(error)}; host state: ${JSON.stringify(await evalIn(app, () => window.__OMNIRUSH_ELECTRON__.invokeDesktop("getComputerUseState")))}`);
+        throw new Error(`${String(error)}; host state: ${JSON.stringify(await evalIn(app, () => window.__MARS_ELECTRON__.invokeDesktop("getComputerUseState")))}`);
       }),
       pending.then((reply) => { throw new Error(`Session ended before approval: ${JSON.stringify(toolState(reply))}`); }),
     ]);
-    await expect(computer.request("omnirush/ui", { action: "approve" })).rejects.toThrow("Method not available to the agent");
+    await expect(computer.request("mars/ui", { action: "approve" })).rejects.toThrow("Method not available to the agent");
     expect(await evalIn(app, () => document.body.innerText.includes("Allow and start"))).toBe(true);
     await screenshot(app);
     await evalIn(app, () => {
@@ -324,7 +324,7 @@ test.skipIf(COMPUTER_USE_PAUSED)("Computer Use enables workspace tools from the 
     expect(await world.foregroundWindow()).toEqual({ title: "Workspace window" });
     return opened.session_id;
   });
-  const host = await evalIn(app, () => window.__OMNIRUSH_ELECTRON__.invokeDesktop("getComputerUseState"));
+  const host = await evalIn(app, () => window.__MARS_ELECTRON__.invokeDesktop("getComputerUseState"));
   if (!Array.isArray(host) || typeof host[0] !== "object" || host[0] === null || !("helperPid" in host[0])) throw new Error("Missing native preview owner");
   const previewPid = host[0].helperPid;
   await step("Normal work has a native preview and no persistent control dashboard", async () => {

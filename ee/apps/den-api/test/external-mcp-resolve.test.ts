@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { EnterpriseMcpConnectionRequirements } from "@omnirush/enterprise-mcp-client"
+import type { EnterpriseMcpConnectionRequirements } from "@mars/enterprise-mcp-client"
 import {
   classifyResolveQuery,
   discoveryQualifiesAsMcp,

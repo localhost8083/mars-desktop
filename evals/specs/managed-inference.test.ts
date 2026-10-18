@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { eventually, needs, test } from "@omnirush/testkit";
+import { eventually, needs, test } from "@mars/testkit";
 import { bootManagedInference } from "../worlds/managed-inference.ts";
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -32,7 +32,7 @@ test("managed responses preserve completion, partial work, and cancellation", { 
   expect(events(text).find((event) => event.usage)?.usage).toMatchObject({ total_tokens: 24, prompt_tokens_details: { cached_tokens: 5 }, completion_tokens_details: { reasoning_tokens: 3 } });
   expect(world.witness.requests[0]?.credential).toBe(`Bearer ${providerKey}`);
   expect(world.witness.requests[0]?.body).toMatchObject({ model, user: memberId });
-  expect(success.headers.get("x-omnirush-request-id")).toBe(world.witness.requests[0]?.body.session_id);
+  expect(success.headers.get("x-mars-request-id")).toBe(world.witness.requests[0]?.body.session_id);
   claim("Successful responses retain text and final usage once", "The real gateway preserves fragmented UTF-8, final usage including a repeated terminal choice, one completion marker, and the server-assigned request identity.");
 
   let reference: Record<string, unknown>[] | undefined;
@@ -68,7 +68,7 @@ test("managed responses preserve completion, partial work, and cancellation", { 
   const { user, trace, session_id, ...providerInput } = forwarded;
   expect(providerInput).toEqual({ model, stream: true, ...controls });
   expect(user).toBe(memberId);
-  expect(trace).toMatchObject({ omnirush_request_id: session_id, org_membership_id: memberId });
+  expect(trace).toMatchObject({ mars_request_id: session_id, org_membership_id: memberId });
   claim("Request settings and tool-error history are not rewritten", "The gateway retains the chosen model, reasoning, routing preferences, transforms and output limits, including malformed historical arguments followed by their matching tool error. It does not substitute defaults or impose a new request contract.");
 
   world.witness.mode("length-tools");
@@ -197,7 +197,7 @@ test("managed responses preserve completion, partial work, and cancellation", { 
   const engine = await world.bootEngine();
   const session = await engine.engine("POST", "/session", { title: "Managed response tool task" });
   if (!record(session) || typeof session.id !== "string") throw new Error("Missing engine session");
-  const result = await engine.engine("POST", `/session/${session.id}/message`, { model: { providerID: "omnirush", modelID: model }, parts: [{ type: "text", text: "Read the managed inference fixture and finish." }] });
+  const result = await engine.engine("POST", `/session/${session.id}/message`, { model: { providerID: "mars", modelID: model }, parts: [{ type: "text", text: "Read the managed inference fixture and finish." }] });
   expect(result).not.toHaveProperty("info.error");
   const transcript = await engine.engine("GET", `/session/${session.id}/message`);
   const parts = Array.isArray(transcript) ? transcript.filter(record).flatMap((message) => Array.isArray(message.parts) ? message.parts.filter(record) : []) : [];
@@ -207,7 +207,7 @@ test("managed responses preserve completion, partial work, and cancellation", { 
   world.witness.mode("interrupted");
   const interrupted = await engine.engine("POST", "/session", { title: "Interrupted managed task" });
   if (!record(interrupted) || typeof interrupted.id !== "string") throw new Error("Missing interrupted session");
-  await engine.engine("POST", `/session/${interrupted.id}/message`, { model: { providerID: "omnirush", modelID: model }, parts: [{ type: "text", text: "Keep the partial result." }] });
+  await engine.engine("POST", `/session/${interrupted.id}/message`, { model: { providerID: "mars", modelID: model }, parts: [{ type: "text", text: "Keep the partial result." }] });
   const saved = await engine.engine("GET", `/session/${interrupted.id}/message`);
   expect(saved).toEqual(expect.arrayContaining([expect.objectContaining({ info: expect.objectContaining({ role: "assistant", error: expect.anything() }), parts: expect.arrayContaining([expect.objectContaining({ type: "text", text: "Partial" })]) })]));
   const statuses = await engine.engine("GET", "/session/status");

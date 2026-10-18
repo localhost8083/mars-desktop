@@ -28,7 +28,7 @@ function createRealm(policy = null) {
     window: globalThis.window,
   };
   const window = new TestWindow("https://example.test");
-  if (policy) window.__omnirushWebMcpPolicyV1 = { check: async (...args) => {
+  if (policy) window.__marsWebMcpPolicyV1 = { check: async (...args) => {
     assert.deepEqual(args, []);
     return policy;
   } };
@@ -203,11 +203,11 @@ test("the isolated preload exposes only a payload-free check, not a policy-repor
     }),
     window: isolatedWindow, document: isolatedDocument, location: { hostname: "app.example" }, URL,
   });
-  const bridge = exposed.__omnirushWebMcpPolicyV1;
+  const bridge = exposed.__marsWebMcpPolicyV1;
   assert.deepEqual(Object.keys(bridge), ["check"]);
   assert.equal((await bridge.check({ originAgentCluster: true, domainMatchesHost: true })).originKeyed, false);
-  assert.deepEqual(invoked, [["omnirush:webmcp:frame-policy"]]);
-  const readPolicy = listeners.get("omnirush:webmcp:read-policy");
+  assert.deepEqual(invoked, [["mars:webmcp:frame-policy"]]);
+  const readPolicy = listeners.get("mars:webmcp:read-policy");
   readPolicy({}, "native-request", 0);
   assert.equal(sent[0][0], "native-request");
   assert.deepEqual(JSON.parse(JSON.stringify(sent[0][1])), {

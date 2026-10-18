@@ -1,7 +1,7 @@
-import { denFetch, signIn } from "@omnirush/behaviors";
-import type { DenFetchResult, DenRef, DenSession } from "@omnirush/behaviors";
-import { eventually, needs, test, unmetNeeds } from "@omnirush/testkit";
-import type { TestNeeds } from "@omnirush/testkit";
+import { denFetch, signIn } from "@mars/behaviors";
+import type { DenFetchResult, DenRef, DenSession } from "@mars/behaviors";
+import { eventually, needs, test, unmetNeeds } from "@mars/testkit";
+import type { TestNeeds } from "@mars/testkit";
 import { expect } from "vitest";
 
 // Live lane: the production Den is attached and never owned by this spec. The
@@ -14,8 +14,8 @@ import { expect } from "vitest";
 const AGENTMAIL_API_URL = "https://api.agentmail.to/v0";
 const MAX_AGENTMAIL_INBOXES = 2;
 const requirements: TestNeeds = {
-  optIn: ["OMNIRUSH_EVAL_LIVE"],
-  env: ["OMNIRUSH_EVAL_LIVE_DEN_API_URL", "AGENTMAIL_API_KEY"],
+  optIn: ["MARS_EVAL_LIVE"],
+  env: ["MARS_EVAL_LIVE_DEN_API_URL", "AGENTMAIL_API_KEY"],
 };
 const missingRequirements = unmetNeeds(requirements, process.env);
 const title = missingRequirements.length > 0
@@ -330,14 +330,14 @@ async function deleteCreatedOrganization(session: DenSession, organizationId: st
 
 test(title, { timeout: 240_000 }, async ({ evidence }) => {
   needs(requirements);
-  const apiUrl = requiredEnv("OMNIRUSH_EVAL_LIVE_DEN_API_URL").replace(/\/+$/, "");
+  const apiUrl = requiredEnv("MARS_EVAL_LIVE_DEN_API_URL").replace(/\/+$/, "");
   const agentMailApiKey = requiredEnv("AGENTMAIL_API_KEY");
   // No hosted Den: a split web origin must be configured explicitly.
-  const webUrl = (process.env.OMNIRUSH_EVAL_LIVE_DEN_WEB_URL?.trim() || apiUrl).replace(/\/+$/, "");
+  const webUrl = (process.env.MARS_EVAL_LIVE_DEN_WEB_URL?.trim() || apiUrl).replace(/\/+$/, "");
   const den: DenRef = { apiUrl, webUrl };
   const runStartedAt = new Date().toISOString();
   const timestamp = runStartedAt.replace(/\D/g, "");
-  const runPrefix = `omnirush-live-${timestamp}`;
+  const runPrefix = `mars-live-${timestamp}`;
   const password = `ProdLive-${timestamp}!`;
   const organizationName = `Prod Live ${timestamp}`;
   const agentMailInboxes: AgentMailInbox[] = [];
@@ -385,8 +385,8 @@ test(title, { timeout: 240_000 }, async ({ evidence }) => {
       agentMailApiKey,
       ownerInbox,
       runStartedAt,
-      `OmniRush.ai verification email in ${ownerInbox.email}`,
-      (message) => message.subject.toLowerCase().includes("omnirush verification code"),
+      `MarsAI verification email in ${ownerInbox.email}`,
+      (message) => message.subject.toLowerCase().includes("mars verification code"),
     );
     const verified = await denFetch(den, "/api/auth/email-otp/verify-email", {
       method: "POST",
@@ -418,7 +418,7 @@ test(title, { timeout: 240_000 }, async ({ evidence }) => {
       agentMailApiKey,
       inviteeM1Inbox,
       runStartedAt,
-      `OmniRush.ai organization invitation in ${inviteeM1Inbox.email}`,
+      `MarsAI organization invitation in ${inviteeM1Inbox.email}`,
       (message) => message.subject.includes(organizationName)
         && message.subject.toLowerCase().includes("invited")
         && message.to.some((recipient) => recipient.toLowerCase().includes(createdIdentity.invitees[0].toLowerCase())),

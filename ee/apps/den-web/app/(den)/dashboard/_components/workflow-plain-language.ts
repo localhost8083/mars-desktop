@@ -1,4 +1,4 @@
-import type { WorkflowGraph, WorkflowGraphNode } from "@omnirush/types/workflows";
+import type { WorkflowGraph, WorkflowGraphNode } from "@mars/types/workflows";
 
 const ACTIONS = new Set(["get", "list", "search", "read", "send", "create", "update", "delete"]);
 const SERVICE_PREFIXES = [

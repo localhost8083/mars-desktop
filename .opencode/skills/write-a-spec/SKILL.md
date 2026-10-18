@@ -15,7 +15,7 @@ description: Extend or write a journey spec in evals/specs. Use only after the c
 One spec per user journey, not per PR; bug fixes add an assertion to the journey they escaped from.
 
 Write new tests in `evals/specs/**/*.test.ts` and import `test` from
-`@omnirush/testkit`. App-driving E2E tests use `.e2e.test.ts`; the PR lane excludes
+`@mars/testkit`. App-driving E2E tests use `.e2e.test.ts`; the PR lane excludes
 them. Model setup as resources in dependency order: `needs()` → `server()` →
 `app()`.
 

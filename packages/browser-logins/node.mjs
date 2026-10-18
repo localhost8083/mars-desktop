@@ -1,4 +1,4 @@
-// @omnirush/browser-logins/node — reading the browsers' own cookie stores.
+// @mars/browser-logins/node — reading the browsers' own cookie stores.
 //
 // Node-only: key derivation, decryption, row mapping, and profile discovery.
 // Nothing here opens a database; callers hand in a `query(sql)` function from

@@ -11,16 +11,16 @@ const electronHelperDir = resolve(desktopRoot, "resources", "helpers");
 
 // Browser automation is approval-free in local development unless explicitly
 // disabled. Set this here as well as in the workspace scripts so direct
-// `@omnirush/desktop` launches behave the same as `pnpm dev` and
-// `pnpm dev:electron`. Dev mode alone keeps the omnirush.ai account service;
-// export OMNIRUSH_LOCAL_API=1 (or OMNIRUSH_GATEWAY_URL) to target a local API.
-process.env.OMNIRUSH_DEV_MODE ??= "1";
-process.env.OMNIRUSH_BROWSER_AUTO_APPROVE ??= "1";
+// `@mars/desktop` launches behave the same as `pnpm dev` and
+// `pnpm dev:electron`. Dev mode alone keeps the marsai.click account service;
+// export MARS_LOCAL_API=1 (or MARS_GATEWAY_URL) to target a local API.
+process.env.MARS_DEV_MODE ??= "1";
+process.env.MARS_BROWSER_AUTO_APPROVE ??= "1";
 
 const defaultDevDataDir = resolve(
   process.env.HOME ?? process.env.USERPROFILE ?? repoRoot,
-  ".omnirush",
-  "omnirush-server-dev",
+  ".mars",
+  "mars-server-dev",
 );
 
 const pnpmCmd = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
@@ -51,7 +51,7 @@ const devPort = rawPort === "0"
 if (rawPort === "0") {
   console.log(`[electron-dev] Vite dev server will use free port ${devPort}`);
 }
-const explicitStartUrl = process.env.OMNIRUSH_ELECTRON_START_URL?.trim() || "";
+const explicitStartUrl = process.env.MARS_ELECTRON_START_URL?.trim() || "";
 const startUrl = explicitStartUrl || `http://localhost:${devPort}`;
 const viteProbeUrls = explicitStartUrl
   ? [explicitStartUrl]
@@ -229,15 +229,15 @@ async function stopAll(exitCode = 0) {
 process.once("SIGINT", () => void stopAll(130));
 process.once("SIGTERM", () => void stopAll(143));
 
-if (process.env.OMNIRUSH_ELECTRON_SKIP_SHARED_PREPARE !== "1") {
+if (process.env.MARS_ELECTRON_SKIP_SHARED_PREPARE !== "1") {
   runSync(nodeCmd, [resolve(__dirname, "prepare-sidecar.mjs"), "--force", "--outdir", electronSidecarDir], { cwd: desktopRoot });
   runSync(nodeCmd, [resolve(__dirname, "prepare-computer-use-helper.mjs"), "--force", "--outdir", electronHelperDir], { cwd: desktopRoot });
 }
 
 // Build workspace packages that Electron imports from their dist output.
 console.log("[electron-dev] Building Electron workspace dependencies...");
-runSync(pnpmCmd, ["--filter", "@omnirush/headless-threads", "build"], { cwd: repoRoot });
-runSync(pnpmCmd, ["--filter", "omnirush-server", "build"], { cwd: repoRoot });
+runSync(pnpmCmd, ["--filter", "@mars/headless-threads", "build"], { cwd: repoRoot });
+runSync(pnpmCmd, ["--filter", "mars-server", "build"], { cwd: repoRoot });
 
 const initialProbeUrls = [startUrl, ...viteProbeUrls].filter(Boolean);
 let viteReady = false;
@@ -263,8 +263,8 @@ if (!viteReady) {
     env: {
       ...process.env,
       PORT: String(devPort),
-      OMNIRUSH_DEV_MODE: process.env.OMNIRUSH_DEV_MODE ?? "1",
-      OMNIRUSH_DATA_DIR: process.env.OMNIRUSH_DATA_DIR ?? defaultDevDataDir,
+      MARS_DEV_MODE: process.env.MARS_DEV_MODE ?? "1",
+      MARS_DATA_DIR: process.env.MARS_DATA_DIR ?? defaultDevDataDir,
     },
   });
 }
@@ -273,17 +273,17 @@ const resolvedStartUrl = await waitForVite(startUrl);
 
 // Native dependencies installed for the host Node ABI must be rebuilt before
 // Electron loads the embedded server and terminal runtime.
-if (process.env.OMNIRUSH_ELECTRON_SKIP_NATIVE_REBUILD === "1") {
+if (process.env.MARS_ELECTRON_SKIP_NATIVE_REBUILD === "1") {
   console.log("[electron-dev] Using prebuilt Electron native dependencies.");
 } else {
   console.log("[electron-dev] Rebuilding native dependencies for Electron...");
-  runSync(pnpmCmd, ["--filter", "@omnirush/desktop", "run", "rebuild:electron-native"], { cwd: repoRoot });
+  runSync(pnpmCmd, ["--filter", "@mars/desktop", "run", "rebuild:electron-native"], { cwd: repoRoot });
 }
 
 // Optional Electron CDP for external debugging / raw CDP clients.
 // NOT required for the built-in browser (uses native webContents APIs).
-// Set OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT=9823 to enable.
-const cdpPortRaw = process.env.OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT?.trim() ?? "";
+// Set MARS_ELECTRON_REMOTE_DEBUG_PORT=9823 to enable.
+const cdpPortRaw = process.env.MARS_ELECTRON_REMOTE_DEBUG_PORT?.trim() ?? "";
 const cdpPort = cdpPortRaw === "" || cdpPortRaw === "0" ? "" : cdpPortRaw;
 
 const blankSlateArgs = process.argv.includes("--blank-slate") ? ["--blank-slate"] : [];
@@ -291,15 +291,15 @@ electronChild = run(pnpmCmd, ["exec", "electron", "./electron/main.mjs", ...blan
   cwd: desktopRoot,
   env: {
     ...process.env,
-    OMNIRUSH_DEV_MODE: process.env.OMNIRUSH_DEV_MODE ?? "1",
-    OMNIRUSH_DATA_DIR: process.env.OMNIRUSH_DATA_DIR ?? defaultDevDataDir,
-    OMNIRUSH_ELECTRON_START_URL: resolvedStartUrl,
-    ...(cdpPort ? { OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT: cdpPort } : {}),
+    MARS_DEV_MODE: process.env.MARS_DEV_MODE ?? "1",
+    MARS_DATA_DIR: process.env.MARS_DATA_DIR ?? defaultDevDataDir,
+    MARS_ELECTRON_START_URL: resolvedStartUrl,
+    ...(cdpPort ? { MARS_ELECTRON_REMOTE_DEBUG_PORT: cdpPort } : {}),
   },
 });
 
 if (cdpPort) {
-  console.log(`[omnirush] Electron CDP exposed at http://127.0.0.1:${cdpPort}`);
+  console.log(`[mars] Electron CDP exposed at http://127.0.0.1:${cdpPort}`);
 }
 
 electronChild.on("exit", (code) => {

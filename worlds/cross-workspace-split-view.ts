@@ -53,8 +53,8 @@ export async function bootCrossWorkspaceSplitView(
 export async function main(): Promise<void> {
   await using stack = new AsyncDisposableStack();
   const { den, desktop } = await bootCrossWorkspaceSplitView(stack, resolvePlace(), {
-    adminEmail: "split-view-admin@omnirush.test",
-    workspacePath: "/tmp/omnirush-cross-workspace-split-primary",
+    adminEmail: "split-view-admin@mars.test",
+    workspacePath: "/tmp/mars-cross-workspace-split-primary",
     sessionTitles: ["Primary split anchor", "Primary same-workspace peer"],
   });
   await hold({

@@ -1,5 +1,5 @@
 import { and, eq, gt, isNotNull, isNull } from "@omnirush-ee/den-db/drizzle"
-import { readOrganizationMetadata } from "@omnirush/types/den/managed-models-policy"
+import { readOrganizationMetadata } from "@mars/types/den/managed-models-policy"
 import {
   ConfigObjectAccessGrantTable,
   ConfigObjectTable,

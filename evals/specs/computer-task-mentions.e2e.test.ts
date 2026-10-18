@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { computerMentions } from "../worlds/chat.ts";
 
 const test = spec.world(computerMentions);
@@ -19,10 +19,10 @@ test("computer mentions steer tasks through Connect and Automations names the co
     await user.press("Enter");
     await user.see({ text: "Received computer task.", nth: 0 }, { timeoutMs: 90_000 });
     await user.see({ text: /^@cloud COMPUTER-CLOUD-TASK Summarize the project notes\.$/ });
-    await user.notSee({ text: /The user selected @cloud|Use OmniRush.ai Connect search_capabilities/ });
+    await user.notSee({ text: /The user selected @cloud|Use MarsAI Connect search_capabilities/ });
     await user.reload();
     await user.see({ text: /^@cloud COMPUTER-CLOUD-TASK Summarize the project notes\.$/ });
-    await user.notSee({ text: /The user selected @cloud|Use OmniRush.ai Connect search_capabilities/ });
+    await user.notSee({ text: /The user selected @cloud|Use MarsAI Connect search_capabilities/ });
     evidence.recordAssertionEvidence("Cloud mention stays compact after reload", "The user sees the exact @cloud task text before and after reload; generated routing instructions are absent in both views.", true);
   });
 
@@ -71,7 +71,7 @@ test("computer mentions steer tasks through Connect and Automations names the co
       { name: "search_capabilities", args: { query: "remote-session:create" } },
       { name: "execute_capability", args: { name: "remote-session:create", body: { target: "desktop", prompt: "COMPUTER-DESKTOP-TASK Summarize my local project notes." } } },
     ]);
-    await user.notSee({ text: /Use OmniRush.ai Connect search_capabilities/ });
+    await user.notSee({ text: /Use MarsAI Connect search_capabilities/ });
     evidence.recordAssertionEvidence("Computer mentions reach the Connect boundary", "Menu-selected @cloud and typed @desktop submit distinct synthetic Connect routing instructions. The Connect witness serves search and create calls with the matching target and full task. An email address makes no tool call, and routing instructions stay out of the visible chat.", true);
   });
 
@@ -83,7 +83,7 @@ test("computer mentions steer tasks through Connect and Automations names the co
     await user.notSee({ text: /Scheduled durably|headlessly|fixed Desktop/ });
     await user.screenshot();
     await user.click({ role: "button", label: /Daily project summary/ });
-    await user.see({ text: "Runs on your desktop computer. Keep OmniRush.ai open and connected at the scheduled time." });
-    evidence.recordAssertionEvidence("Automation placement is visible and understandable", "The automation list labels its desktop computer; the detail explains that OmniRush.ai must stay open and connected without runtime terminology.", true);
+    await user.see({ text: "Runs on your desktop computer. Keep MarsAI open and connected at the scheduled time." });
+    evidence.recordAssertionEvidence("Automation placement is visible and understandable", "The automation list labels its desktop computer; the detail explains that MarsAI must stay open and connected without runtime terminology.", true);
   });
 });

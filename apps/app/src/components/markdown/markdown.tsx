@@ -168,8 +168,8 @@ function MarkdownBlockInner({
     const root = rootRef.current;
     if (!root) return;
 
-    for (const [index, codeBlock] of root.querySelectorAll("[data-omnirush-code-block]").entries()) {
-      const button = codeBlock.querySelector("[data-omnirush-code-wrap]");
+    for (const [index, codeBlock] of root.querySelectorAll("[data-mars-code-block]").entries()) {
+      const button = codeBlock.querySelector("[data-mars-code-wrap]");
       if (button instanceof HTMLButtonElement) {
         setCodeWrapButtonState(button, codeWrapStates.current.get(index) ?? false);
       }
@@ -256,14 +256,14 @@ function MarkdownBlockInner({
         videoCleanups.current.delete(video);
       }
     }
-    for (const video of root.querySelectorAll("video[data-omnirush-video-path]")) {
+    for (const video of root.querySelectorAll("video[data-mars-video-path]")) {
       if (!(video instanceof HTMLVideoElement)) continue;
       if (videoCleanups.current.has(video)) continue;
       let cancelled = false;
       let objectUrl: string | null = null;
-      const href = video.dataset.omnirushVideoPath ?? "";
+      const href = video.dataset.marsVideoPath ?? "";
       const showError = () => {
-        const notice = video.parentElement?.querySelector("[data-omnirush-video-error]");
+        const notice = video.parentElement?.querySelector("[data-mars-video-error]");
         if (notice instanceof HTMLElement) notice.hidden = false;
       };
       video.addEventListener("error", showError);
@@ -310,32 +310,32 @@ function MarkdownBlockInner({
     const handleClick = (event: MouseEvent) => {
       if (!(event.target instanceof Element)) return;
 
-      const copyButton = event.target.closest("[data-omnirush-code-copy]");
+      const copyButton = event.target.closest("[data-mars-code-copy]");
       if (copyButton instanceof HTMLButtonElement) {
         event.preventDefault();
         event.stopPropagation();
 
-        const codeBlock = copyButton.closest("[data-omnirush-code-block]");
+        const codeBlock = copyButton.closest("[data-mars-code-block]");
         const code = codeBlock?.querySelector("code");
         void handleCodeBlockCopy(copyButton, code?.textContent ?? "");
         return;
       }
 
-      const inlineCodePath = event.target.closest("[data-omnirush-inline-code-path]");
+      const inlineCodePath = event.target.closest("[data-mars-inline-code-path]");
       if (inlineCodePath instanceof HTMLElement) {
         event.preventDefault();
         event.stopPropagation();
-        openArtifactPath(inlineCodePath.dataset.omnirushInlineCodePath ?? "");
+        openArtifactPath(inlineCodePath.dataset.marsInlineCodePath ?? "");
         return;
       }
 
-      const wrapButton = event.target.closest("[data-omnirush-code-wrap]");
+      const wrapButton = event.target.closest("[data-mars-code-wrap]");
       if (wrapButton instanceof HTMLButtonElement) {
         event.preventDefault();
         event.stopPropagation();
 
-        const codeBlock = wrapButton.closest("[data-omnirush-code-block]");
-        const codeBlocks = Array.from(root.querySelectorAll("[data-omnirush-code-block]"));
+        const codeBlock = wrapButton.closest("[data-mars-code-block]");
+        const codeBlocks = Array.from(root.querySelectorAll("[data-mars-code-block]"));
         const index = codeBlock ? codeBlocks.indexOf(codeBlock) : -1;
         if (index >= 0) {
           const wrapped = !(codeWrapStates.current.get(index) ?? false);
@@ -345,11 +345,11 @@ function MarkdownBlockInner({
         return;
       }
 
-      const chevron = event.target.closest("[data-omnirush-link-chevron]");
+      const chevron = event.target.closest("[data-mars-link-chevron]");
       if (chevron instanceof HTMLElement) {
         event.preventDefault();
         event.stopPropagation();
-        const href = chevron.dataset.omnirushLinkChevron ?? "";
+        const href = chevron.dataset.marsLinkChevron ?? "";
         const target = openTargetForHref(href, openTargets);
         if (target) {
           setLinkMenu({ target, rect: chevron.getBoundingClientRect() });
@@ -357,9 +357,9 @@ function MarkdownBlockInner({
         return;
       }
 
-      const link = event.target.closest("a[data-omnirush-link-href]");
+      const link = event.target.closest("a[data-mars-link-href]");
       if (link instanceof HTMLAnchorElement) {
-        const href = link.dataset.omnirushLinkHref ?? link.getAttribute("href") ?? "";
+        const href = link.dataset.marsLinkHref ?? link.getAttribute("href") ?? "";
         const target = openTargetForHref(href, openTargets);
 
         if (target && onOpenTarget) {
@@ -369,7 +369,7 @@ function MarkdownBlockInner({
         }
       }
 
-      const preview = event.target.closest("[data-omnirush-image-preview]");
+      const preview = event.target.closest("[data-mars-image-preview]");
       if (!(preview instanceof HTMLElement)) return;
 
       event.preventDefault();
@@ -381,11 +381,11 @@ function MarkdownBlockInner({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Enter" && event.key !== " ") return;
-      if (!(event.target instanceof HTMLElement) || !event.target.matches("[data-omnirush-inline-code-path]")) return;
+      if (!(event.target instanceof HTMLElement) || !event.target.matches("[data-mars-inline-code-path]")) return;
 
       event.preventDefault();
       event.stopPropagation();
-      openArtifactPath(event.target.dataset.omnirushInlineCodePath ?? "");
+      openArtifactPath(event.target.dataset.marsInlineCodePath ?? "");
     };
 
     root.addEventListener("load", handleLoad, true);

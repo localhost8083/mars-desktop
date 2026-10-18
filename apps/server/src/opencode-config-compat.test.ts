@@ -23,7 +23,7 @@ afterEach(async () => {
 });
 
 async function createRoot(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-opencode-config-compat-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-opencode-config-compat-"));
   roots.push(root);
   return root;
 }
@@ -187,7 +187,7 @@ describe("parseOpencodeConfigErrorBody", () => {
     expect(parsed).toEqual({
       name: "ConfigInvalidError",
       file: "/ws/.opencode/opencode.json",
-      message: `OmniRush configuration is invalid at /ws/.opencode/opencode.json: ${OPENCODE_V2_PERMISSIONS_MESSAGE} (permissions); ${OPENCODE_V2_PERMISSIONS_MESSAGE} (agent.build.permissions)`,
+      message: `Mars configuration is invalid at /ws/.opencode/opencode.json: ${OPENCODE_V2_PERMISSIONS_MESSAGE} (permissions); ${OPENCODE_V2_PERMISSIONS_MESSAGE} (agent.build.permissions)`,
       issues: [
         { path: ["permissions"], message: OPENCODE_V2_PERMISSIONS_MESSAGE },
         { path: ["agent", "build", "permissions"], message: OPENCODE_V2_PERMISSIONS_MESSAGE },
@@ -199,13 +199,13 @@ describe("parseOpencodeConfigErrorBody", () => {
     expect(parseOpencodeConfigErrorBody({ name: "ConfigJsonError", data: { path: "/ws/opencode.json", message: "Unexpected token" } })).toEqual({
       name: "ConfigJsonError",
       file: "/ws/opencode.json",
-      message: "OmniRush configuration is invalid at /ws/opencode.json: Unexpected token",
+      message: "Mars configuration is invalid at /ws/opencode.json: Unexpected token",
       issues: [],
     });
     expect(parseOpencodeConfigErrorBody({ name: "ConfigInvalidError", data: { path: "config" } })).toEqual({
       name: "ConfigInvalidError",
       file: null,
-      message: "OmniRush configuration is invalid",
+      message: "Mars configuration is invalid",
       issues: [],
     });
   });

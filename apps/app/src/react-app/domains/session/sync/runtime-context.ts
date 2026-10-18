@@ -13,7 +13,7 @@
  * Kept dependency-free so unit tests and specs can import it directly.
  */
 
-export type OmniRushRuntimeFacts = {
+export type MarsRuntimeFacts = {
   /** IANA zone, for example America/Los_Angeles. */
   timeZone: string;
   /** Offset of that zone at `now`, for example UTC-07:00. */
@@ -26,7 +26,7 @@ export type OmniRushRuntimeFacts = {
   locale: string;
 };
 
-export type OmniRushRuntimeFactsInput = {
+export type MarsRuntimeFactsInput = {
   now?: Date;
   timeZone?: string;
   locale?: string;
@@ -96,7 +96,7 @@ function offsetFor(timeZone: string, now: Date): string {
   return formatOffset(Math.round((asUtc - wholeSeconds) / 60_000));
 }
 
-export function readOmniRushRuntimeFacts(input: OmniRushRuntimeFactsInput = {}): OmniRushRuntimeFacts {
+export function readMarsRuntimeFacts(input: MarsRuntimeFactsInput = {}): MarsRuntimeFacts {
   const now = input.now ?? new Date();
   const locale = input.locale ?? detectLocale();
   let timeZone = input.timeZone ?? detectTimeZone();
@@ -130,7 +130,7 @@ export function readOmniRushRuntimeFacts(input: OmniRushRuntimeFactsInput = {}):
   };
 }
 
-export function renderOmniRushRuntimeContext(facts: OmniRushRuntimeFacts): string {
+export function renderMarsRuntimeContext(facts: MarsRuntimeFacts): string {
   return [
     "User context:",
     `- Time zone: ${facts.timeZone} (${facts.utcOffset})`,

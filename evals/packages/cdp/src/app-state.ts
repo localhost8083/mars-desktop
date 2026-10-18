@@ -3,14 +3,14 @@ import { evaluate } from "./cdp.ts";
 import type { CdpClient, EvaluateOptions } from "./cdp.ts";
 
 /**
- * Readiness of the OmniRush.ai desktop is defined by the UI being *interactive*,
+ * Readiness of the MarsAI desktop is defined by the UI being *interactive*,
  * not by the route matching an allowlist: a fresh profile with no workspace
  * legitimately sits on `/session` offering "Create or connect a workspace",
  * and a workspace can be selected while the panel still renders placeholders.
  *
  * This module is the single implementation of that predicate so the lifecycle
- * layer (@omnirush/hosts) and the behaviours specs call (@omnirush/behaviors)
- * cannot drift apart. It lives in @omnirush/cdp because both already depend on
+ * layer (@mars/hosts) and the behaviours specs call (@mars/behaviors)
+ * cannot drift apart. It lives in @mars/cdp because both already depend on
  * it, which keeps the dependency graph acyclic.
  */
 
@@ -92,10 +92,10 @@ const PROBE_EXPRESSION = browserScript((value) => {
   const buttonLabels = [...document.querySelectorAll("button")].map((button) => (button.textContent ?? "").trim());
   const taskUi = text.includes("What do you need done?") || buttonLabels.includes("Run task");
   const needsWorkspace = text.includes("Create or connect a workspace");
-  const welcome = text.includes("Welcome to OmniRush.ai");
+  const welcome = text.includes("Welcome to MarsAI");
   // The product's own active-workspace state; the route is only a fallback
   // because a selected workspace does not always appear in the hash.
-  const stored = localStorage.getItem("omnirush.react.activeWorkspace");
+  const stored = localStorage.getItem("mars.react.activeWorkspace");
   const routeMatch = (route.match(/\/workspace\/([^/?#]+)/) ?? [])[1] ?? null;
   const workspaceId = (stored && stored.length > 0 ? stored : null) ?? routeMatch;
   // Any settings/extensions surface inside a workspace is interactive too. The
@@ -111,7 +111,7 @@ const PROBE_EXPRESSION = browserScript((value) => {
         ? "no-workspace"
         : null;
   return {
-    controlReady: Boolean(window.__omnirushControl),
+    controlReady: Boolean(window.__marsControl),
     transitional,
     surface,
     // Report the id whenever the app knows one, even while the welcome surface

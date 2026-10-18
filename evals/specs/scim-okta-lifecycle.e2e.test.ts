@@ -1,11 +1,11 @@
 import { expect } from "vitest";
-import { denFetch, signIn } from "@omnirush/behaviors";
-import { eventually, inviteMember, needs, server, test, unmetNeeds } from "@omnirush/testkit";
-import type { TestNeeds } from "@omnirush/testkit";
+import { denFetch, signIn } from "@mars/behaviors";
+import { eventually, inviteMember, needs, server, test, unmetNeeds } from "@mars/testkit";
+import type { TestNeeds } from "@mars/testkit";
 import { enableScimFixtureSso } from "./helpers/scim-fixture.ts";
 
 const requirements: TestNeeds = {
-  optIn: ["OMNIRUSH_EVAL_E2E_TESTS"],
+  optIn: ["MARS_EVAL_E2E_TESTS"],
 };
 const missingRequirements = unmetNeeds(requirements, process.env);
 const title = missingRequirements.length > 0
@@ -80,7 +80,7 @@ test(title, { timeout: 1_800_000 }, async ({ evidence, place }) => {
   const orgName = `Okta SCIM Lifecycle ${runId}`;
   const managedDomain = "okta-scim.test";
   const managedEmail = `avery.${runId}@${managedDomain}`;
-  const controlPassword = "OmniRushEval123!";
+  const controlPassword = "MarsEval123!";
 
   await using den = await server({
     place,
@@ -90,7 +90,7 @@ test(title, { timeout: 1_800_000 }, async ({ evidence, place }) => {
     },
   });
   const control = await inviteMember(den, "control", {
-    email: `control.${runId}@omnirush.test`,
+    email: `control.${runId}@mars.test`,
     name: "Control Member",
     password: controlPassword,
   });
@@ -120,7 +120,7 @@ test(title, { timeout: 1_800_000 }, async ({ evidence, place }) => {
   const adminHeaders = {
     authorization: `Bearer ${den.admin.token}`,
     cookie: sessionCookie,
-    "x-omnirush-org-id": organizationId,
+    "x-mars-org-id": organizationId,
   };
   const sso = await denFetch(den.ref, "/v1/sso/saml", {
     method: "POST",
@@ -128,7 +128,7 @@ test(title, { timeout: 1_800_000 }, async ({ evidence, place }) => {
     body: JSON.stringify({
       issuer: `http://127.0.0.1/okta/exk-${runId}`,
       domain: managedDomain,
-      entryPoint: `https://okta.example.test/app/omnirush/exk-${runId}/sso/saml`,
+      entryPoint: `https://okta.example.test/app/mars/exk-${runId}/sso/saml`,
       cert: "okta-test-signing-certificate",
       audience: den.ref.apiUrl,
     }),

@@ -1,11 +1,11 @@
-import { browserScript, clickAt } from "@omnirush/cdp";
-import type { Point } from "@omnirush/cdp";
-import type { Seed } from "@omnirush/env";
+import { browserScript, clickAt } from "@mars/cdp";
+import type { Point } from "@mars/cdp";
+import type { Seed } from "@mars/env";
 import { artifactCodeBrowserWorld } from "./first-run.ts";
 
-export const previewCanaryKey = "omnirush.eval.html-preview-canary";
-export const previewWitnessKey = "omnirush.eval.html-preview-witness";
-export const previewFileName = "omnirush-html-preview-proof.html";
+export const previewCanaryKey = "mars.eval.html-preview-canary";
+export const previewWitnessKey = "mars.eval.html-preview-witness";
+export const previewFileName = "mars-html-preview-proof.html";
 
 // Only synthetic state is accessed. The desktop call reads runtime information;
 // its return value is discarded, so no credentials enter the witness or evidence.
@@ -32,9 +32,9 @@ const html = `<!doctype html>
     parentStorageWritable = parent.localStorage.getItem("${previewCanaryKey}") === "preview-modified";
   } catch {}
   try {
-    parentBridgeReachable = typeof parent.__OMNIRUSH_ELECTRON__?.invokeDesktop === "function";
+    parentBridgeReachable = typeof parent.__MARS_ELECTRON__?.invokeDesktop === "function";
     if (parentBridgeReachable) {
-      await parent.__OMNIRUSH_ELECTRON__.invokeDesktop("omnirushServerInfo");
+      await parent.__MARS_ELECTRON__.invokeDesktop("marsServerInfo");
       parentDesktopCallSucceeded = true;
     }
   } catch {}
@@ -44,7 +44,7 @@ const html = `<!doctype html>
     context.fillRect(220, 20, 60, 140);
     const pixel = context.getImageData(240, 40, 1, 1).data;
     requestAnimationFrame(() => parent.postMessage({
-      type: "omnirush-html-preview-proof",
+      type: "mars-html-preview-proof",
       headingRendered: document.querySelector("h1").getBoundingClientRect().height > 0,
       chartUpdated: pixel[0] === 255 && pixel[1] === 120 && pixel[2] === 0 && pixel[3] === 255,
       parentDomReadable, parentStorageReadable, parentStorageWritable,
@@ -57,8 +57,8 @@ const html = `<!doctype html>
 export async function artifactHtmlPreviewWorld(seed: Seed) {
   const base = await artifactCodeBrowserWorld(seed);
   const wrote = await seed.evalIn(base.app, browserScript(async (workspaceId, content, fileName, canaryKey, witnessKey) => {
-    const port = localStorage.getItem("omnirush.server.port");
-    const token = localStorage.getItem("omnirush.server.token");
+    const port = localStorage.getItem("mars.server.port");
+    const token = localStorage.getItem("mars.server.token");
     if (!port || !token) return false;
     localStorage.setItem(canaryKey, "dummy-parent-value");
     document.body.dataset.htmlPreviewCanary = "dummy-parent-value";
@@ -68,7 +68,7 @@ export async function artifactHtmlPreviewWorld(seed: Seed) {
       if (!(frame instanceof HTMLIFrameElement) || event.source !== frame.contentWindow) return;
       const data = event.data;
       if (typeof data !== "object" || data === null
-        || Reflect.get(data, "type") !== "omnirush-html-preview-proof") return;
+        || Reflect.get(data, "type") !== "mars-html-preview-proof") return;
       const fields = ["headingRendered", "chartUpdated", "parentDomReadable", "parentStorageReadable",
         "parentStorageWritable", "parentBridgeReachable", "parentDesktopCallSucceeded"];
       if (!fields.every((key) => typeof Reflect.get(data, key) === "boolean")) return;

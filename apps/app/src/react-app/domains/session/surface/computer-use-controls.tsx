@@ -13,13 +13,13 @@ const sessionsSchema = z.array(z.object({
 }));
 export function ComputerUseControls() {
   const [windows, setWindows] = useState<Record<string, number>>({});
-  const state = useQuery({ queryKey: ["computer-use", "host"], enabled: Boolean(window.__OMNIRUSH_ELECTRON__?.invokeDesktop),
+  const state = useQuery({ queryKey: ["computer-use", "host"], enabled: Boolean(window.__MARS_ELECTRON__?.invokeDesktop),
     queryFn: async () => {
-      const invoke = window.__OMNIRUSH_ELECTRON__?.invokeDesktop;
+      const invoke = window.__MARS_ELECTRON__?.invokeDesktop;
       return invoke ? sessionsSchema.parse(await invoke("getComputerUseState")) : [];
     }, refetchInterval: 750, refetchIntervalInBackground: true, retry: false });
   const action = useMutation({ mutationFn: async (value: { connectionId: string; id: string; action: string; windowId?: number }) => {
-    const invoke = window.__OMNIRUSH_ELECTRON__?.invokeDesktop;
+    const invoke = window.__MARS_ELECTRON__?.invokeDesktop;
     if (!invoke) throw new Error("Computer Use requires the desktop app.");
     await invoke("computerUseAction", value);
   }, onSuccess: () => state.refetch() });

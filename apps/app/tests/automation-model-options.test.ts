@@ -22,11 +22,11 @@ function provider(input: Partial<DenOrgLlmProvider> & Pick<DenOrgLlmProvider, "i
 describe("Automation model options", () => {
   test("always offers the normalized internal starter model", () => {
     expect(automationModelOptions([])).toEqual([{
-      providerId: "omnirush",
+      providerId: "mars",
       modelId: "z-ai/glm-5.2",
-      providerName: "omnirush.ai Models",
+      providerName: "marsai.click Models",
       modelName: "GLM-5.2",
-      accessKind: "omnirush_managed",
+      accessKind: "mars_managed",
     }])
   })
 
@@ -34,13 +34,13 @@ describe("Automation model options", () => {
     expect(automationModelOptions([], { includeInternalStarter: false })).toEqual([])
   })
 
-  test("expands the member's managed omnirush.ai aliases even when Den stores no model rows", () => {
+  test("expands the member's managed marsai.click aliases even when Den stores no model rows", () => {
     const options = automationModelOptions([
-      provider({ id: "lpr_member_omnirush", source: "omnirush", name: "omnirush.ai Models" }),
+      provider({ id: "lpr_member_mars", source: "mars", name: "marsai.click Models" }),
     ])
 
-    expect(options.some((option) => option.providerId === "omnirush" && option.modelId === "z-ai/glm-5.2")).toBe(true)
-    expect(options.some((option) => option.providerId === "lpr_member_omnirush")).toBe(false)
+    expect(options.some((option) => option.providerId === "mars" && option.modelId === "z-ai/glm-5.2")).toBe(true)
+    expect(options.some((option) => option.providerId === "lpr_member_mars")).toBe(false)
   })
 
   test("keeps authorized custom providers on their concrete Den provider IDs", () => {
@@ -129,7 +129,7 @@ describe("Automation proposal model resolution", () => {
 
   test("defaults an omitted model to the internal starter model", () => {
     expect(resolveProposalModel(undefined, [])).toEqual({
-      model: { providerId: "omnirush", modelId: "z-ai/glm-5.2", variant: null },
+      model: { providerId: "mars", modelId: "z-ai/glm-5.2", variant: null },
       resolution: "default",
     })
   })
@@ -138,10 +138,10 @@ describe("Automation proposal model resolution", () => {
     const custom = { providerId: "lpr_abc", modelId: "deepseek-v4-flash", variant: "high" }
     expect(resolveProposalModel(custom, [customProvider])).toEqual({ model: custom, resolution: "exact" })
 
-    const managedProvider = provider({ id: "lpr_managed", source: "omnirush", name: "omnirush.ai Models" })
-    const managedOption = automationModelOptions([managedProvider]).find((option) => option.accessKind === "omnirush_managed")
+    const managedProvider = provider({ id: "lpr_managed", source: "mars", name: "marsai.click Models" })
+    const managedOption = automationModelOptions([managedProvider]).find((option) => option.accessKind === "mars_managed")
     expect(managedOption).toBeDefined()
-    if (!managedOption) throw new Error("Expected an enabled omnirush.ai managed model")
+    if (!managedOption) throw new Error("Expected an enabled marsai.click managed model")
     const managed = { providerId: managedOption.providerId, modelId: managedOption.modelId, variant: "high" }
     expect(resolveProposalModel(managed, [managedProvider])).toEqual({ model: managed, resolution: "exact" })
   })
@@ -158,24 +158,24 @@ describe("Automation proposal model resolution", () => {
     })
   })
 
-  test("does not map through omnirush.ai provider records", () => {
+  test("does not map through marsai.click provider records", () => {
     const managed = provider({
       ...customProvider,
       id: "lpr_managed",
-      source: "omnirush",
+      source: "mars",
     })
     expect(resolveProposalModel(
       { providerId: "deepseek", modelId: "deepseek-v4-flash" },
       [managed],
     )).toEqual({
-      model: { providerId: "omnirush", modelId: "z-ai/glm-5.2", variant: null },
+      model: { providerId: "mars", modelId: "z-ai/glm-5.2", variant: null },
       resolution: "fallback",
     })
   })
 
   test("falls back when the provider or model is unavailable", () => {
     const fallback = {
-      model: { providerId: "omnirush", modelId: "z-ai/glm-5.2", variant: null },
+      model: { providerId: "mars", modelId: "z-ai/glm-5.2", variant: null },
       resolution: "fallback",
     }
     expect(resolveProposalModel({ providerId: "unknown", modelId: "missing", variant: "high" }, [customProvider]))

@@ -1,10 +1,10 @@
-import type { OmniRushServerClient } from "@/app/lib/omnirush-server";
+import type { MarsServerClient } from "@/app/lib/mars-server";
 import type { Client } from "@/app/types";
 import type { DesktopAppRestrictionChecker } from "@/app/cloud/desktop-app-restrictions";
 import { updateManagedDisabledProviders } from "./managed-engine-config";
 import { isProviderAllowedByDesktopPolicy } from "./provider-auth/provider-policy";
 
-export const POLICY_DISABLED_PROVIDERS_STORAGE_KEY = "omnirush.policy.disabledProviders";
+export const POLICY_DISABLED_PROVIDERS_STORAGE_KEY = "mars.policy.disabledProviders";
 
 export type PolicyProviderListItem = {
   id: string;
@@ -28,7 +28,7 @@ type PolicyDisabledProvidersStorage = Pick<Storage, "getItem" | "setItem">;
 
 export type ReconcilePolicyDisabledProvidersInput = {
   opencodeClient: Client | null;
-  omnirushClient?: OmniRushServerClient | null;
+  marsClient?: MarsServerClient | null;
   workspaceId?: string | null;
   workspaceType?: string | null;
   allProviders: readonly PolicyProviderListItem[];
@@ -166,7 +166,7 @@ export async function reconcilePolicyDisabledProviders(
     if (disabledProviderIds.includes(providerId)) continue;
     const result = await updateManagedDisabledProviders({
       opencodeClient: input.opencodeClient,
-      omnirushClient: input.omnirushClient,
+      marsClient: input.marsClient,
       workspaceId: input.workspaceId,
       workspaceType: input.workspaceType,
       disabledProviders: addProviderId(disabledProviderIds, providerId),
@@ -188,7 +188,7 @@ export async function reconcilePolicyDisabledProviders(
     }
     const result = await updateManagedDisabledProviders({
       opencodeClient: input.opencodeClient,
-      omnirushClient: input.omnirushClient,
+      marsClient: input.marsClient,
       workspaceId: input.workspaceId,
       workspaceType: input.workspaceType,
       disabledProviders: removeProviderId(disabledProviderIds, providerId),

@@ -28,7 +28,7 @@ const readArg = (name) => {
   return null;
 };
 
-const sidecarOverride = process.env.OMNIRUSH_SIDECAR_DIR?.trim() || readArg("--outdir");
+const sidecarOverride = process.env.MARS_SIDECAR_DIR?.trim() || readArg("--outdir");
 const sidecarDir = sidecarOverride ? resolve(sidecarOverride) : join(__dirname, "..", "resources", "sidecars");
 const constantsPath = resolve(__dirname, "..", "..", "..", "constants.json");
 
@@ -49,7 +49,7 @@ const normalizeVersion = (value) => {
   return raw.startsWith("v") ? raw.slice(1) : raw;
 };
 
-// The engine is OmniRush.ai's build of opencode 1.18.32 (the one the CLI
+// The engine is MarsAI's build of opencode 1.18.32 (the one the CLI
 // bundles): per-platform tarballs on a public pre-release of this repo (never
 // marked latest), sha256-pinned in engine-release.json. No token is needed.
 // Each tarball holds one executable, `opencode[.exe]`, at its root.
@@ -86,8 +86,8 @@ const opencodeTargetPath = opencodeTargetName ? join(sidecarDir, opencodeTargetN
 const opencodeCandidatePath = opencodeTargetPath ?? opencodePath;
 let existingOpencodeVersion = null;
 
-// omnirush-server paths
-const omnirushServerDir = resolve(__dirname, "..", "..", "server");
+// mars-server paths
+const marsServerDir = resolve(__dirname, "..", "..", "server");
 
 const readHeader = (filePath, length = 256) => {
   const fd = openSync(filePath, "r");
@@ -195,7 +195,7 @@ const adHocSignDarwinSidecars = (paths) => {
   }
 };
 
-// omnirush-server is no longer compiled as a sidecar binary — it runs
+// mars-server is no longer compiled as a sidecar binary — it runs
 // in-process inside Electron via a direct import of the server library.
 // Server binary copy/sign skipped — runs in-process.
 
@@ -258,7 +258,7 @@ const download = async (url) => {
   let last = null;
   for (let attempt = 1; attempt <= 4; attempt++) {
     try {
-      const response = await fetch(url, { headers: { "user-agent": "omnirush-desktop-prepare-sidecar" }, redirect: "follow" });
+      const response = await fetch(url, { headers: { "user-agent": "mars-desktop-prepare-sidecar" }, redirect: "follow" });
       if (response.ok) return Buffer.from(await response.arrayBuffer());
       last = new Error(`GitHub answered ${response.status} for ${url}`);
       if (response.status < 500 && response.status !== 429) break;
@@ -270,7 +270,7 @@ const download = async (url) => {
   throw last ?? new Error(`Download of ${url} failed`);
 };
 
-/** The pinned archive's bytes: a local copy (OMNIRUSH_ENGINE_ARCHIVE), the cache, or the public release. */
+/** The pinned archive's bytes: a local copy (MARS_ENGINE_ARCHIVE), the cache, or the public release. */
 const readEngineArchive = async () => {
   const verify = (bytes, source) => {
     const actual = createHash("sha256").update(bytes).digest("hex");
@@ -279,11 +279,11 @@ const readEngineArchive = async () => {
     }
     return bytes;
   };
-  const local = process.env.OMNIRUSH_ENGINE_ARCHIVE?.trim();
+  const local = process.env.MARS_ENGINE_ARCHIVE?.trim();
   if (local) return verify(readFileSync(resolve(local)), local);
-  const cacheDir = process.env.OMNIRUSH_ENGINE_CACHE?.trim()
-    ? resolve(process.env.OMNIRUSH_ENGINE_CACHE.trim())
-    : join(homedir(), ".cache", "omnirush-desktop", "engine");
+  const cacheDir = process.env.MARS_ENGINE_CACHE?.trim()
+    ? resolve(process.env.MARS_ENGINE_CACHE.trim())
+    : join(homedir(), ".cache", "mars-desktop", "engine");
   const cached = join(cacheDir, engineRelease.tag, engineAsset.name);
   if (existsSync(cached)) {
     try {
@@ -369,12 +369,12 @@ if (shouldDownloadOpencode) {
 adHocSignDarwinSidecars([
   opencodePath,
   opencodeTargetPath,
-  // omnirush-server runs in-process — no binary to sign.
+  // mars-server runs in-process — no binary to sign.
 ]);
 
-const omnirushServerVersion = (() => {
+const marsServerVersion = (() => {
   try {
-    const raw = readFileSync(resolve(omnirushServerDir, "package.json"), "utf8");
+    const raw = readFileSync(resolve(marsServerDir, "package.json"), "utf8");
     return String(JSON.parse(raw).version ?? "").trim();
   } catch {
     return null;
@@ -388,8 +388,8 @@ const versions = {
     release: engineRelease.tag,
     archiveSha256: engineAsset?.sha256 ?? null,
   },
-  "omnirush-server": {
-    version: omnirushServerVersion,
+  "mars-server": {
+    version: marsServerVersion,
     sha256: "in-process",
   },
 };

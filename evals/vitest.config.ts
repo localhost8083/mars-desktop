@@ -12,7 +12,7 @@ const appResolve = {
 };
 
 const prepareSuite = shouldPrepareSuite(process.argv);
-const attachedDen = Boolean(process.env.OMNIRUSH_EVAL_DEN_API_URL?.trim());
+const attachedDen = Boolean(process.env.MARS_EVAL_DEN_API_URL?.trim());
 const managedStack = prepareSuite && !attachedDen;
 const e2eWorkers = managedStack ? suiteWorkerCount(process.argv, process.env) : 1;
 const namedLiveSpec = process.argv.some((argument) => argument.endsWith(".live.test.ts") || argument.endsWith("/live.test.ts"));

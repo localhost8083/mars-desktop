@@ -1,6 +1,6 @@
 import { expect } from "vitest";
-import type { Target } from "@omnirush/cdp";
-import { spec } from "@omnirush/testkit";
+import type { Target } from "@mars/cdp";
+import { spec } from "@mars/testkit";
 import { paletteSessionActions } from "../worlds/chat.ts";
 
 const test = spec.world(paletteSessionActions);

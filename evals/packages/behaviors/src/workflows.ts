@@ -39,18 +39,18 @@ async function request(admin: DenSession, path: string, init: RequestInit = {}):
   return { status: response.status, body, text };
 }
 
-export async function grantOmniRushWebAccess(
+export async function grantMarsWebAccess(
   admin: DenSession,
   organizationId: string,
   reason: string,
 ): Promise<void> {
-  const result = await request(admin, `/v1/admin/organizations/${organizationId}/omnirush-web-access`, {
+  const result = await request(admin, `/v1/admin/organizations/${organizationId}/mars-web-access`, {
     method: "PUT",
     headers: auth(admin),
     body: JSON.stringify({ enabled: true, reason }),
   });
   if (result.status < 200 || result.status >= 300) {
-    throw new Error(`Granting OmniRush.ai Web access failed (${result.status}): ${preview(result.body)}`);
+    throw new Error(`Granting MarsAI Web access failed (${result.status}): ${preview(result.body)}`);
   }
 }
 

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { classifySpec, compareBaseline, violations } from "./spec-boundary-ratchet.mjs";
 
-const clean = classifySpec('import { spec } from "@omnirush/testkit"; spec.world("demo", () => {});');
+const clean = classifySpec('import { spec } from "@mars/testkit"; spec.world("demo", () => {});');
 
 test("classifySpec detects product-source imports and URL reads", () => {
   assert.equal(classifySpec('import thing from "../../apps/app/src/thing"; app();').importsProductSource, true);
@@ -31,7 +31,7 @@ test("classifySpec recognizes only boundary calls", () => {
 });
 
 test("the capture HTTP lab boundary preserves the product-source import guard", () => {
-  const boundary = classifySpec('import { startCaptureEfficiencyLab } from "@omnirush/labs"; await startCaptureEfficiencyLab();');
+  const boundary = classifySpec('import { startCaptureEfficiencyLab } from "@mars/labs"; await startCaptureEfficiencyLab();');
   assert.deepEqual(violations("capture.test.ts", boundary), []);
   const sourceImport = classifySpec('import "../../apps/server/src/capture-client.js"; startCaptureEfficiencyLab();');
   assert.equal(sourceImport.importsProductSource, true);
@@ -39,10 +39,10 @@ test("the capture HTTP lab boundary preserves the product-source import guard", 
 });
 
 test("classifySpec recognizes world imports as boundaries", () => {
-  for (const specifier of ["../../worlds/example.ts", "../worlds/example.ts", "@omnirush/world"]) {
+  for (const specifier of ["../../worlds/example.ts", "../worlds/example.ts", "@mars/world"]) {
     assert.equal(classifySpec(`import "${specifier}";`).crossesBoundary, true);
   }
-  assert.equal(classifySpec('import "@omnirush/world-extra";').crossesBoundary, false);
+  assert.equal(classifySpec('import "@mars/world-extra";').crossesBoundary, false);
 });
 
 test("violations returns human-readable reasons", () => {

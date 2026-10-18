@@ -1,7 +1,7 @@
 export default function Home() {
   return (
     <main className="home">
-      <p className="eyebrow">OmniRush.ai Review</p>
+      <p className="eyebrow">MarsAI Review</p>
       <h1>
         A clearer view
         <br />

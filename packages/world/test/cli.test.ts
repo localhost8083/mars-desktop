@@ -139,7 +139,7 @@ test("world arguments expose only script lifecycle flags and forward arguments a
 });
 
 test("discovery, resolution, list, and help classify scripts without importing them", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-world-cli-discovery-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-world-cli-discovery-"));
   try {
     const worldsDirectory = join(root, "worlds");
     const fixturePath = join(worldsDirectory, "throwing.ts");
@@ -175,7 +175,7 @@ test("discovery, resolution, list, and help classify scripts without importing t
 });
 
 test("preflight failures warn without blocking up and do not affect attach or plan", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-world-cli-preflight-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-world-cli-preflight-"));
   const worldsDirectory = join(root, "worlds");
   const receiptPath = join(root, "evals", "results", ".worlds", "scripts", "warned.json");
   const holdUrl = new URL("../src/hold.ts", import.meta.url).href;
@@ -247,7 +247,7 @@ test("preflight failures warn without blocking up and do not affect attach or pl
 });
 
 test("foreground scripts receive argv after -- and mirror their exit code", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-world-cli-argv-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-world-cli-argv-"));
   try {
     const worldsDirectory = join(root, "worlds");
     const outputPath = join(root, "argv.json");

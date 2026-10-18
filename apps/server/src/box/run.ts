@@ -1,4 +1,4 @@
-// Ported from the CLI (omnirush-cli src/box/run.js, feat/local-box-backends);
+// Ported from the CLI (mars-cli src/box/run.js, feat/local-box-backends);
 // keep the two in step. Only types were added here.
 //
 // Running a runtime's CLI: a time limit, output caps, never a throw.

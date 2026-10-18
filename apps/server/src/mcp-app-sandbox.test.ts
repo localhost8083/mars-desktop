@@ -47,7 +47,7 @@ describe("MCP Apps sandbox proxy policy", () => {
   });
 
   test("serves the proxy unauthenticated with an HTTP CSP header", async () => {
-    const root = await mkdtemp(join(tmpdir(), "omnirush-mcp-app-sandbox-"));
+    const root = await mkdtemp(join(tmpdir(), "mars-mcp-app-sandbox-"));
     roots.push(root);
     const config: ServerConfig = {
       host: "127.0.0.1",

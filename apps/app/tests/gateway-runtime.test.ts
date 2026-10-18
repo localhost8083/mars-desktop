@@ -10,19 +10,19 @@ import {
   resolveDenBaseUrls,
 } from "../src/app/lib/den";
 import {
-  hydrateOmniRushServerSettingsFromEnv,
-  readOmniRushServerSettings,
-} from "../src/app/lib/omnirush-server";
-import { createOmniRushServerStore } from "../src/react-app/domains/connections/omnirush-server-store";
-import { buildOmniRushHealthHeaders } from "../src/react-app/kernel/server-provider";
+  hydrateMarsServerSettingsFromEnv,
+  readMarsServerSettings,
+} from "../src/app/lib/mars-server";
+import { createMarsServerStore } from "../src/react-app/domains/connections/mars-server-store";
+import { buildMarsHealthHeaders } from "../src/react-app/kernel/server-provider";
 import {
   isStaleStoredDesktopConnection,
-  resolveOmniRushConnection,
-} from "../src/react-app/shell/omnirush-connection";
+  resolveMarsConnection,
+} from "../src/react-app/shell/mars-connection";
 
 const originalWindow = globalThis.window;
 const originalFetch = globalThis.fetch;
-const originalDeployment = process.env.VITE_OMNIRUSH_DEPLOYMENT;
+const originalDeployment = process.env.VITE_MARS_DEPLOYMENT;
 
 function restoreEnv(key: string, value: string | undefined) {
   if (value === undefined) delete process.env[key];
@@ -59,8 +59,8 @@ function getRequestUrl(input: RequestInfo | URL): string {
   return input.url;
 }
 
-function createTestOmniRushServerStore(startupPreference: "local" | "server" = "server") {
-  return createOmniRushServerStore({
+function createTestMarsServerStore(startupPreference: "local" | "server" = "server") {
+  return createMarsServerStore({
     startupPreference: () => startupPreference,
     documentVisible: () => true,
     developerMode: () => false,
@@ -88,9 +88,9 @@ function installWindow(options: {
     clientToken?: string;
     hostToken?: string;
   };
-  /** Raw omnirushServerInfo response for non-ready/restarting server states. */
+  /** Raw marsServerInfo response for non-ready/restarting server states. */
   electronServerInfoRaw?: Record<string, unknown>;
-  /** Simulate a desktop bridge whose omnirushServerInfo call fails outright. */
+  /** Simulate a desktop bridge whose marsServerInfo call fails outright. */
   electronServerInfoError?: boolean;
 }) {
   const localStorage = memoryStorage();
@@ -104,12 +104,12 @@ function installWindow(options: {
       setTimeout: () => 1,
       clearTimeout: () => undefined,
       location: { origin: options.origin },
-      __OMNIRUSH_GATEWAY__: options.gateway ? { version: 1 } : undefined,
-      __OMNIRUSH_BOOTSTRAP__: options.bootstrapToken ? { token: options.bootstrapToken } : undefined,
-      __OMNIRUSH_ELECTRON__: electronBridgeInstalled
+      __MARS_GATEWAY__: options.gateway ? { version: 1 } : undefined,
+      __MARS_BOOTSTRAP__: options.bootstrapToken ? { token: options.bootstrapToken } : undefined,
+      __MARS_ELECTRON__: electronBridgeInstalled
         ? {
             invokeDesktop: async (command: string) => {
-              if (command !== "omnirushServerInfo") {
+              if (command !== "marsServerInfo") {
                 throw new Error(`Unexpected desktop command: ${command}`);
               }
               if (options.electronServerInfoError) {
@@ -135,7 +135,7 @@ function installWindow(options: {
 
 describe("gateway runtime mode", () => {
   beforeEach(() => {
-    process.env.VITE_OMNIRUSH_DEPLOYMENT = "web";
+    process.env.VITE_MARS_DEPLOYMENT = "web";
   });
 
   afterEach(() => {
@@ -148,22 +148,22 @@ describe("gateway runtime mode", () => {
       value: originalFetch,
     });
     if (originalDeployment === undefined) {
-      delete process.env.VITE_OMNIRUSH_DEPLOYMENT;
+      delete process.env.VITE_MARS_DEPLOYMENT;
     } else {
-      process.env.VITE_OMNIRUSH_DEPLOYMENT = originalDeployment;
+      process.env.VITE_MARS_DEPLOYMENT = originalDeployment;
     }
   });
 
-  test("resolves OmniRush.ai server traffic through the gateway origin with the Den session token", async () => {
-    const storage = installWindow({ origin: "https://web.omnirush.example.com", gateway: true });
-    storage.setItem("omnirush.den.authToken", "den-session-token");
-    storage.setItem("omnirush.server.urlOverride", "https://direct-instance.example.com");
-    storage.setItem("omnirush.server.token", "stale-instance-token");
+  test("resolves MarsAI server traffic through the gateway origin with the Den session token", async () => {
+    const storage = installWindow({ origin: "https://web.mars.example.com", gateway: true });
+    storage.setItem("mars.den.authToken", "den-session-token");
+    storage.setItem("mars.server.urlOverride", "https://direct-instance.example.com");
+    storage.setItem("mars.server.token", "stale-instance-token");
 
-    const connection = await resolveOmniRushConnection();
+    const connection = await resolveMarsConnection();
 
     expect(connection).toEqual({
-      normalizedBaseUrl: "https://web.omnirush.example.com",
+      normalizedBaseUrl: "https://web.mars.example.com",
       resolvedToken: "den-session-token",
       resolvedHostToken: "",
       hostInfo: null,
@@ -171,9 +171,9 @@ describe("gateway runtime mode", () => {
     });
   });
 
-  test("keeps the OmniRush.ai server snapshot stable when options have not changed", () => {
-    installWindow({ origin: "https://web.omnirush.example.com", gateway: true });
-    const store = createTestOmniRushServerStore();
+  test("keeps the MarsAI server snapshot stable when options have not changed", () => {
+    installWindow({ origin: "https://web.mars.example.com", gateway: true });
+    const store = createTestMarsServerStore();
     const initialSnapshot = store.getSnapshot();
     let notifications = 0;
     const unsubscribe = store.subscribe(() => {
@@ -185,7 +185,7 @@ describe("gateway runtime mode", () => {
     expect(store.getSnapshot()).toBe(initialSnapshot);
     expect(notifications).toBe(0);
 
-    store.updateOmniRushServerSettings({
+    store.updateMarsServerSettings({
       urlOverride: "https://instance.example.com",
       token: "instance-token",
     });
@@ -197,7 +197,7 @@ describe("gateway runtime mode", () => {
 
   test("serves Den web from the gateway origin and Den API calls through its proxy when no web base is configured", () => {
     const storage = installWindow({ origin: "https://gw.example", gateway: true });
-    storage.setItem("omnirush.den.authToken", "den-session-token");
+    storage.setItem("mars.den.authToken", "den-session-token");
 
     // There is no hosted default web base: the gateway itself serves the Den
     // web app unless a different origin was configured explicitly.
@@ -263,10 +263,10 @@ describe("gateway runtime mode", () => {
         requests.push({
           url,
           authorization: headers.get("authorization"),
-          organizationId: headers.get("x-omnirush-org-id"),
+          organizationId: headers.get("x-mars-org-id"),
         });
         if (new URL(url).pathname === "/api/den/v1/org") {
-          return Response.json({ capabilities: { omnirushWeb: true } });
+          return Response.json({ capabilities: { marsWeb: true } });
         }
         return Response.json({
           billing: {
@@ -286,7 +286,7 @@ describe("gateway runtime mode", () => {
     const access = await createDenClient({
       baseUrl: readDenSettings().baseUrl,
       token: "tok_test",
-    }).getOmniRushWebAccess("org_test");
+    }).getMarsWebAccess("org_test");
 
     expect(access).toEqual({ hasAccess: true, accessSource: "complimentary" });
     expect(requests).toEqual([
@@ -317,7 +317,7 @@ describe("gateway runtime mode", () => {
     const access = await createDenClient({
       baseUrl: readDenSettings().baseUrl,
       token: "tok_test",
-    }).getOmniRushWebAccess("org_test");
+    }).getMarsWebAccess("org_test");
 
     expect(access).toEqual({ hasAccess: false, accessSource: null });
     expect(requestedUrls).toEqual(["https://gw.example/api/den/v1/org"]);
@@ -330,36 +330,36 @@ describe("gateway runtime mode", () => {
   });
 
   test("returns a stable gateway bootstrap snapshot for React external stores", () => {
-    installWindow({ origin: "https://web.omnirush.example.com", gateway: true });
+    installWindow({ origin: "https://web.mars.example.com", gateway: true });
 
     const first = readDenBootstrapConfig();
     const second = readDenBootstrapConfig();
 
     expect(second).toBe(first);
     // Without a configured web base the gateway serves the Den web app too.
-    expect(first.baseUrl).toBe("https://web.omnirush.example.com");
-    expect(first.apiBaseUrl).toBe("https://web.omnirush.example.com/api/den");
+    expect(first.baseUrl).toBe("https://web.mars.example.com");
+    expect(first.apiBaseUrl).toBe("https://web.mars.example.com/api/den");
   });
 
   test("does not hydrate an instance bootstrap token into server storage behind the gateway", () => {
     const storage = installWindow({
-      origin: "https://web.omnirush.example.com",
+      origin: "https://web.mars.example.com",
       gateway: true,
       bootstrapToken: "instance-token-must-not-store",
     });
 
-    hydrateOmniRushServerSettingsFromEnv();
+    hydrateMarsServerSettingsFromEnv();
 
-    expect(storage.getItem("omnirush.server.token")).toBeNull();
-    expect(readOmniRushServerSettings().token).toBeUndefined();
+    expect(storage.getItem("mars.server.token")).toBeNull();
+    expect(readMarsServerSettings().token).toBeUndefined();
   });
 
-  test("uses same-origin and the Den bearer for OmniRush.ai server store env calls behind the gateway", async () => {
+  test("uses same-origin and the Den bearer for MarsAI server store env calls behind the gateway", async () => {
     const storage = installWindow({ origin: "https://gw.example", gateway: true });
-    storage.setItem("omnirush.den.authToken", "den-session-token");
-    storage.setItem("omnirush.server.urlOverride", "https://direct-instance.example.com");
-    storage.setItem("omnirush.server.token", "stale-instance-token");
-    storage.setItem("omnirush.server.hostToken", "stale-host-token");
+    storage.setItem("mars.den.authToken", "den-session-token");
+    storage.setItem("mars.server.urlOverride", "https://direct-instance.example.com");
+    storage.setItem("mars.server.token", "stale-instance-token");
+    storage.setItem("mars.server.hostToken", "stale-host-token");
     const requests: Array<{ url: string; authorization: string | null; hostToken: string | null }> = [];
     Object.defineProperty(globalThis, "fetch", {
       configurable: true,
@@ -368,7 +368,7 @@ describe("gateway runtime mode", () => {
         requests.push({
           url: getRequestUrl(input),
           authorization: headers.get("authorization"),
-          hostToken: headers.get("x-omnirush-host-token"),
+          hostToken: headers.get("x-mars-host-token"),
         });
         return new Response(JSON.stringify({ runtimeKey: "runtime-a", pendingChanges: false, ok: true, count: 1 }), {
           status: 200,
@@ -377,14 +377,14 @@ describe("gateway runtime mode", () => {
       },
     });
 
-    const store = createTestOmniRushServerStore();
+    const store = createTestMarsServerStore();
     const snapshot = store.getSnapshot();
-    const client = snapshot.omnirushServerClient;
-    if (!client) throw new Error("Expected a gateway OmniRush.ai server client");
+    const client = snapshot.marsServerClient;
+    if (!client) throw new Error("Expected a gateway MarsAI server client");
 
-    expect(snapshot.omnirushServerBaseUrl).toBe("https://gw.example");
-    expect(snapshot.omnirushServerAuth.token).toBe("den-session-token");
-    expect(snapshot.omnirushServerAuth.hostToken).toBeUndefined();
+    expect(snapshot.marsServerBaseUrl).toBe("https://gw.example");
+    expect(snapshot.marsServerAuth.token).toBe("den-session-token");
+    expect(snapshot.marsServerAuth.hostToken).toBeUndefined();
     expect(client.baseUrl).toBe("https://gw.example");
     expect(client.token).toBe("den-session-token");
 
@@ -407,10 +407,10 @@ describe("gateway runtime mode", () => {
 
   test("uses the Den bearer for same-origin OpenCode health polling behind the gateway", () => {
     const storage = installWindow({ origin: "https://gw.example", gateway: true });
-    storage.setItem("omnirush.den.authToken", "den-session-token");
-    storage.setItem("omnirush.server.token", "stale-instance-token");
+    storage.setItem("mars.den.authToken", "den-session-token");
+    storage.setItem("mars.server.token", "stale-instance-token");
 
-    expect(buildOmniRushHealthHeaders("https://gw.example/opencode")).toEqual({
+    expect(buildMarsHealthHeaders("https://gw.example/opencode")).toEqual({
       Authorization: "Bearer den-session-token",
     });
   });
@@ -418,7 +418,7 @@ describe("gateway runtime mode", () => {
 
 describe("non-gateway connection modes", () => {
   beforeEach(() => {
-    process.env.VITE_OMNIRUSH_DEPLOYMENT = "web";
+    process.env.VITE_MARS_DEPLOYMENT = "web";
   });
 
   afterEach(() => {
@@ -431,46 +431,46 @@ describe("non-gateway connection modes", () => {
       value: originalFetch,
     });
     if (originalDeployment === undefined) {
-      delete process.env.VITE_OMNIRUSH_DEPLOYMENT;
+      delete process.env.VITE_MARS_DEPLOYMENT;
     } else {
-      process.env.VITE_OMNIRUSH_DEPLOYMENT = originalDeployment;
+      process.env.VITE_MARS_DEPLOYMENT = originalDeployment;
     }
   });
 
   test("direct instance bootstrap hydration and same-origin resolution are unchanged without the marker", async () => {
     installWindow({ origin: "https://instance.example.com", bootstrapToken: "instance-token" });
 
-    hydrateOmniRushServerSettingsFromEnv();
-    const connection = await resolveOmniRushConnection();
+    hydrateMarsServerSettingsFromEnv();
+    const connection = await resolveMarsConnection();
 
-    expect(readOmniRushServerSettings().token).toBe("instance-token");
+    expect(readMarsServerSettings().token).toBe("instance-token");
     expect(connection.normalizedBaseUrl).toBe("https://instance.example.com");
     expect(connection.resolvedToken).toBe("instance-token");
     expect(connection.source).toBe("same-origin");
   });
 
-  test("force-env settings overwrite stale localStorage omnirush-server credentials", () => {
+  test("force-env settings overwrite stale localStorage mars-server credentials", () => {
     const previous = {
-      url: process.env.VITE_OMNIRUSH_URL,
-      port: process.env.VITE_OMNIRUSH_PORT,
-      token: process.env.VITE_OMNIRUSH_TOKEN,
-      hostToken: process.env.VITE_OMNIRUSH_HOST_TOKEN,
-      force: process.env.VITE_OMNIRUSH_FORCE_ENV_SETTINGS,
+      url: process.env.VITE_MARS_URL,
+      port: process.env.VITE_MARS_PORT,
+      token: process.env.VITE_MARS_TOKEN,
+      hostToken: process.env.VITE_MARS_HOST_TOKEN,
+      force: process.env.VITE_MARS_FORCE_ENV_SETTINGS,
     };
-    process.env.VITE_OMNIRUSH_URL = "http://127.0.0.1:8787";
-    process.env.VITE_OMNIRUSH_PORT = "8787";
-    process.env.VITE_OMNIRUSH_TOKEN = "fresh-token";
-    process.env.VITE_OMNIRUSH_HOST_TOKEN = "fresh-host-token";
-    process.env.VITE_OMNIRUSH_FORCE_ENV_SETTINGS = "1";
+    process.env.VITE_MARS_URL = "http://127.0.0.1:8787";
+    process.env.VITE_MARS_PORT = "8787";
+    process.env.VITE_MARS_TOKEN = "fresh-token";
+    process.env.VITE_MARS_HOST_TOKEN = "fresh-host-token";
+    process.env.VITE_MARS_FORCE_ENV_SETTINGS = "1";
 
     const storage = installWindow({ origin: "http://127.0.0.1:5173" });
-    storage.setItem("omnirush.server.urlOverride", "http://127.0.0.1:9999");
-    storage.setItem("omnirush.server.token", "stale-token");
-    storage.setItem("omnirush.server.hostToken", "stale-host-token");
+    storage.setItem("mars.server.urlOverride", "http://127.0.0.1:9999");
+    storage.setItem("mars.server.token", "stale-token");
+    storage.setItem("mars.server.hostToken", "stale-host-token");
 
     try {
-      hydrateOmniRushServerSettingsFromEnv();
-      expect(readOmniRushServerSettings()).toEqual({
+      hydrateMarsServerSettingsFromEnv();
+      expect(readMarsServerSettings()).toEqual({
         urlOverride: "http://127.0.0.1:8787",
         portOverride: 8787,
         token: "fresh-token",
@@ -478,79 +478,79 @@ describe("non-gateway connection modes", () => {
         remoteAccessEnabled: false,
       });
     } finally {
-      restoreEnv("VITE_OMNIRUSH_URL", previous.url);
-      restoreEnv("VITE_OMNIRUSH_PORT", previous.port);
-      restoreEnv("VITE_OMNIRUSH_TOKEN", previous.token);
-      restoreEnv("VITE_OMNIRUSH_HOST_TOKEN", previous.hostToken);
-      restoreEnv("VITE_OMNIRUSH_FORCE_ENV_SETTINGS", previous.force);
+      restoreEnv("VITE_MARS_URL", previous.url);
+      restoreEnv("VITE_MARS_PORT", previous.port);
+      restoreEnv("VITE_MARS_TOKEN", previous.token);
+      restoreEnv("VITE_MARS_HOST_TOKEN", previous.hostToken);
+      restoreEnv("VITE_MARS_FORCE_ENV_SETTINGS", previous.force);
     }
   });
 
   test("force-env without a VITE host token clears a leftover browser host token", () => {
     const previous = {
-      url: process.env.VITE_OMNIRUSH_URL,
-      port: process.env.VITE_OMNIRUSH_PORT,
-      token: process.env.VITE_OMNIRUSH_TOKEN,
-      hostToken: process.env.VITE_OMNIRUSH_HOST_TOKEN,
-      force: process.env.VITE_OMNIRUSH_FORCE_ENV_SETTINGS,
+      url: process.env.VITE_MARS_URL,
+      port: process.env.VITE_MARS_PORT,
+      token: process.env.VITE_MARS_TOKEN,
+      hostToken: process.env.VITE_MARS_HOST_TOKEN,
+      force: process.env.VITE_MARS_FORCE_ENV_SETTINGS,
     };
-    process.env.VITE_OMNIRUSH_URL = "http://127.0.0.1:8787";
-    process.env.VITE_OMNIRUSH_PORT = "8787";
-    process.env.VITE_OMNIRUSH_TOKEN = "fresh-token";
-    delete process.env.VITE_OMNIRUSH_HOST_TOKEN;
-    process.env.VITE_OMNIRUSH_FORCE_ENV_SETTINGS = "1";
+    process.env.VITE_MARS_URL = "http://127.0.0.1:8787";
+    process.env.VITE_MARS_PORT = "8787";
+    process.env.VITE_MARS_TOKEN = "fresh-token";
+    delete process.env.VITE_MARS_HOST_TOKEN;
+    process.env.VITE_MARS_FORCE_ENV_SETTINGS = "1";
 
     const storage = installWindow({ origin: "http://127.0.0.1:5178" });
-    storage.setItem("omnirush.server.hostToken", "leaked-host-token");
+    storage.setItem("mars.server.hostToken", "leaked-host-token");
 
     try {
-      hydrateOmniRushServerSettingsFromEnv();
-      expect(readOmniRushServerSettings().hostToken).toBeUndefined();
-      expect(storage.getItem("omnirush.server.hostToken")).toBeNull();
+      hydrateMarsServerSettingsFromEnv();
+      expect(readMarsServerSettings().hostToken).toBeUndefined();
+      expect(storage.getItem("mars.server.hostToken")).toBeNull();
     } finally {
-      restoreEnv("VITE_OMNIRUSH_URL", previous.url);
-      restoreEnv("VITE_OMNIRUSH_PORT", previous.port);
-      restoreEnv("VITE_OMNIRUSH_TOKEN", previous.token);
-      restoreEnv("VITE_OMNIRUSH_HOST_TOKEN", previous.hostToken);
-      restoreEnv("VITE_OMNIRUSH_FORCE_ENV_SETTINGS", previous.force);
+      restoreEnv("VITE_MARS_URL", previous.url);
+      restoreEnv("VITE_MARS_PORT", previous.port);
+      restoreEnv("VITE_MARS_TOKEN", previous.token);
+      restoreEnv("VITE_MARS_HOST_TOKEN", previous.hostToken);
+      restoreEnv("VITE_MARS_FORCE_ENV_SETTINGS", previous.force);
     }
   });
 
   test("stored server settings still win without the marker", async () => {
     const storage = installWindow({ origin: "https://instance.example.com" });
-    storage.setItem("omnirush.server.urlOverride", "https://manual.example.com");
-    storage.setItem("omnirush.server.token", "manual-token");
-    storage.setItem("omnirush.server.hostToken", "host-token");
+    storage.setItem("mars.server.urlOverride", "https://manual.example.com");
+    storage.setItem("mars.server.token", "manual-token");
+    storage.setItem("mars.server.hostToken", "host-token");
 
-    const connection = await resolveOmniRushConnection();
+    const connection = await resolveMarsConnection();
 
     expect(connection.normalizedBaseUrl).toBe("https://manual.example.com");
     expect(connection.resolvedToken).toBe("manual-token");
     expect(connection.resolvedHostToken).toBe("");
     expect(connection.source).toBe("stored-settings");
 
-    const store = createTestOmniRushServerStore();
+    const store = createTestMarsServerStore();
     const snapshot = store.getSnapshot();
 
-    expect(snapshot.omnirushServerBaseUrl).toBe("https://manual.example.com");
-    expect(snapshot.omnirushServerAuth.token).toBe("manual-token");
-    expect(snapshot.omnirushServerAuth.hostToken).toBeUndefined();
-    expect(snapshot.omnirushServerClient?.baseUrl).toBe("https://manual.example.com");
-    expect(snapshot.omnirushServerClient?.token).toBe("manual-token");
+    expect(snapshot.marsServerBaseUrl).toBe("https://manual.example.com");
+    expect(snapshot.marsServerAuth.token).toBe("manual-token");
+    expect(snapshot.marsServerAuth.hostToken).toBeUndefined();
+    expect(snapshot.marsServerClient?.baseUrl).toBe("https://manual.example.com");
+    expect(snapshot.marsServerClient?.token).toBe("manual-token");
   });
 
   test("OpenCode health polling still uses the stored instance token without the gateway marker", () => {
     const storage = installWindow({ origin: "https://instance.example.com" });
-    storage.setItem("omnirush.server.token", "instance-token");
+    storage.setItem("mars.server.token", "instance-token");
 
-    expect(buildOmniRushHealthHeaders("https://instance.example.com/opencode")).toEqual({
+    expect(buildMarsHealthHeaders("https://instance.example.com/opencode")).toEqual({
       Authorization: "Bearer instance-token",
     });
   });
 
   test("plain web Den settings still use a stored custom base URL without the marker", () => {
     const storage = installWindow({ origin: "https://instance.example.com" });
-    storage.setItem("omnirush.den.baseUrl", "https://den.self-hosted.example.com");
+    storage.setItem("mars.den.baseUrl", "https://den.self-hosted.example.com");
 
     expect(readDenSettings().baseUrl).toBe("https://den.self-hosted.example.com");
     expect(readDenSettings().apiBaseUrl).toBe("https://den.self-hosted.example.com/api/den");
@@ -560,7 +560,7 @@ describe("non-gateway connection modes", () => {
     const previous = process.env.VITE_DEN_API_BASE_URL;
     process.env.VITE_DEN_API_BASE_URL = "http://127.0.0.1:5178/api/den";
     const storage = installWindow({ origin: "http://127.0.0.1:5178" });
-    storage.setItem("omnirush.den.baseUrl", "https://den.example.com");
+    storage.setItem("mars.den.baseUrl", "https://den.example.com");
 
     try {
       const settings = readDenSettings();
@@ -587,30 +587,30 @@ describe("non-gateway connection modes", () => {
 
   test("loopback web auth uses desktop handoff instead of an unapprovable webAuth return URL", () => {
     const storage = installWindow({ origin: "http://127.0.0.1:5178" });
-    storage.setItem("omnirush.den.baseUrl", "https://den.example.com");
+    storage.setItem("mars.den.baseUrl", "https://den.example.com");
 
     const authUrl = new URL(buildDenAuthUrl(readDenSettings().baseUrl, "sign-in"));
 
     expect(authUrl.origin).toBe("https://den.example.com");
     expect(authUrl.searchParams.get("desktopAuth")).toBe("1");
-    expect(authUrl.searchParams.get("desktopScheme")).toBe("omnirush");
+    expect(authUrl.searchParams.get("desktopScheme")).toBe("mars");
     expect(authUrl.searchParams.get("webAuth")).toBeNull();
     expect(authUrl.searchParams.get("webAuthReturn")).toBeNull();
   });
 
   test("force-env clears a stale stored Den base URL on web bootstrap init", async () => {
-    const previous = process.env.VITE_OMNIRUSH_FORCE_ENV_SETTINGS;
-    process.env.VITE_OMNIRUSH_FORCE_ENV_SETTINGS = "1";
+    const previous = process.env.VITE_MARS_FORCE_ENV_SETTINGS;
+    process.env.VITE_MARS_FORCE_ENV_SETTINGS = "1";
     const storage = installWindow({ origin: "http://127.0.0.1:5178" });
-    storage.setItem("omnirush.den.baseUrl", "http://127.0.0.1:8779");
+    storage.setItem("mars.den.baseUrl", "http://127.0.0.1:8779");
 
     try {
       await initializeDenBootstrapConfig();
-      expect(storage.getItem("omnirush.den.baseUrl")).toBeNull();
+      expect(storage.getItem("mars.den.baseUrl")).toBeNull();
       // No build default exists, so the cleared setting leaves no control plane.
       expect(readDenSettings().baseUrl).toBe("");
     } finally {
-      restoreEnv("VITE_OMNIRUSH_FORCE_ENV_SETTINGS", previous);
+      restoreEnv("VITE_MARS_FORCE_ENV_SETTINGS", previous);
     }
   });
 
@@ -624,7 +624,7 @@ describe("non-gateway connection modes", () => {
       },
     });
 
-    const connection = await resolveOmniRushConnection();
+    const connection = await resolveMarsConnection();
 
     expect(connection.normalizedBaseUrl).toBe("http://127.0.0.1:8787");
     expect(connection.resolvedToken).toBe("owner-token");
@@ -642,8 +642,8 @@ describe("non-gateway connection modes", () => {
         hostToken: "live-host-token",
       },
     });
-    storage.setItem("omnirush.server.token", "stale-client-token");
-    storage.setItem("omnirush.server.hostToken", "stale-host-token");
+    storage.setItem("mars.server.token", "stale-client-token");
+    storage.setItem("mars.server.hostToken", "stale-host-token");
     Object.defineProperty(globalThis, "fetch", {
       configurable: true,
       value: async () => new Response(JSON.stringify({ ok: true }), {
@@ -652,12 +652,12 @@ describe("non-gateway connection modes", () => {
       }),
     });
 
-    const store = createTestOmniRushServerStore("local");
+    const store = createTestMarsServerStore("local");
 
-    expect(await store.reconnectOmniRushServer()).toBe(true);
-    expect(readOmniRushServerSettings().token).toBe("live-client-token");
-    expect(readOmniRushServerSettings().hostToken).toBe("live-host-token");
-    expect(store.getSnapshot().omnirushServerAuth).toEqual({
+    expect(await store.reconnectMarsServer()).toBe(true);
+    expect(readMarsServerSettings().token).toBe("live-client-token");
+    expect(readMarsServerSettings().hostToken).toBe("live-host-token");
+    expect(store.getSnapshot().marsServerAuth).toEqual({
       token: "live-client-token",
       hostToken: "live-host-token",
     });
@@ -671,10 +671,10 @@ describe("non-gateway connection modes", () => {
       origin: "https://instance.example.com",
       electronServerInfoRaw: { running: false, baseUrl: null, ownerToken: null, clientToken: null },
     });
-    storage.setItem("omnirush.server.urlOverride", "http://127.0.0.1:4100");
-    storage.setItem("omnirush.server.token", "tok_previous_lifetime");
+    storage.setItem("mars.server.urlOverride", "http://127.0.0.1:4100");
+    storage.setItem("mars.server.token", "tok_previous_lifetime");
 
-    const connection = await resolveOmniRushConnection();
+    const connection = await resolveMarsConnection();
 
     expect(connection.source).toBe("empty");
     expect(connection.normalizedBaseUrl).toBe("");
@@ -686,10 +686,10 @@ describe("non-gateway connection modes", () => {
       origin: "https://instance.example.com",
       electronServerInfoRaw: { running: false, baseUrl: null, ownerToken: null, clientToken: null },
     });
-    storage.setItem("omnirush.server.urlOverride", "https://manual.example.com");
-    storage.setItem("omnirush.server.token", "manual-token");
+    storage.setItem("mars.server.urlOverride", "https://manual.example.com");
+    storage.setItem("mars.server.token", "manual-token");
 
-    const connection = await resolveOmniRushConnection();
+    const connection = await resolveMarsConnection();
 
     expect(connection.source).toBe("stored-settings");
     expect(connection.normalizedBaseUrl).toBe("https://manual.example.com");
@@ -703,10 +703,10 @@ describe("non-gateway connection modes", () => {
       origin: "https://instance.example.com",
       electronServerInfoError: true,
     });
-    storage.setItem("omnirush.server.urlOverride", "http://127.0.0.1:4100");
-    storage.setItem("omnirush.server.token", "tok_stored");
+    storage.setItem("mars.server.urlOverride", "http://127.0.0.1:4100");
+    storage.setItem("mars.server.token", "tok_stored");
 
-    const connection = await resolveOmniRushConnection();
+    const connection = await resolveMarsConnection();
 
     expect(connection.source).toBe("stored-settings");
     expect(connection.normalizedBaseUrl).toBe("http://127.0.0.1:4100");

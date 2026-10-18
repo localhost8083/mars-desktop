@@ -1,4 +1,4 @@
-import { currentTestEvidence } from "@omnirush/test-evidence";
+import { currentTestEvidence } from "@mars/test-evidence";
 import { getBriefTestRegistrar } from "./brief-internal.ts";
 import type { TestContext } from "./brief-internal.ts";
 

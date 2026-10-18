@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { zstdDecompressSync } from "node:zlib";
 
 import { REMEMBER_MS, RECHECK_MS, RETRY_MS, UPLOAD_FORMAT_FILE, UploadFormat } from "./context/upload-format.js";
-import { OmniRushGatewayBroker } from "./omnirush-gateway-broker.js";
+import { MarsGatewayBroker } from "./mars-gateway-broker.js";
 import { SessionUploader, type TraceCapabilities } from "./session-uploader.js";
 
 // 3.4.1 cached schema 2 for five minutes after any failed capabilities check
@@ -33,7 +33,7 @@ type Check = "ok" | "fail" | TraceCapabilities;
 
 /** One run (a process) with `stateDir`: the [schema, refused] of each trace upload sent. */
 async function runTraces(stateDir: string, check: Check, options: { refuse3?: boolean } = {}): Promise<Array<[number, boolean]>> {
-  const root = await temp("omnirush-format-ws-");
+  const root = await temp("mars-format-ws-");
   await writeFile(join(root, "README.md"), "# demo\n");
   const sent: Array<[number, boolean]> = [];
   const uploader = new SessionUploader({
@@ -68,14 +68,14 @@ async function runTraces(stateDir: string, check: Check, options: { refuse3?: bo
 
 describe("the upload format when the capabilities check fails", () => {
   test("a failed check after the server advertised schema 3 still sends schema 3", async () => {
-    const stateDir = await temp("omnirush-format-state-");
+    const stateDir = await temp("mars-format-state-");
     expect(await runTraces(stateDir, "ok")).toEqual([[3, false]]);
     // The broker throws for a 401 after its refresh, a 5xx, a timeout (sessionUploadCapabilities strict).
     expect(await runTraces(stateDir, "fail")).toEqual([[3, false]]);
   }, 30_000);
 
   test("an answer without schema 3 does not undo a remembered one; /collect's 422 unsupported_schema does", async () => {
-    const stateDir = await temp("omnirush-format-state-");
+    const stateDir = await temp("mars-format-state-");
     expect(await runTraces(stateDir, "ok")).toEqual([[3, false]]);
     expect(await runTraces(stateDir, { schema_versions: [1, 2], canonical_trace: false })).toEqual([[3, false]]);
     expect(await runTraces(stateDir, "ok", { refuse3: true })).toEqual([[3, true], [2, false]]);
@@ -85,11 +85,11 @@ describe("the upload format when the capabilities check fails", () => {
   }, 30_000);
 
   test("a fresh install whose first check fails still sends schema 3", async () => {
-    expect(await runTraces(await temp("omnirush-format-state-"), "fail")).toEqual([[3, false]]);
+    expect(await runTraces(await temp("mars-format-state-"), "fail")).toEqual([[3, false]]);
   }, 30_000);
 
   test("a fresh install whose first check fails, on a server without schema 3: the batch goes again as schema 2", async () => {
-    expect(await runTraces(await temp("omnirush-format-state-"), "fail", { refuse3: true })).toEqual([[3, true], [2, false]]);
+    expect(await runTraces(await temp("mars-format-state-"), "fail", { refuse3: true })).toEqual([[3, true], [2, false]]);
   }, 30_000);
 });
 
@@ -134,7 +134,7 @@ describe("UploadFormat (context/upload-format.ts)", () => {
   });
 
   test("remembered on disk per server for REMEMBER_MS", async () => {
-    const file = join(await temp("omnirush-format-file-"), UPLOAD_FORMAT_FILE);
+    const file = join(await temp("mars-format-file-"), UPLOAD_FORMAT_FILE);
     const time = clock();
     const down = async (): Promise<TraceCapabilities> => { throw new Error("503"); };
     expect(await new UploadFormat({ file, server: () => "gateway", now: time.now, probe: async () => SCHEMA_3 }).version()).toBe(3);
@@ -161,8 +161,8 @@ describe("UploadFormat (context/upload-format.ts)", () => {
 describe("the broker's capabilities for the uploader", () => {
   function broker(answers: Array<number | "network" | "ok">) {
     let probes = 0;
-    const instance = new OmniRushGatewayBroker({
-      credentials: { gatewayUrl: "https://gateway.example/omnirush/v1", accessToken: "access-token", refreshToken: "refresh-token" },
+    const instance = new MarsGatewayBroker({
+      credentials: { gatewayUrl: "https://gateway.example/mars/v1", accessToken: "access-token", refreshToken: "refresh-token" },
       engineToken: "local-engine-token",
       fetch: async (input) => {
         const pathname = new URL(String(input)).pathname;
@@ -174,7 +174,7 @@ describe("the broker's capabilities for the uploader", () => {
           return new Response("{}", { status: next });
         }
         // The refresh cannot rotate right now (the account server is busy).
-        if (pathname.endsWith("/device/refresh")) return new Response("{}", { status: 503 });
+        if (pathname.endsWith("/oauth/token")) return new Response("{}", { status: 503 });
         return Response.json({ output: [] });
       },
     });

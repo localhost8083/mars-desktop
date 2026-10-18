@@ -3,10 +3,10 @@ import type { ComposerAttachment, WorkspacePreset } from "../../../app/types";
 export type CreateWorkspaceScreen = "chooser" | "local" | "remote";
 
 export type RemoteWorkspaceInput = {
-  omnirushHostUrl?: string | null;
-  omnirushToken?: string | null;
-  omnirushClientToken?: string | null;
-  omnirushHostToken?: string | null;
+  marsHostUrl?: string | null;
+  marsToken?: string | null;
+  marsClientToken?: string | null;
+  marsHostToken?: string | null;
   directory?: string | null;
   displayName?: string | null;
   closeModal?: boolean;
@@ -46,14 +46,14 @@ export type CreateRemoteWorkspaceModalProps = {
   open: boolean;
   onClose: () => void;
   onConfirm: (input: {
-    omnirushHostUrl?: string | null;
-    omnirushToken?: string | null;
+    marsHostUrl?: string | null;
+    marsToken?: string | null;
     directory?: string | null;
     displayName?: string | null;
   }) => void;
   initialValues?: {
-    omnirushHostUrl?: string | null;
-    omnirushToken?: string | null;
+    marsHostUrl?: string | null;
+    marsToken?: string | null;
     directory?: string | null;
     displayName?: string | null;
   };

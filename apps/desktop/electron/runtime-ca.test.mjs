@@ -20,7 +20,7 @@ const CERT_TWO = "-----BEGIN CERTIFICATE-----\ntwo\n-----END CERTIFICATE-----";
 const CERT_THREE = "-----BEGIN CERTIFICATE-----\nthree\n-----END CERTIFICATE-----";
 
 function windowsPowerShellCertBlock(base64) {
-  return `-----OMNIRUSH-CERTIFICATE-----\n${base64}\n-----END-OMNIRUSH-CERTIFICATE-----`;
+  return `-----MARS-CERTIFICATE-----\n${base64}\n-----END-MARS-CERTIFICATE-----`;
 }
 
 function pemForBase64(base64) {
@@ -35,9 +35,9 @@ let certificateFixturePromise;
 
 async function certificateFixture() {
   certificateFixturePromise ??= (async () => {
-    const directory = await mkdtemp(path.join(tmpdir(), "omnirush-runtime-cert-chain-"));
+    const directory = await mkdtemp(path.join(tmpdir(), "mars-runtime-cert-chain-"));
     const run = (...args) => execFileSync("openssl", args, { cwd: directory, stdio: "ignore" });
-    run("req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", "root.key", "-out", "root.pem", "-subj", "/CN=OmniRush.ai Test Root", "-days", "2", "-sha256");
+    run("req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", "root.key", "-out", "root.pem", "-subj", "/CN=MarsAI Test Root", "-days", "2", "-sha256");
     await writeFile(path.join(directory, "server.ext"), "extendedKeyUsage = serverAuth\nsubjectAltName = DNS:enterprise.test\n");
     run("req", "-newkey", "rsa:2048", "-nodes", "-keyout", "leaf.key", "-out", "leaf.csr", "-subj", "/CN=enterprise.test", "-sha256");
     run("x509", "-req", "-in", "leaf.csr", "-CA", "root.pem", "-CAkey", "root.key", "-set_serial", "2", "-out", "leaf.pem", "-days", "1", "-sha256", "-extfile", "server.ext");
@@ -143,7 +143,7 @@ test("malformed and cyclic certificate chains never accept", async () => {
 });
 
 test("writes system CA bundle when certificates are available", async () => {
-  const userDataDir = await mkdtemp(path.join(tmpdir(), "omnirush-runtime-ca-"));
+  const userDataDir = await mkdtemp(path.join(tmpdir(), "mars-runtime-ca-"));
   const bundlePath = path.join(userDataDir, "system-ca-bundle.pem");
 
   const env = await resolveSystemCaEnv({
@@ -164,7 +164,7 @@ test("writes system CA bundle when certificates are available", async () => {
 });
 
 test("sets NODE_EXTRA_CA_CERTS for a child env merge", async () => {
-  const userDataDir = await mkdtemp(path.join(tmpdir(), "omnirush-runtime-ca-"));
+  const userDataDir = await mkdtemp(path.join(tmpdir(), "mars-runtime-ca-"));
   const caEnv = await resolveSystemCaEnv({
     tlsModule: { getCACertificates: () => [CERT_ONE] },
     userDataDir,
@@ -192,7 +192,7 @@ test("keeps NODE_EXTRA_CA_CERTS from user env file over generated bundle", () =>
 });
 
 test("merges a user-set NODE_EXTRA_CA_CERTS with the OS store, in process and for children", async () => {
-  const userDataDir = await mkdtemp(path.join(tmpdir(), "omnirush-runtime-ca-"));
+  const userDataDir = await mkdtemp(path.join(tmpdir(), "mars-runtime-ca-"));
   const configured = path.join(userDataDir, "custom-ca.pem");
   await writeFile(configured, `${CERT_THREE}\n`);
   let logged = false;
@@ -226,7 +226,7 @@ test("merges a user-set NODE_EXTRA_CA_CERTS with the OS store, in process and fo
 });
 
 test("keeps an unreadable user-set NODE_EXTRA_CA_CERTS for children as is", async () => {
-  const userDataDir = await mkdtemp(path.join(tmpdir(), "omnirush-runtime-ca-"));
+  const userDataDir = await mkdtemp(path.join(tmpdir(), "mars-runtime-ca-"));
   const env = await resolveSystemCaEnv({
     tlsModule: { getCACertificates: () => [CERT_ONE] },
     userDataDir,
@@ -238,7 +238,7 @@ test("keeps an unreadable user-set NODE_EXTRA_CA_CERTS for children as is", asyn
 });
 
 test("no-ops when tls.getCACertificates is unavailable", async () => {
-  const userDataDir = await mkdtemp(path.join(tmpdir(), "omnirush-runtime-ca-"));
+  const userDataDir = await mkdtemp(path.join(tmpdir(), "mars-runtime-ca-"));
 
   const env = await resolveSystemCaEnv({
     tlsModule: {},
@@ -253,7 +253,7 @@ test("no-ops when tls.getCACertificates is unavailable", async () => {
 });
 
 test("incident case: macOS runtime returns no certs but platform keychains produce a bundle", async () => {
-  const userDataDir = await mkdtemp(path.join(tmpdir(), "omnirush-runtime-ca-"));
+  const userDataDir = await mkdtemp(path.join(tmpdir(), "mars-runtime-ca-"));
   const bundlePath = path.join(userDataDir, "system-ca-bundle.pem");
   const logs = [];
   const setDefaultCalls = [];
@@ -285,7 +285,7 @@ test("incident case: macOS runtime returns no certs but platform keychains produ
 });
 
 test("dedupes certificates across runtime and platform sources", async () => {
-  const userDataDir = await mkdtemp(path.join(tmpdir(), "omnirush-runtime-ca-"));
+  const userDataDir = await mkdtemp(path.join(tmpdir(), "mars-runtime-ca-"));
   const bundlePath = path.join(userDataDir, "system-ca-bundle.pem");
 
   const env = await resolveSystemCaEnv({
@@ -302,7 +302,7 @@ test("dedupes certificates across runtime and platform sources", async () => {
 });
 
 test("does not set main-process defaults when no additions are available", async () => {
-  const userDataDir = await mkdtemp(path.join(tmpdir(), "omnirush-runtime-ca-"));
+  const userDataDir = await mkdtemp(path.join(tmpdir(), "mars-runtime-ca-"));
   let setDefaultCalled = false;
 
   const env = await resolveSystemCaEnv({
@@ -323,7 +323,7 @@ test("does not set main-process defaults when no additions are available", async
 });
 
 test("main-process default extension is optional", async () => {
-  const userDataDir = await mkdtemp(path.join(tmpdir(), "omnirush-runtime-ca-"));
+  const userDataDir = await mkdtemp(path.join(tmpdir(), "mars-runtime-ca-"));
   const bundlePath = path.join(userDataDir, "system-ca-bundle.pem");
 
   const env = await resolveSystemCaEnv({

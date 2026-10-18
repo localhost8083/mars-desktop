@@ -5,7 +5,7 @@ import {
   listAssignedConnectCapabilities,
 } from "../src/react-app/domains/session/surface/connect-capability-inventory";
 
-describe("assigned OmniRush.ai Connect capability inventory", () => {
+describe("assigned MarsAI Connect capability inventory", () => {
   test("keeps assigned Workflows returned by Den", async () => {
     const originalFetch = globalThis.fetch;
     const fetchMock: typeof fetch = async () => new Response(JSON.stringify({
@@ -195,7 +195,7 @@ describe("assigned OmniRush.ai Connect capability inventory", () => {
       expect.objectContaining({
         name: "Escalate ticket",
         trigger: "escalate-ticket",
-        origin: "omnirush-connect",
+        origin: "mars-connect",
         marketplaceName: "Team tools",
         pluginName: "Support kit",
         connectCapabilityName: "plugin:plugin_1:skill_1",
@@ -204,7 +204,7 @@ describe("assigned OmniRush.ai Connect capability inventory", () => {
     expect(inventory.mcpServers).toEqual([
       expect.objectContaining({
         name: "Support MCP",
-        origin: "omnirush-connect",
+        origin: "mars-connect",
         marketplaceName: "Team tools",
         pluginName: "Support kit",
         config: {

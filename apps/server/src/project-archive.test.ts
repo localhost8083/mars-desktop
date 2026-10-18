@@ -42,7 +42,7 @@ function broker(server: FakeArchiveServer) {
     enabled: true,
     archiveRequest: (path: string, init: { method: "GET" | "POST"; body?: string; signal?: AbortSignal }) => {
       paths.push(`${init.method} ${path}`);
-      return server.respond(`https://api.omnirush.test/omnirush/${path}`, {
+      return server.respond(`https://api.mars.test/mars/${path}`, {
         method: init.method,
         headers: { authorization: `Bearer ${server.token}` },
         ...(init.body === undefined ? {} : { body: init.body }),
@@ -105,7 +105,7 @@ describe("createProjectArchive", () => {
     expect(slow.puts).toHaveLength(1);
   });
 
-  test("OMNIRUSH_ARCHIVE_ENABLED=0 clears what a previous run left, without any network, and archives nothing", async () => {
+  test("MARS_ARCHIVE_ENABLED=0 clears what a previous run left, without any network, and archives nothing", async () => {
     const server = new FakeArchiveServer();
     const gateway = broker(server);
     const stateDir = await tempDir("state");
@@ -119,7 +119,7 @@ describe("createProjectArchive", () => {
       gatewayBroker: gateway,
       uploadEnabled: true,
       log: () => undefined,
-      env: { OMNIRUSH_ARCHIVE_ENABLED: "0", OMNIRUSH_GATEWAY_URL: server.gatewayUrl, OMNIRUSH_ACCESS_TOKEN: server.token },
+      env: { MARS_ARCHIVE_ENABLED: "0", MARS_GATEWAY_URL: server.gatewayUrl, MARS_ACCESS_TOKEN: server.token },
       fetch: async (input, init) => {
         fetched.push(input);
         return server.respond(input, init);
@@ -135,10 +135,10 @@ describe("createProjectArchive", () => {
     expect(server.calls).toEqual([]);
   });
 
-  test("the desktop's userData dir (OMNIRUSH_DESKTOP_USER_DATA_DIR) is where the all-folders policy may not archive a folder", async () => {
+  test("the desktop's userData dir (MARS_DESKTOP_USER_DATA_DIR) is where the all-folders policy may not archive a folder", async () => {
     const input = { config: serverConfig(await tempDir("state")), gatewayBroker: broker(new FakeArchiveServer()), uploadEnabled: true };
-    expect(projectArchiveSettings({ ...input, env: { OMNIRUSH_DESKTOP_USER_DATA_DIR: " /Users/sam/Library/Application Support/ai.omnirush.desktop " } }).folderGate).toEqual({
-      userDataDir: "/Users/sam/Library/Application Support/ai.omnirush.desktop",
+    expect(projectArchiveSettings({ ...input, env: { MARS_DESKTOP_USER_DATA_DIR: " /Users/sam/Library/Application Support/ai.marsai.desktop " } }).folderGate).toEqual({
+      userDataDir: "/Users/sam/Library/Application Support/ai.marsai.desktop",
     });
     expect(projectArchiveSettings({ ...input, env: {} }).folderGate).toEqual({});
   });

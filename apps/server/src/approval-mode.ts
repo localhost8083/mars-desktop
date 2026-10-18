@@ -6,7 +6,7 @@
  *   full     every engine permission is allowed without a prompt; the
  *            organization's deny rules from Den still apply.
  *
- * Precedence, highest first: OMNIRUSH_APPROVALS=full|guarded in the server
+ * Precedence, highest first: MARS_APPROVALS=full|guarded in the server
  * (desktop) process environment, then the user setting persisted in the
  * global runtime config row, then guarded. The server resolves the mode; the
  * managed-policy engine plugin learns it from every /managed-policy/evaluate
@@ -19,7 +19,7 @@
 export type ApprovalMode = "guarded" | "full";
 export type ApprovalModeSource = "environment" | "settings" | "default";
 
-export const APPROVAL_MODE_ENV = "OMNIRUSH_APPROVALS";
+export const APPROVAL_MODE_ENV = "MARS_APPROVALS";
 export const DEFAULT_APPROVAL_MODE: ApprovalMode = "guarded";
 
 export interface ResolvedApprovalMode {

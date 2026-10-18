@@ -1,9 +1,9 @@
 import { expect } from "vitest";
-import { eventually, spec } from "@omnirush/testkit";
+import { eventually, spec } from "@mars/testkit";
 import { browserLoginSyncWorld } from "../worlds/browser-panel.ts";
 
 const test = spec.world(browserLoginSyncWorld, {
-  needs: { optIn: ["OMNIRUSH_EVAL_BROWSER_LOGIN_SYNC"] },
+  needs: { optIn: ["MARS_EVAL_BROWSER_LOGIN_SYNC"] },
 });
 
 test("selected browser logins stay synced until the user pauses or forgets them", async ({ world, user, step }) => {

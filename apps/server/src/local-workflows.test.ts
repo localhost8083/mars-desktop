@@ -19,18 +19,18 @@ type EngineFactory = ConstructorParameters<typeof LocalWorkflowService>[1];
 type Engine = ReturnType<EngineFactory>;
 
 const model = { providerID: "anthropic", modelID: "claude-sonnet-4-5" };
-const previousDataDir = process.env.OMNIRUSH_DATA_DIR;
+const previousDataDir = process.env.MARS_DATA_DIR;
 let dataDir = "";
 const cleanups: Array<() => Promise<void>> = [];
 
 beforeAll(async () => {
-  dataDir = await mkdtemp(join(tmpdir(), "omnirush-local-workflows-data-"));
-  process.env.OMNIRUSH_DATA_DIR = dataDir;
+  dataDir = await mkdtemp(join(tmpdir(), "mars-local-workflows-data-"));
+  process.env.MARS_DATA_DIR = dataDir;
 });
 
 afterAll(async () => {
-  if (previousDataDir === undefined) delete process.env.OMNIRUSH_DATA_DIR;
-  else process.env.OMNIRUSH_DATA_DIR = previousDataDir;
+  if (previousDataDir === undefined) delete process.env.MARS_DATA_DIR;
+  else process.env.MARS_DATA_DIR = previousDataDir;
   await rm(dataDir, { recursive: true, force: true });
 });
 
@@ -39,7 +39,7 @@ afterEach(async () => {
 });
 
 async function fixture() {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-local-workflows-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-local-workflows-"));
   cleanups.push(() => rm(root, { recursive: true, force: true }));
   const workspace: WorkspaceInfo = { id: "ws_wf", name: "Workflows", path: root, preset: "starter", workspaceType: "local", baseUrl: "http://127.0.0.1:9" };
   const config: ServerConfig = {
@@ -66,7 +66,7 @@ async function fixture() {
   };
   const dispatcher: LocalWorkflowPromptDispatcher = {
     assertAllowed(target) {
-      if (control.refuse) throw new ApiError(403, "omnirush_account_required", "Sign in to omnirush.ai from Settings to start a session.");
+      if (control.refuse) throw new ApiError(403, "mars_account_required", "Sign in to marsai.click from Settings to start a session.");
       expect(target.id).toBe(workspace.id);
     },
     async prompt(target, sessionId, body, signal) {
@@ -106,7 +106,7 @@ describe("local workflow prompt dispatch", () => {
       const error = await service.run(workspace, workflow.id, trigger).then(() => null, (thrown: unknown) => thrown);
       expect(error).toBeInstanceOf(ApiError);
       expect(error instanceof ApiError ? [error.status, error.code, error.message] : null).toEqual([
-        403, "omnirush_account_required", "Sign in to omnirush.ai from Settings to start a session.",
+        403, "mars_account_required", "Sign in to marsai.click from Settings to start a session.",
       ]);
     }
     expect(engine.creates).toEqual([]);
@@ -134,10 +134,10 @@ describe("local workflow prompt dispatch", () => {
 
   test("surfaces the proxy's refusal as the step failure and stops the run", async () => {
     const { workspace, service, workflow, engine, dispatcher, dispatched, settled } = await fixture();
-    dispatcher.respond = () => Response.json({ error: "omnirush_account_required", message: "Sign in to omnirush.ai from Settings to start a session." }, { status: 403 });
+    dispatcher.respond = () => Response.json({ error: "mars_account_required", message: "Sign in to marsai.click from Settings to start a session." }, { status: 403 });
     const run = await settled((await service.run(workspace, workflow.id)).id);
     expect(run.status).toBe("failed");
-    expect(run.error).toBe("Sign in to omnirush.ai from Settings to start a session.");
+    expect(run.error).toBe("Sign in to marsai.click from Settings to start a session.");
     expect(run.steps.map((step) => step.status)).toEqual(["failed", "cancelled"]);
     expect(dispatched).toHaveLength(1);
     expect(engine.sdkPrompts).toBe(0);

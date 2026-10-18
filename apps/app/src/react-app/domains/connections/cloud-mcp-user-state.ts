@@ -1,21 +1,21 @@
 import { CLOUD_MCP_SYNC_MARKER_STORAGE_KEY } from "../../../app/lib/den";
 
-/** Durable, scoped records for the auto-managed omnirush.ai Cloud MCP. */
+/** Durable, scoped records for the auto-managed marsai.click Cloud MCP. */
 
-export const CLOUD_MCP_SERVER_NAME = "omnirush-cloud";
+export const CLOUD_MCP_SERVER_NAME = "mars-cloud";
 /**
  * OpenCode MCP entries the local server projects for org connections an admin
- * exposed directly. They are owned by the `omnirush-cloud` reconcile and are
+ * exposed directly. They are owned by the `mars-cloud` reconcile and are
  * represented in the UI by their org connection card, never as local MCPs.
  */
-export const CONNECT_DIRECT_MCP_SERVER_NAME_PREFIX = "omnirush-direct-";
+export const CONNECT_DIRECT_MCP_SERVER_NAME_PREFIX = "mars-direct-";
 
 export function isConnectDirectMcpServerName(name: string): boolean {
   return name.startsWith(CONNECT_DIRECT_MCP_SERVER_NAME_PREFIX);
 }
 
-const CLOUD_MCP_USER_STATE_KEY = "omnirush.den.mcp.cloudControlUserState";
-const CLOUD_MCP_UNHEALTHY_REMINT_ATTEMPT_KEY = "omnirush.den.mcp.unhealthyRemintAttempt";
+const CLOUD_MCP_USER_STATE_KEY = "mars.den.mcp.cloudControlUserState";
+const CLOUD_MCP_UNHEALTHY_REMINT_ATTEMPT_KEY = "mars.den.mcp.unhealthyRemintAttempt";
 
 export type CloudMcpUserState = "disabled" | "removed";
 export type CloudMcpScope = {

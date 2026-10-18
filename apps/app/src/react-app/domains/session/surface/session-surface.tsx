@@ -23,10 +23,10 @@ import { createDenClient, readDenSettings } from "@/app/lib/den";
 import { denSettingsChangedEvent } from "@/app/lib/den-session-events";
 import { useSessionDraftState } from "@/react-app/domains/session/sync/draft-store";
 import type {
-  OmniRushServerClient,
-  OmniRushSessionSnapshot,
-} from "@/app/lib/omnirush-server";
-import { isLoopbackOmniRushServerUrl } from "@/app/lib/omnirush-server";
+  MarsServerClient,
+  MarsSessionSnapshot,
+} from "@/app/lib/mars-server";
+import { isLoopbackMarsServerUrl } from "@/app/lib/mars-server";
 import type {
   ComposerAttachment,
   ComposerDraft,
@@ -43,7 +43,7 @@ import {
   publishInspectorSlice,
   recordInspectorEvent,
 } from "@/app/lib/app-inspector";
-import { useControlAction, type OmniRushControlAction } from "@/react-app/shell/control/control-provider";
+import { useControlAction, type MarsControlAction } from "@/react-app/shell/control/control-provider";
 import { isConnectDirectMcpServerName } from "@/react-app/domains/connections/cloud-mcp-user-state";
 import { attemptSilentMcpReauth } from "@/react-app/domains/connections/mcp-silent-reauth";
 import type {
@@ -74,7 +74,7 @@ import {
   subscribeQueuedDrain,
 } from "./queued-drain-machine";
 import { DevProfiler } from "@/react-app/shell/dev-profiler";
-import { PaperGrainGradient } from "@omnirush/ui/react";
+import { PaperGrainGradient } from "@mars/ui/react";
 import { useShellConfig } from "@/react-app/shell/shell-config";
 import { useReactRenderWatchdog } from "@/react-app/shell/react-render-watchdog";
 import { SessionDebugPanel } from "./debug-panel";
@@ -99,7 +99,6 @@ import { getSessionActivityStatusLabel, useSessionActivityStore, type SessionAct
 import { PermissionApprovalPanel } from "@/react-app/domains/session/chat/permission-approval-modal";
 import { QuestionPanel } from "@/react-app/domains/session/modals/question-modal";
 import { QueuedMessagesPanel } from "@/react-app/domains/session/modals/queued-messages-panel";
-import { GoodSessionChecklistBar, noteUserStop } from "@/react-app/domains/quality/good-session";
 import { deriveOpenTargets, sameOpenTargets, selectAutoOpenTarget, type OpenTarget } from "@/react-app/domains/session/artifacts/open-target";
 import { usePanelTabStore } from "@/react-app/domains/session/panel/panel-tab-store";
 import {
@@ -168,21 +167,21 @@ import { buildConnectorToolIdentities } from "@/react-app/domains/connections/co
 
 const EMPTY_TRANSCRIPT: UIMessage[] = [];
 const IDLE_STATUS: SessionStatus = { type: "idle" };
-const DEFAULT_COMPOSER_CONTROL_TEXT = "Help me outline the next omnirush.ai task.";
+const DEFAULT_COMPOSER_CONTROL_TEXT = "Help me outline the next marsai.click task.";
 const SESSION_SURFACE_SELECTOR = "[data-session-surface-id]";
 
 function sanitizedInspectorDiagnosticText(value: string) {
   return value
     .replace(/https?:\/\/[^\s"'<>]+/gi, "[url]")
     .replace(/\b(Bearer|Basic)\s+[^\s"'<>]+/gi, "$1 [redacted]")
-    .replace(/\b(authorization|ownerToken|clientToken|omnirushToken|accessToken|apiKey|token)\b\s*[=:]\s*[^\s,;]+/gi, "$1=[redacted]")
+    .replace(/\b(authorization|ownerToken|clientToken|marsToken|accessToken|apiKey|token)\b\s*[=:]\s*[^\s,;]+/gi, "$1=[redacted]")
     .replace(/[\r\n\t]+/g, " ")
     .slice(0, 240);
 }
 
 const MARKDOWN_PRIMITIVE_EVAL_TEXT = `# Markdown proof heading
 
-This shared renderer keeps **bold proof text**, inline \`renderMarkdownHtml\`, and [omnirush.ai link](https://omnirush.ai) readable in one message.
+This shared renderer keeps **bold proof text**, inline \`renderMarkdownHtml\`, and [marsai.click link](https://marsai.click) readable in one message.
 
 \`\`\`ts
 const pipeline = "shared markdown primitive";
@@ -320,7 +319,7 @@ function createChatTranscriptEvalMessages(sessionId: string) {
         },
         {
           type: "dynamic-tool",
-          toolName: "omnirush-cloud_execute_capability",
+          toolName: "mars-cloud_execute_capability",
           toolCallId: "eval-transcript-capability",
           state: "output-available",
           input: { name: "getCapabilitiesGoogleWorkspaceCalendarEvents", body: {} },
@@ -347,7 +346,7 @@ function createChatTranscriptEvalMessages(sessionId: string) {
           toolName: "edit",
           toolCallId: "eval-transcript-edit-1",
           state: "output-available",
-          input: { filePath: "/tmp/omnirush-eval/plan-tomorrow.md", oldString: "", newString: "" },
+          input: { filePath: "/tmp/mars-eval/plan-tomorrow.md", oldString: "", newString: "" },
           output: "",
         },
         {
@@ -355,7 +354,7 @@ function createChatTranscriptEvalMessages(sessionId: string) {
           toolName: "read",
           toolCallId: "eval-transcript-read-1",
           state: "output-available",
-          input: { filePath: "/tmp/omnirush-eval/meeting-notes.md" },
+          input: { filePath: "/tmp/mars-eval/meeting-notes.md" },
           output: "",
         },
         {
@@ -368,7 +367,7 @@ function createChatTranscriptEvalMessages(sessionId: string) {
         },
         {
           type: "text",
-          text: "Your plan is drafted — details in [omnirush.ai](https://omnirush.ai). Search token: chat-transcript-proof.",
+          text: "Your plan is drafted — details in [marsai.click](https://marsai.click). Search token: chat-transcript-proof.",
         },
       ],
       // `completed` makes the finished turn fold behind a real
@@ -394,7 +393,7 @@ function createConnectorToolCallEvalMessages(sessionId: string): UIMessage[] {
       role: "assistant",
       parts: [{
         type: "dynamic-tool",
-        toolName: "omnirush-cloud_execute_capability",
+        toolName: "mars-cloud_execute_capability",
         toolCallId: "eval-connector-google-workspace",
         state: "output-available",
         input: { name: "getCapabilitiesGoogleWorkspaceCalendarEvents", body: {} },
@@ -430,7 +429,7 @@ function createSessionLifecycleEvalMessages(sessionId: string): UIMessage[] {
           toolName: "read",
           toolCallId: "eval-lifecycle-read",
           state: "input-streaming",
-          input: { filePath: "/tmp/omnirush-eval/brief.md" },
+          input: { filePath: "/tmp/mars-eval/brief.md" },
         },
       ],
       metadata: { opencode: { created: now + 1 } },
@@ -502,7 +501,7 @@ function createSubagentActivityEvalMessages(sessionId: string, childSessionId?: 
             prompt: "Reproduce the Azure failure in isolation.",
             subagent_type: "executor-deep",
           },
-          ...(childSessionId ? { callProviderMetadata: { omnirush: { childSessionId } } } : {}),
+          ...(childSessionId ? { callProviderMetadata: { mars: { childSessionId } } } : {}),
         },
       ],
       metadata: { opencode: { created: now + 1 } },
@@ -573,10 +572,10 @@ function createImageLightboxEvalMessages(sessionId: string): UIMessage[] {
 }
 
 export type SessionSurfaceProps = {
-  /** OmniRush GUI has no MCP capability. */
+  /** Mars GUI has no MCP capability. */
   mcpDisabled?: boolean;
-  client: OmniRushServerClient;
-  environmentClient?: OmniRushServerClient | null;
+  client: MarsServerClient;
+  environmentClient?: MarsServerClient | null;
   workspaceId: string;
   workspaceRoot: string;
   sessionId: string;
@@ -584,7 +583,7 @@ export type SessionSurfaceProps = {
   isControlTarget: boolean;
   chatPane?: "primary" | "secondary";
   opencodeBaseUrl: string;
-  omnirushToken: string;
+  marsToken: string;
   developerMode: boolean;
   modelLabel: string;
   onModelClick: (sessionId?: string) => void;
@@ -602,10 +601,10 @@ export type SessionSurfaceProps = {
   selectedModel: ModelRef;
   /** providerID → modelID → provider model, for per-session variant options. */
   providerCatalog?: ProviderCatalog;
-  /** Den/import includes omnirush.ai Models for this org member (not just local sync). */
-  omniRushModelsEntitled?: boolean;
-  /** The server is waiting to reload this workspace with omnirush.ai Models. */
-  omniRushModelsSyncing?: boolean;
+  /** Den/import includes marsai.click Models for this org member (not just local sync). */
+  marsModelsEntitled?: boolean;
+  /** The server is waiting to reload this workspace with marsai.click Models. */
+  marsModelsSyncing?: boolean;
   onRefreshOrganizationModels?: () => void | Promise<void>;
   onModelPickerOpenChange: (open: boolean) => void;
   onModelChange: (model: ModelRef, variant?: string | null) => void;
@@ -654,7 +653,7 @@ export type SessionSurfaceProps = {
 };
 
 function messageToReadableText(message: UIMessage) {
-  const header = message.role === "user" ? "You" : message.role === "assistant" ? "omnirush.ai" : message.role;
+  const header = message.role === "user" ? "You" : message.role === "assistant" ? "marsai.click" : message.role;
   const body = message.parts
     .flatMap((part) => {
       if (part.type === "text") return [part.text];
@@ -730,7 +729,7 @@ function ContextCompactionProgress() {
   );
 }
 
-function statusLabel(snapshot: OmniRushSessionSnapshot | undefined, busy: boolean) {
+function statusLabel(snapshot: MarsSessionSnapshot | undefined, busy: boolean) {
   if (busy) return "Running...";
   if (snapshot?.status.type === "busy") return "Running...";
   if (snapshot?.status.type === "retry") return `Retrying: ${snapshot.status.message}`;
@@ -815,9 +814,9 @@ function SessionRunStatus(props: SessionRunStatusProps) {
 
   let title = t("session.run_status_working");
   let detail = t("session.run_status_working_detail");
-  let tone = "border-dls-border bg-dls-hover/50";
-  let Icon = LoaderCircle;
-  let iconClass = "animate-spin text-dls-secondary";
+  let tone = "mars-working";
+  let Icon: typeof LoaderCircle | null = null;
+  let iconClass = "";
   const action = props.busy && props.activityStatus !== "waiting" && props.activityStatus !== "compacting"
     ? (
       <button
@@ -860,6 +859,42 @@ function SessionRunStatus(props: SessionRunStatusProps) {
     iconClass = "text-amber-11";
   }
 
+  // Sleek default: a compact floating pill docked to the composer's top edge.
+  // Actionable states below keep the full card with their buttons.
+  if (Icon === null) {
+    const stoppable = props.busy && props.activityStatus !== "waiting" && props.activityStatus !== "compacting";
+    return (
+      <div
+        data-testid="session-run-status"
+        role="status"
+        aria-live="polite"
+        title={`${title} — ${detail}`}
+        className="pointer-events-none relative z-10 -mb-3 flex justify-center px-3"
+      >
+        <div className="mars-working pointer-events-auto flex items-center gap-2 rounded-full py-1.5 pl-3 pr-1.5 text-xs">
+          <span aria-hidden="true" className="mars-working-dot size-2 shrink-0" />
+          <span className="whitespace-nowrap font-medium text-dls-text">{title}</span>
+          {props.queuedCount > 0 ? (
+            <span className="whitespace-nowrap text-dls-secondary">
+              · {t("session.run_status_queued", { count: props.queuedCount })}
+            </span>
+          ) : null}
+          {stoppable ? (
+            <button
+              type="button"
+              aria-label={stopPending ? t("session.run_status_stopping_action") : t("composer.stop")}
+              className="ml-0.5 grid size-6 shrink-0 place-items-center rounded-full text-dls-accent transition-colors hover:bg-dls-accent/10 disabled:cursor-wait disabled:opacity-60"
+              onClick={() => void stop()}
+              disabled={stopPending}
+            >
+              {stopPending ? <LoaderCircle size={13} className="animate-spin" /> : <CirclePause size={14} aria-hidden="true" />}
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       data-testid="session-run-status"
@@ -867,7 +902,11 @@ function SessionRunStatus(props: SessionRunStatusProps) {
       aria-live="polite"
       className={`mx-3 mb-2 flex items-start gap-3 rounded-xl border px-3 py-2.5 text-xs ${tone}`}
     >
-      <Icon aria-hidden="true" className={`mt-0.5 size-4 shrink-0 ${iconClass}`} />
+      {Icon ? (
+        <Icon aria-hidden="true" className={`mt-0.5 size-4 shrink-0 ${iconClass}`} />
+      ) : (
+        <span aria-hidden="true" className="mars-working-dot mt-1 size-2.5 shrink-0" />
+      )}
       <div className="min-w-0 flex-1">
         <p className="font-medium text-dls-text">{title}</p>
         <p className="mt-0.5 text-dls-secondary">{detail}</p>
@@ -1140,7 +1179,7 @@ function composerSessionHasContent(state: ComposerSessionState | undefined) {
   ));
 }
 
-function hiddenMessageCount(snapshot: OmniRushSessionSnapshot, revertMessageId: string): number {
+function hiddenMessageCount(snapshot: MarsSessionSnapshot, revertMessageId: string): number {
   const index = snapshot.messages.findIndex((message) => message.info.id === revertMessageId);
   return index < 0 ? snapshot.messages.length : snapshot.messages.length - index;
 }
@@ -1228,7 +1267,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
       workspaceId: props.workspaceId,
       workspaceRoot: props.workspaceRoot,
       opencodeBaseUrl: props.opencodeBaseUrl,
-      omnirushToken: props.omnirushToken,
+      marsToken: props.marsToken,
       client: props.client,
       agent: props.selectedAgent,
       variant: props.modelVariant,
@@ -1240,7 +1279,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
     props.environmentRuntimeKey,
     props.modelVariant,
     props.opencodeBaseUrl,
-    props.omnirushToken,
+    props.marsToken,
     props.selectedAgent,
     props.selectedModel,
     props.sessionId,
@@ -1306,12 +1345,12 @@ export function SessionSurface(props: SessionSurfaceProps) {
   activeSessionOwnerRef.current = sessionOwner;
   const snapshotTargetRef = useRef<NativeSessionSnapshotTarget>({
     owner: sessionOwner,
-    endpoint: { opencodeBaseUrl: props.opencodeBaseUrl, token: props.omnirushToken },
+    endpoint: { opencodeBaseUrl: props.opencodeBaseUrl, token: props.marsToken },
     sessionId: props.sessionId,
   });
   snapshotTargetRef.current = {
     owner: sessionOwner,
-    endpoint: { opencodeBaseUrl: props.opencodeBaseUrl, token: props.omnirushToken },
+    endpoint: { opencodeBaseUrl: props.opencodeBaseUrl, token: props.marsToken },
     sessionId: props.sessionId,
   };
   const [ownedError, setOwnedError] = useState<{ owner: string; error: SessionError } | null>(null);
@@ -1328,7 +1367,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
   // Terminal invariant: an accepted admission that reached idle with no
   // assistant result surfaces a bounded recovery card instead of plain idle.
   const [admissionOutcomeUnresolved, setAdmissionOutcomeUnresolved] = useState(false);
-  const [rendered, setRendered] = useState<{ sessionId: string; snapshot: OmniRushSessionSnapshot } | null>(null);
+  const [rendered, setRendered] = useState<{ sessionId: string; snapshot: MarsSessionSnapshot } | null>(null);
   const [toolSkills, setToolSkills] = useState<SkillCard[]>([]);
   const [toolMcpServers, setToolMcpServers] = useState<McpServerEntry[]>([]);
   const [toolMcpStatus, setToolMcpStatus] = useState<string | null>(null);
@@ -1370,9 +1409,9 @@ export function SessionSurface(props: SessionSurfaceProps) {
   const initializedAutoOpenSessionRef = useRef<string | null>(null);
   const opencodeClient = useMemo(
     () => isOpencodeV2BaseUrl(props.opencodeBaseUrl)
-      ? createClientV2(props.opencodeBaseUrl, props.workspaceRoot || undefined, { token: props.omnirushToken })
-      : createClient(props.opencodeBaseUrl, props.workspaceRoot.trim() || undefined, { token: props.omnirushToken, mode: "omnirush" }),
-    [props.opencodeBaseUrl, props.omnirushToken, props.workspaceRoot],
+      ? createClientV2(props.opencodeBaseUrl, props.workspaceRoot || undefined, { token: props.marsToken })
+      : createClient(props.opencodeBaseUrl, props.workspaceRoot.trim() || undefined, { token: props.marsToken, mode: "mars" }),
+    [props.opencodeBaseUrl, props.marsToken, props.workspaceRoot],
   );
 
   const snapshotQueryKey = useMemo(
@@ -1388,8 +1427,8 @@ export function SessionSurface(props: SessionSurfaceProps) {
     [props.workspaceId, props.sessionId],
   );
   const useDesktopLoopbackSnapshotRetry = isDesktopRuntime()
-    && isLoopbackOmniRushServerUrl(props.opencodeBaseUrl);
-  const snapshotQuery = useQuery<OmniRushSessionSnapshot>({
+    && isLoopbackMarsServerUrl(props.opencodeBaseUrl);
+  const snapshotQuery = useQuery<MarsSessionSnapshot>({
     queryKey: snapshotQueryKey,
     queryFn: async ({ signal }) => {
       if (evalSnapshotFailureRef.current) {
@@ -1403,7 +1442,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
           { limit: 140, signal },
         )
         : await opencodeSessionNative.composeNativeSessionSnapshot(
-          { opencodeBaseUrl: props.opencodeBaseUrl, token: props.omnirushToken },
+          { opencodeBaseUrl: props.opencodeBaseUrl, token: props.marsToken },
           props.sessionId,
           { limit: 140, signal },
         );
@@ -1429,7 +1468,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
     const { workspaceId, sessionId } = props;
     let cancelled = false;
     void opencodeSessionNative.getNativeSession(
-      { opencodeBaseUrl: props.opencodeBaseUrl, token: props.omnirushToken },
+      { opencodeBaseUrl: props.opencodeBaseUrl, token: props.marsToken },
       sessionId,
     ).then(
       () => {
@@ -1444,7 +1483,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [snapshotSessionMissing, props.workspaceId, props.sessionId, props.opencodeBaseUrl, props.omnirushToken]);
+  }, [snapshotSessionMissing, props.workspaceId, props.sessionId, props.opencodeBaseUrl, props.marsToken]);
   const inspectorOpencodeBaseUrl = useMemo(() => {
     try {
       const url = new URL(props.opencodeBaseUrl);
@@ -1531,7 +1570,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
         currentSnapshotId: currentSnapshot?.session.id ?? null,
         intendedSessionId: props.sessionId,
         opencodeBaseUrl: inspectorOpencodeBaseUrl,
-        tokenPresent: props.omnirushToken.length > 0,
+        tokenPresent: props.marsToken.length > 0,
       },
       error,
     }));
@@ -1544,7 +1583,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
     pasteParts,
     currentSnapshot,
     inspectorOpencodeBaseUrl,
-    props.omnirushToken,
+    props.marsToken,
     props.sessionId,
     props.workspaceId,
     props.cloudMcpSubmissionState,
@@ -1679,7 +1718,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
   useEffect(() => {
     renderedMessagesRef.current = renderedMessages;
   }, [renderedMessages]);
-  const seedMarkdownPrimitiveControlAction = useMemo<OmniRushControlAction | null>(() => {
+  const seedMarkdownPrimitiveControlAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
 
     return {
@@ -1700,7 +1739,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
     };
   }, [props.sessionId]);
   useControlAction(props.isControlTarget ? seedMarkdownPrimitiveControlAction : null);
-  const setMermaidEvalThemeControlAction = useMemo<OmniRushControlAction | null>(() => {
+  const setMermaidEvalThemeControlAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
 
     return {
@@ -1718,7 +1757,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
     };
   }, [props.sessionId]);
   useControlAction(props.isControlTarget ? setMermaidEvalThemeControlAction : null);
-  const seedMarkdownMathControlAction = useMemo<OmniRushControlAction | null>(() => {
+  const seedMarkdownMathControlAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
 
     return {
@@ -1742,7 +1781,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
     };
   }, [props.sessionId]);
   useControlAction(props.isControlTarget ? seedMarkdownMathControlAction : null);
-  const seedChatTranscriptControlAction = useMemo<OmniRushControlAction | null>(() => {
+  const seedChatTranscriptControlAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
 
     return {
@@ -1759,7 +1798,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
     };
   }, [props.sessionId]);
   useControlAction(props.isControlTarget ? seedChatTranscriptControlAction : null);
-  const seedConnectorToolCallControlAction = useMemo<OmniRushControlAction | null>(() => {
+  const seedConnectorToolCallControlAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
 
     return {
@@ -1775,7 +1814,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
     };
   }, [props.sessionId]);
   useControlAction(props.isControlTarget ? seedConnectorToolCallControlAction : null);
-  const seedSessionErrorControlAction = useMemo<OmniRushControlAction | null>(() => {
+  const seedSessionErrorControlAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
 
     return {
@@ -1805,7 +1844,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
     };
   }, [props.sessionId, setError]);
   useControlAction(props.isControlTarget ? seedSessionErrorControlAction : null);
-  const seedSessionLifecycleControlAction = useMemo<OmniRushControlAction | null>(() => {
+  const seedSessionLifecycleControlAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
 
     return {
@@ -1847,7 +1886,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
     };
   }, [props.sessionId, props.workspaceId]);
   useControlAction(props.isControlTarget ? seedSessionLifecycleControlAction : null);
-  const seedSubagentActivityControlAction = useMemo<OmniRushControlAction | null>(() => {
+  const seedSubagentActivityControlAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
 
     return {
@@ -1877,7 +1916,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
     };
   }, [props.sessionId, props.workspaceId]);
   useControlAction(props.isControlTarget ? seedSubagentActivityControlAction : null);
-  const seedChatLoadingControlAction = useMemo<OmniRushControlAction | null>(() => {
+  const seedChatLoadingControlAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
 
     return {
@@ -1899,7 +1938,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
     };
   }, [props.sessionId, props.workspaceId]);
   useControlAction(props.isControlTarget ? seedChatLoadingControlAction : null);
-  const seedImageLightboxControlAction = useMemo<OmniRushControlAction | null>(() => {
+  const seedImageLightboxControlAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
 
     return {
@@ -2077,7 +2116,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
     // A failed send stays visible for composer recovery; only snapshot failure invalidates the session transition.
     isError: snapshotQuery.isError,
   });
-  const failSessionSnapshotControlAction = useMemo<OmniRushControlAction | null>(() => {
+  const failSessionSnapshotControlAction = useMemo<MarsControlAction | null>(() => {
     if (!import.meta.env.DEV) return null;
 
     return {
@@ -2448,8 +2487,6 @@ export function SessionSurface(props: SessionSurfaceProps) {
   const handleAbort = useCallback(async () => {
     const phase = getQueuedDrainState(props.sessionId).phase;
     if (!chatStreaming && phase.kind !== "sending" && phase.kind !== "admission_unknown") return;
-    // A stopped turn is the user's call: no automatic retry follows it.
-    noteUserStop(props.sessionId);
     setError(null);
     // Stop means stop: drop queued follow-ups before aborting, otherwise the
     // queue-drain effect below re-prompts the agent the moment the abort
@@ -2736,12 +2773,12 @@ export function SessionSurface(props: SessionSurfaceProps) {
   }, [draft, props.sessionId, setComposerDraft]);
 
   const typeComposerText = useCallback(async (text: string, revertMessageId?: string | null) => {
-    window.dispatchEvent(new Event("omnirush:focusPrompt"));
+    window.dispatchEvent(new Event("mars:focusPrompt"));
     replaceComposerDraft(props.sessionId, text, revertMessageId);
     await waitForControl(40);
   }, [props.sessionId, replaceComposerDraft]);
 
-  const composerSetTextControlAction = useMemo<OmniRushControlAction>(() => ({
+  const composerSetTextControlAction = useMemo<MarsControlAction>(() => ({
     id: "composer.set_text",
     label: "Type into the composer",
     description: "Replace the current session draft and type the supplied text visibly.",
@@ -2761,7 +2798,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
   }), [attachments, buildDraft, props.onDraftChange, typeComposerText]);
   useControlAction(props.isControlTarget ? composerSetTextControlAction : null);
 
-  const composerSendControlAction = useMemo<OmniRushControlAction>(() => ({
+  const composerSendControlAction = useMemo<MarsControlAction>(() => ({
     id: "composer.send",
     label: "Send the composer prompt",
     description: "Send the currently visible composer draft to the active session.",
@@ -2775,7 +2812,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
   }), [attachments.length, draft, handleSend, model.transitionState, queuedDrainState.phase.kind, sessionModelUnavailable]);
   useControlAction(props.isControlTarget ? composerSendControlAction : null);
 
-  const composerStopControlAction = useMemo<OmniRushControlAction>(() => ({
+  const composerStopControlAction = useMemo<MarsControlAction>(() => ({
     id: "composer.stop",
     label: "Stop the current run",
     description: "Stop the current streaming session run.",
@@ -2812,7 +2849,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
 
   const listMcp = useCallback(async (): Promise<{ servers: McpServerEntry[]; statuses: McpStatusMap; status: string | null }> => {
     if (props.mcpDisabled === true) {
-      const status = "MCP servers are disabled in OmniRush.ai.";
+      const status = "MCP servers are disabled in MarsAI.";
       setToolMcpServers([]);
       setToolMcpStatuses({});
       setToolMcpStatus(status);
@@ -2842,7 +2879,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
         name: entry.name,
         config: entry.config as McpServerEntry["config"],
         source: entry.source,
-        origin: entry.name === "omnirush-cloud" ? "omnirush-connect" : "local",
+        origin: entry.name === "mars-cloud" ? "mars-connect" : "local",
       } satisfies McpServerEntry));
 
     void connectPromise.then((connect) => {
@@ -3004,9 +3041,6 @@ export function SessionSurface(props: SessionSurfaceProps) {
       }
     });
   }, [props.sessionId, sendDraft]);
-  const handleAutoRetry = useCallback((prompt: string) => {
-    void handleResumeInterrupted(prompt);
-  }, [handleResumeInterrupted]);
   const handleResumeUnknownOutcome = useCallback(() => {
     void handleResumeInterrupted(interruptedTaskRecoveryPrompt);
   }, [handleResumeInterrupted]);
@@ -3015,10 +3049,10 @@ export function SessionSurface(props: SessionSurfaceProps) {
     const resetReconnectState = () => {
       useChatMcpReconnectStore.getState().reset();
       clearCloudInventoryCache();
-      setToolSkills((current) => current.filter((skill) => skill.origin !== "omnirush-connect"));
-      setToolMcpServers((current) => current.filter((server) => server.origin !== "omnirush-connect"));
+      setToolSkills((current) => current.filter((skill) => skill.origin !== "mars-connect"));
+      setToolMcpServers((current) => current.filter((server) => server.origin !== "mars-connect"));
       setToolMcpStatuses((current) => Object.fromEntries(
-        Object.entries(current).filter(([key]) => !key.startsWith("omnirush-connect:")),
+        Object.entries(current).filter(([key]) => !key.startsWith("mars-connect:")),
       ));
     };
     const refreshImportedPlugins = () => {
@@ -3041,7 +3075,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
     const organizationId = settings.activeOrgId?.trim() ?? "";
     if (!token || !organizationId) {
       props.onOpenConnect();
-      throw new Error("Sign in to omnirush.ai Cloud, then try reconnecting again.");
+      throw new Error("Sign in to marsai.click Cloud, then try reconnecting again.");
     }
 
     const scope: ChatMcpReconnectScope = {
@@ -3060,7 +3094,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
     try {
       const denClient = createDenClient({ baseUrl: settings.baseUrl, token });
       const connections = await denClient.listMcpConnections(organizationId, "usable");
-      if (!isChatMcpReconnectScopeCurrent(scope, currentScope())) throw new Error("Your omnirush.ai account changed. Try connecting again.");
+      if (!isChatMcpReconnectScopeCurrent(scope, currentScope())) throw new Error("Your marsai.click account changed. Try connecting again.");
       const connection = connections.find((entry) => entry.id === action.connectionId);
       if (!connection || connection.authType !== "oauth" || connection.credentialMode !== "per_member") {
         throw new Error(`${action.connectionName} is no longer available as your reconnectable account.`);
@@ -3073,7 +3107,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
       });
       onProgress({ phase: "opening" });
       const result = await denClient.startMcpConnectionConnect(organizationId, action.connectionId);
-      if (!isChatMcpReconnectScopeCurrent(scope, currentScope())) throw new Error("Your omnirush.ai account changed. Try connecting again.");
+      if (!isChatMcpReconnectScopeCurrent(scope, currentScope())) throw new Error("Your marsai.click account changed. Try connecting again.");
       if (result.status === "connected") {
         recordInspectorEvent("mcp.chat_reconnect.completed", {
           workspaceId: props.workspaceId,
@@ -3158,7 +3192,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
       .finally(() => setRestoringRevertedMessages(false));
   }, [props.onRestoreRevertedSession, props.sessionId, restoringRevertedMessages]);
 
-  const sessionScrollTopControlAction = useMemo<OmniRushControlAction>(() => ({
+  const sessionScrollTopControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.scroll_top",
     label: "Go to the top of the session",
     description: "Scroll the visible session transcript to the first messages.",
@@ -3173,7 +3207,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
   }), []);
   useControlAction(props.isControlTarget ? sessionScrollTopControlAction : null);
 
-  const sessionScrollBottomControlAction = useMemo<OmniRushControlAction>(() => ({
+  const sessionScrollBottomControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.scroll_bottom",
     label: "Go to the bottom of the session",
     description: "Scroll the visible session transcript to the newest messages and composer area.",
@@ -3186,7 +3220,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
   }), [sessionScroll.jumpToLatest]);
   useControlAction(props.isControlTarget ? sessionScrollBottomControlAction : null);
 
-  const sessionLatestMessageControlAction = useMemo<OmniRushControlAction>(() => ({
+  const sessionLatestMessageControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.latest_message",
     label: "Read the latest session message",
     description: "Return the latest visible message in the current session transcript.",
@@ -3207,7 +3241,7 @@ export function SessionSurface(props: SessionSurfaceProps) {
   }), [props.sessionId, renderedMessages]);
   useControlAction(props.isControlTarget ? sessionLatestMessageControlAction : null);
 
-  const sessionReadTranscriptControlAction = useMemo<OmniRushControlAction>(() => ({
+  const sessionReadTranscriptControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.read_transcript",
     label: "Read the current session transcript",
     description: "Return the last messages from the current session transcript as readable text, including the session ID, title, and message count.",
@@ -3465,16 +3499,6 @@ export function SessionSurface(props: SessionSurfaceProps) {
           onCheckAcceptance={() => void checkUnknownAdmission(true)}
           onStop={async () => { await handleAbort(); }}
         />
-        <GoodSessionChecklistBar
-          sessionId={props.sessionId}
-          messages={renderedMessages}
-          workspaceRoot={props.workspaceRoot}
-          isRemoteWorkspace={props.isRemoteWorkspace}
-          turnRunning={chatStreaming || (effectiveActivityStatus !== "idle" && effectiveActivityStatus !== "error")}
-          onFinishIt={handleMessageListSetPrompt}
-          onAutoRetry={handleAutoRetry}
-          client={props.client}
-        />
         <ReactSessionComposer
           runModeControl={<WorkspaceRunModeMenu client={props.client} workspaceId={props.workspaceId} busy={chatStreaming || preparingCloudTools || Boolean(props.activePermission || props.activeQuestion)} />}
           fullPermissionsControl={<FullPermissionsToggle client={props.client} workspaceId={props.workspaceId} />}
@@ -3503,8 +3527,8 @@ export function SessionSurface(props: SessionSurfaceProps) {
         statusLabel={statusLabel(snapshot ?? undefined, chatStreaming)}
         modelPickerOpen={modelPickerOpen}
         selectedModel={sessionModel.selectedModel}
-        omniRushModelsEntitled={props.omniRushModelsEntitled}
-        omniRushModelsSyncing={props.omniRushModelsSyncing}
+        marsModelsEntitled={props.marsModelsEntitled}
+        marsModelsSyncing={props.marsModelsSyncing}
         onRefreshOrganizationModels={props.onRefreshOrganizationModels}
         onModelPickerOpenChange={handleModelPickerOpenChange}
         onModelChange={handleModelChange}

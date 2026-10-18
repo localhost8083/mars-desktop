@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/evals",
+  "name": "@mars/evals",
   "private": true,
   "type": "module",
   "scripts": {
@@ -22,19 +22,19 @@
     "check:browser": "node scripts/check-browser-code.mjs"
   },
   "dependencies": {
-    "@omnirush/behaviors": "workspace:*",
-    "@omnirush/cdp": "workspace:*",
-    "@omnirush/env": "workspace:*",
-    "@omnirush/hosts": "workspace:*",
-    "@omnirush/labs": "workspace:*",
-    "@omnirush/matchers": "workspace:*",
+    "@mars/behaviors": "workspace:*",
+    "@mars/cdp": "workspace:*",
+    "@mars/env": "workspace:*",
+    "@mars/hosts": "workspace:*",
+    "@mars/labs": "workspace:*",
+    "@mars/matchers": "workspace:*",
     "@omnirush/sdk": "link:../packages/sdk",
-    "@omnirush/test-artifacts": "workspace:*",
-    "@omnirush/test-evidence": "workspace:*",
-    "@omnirush/testkit": "workspace:*",
-    "@omnirush/types": "link:../packages/types",
-    "@omnirush/world": "link:../packages/world",
-    "@omnirush/review": "link:../packages/review"
+    "@mars/test-artifacts": "workspace:*",
+    "@mars/test-evidence": "workspace:*",
+    "@mars/testkit": "workspace:*",
+    "@mars/types": "link:../packages/types",
+    "@mars/world": "link:../packages/world",
+    "@mars/review": "link:../packages/review"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^3.2.4",

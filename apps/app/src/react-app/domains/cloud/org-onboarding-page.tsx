@@ -89,9 +89,9 @@ import {
   workspaceBrandingFingerprint,
 } from "./workspace-branding-restart";
 
-const RELOAD_AFTER_ONBOARDING_KEY = "omnirush.reloadAfterOrgOnboarding";
-const APPLIED_BRANDING_FINGERPRINT_KEY = "omnirush.den.appliedBrandingFingerprint";
-const BRANDING_RESTART_RESUME_KEY = "omnirush.den.brandingRestartResume";
+const RELOAD_AFTER_ONBOARDING_KEY = "mars.reloadAfterOrgOnboarding";
+const APPLIED_BRANDING_FINGERPRINT_KEY = "mars.den.appliedBrandingFingerprint";
+const BRANDING_RESTART_RESUME_KEY = "mars.den.brandingRestartResume";
 
 type BrandingRestartState = {
   fingerprint: string;
@@ -99,19 +99,19 @@ type BrandingRestartState = {
   warning: string | null;
 };
 
-type OnboardingUpdaterBridge = NonNullable<Window["__OMNIRUSH_ELECTRON__"]>["updater"];
+type OnboardingUpdaterBridge = NonNullable<Window["__MARS_ELECTRON__"]>["updater"];
 
 declare global {
   interface Window {
-    __omnirushOnboardingUpdaterEvalBridge?: OnboardingUpdaterBridge;
+    __marsOnboardingUpdaterEvalBridge?: OnboardingUpdaterBridge;
   }
 }
 
 function onboardingUpdaterBridge(): OnboardingUpdaterBridge | undefined {
-  if (import.meta.env.DEV && window.__omnirushOnboardingUpdaterEvalBridge) {
-    return window.__omnirushOnboardingUpdaterEvalBridge;
+  if (import.meta.env.DEV && window.__marsOnboardingUpdaterEvalBridge) {
+    return window.__marsOnboardingUpdaterEvalBridge;
   }
-  return window.__OMNIRUSH_ELECTRON__?.updater;
+  return window.__MARS_ELECTRON__?.updater;
 }
 
 async function stageOnboardingUpdate(
@@ -264,12 +264,12 @@ function PreparedWorkspacePage({ prepared }: { prepared: PreparedBootstrapSummar
       <PageContainer>
         <PageHeader>
           <div
-            data-omnirush-prepared="true"
-            data-omnirush-provisional="true"
+            data-mars-prepared="true"
+            data-mars-provisional="true"
             className="mx-auto flex w-fit items-center gap-2 rounded-full border border-green-6/30 bg-green-2/30 px-3 py-1 text-xs font-semibold text-green-11"
           >
             <CheckCircle2 className="size-3.5" />
-            Setup complete — omnirush.ai is ready
+            Setup complete — marsai.click is ready
           </div>
           <PageTitle>{prepared.orgName}</PageTitle>
         </PageHeader>
@@ -334,11 +334,11 @@ function markProvidersSeen(providers: DenOrgLlmProvider[]) {
   if (providers.length === 0) return;
 
   try {
-    const raw = window.localStorage.getItem("omnirush.seenProviderIds");
+    const raw = window.localStorage.getItem("mars.seenProviderIds");
     const existing: string[] = raw ? JSON.parse(raw) : [];
     const ids = new Set(existing);
     for (const provider of providers) ids.add(provider.id);
-    window.localStorage.setItem("omnirush.seenProviderIds", JSON.stringify([...ids]));
+    window.localStorage.setItem("mars.seenProviderIds", JSON.stringify([...ids]));
   } catch {}
 }
 
@@ -655,7 +655,7 @@ export function ResourceSelectionPage({ autoContinue = false }: { autoContinue?:
   }, [navigate, providers, selectedDefault]);
 
   const handleContinue = useCallback(async (optionsArg?: { requestReload?: boolean }) => {
-    if (!window.__OMNIRUSH_ELECTRON__?.shell?.relaunch) {
+    if (!window.__MARS_ELECTRON__?.shell?.relaunch) {
       finishOnboarding({ requestReload: optionsArg?.requestReload });
       return;
     }
@@ -770,7 +770,7 @@ export function ResourceSelectionPage({ autoContinue = false }: { autoContinue?:
           <PageHeader>
             <PageTitle>Workspace identity is ready</PageTitle>
             <PageDescription>
-              Restart omnirush.ai once to finish applying {orgName || "your workspace"}&apos;s name and app icon everywhere.
+              Restart marsai.click once to finish applying {orgName || "your workspace"}&apos;s name and app icon everywhere.
             </PageDescription>
             {brandingRestart.updateReady ? (
               <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-green-6/30 bg-green-2/30 px-3 py-1 text-xs font-semibold text-green-11">
@@ -800,7 +800,7 @@ export function ResourceSelectionPage({ autoContinue = false }: { autoContinue?:
               Continue without restarting
             </Button>
             <Button type="button" size="lg" onClick={() => void restartWithBranding()}>
-              Restart omnirush.ai
+              Restart marsai.click
               <ArrowRight data-icon="inline-end" />
             </Button>
           </PageFooter>
@@ -839,11 +839,11 @@ export function ResourceSelectionPage({ autoContinue = false }: { autoContinue?:
         <PageHeader>
           {prepared ? (
             <div
-              data-omnirush-prepared="true"
+              data-mars-prepared="true"
               className="mx-auto flex w-fit items-center gap-2 rounded-full border border-green-6/30 bg-green-2/30 px-3 py-1 text-xs font-semibold text-green-11"
             >
               <CheckCircle2 className="size-3.5" />
-              Setup complete — omnirush.ai prepared this workspace
+              Setup complete — marsai.click prepared this workspace
             </div>
           ) : null}
           <PageTitle>
@@ -876,7 +876,7 @@ export function ResourceSelectionPage({ autoContinue = false }: { autoContinue?:
               <EmptyHeader>
                 <EmptyTitle>No resources have been configured for this organization yet.</EmptyTitle>
                 <EmptyDescription>
-                  Add AI providers or marketplaces from the omnirush.ai Cloud dashboard.
+                  Add AI providers or marketplaces from the marsai.click Cloud dashboard.
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
@@ -884,7 +884,7 @@ export function ResourceSelectionPage({ autoContinue = false }: { autoContinue?:
                   variant="outline"
                   onClick={() => platform.openLink(resolveDenBaseUrls(settings.baseUrl).baseUrl)}
                 >
-                  Open omnirush.ai Cloud
+                  Open marsai.click Cloud
                   <ArrowUpRightIcon data-icon="inline-end" />
                 </Button>
               </EmptyContent>

@@ -1,5 +1,5 @@
-import { checkedExec, defaultDaytonaExec, deleteSandboxes } from "@omnirush/hosts";
-import type { DaytonaExec, DaytonaExecResult } from "@omnirush/hosts";
+import { checkedExec, defaultDaytonaExec, deleteSandboxes } from "@mars/hosts";
+import type { DaytonaExec, DaytonaExecResult } from "@mars/hosts";
 import { placementHasCapability } from "./network-world.ts";
 import type { Placement } from "./network-world.ts";
 
@@ -7,7 +7,7 @@ const PLACEMENT_ID = /^[a-z][a-z0-9-]{0,62}$/;
 const SANDBOX_NAME = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const KUBERNETES_NAME = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const HELM_RELEASE = /^[a-z0-9](?:[a-z0-9-]{0,51}[a-z0-9])?$/;
-const RUNTIME_BASE = "/tmp/omnirush-world-k3s";
+const RUNTIME_BASE = "/tmp/mars-world-k3s";
 const MAX_PREVIEW_EXPIRY_SECONDS = 86_400;
 const TOOL_TIMEOUT_MS = 120_000;
 const DEFAULT_DAYTONA_K3S_SNAPSHOT: DaytonaK3sSnapshot = "daytona-large";
@@ -355,7 +355,7 @@ function serverArgs(paths: DaytonaK3sRuntimePaths, placementId: string): string[
     "--data-dir", paths.dataDir,
     "--write-kubeconfig", paths.kubeconfig,
     "--write-kubeconfig-mode", "0600",
-    "--node-name", `omnirush-${placementId}`,
+    "--node-name", `mars-${placementId}`,
     "--snapshotter", "native",
   ];
 }

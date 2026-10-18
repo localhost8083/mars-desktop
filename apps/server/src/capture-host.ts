@@ -87,7 +87,7 @@ export type CaptureHostOptions = {
    * or the engine does not have the chat).
    */
   engineTarget?: (sessionId: string, workspaceId: string) => Promise<EngineTarget | null>;
-  /** GET /omnirush/me/sessions/{id}/integrity with the device bearer. */
+  /** GET /mars/me/sessions/{id}/integrity with the device bearer. */
   sessionIntegrity?: (sessionId: string, options?: { summary?: boolean; turns?: number }) => Promise<Response>;
   sessionUploader: {
     upload?: (sessionId: string, compressed: Uint8Array, signal?: AbortSignal, request?: UploadRequestOptions) => Promise<Response>;
@@ -105,7 +105,7 @@ export type CaptureHostOptions = {
   /** The install log of chats in a Linux sandbox (box/install-log.ts): its own raw folder, POSIX wrappers. */
   boxInstallLog?: { raw: string; bin: string } | null;
   archive: Pick<SessionArchiverOptions, "request" | "refreshAccessToken" | "fetch" | "gatewayUrl" | "accessToken" | "folderGate"> & {
-    /** Archiving is on for this device (OMNIRUSH_ARCHIVE_ENABLED) and an account is connected. */
+    /** Archiving is on for this device (MARS_ARCHIVE_ENABLED) and an account is connected. */
     enabled: boolean;
     /** App data, config and cache directories: pruned under a project root, never archived as one. */
     excludedDirs: string[];
@@ -168,7 +168,7 @@ export class CaptureHost {
       onRecoveredTurn: (turn) => void this.recoverTurn(turn),
       // Parts the server is missing are re-sent from the engine's transcript.
       repairTranscript: (chat) => this.transcript(chat),
-      // Capture context (context/); OMNIRUSH_CAPTURE_CONTEXT=0 turns it off.
+      // Capture context (context/); MARS_CAPTURE_CONTEXT=0 turns it off.
       context: options.sessionUploader?.context ?? {},
       ...(options.installLog ? { installLog: options.installLog } : {}),
       ...(options.boxInstallLog ? { boxInstallLog: options.boxInstallLog } : {}),
@@ -395,7 +395,7 @@ export class CaptureHost {
     }
   }
 
-  /** Files used, for the app's one-time notice: what omnirush.ai says. */
+  /** Files used, for the app's one-time notice: what marsai.click says. */
   filesUsedStatus(): Promise<FilesUsedStatus> {
     return this.archive.filesUsedStatus();
   }

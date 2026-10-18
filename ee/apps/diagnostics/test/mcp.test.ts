@@ -3,7 +3,7 @@ import {
   EGRESS_DIAGNOSTIC_RUN_HEADER,
   EGRESS_DIAGNOSTIC_SIGNATURE_HEADER,
   EGRESS_DIAGNOSTIC_STEP_HEADER,
-} from "@omnirush/types/den/egress-diagnostics"
+} from "@mars/types/den/egress-diagnostics"
 import { randomUUID } from "node:crypto"
 import { GET as completeMockAuthorization } from "../app/mcp/mock-auth/route"
 import { mcpAuthorizationSubject } from "../src/auth"

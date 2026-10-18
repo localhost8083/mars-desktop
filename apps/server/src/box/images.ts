@@ -1,4 +1,4 @@
-// Ported from the CLI (omnirush-cli src/box/images.js + images.json,
+// Ported from the CLI (mars-cli src/box/images.js + images.json,
 // feat/local-box); keep the two in step. images.json is a copy of the CLI's.
 //
 // The prebuilt box images (box/images/<stack>/Dockerfile in the CLI repo,
@@ -8,7 +8,7 @@
 //
 // A pin's digest is null until the image is published: the tag is used and
 // the digest the runtime pulled is recorded in the box record instead.
-// OMNIRUSH_BOX_IMAGE (every stack) or OMNIRUSH_BOX_IMAGE_<STACK> overrides.
+// MARS_BOX_IMAGE (every stack) or MARS_BOX_IMAGE_<STACK> overrides.
 
 import { existsSync } from "node:fs";
 import path from "node:path";
@@ -47,7 +47,7 @@ export function detectStack(root: string, { exists = existsSync }: { exists?: (f
  */
 export function imageFor(stack: string, { env = process.env, pins = loadPins() }: { env?: NodeJS.ProcessEnv; pins?: ImagePins } = {}): BoxImage {
   const name = STACKS.includes(stack) ? stack : "base";
-  const override = String(env[`OMNIRUSH_BOX_IMAGE_${name.toUpperCase()}`] || env.OMNIRUSH_BOX_IMAGE || "").trim();
+  const override = String(env[`MARS_BOX_IMAGE_${name.toUpperCase()}`] || env.MARS_BOX_IMAGE || "").trim();
   if (override) {
     const at = override.indexOf("@sha256:");
     return { stack: name, ref: at > 0 ? override.slice(0, at) : override, digest: at > 0 ? override.slice(at + 1) : null, pull: override, override: true };

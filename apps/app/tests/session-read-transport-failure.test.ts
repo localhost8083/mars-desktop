@@ -447,7 +447,7 @@ describe("saved session lists", () => {
     writeCachedWorkspaceSessions("ws_taskforge", [session]);
     forgetWorkspaceMemory("ws_taskforge");
     expect(readCachedWorkspaceSessions("ws_taskforge")).toBeNull();
-    values.set("omnirush.react.workspaceSessionList", "{not json");
+    values.set("mars.react.workspaceSessionList", "{not json");
     expect(readCachedWorkspaceSessions("ws_taskforge")).toBeNull();
   });
 });

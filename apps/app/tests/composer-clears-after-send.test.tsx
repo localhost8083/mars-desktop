@@ -6,12 +6,12 @@ import { createRequire } from "node:module";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 
-import type { OmniRushSessionSnapshot } from "../src/app/lib/omnirush-server";
+import type { MarsSessionSnapshot } from "../src/app/lib/mars-server";
 
 const workspaceId = "workspace-composer-clears";
 const sessionId = "session-composer-clears";
 
-function createSnapshot(targetSessionId: string): OmniRushSessionSnapshot {
+function createSnapshot(targetSessionId: string): MarsSessionSnapshot {
   return {
     session: {
       id: targetSessionId,
@@ -56,14 +56,14 @@ test("a new-session send clears the handed-off text and attachment chips, later 
     mock.module(moduleId, () => moduleExports);
   }
   const [
-    { createOmniRushServerClient },
+    { createMarsServerClient },
     { IDLE_CLOUD_MCP_SUBMISSION_GATE_STATE },
     { useComposerStateStore },
     { getReactQueryClient },
     { LocalProvider },
     { ShellConfigProvider },
   ] = await Promise.all([
-    import("../src/app/lib/omnirush-server"),
+    import("../src/app/lib/mars-server"),
     import("../src/react-app/domains/connections/cloud-mcp-submit-readiness"),
     import("../src/react-app/domains/session/surface/composer-state-store"),
     import("../src/react-app/infra/query-client"),
@@ -83,7 +83,7 @@ test("a new-session send clears the handed-off text and attachment chips, later 
   const fetchStub = async () => new Response("{}", { headers: { "content-type": "application/json" } });
   Object.defineProperty(globalThis, "fetch", { configurable: true, value: fetchStub });
   Object.defineProperty(window, "fetch", { configurable: true, value: fetchStub });
-  window.localStorage.setItem("omnirush.shell-config", JSON.stringify({ starterCards: false }));
+  window.localStorage.setItem("mars.shell-config", JSON.stringify({ starterCards: false }));
   mock.module("@/components/model-select", () => ({ ModelSelect: () => null }));
   mock.module("@/react-app/domains/session/surface/composer/workspace-run-mode-menu", () => ({
     WorkspaceRunModeMenu: () => null,
@@ -108,7 +108,7 @@ test("a new-session send clears the handed-off text and attachment chips, later 
   const key = snapshotKey(workspaceId, sessionId);
   queryClient.setQueryDefaults(key, { retryDelay: 0 });
   queryClient.setQueryData(key, createSnapshot(sessionId));
-  const client = createOmniRushServerClient({ baseUrl: "http://127.0.0.1:1", token: "test-token" });
+  const client = createMarsServerClient({ baseUrl: "http://127.0.0.1:1", token: "test-token" });
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
@@ -160,7 +160,7 @@ test("a new-session send clears the handed-off text and attachment chips, later 
               draftScope="local"
               isControlTarget={false}
               opencodeBaseUrl={opencodeBaseUrl}
-              omnirushToken="test-token"
+              marsToken="test-token"
               developerMode
               modelLabel="Test model"
               onModelClick={() => {}}
@@ -185,7 +185,7 @@ test("a new-session send clears the handed-off text and attachment chips, later 
               modelVariantLabel="Default"
               modelVariant={null}
               onModelVariantChange={() => {}}
-              agentLabel="OmniRush.ai"
+              agentLabel="MarsAI"
               selectedAgent={null}
               listAgents={async () => []}
               onSelectAgent={() => {}}

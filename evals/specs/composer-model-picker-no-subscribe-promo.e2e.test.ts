@@ -1,9 +1,9 @@
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { modelPicker } from "../worlds/chat.ts";
 
 const test = spec.world(modelPicker);
 
-test("the composer model pickers keep their controls without the OmniRush.ai Models subscribe promo", async ({ user, step }) => {
+test("the composer model pickers keep their controls without the MarsAI Models subscribe promo", async ({ user, step }) => {
   await user.click({ role: "button", label: "Change model" });
   await user.click({ role: "button", label: /^Model\s+Big Pickle/ });
 
@@ -28,7 +28,7 @@ test("the composer model pickers keep their controls without the OmniRush.ai Mod
     await user.see({ text: "Select a model for this session." });
     await user.see({ placeholder: "Search providers and models..." });
     await user.see({ role: "button", label: "Done" });
-    await user.notSee({ role: "button", label: "Hide OmniRush.ai Models" });
+    await user.notSee({ role: "button", label: "Hide MarsAI Models" });
     await user.notSee({ text: "Subscribe to use hosted frontier models in this workspace." });
     await user.notSee({ text: "Sign in to unlock hosted frontier models for your team." });
     await user.notSee({ role: "button", label: "Subscribe" });

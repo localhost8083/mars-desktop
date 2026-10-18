@@ -18,7 +18,7 @@ export type StackPreparation =
 
 declare module "vitest" {
   export interface ProvidedContext {
-    omnirushStackPreparation: StackPreparation;
+    marsStackPreparation: StackPreparation;
   }
 }
 
@@ -36,20 +36,20 @@ async function readable(path: string): Promise<boolean> {
 }
 
 async function prepareLocal(): Promise<StackPreparation> {
-  console.error("[omnirush/evals] preparing shared local Den and Electron runtime once...");
+  console.error("[mars/evals] preparing shared local Den and Electron runtime once...");
   const runtimeBuilds = [
-    "@omnirush/email",
-    "@omnirush/install-config",
-    "@omnirush/connect-link",
-    "@omnirush/enterprise-mcp-client",
-    "@omnirush/codemode",
-    "@omnirush/headless-threads",
+    "@mars/email",
+    "@mars/install-config",
+    "@mars/connect-link",
+    "@mars/enterprise-mcp-client",
+    "@mars/codemode",
+    "@mars/headless-threads",
   ].map((pkg) => run("pnpm", ["--filter", pkg, "build"]));
   await Promise.all(runtimeBuilds);
   await run("pnpm", ["--filter", "@omnirush-ee/den-db", "build"]);
 
   await Promise.all([
-    run("pnpm", ["--filter", "@omnirush/ui", "build"]),
+    run("pnpm", ["--filter", "@mars/ui", "build"]),
     run("pnpm", ["--filter", "@omnirush-ee/utils", "build"]),
     run(process.execPath, [join(REPO_ROOT, "apps/desktop/scripts/prepare-sidecar.mjs"), "--force", "--outdir", join(REPO_ROOT, "apps/desktop/resources/sidecars")], join(REPO_ROOT, "apps/desktop")),
     run(process.execPath, [join(REPO_ROOT, "apps/desktop/scripts/prepare-computer-use-helper.mjs"), "--force", "--outdir", join(REPO_ROOT, "apps/desktop/resources/helpers")], join(REPO_ROOT, "apps/desktop")),
@@ -70,15 +70,15 @@ async function prepareLocal(): Promise<StackPreparation> {
 
 async function prepareDaytona(argv: readonly string[]): Promise<{ preparation: StackPreparation; cleanup: () => Promise<void> }> {
   const workerCount = suiteWorkerCount(argv, process.env);
-  const ref = process.env.OMNIRUSH_EVAL_REF?.trim() || process.env.GITHUB_SHA?.trim() || "dev";
+  const ref = process.env.MARS_EVAL_REF?.trim() || process.env.GITHUB_SHA?.trim() || "dev";
   const created = new Set<string>();
-  const log = (line: string): void => console.error(`[omnirush/evals] ${line}`);
+  const log = (line: string): void => console.error(`[mars/evals] ${line}`);
   try {
     const slots = await Promise.all(Array.from({ length: workerCount }, async (_, index) => {
       const [den, desktop] = await Promise.all([
         provisionDenSandbox({
           ref,
-          bootstrapAdminEmail: process.env.OMNIRUSH_EVAL_DEMO_EMAIL?.trim() || "alex@acme.test",
+          bootstrapAdminEmail: process.env.MARS_EVAL_DEMO_EMAIL?.trim() || "alex@acme.test",
           log,
         }).then((result) => {
           if (result.created) created.add(result.sandbox);
@@ -91,7 +91,7 @@ async function prepareDaytona(argv: readonly string[]): Promise<{ preparation: S
       ]);
       return { denSandbox: den.sandbox, desktopSandbox: desktop.sandbox };
     }));
-    console.error(`[omnirush/evals] prepared ${slots.length} isolated Daytona worker slot${slots.length === 1 ? "" : "s"}.`);
+    console.error(`[mars/evals] prepared ${slots.length} isolated Daytona worker slot${slots.length === 1 ? "" : "s"}.`);
     return {
       preparation: { kind: "daytona", slots },
       cleanup: async () => {
@@ -105,16 +105,16 @@ async function prepareDaytona(argv: readonly string[]): Promise<{ preparation: S
 }
 
 export default async function setup(project: TestProject): Promise<() => Promise<void>> {
-  if (!shouldPrepareSuite(process.argv) || process.env.OMNIRUSH_EVAL_DEN_API_URL?.trim()) {
-    project.provide("omnirushStackPreparation", { kind: "none" });
+  if (!shouldPrepareSuite(process.argv) || process.env.MARS_EVAL_DEN_API_URL?.trim()) {
+    project.provide("marsStackPreparation", { kind: "none" });
     return async () => undefined;
   }
-  if (process.env.OMNIRUSH_EVAL_DAYTONA?.trim() === "1") {
+  if (process.env.MARS_EVAL_DAYTONA?.trim() === "1") {
     const prepared = await prepareDaytona(process.argv);
-    project.provide("omnirushStackPreparation", prepared.preparation);
+    project.provide("marsStackPreparation", prepared.preparation);
     return prepared.cleanup;
   }
   const preparation = await prepareLocal();
-  project.provide("omnirushStackPreparation", preparation);
+  project.provide("marsStackPreparation", preparation);
   return async () => undefined;
 }

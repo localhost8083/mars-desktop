@@ -1,8 +1,8 @@
 import React, { type CSSProperties } from "react"
 import { Body, Button, Container, Head, Heading, Hr, Html, Img, Preview, Section, Text } from "@react-email/components"
 
-// Served by the console app at the omnirush.ai edge (512x512 PNG).
-const LOGO_URL = "https://omnirush.ai/omnirush-mark.png"
+// Served by the console app at the marsai.click edge (512x512 PNG).
+const LOGO_URL = "https://marsai.click/mars-mark.png"
 
 export type OrganizationInviteEmailProps = {
   inviteLink: string
@@ -24,16 +24,16 @@ export function OrganizationInviteEmail({
   return (
     <Html>
       <Head />
-      <Preview>{invitedByName} invited you to join {organizationName} on OmniRush.ai</Preview>
+      <Preview>{invitedByName} invited you to join {organizationName} on MarsAI</Preview>
       <Body style={styles.body}>
         <Container style={styles.frame}>
           <Section style={styles.brand}>
-            <Img src={LOGO_URL} width="24" height="24" alt="OmniRush.ai" style={styles.brandLogo} />
-            <span style={styles.brandName}>OmniRush.ai</span>
+            <Img src={LOGO_URL} width="24" height="24" alt="MarsAI" style={styles.brandLogo} />
+            <span style={styles.brandName}>MarsAI</span>
           </Section>
           <Section style={styles.card}>
             <Text style={styles.eyebrow}>Invitation</Text>
-            <Heading style={styles.heading}>Join {organizationName} on OmniRush.ai</Heading>
+            <Heading style={styles.heading}>Join {organizationName} on MarsAI</Heading>
             <Text style={styles.text}>
               {inviter} invited you to join the <span style={styles.strong}>{organizationName}</span> workspace as {articleFor(role)} {role}.
             </Text>
@@ -43,9 +43,9 @@ export function OrganizationInviteEmail({
             <Text style={styles.link}>{inviteLink}</Text>
           </Section>
           <Text style={styles.footer}>
-            You received this email because someone invited you to an OmniRush.ai workspace.
+            You received this email because someone invited you to an MarsAI workspace.
             <br />
-            omnirush.ai
+            marsai.click
           </Text>
         </Container>
       </Body>

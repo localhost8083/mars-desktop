@@ -16,13 +16,13 @@ try {
   // .env.dev is optional; the inline fallbacks below still apply.
 }
 const composeFile = path.join(rootDir, "packaging", "docker", "docker-compose.web-local.yml")
-const composeProject = "omnirush-den-local"
+const composeProject = "mars-den-local"
 
 const apiPort = process.env.DEN_API_PORT?.trim() || process.env.DEN_CONTROLLER_PORT?.trim() || "8788"
 const inferencePort = process.env.INFERENCE_PORT?.trim() || "8791"
 const webPort = process.env.DEN_WEB_PORT?.trim() || "3005"
-const appPort = process.env.OMNIRUSH_APP_PORT?.trim() || process.env.PORT?.trim() || "5173"
-const extraAppPorts = (process.env.OMNIRUSH_EXTRA_APP_PORTS?.trim() || "5174")
+const appPort = process.env.MARS_APP_PORT?.trim() || process.env.PORT?.trim() || "5173"
+const extraAppPorts = (process.env.MARS_EXTRA_APP_PORTS?.trim() || "5174")
   .split(",")
   .map((value) => value.trim())
   .filter(Boolean)

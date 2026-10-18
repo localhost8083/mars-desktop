@@ -25,7 +25,7 @@ const PE = (() => {
 })();
 const SCRIPT = Buffer.from("#!/usr/bin/env node\nrequire('../lib/cli.js')\n");
 
-function tmp(prefix = "omnirush-hostbuilds-"): string {
+function tmp(prefix = "mars-hostbuilds-"): string {
   return mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 function put(root: string, rel: string, content: Buffer | string, mode = 0o644): string {
@@ -136,8 +136,8 @@ describe("host builds: the desktop's projects", () => {
         settings.set(id, { mode: update.mode === undefined ? current.mode : update.mode, offered: update.offered ?? current.offered });
       },
       workspaces: () => [workspace],
-      pluginPath: () => "/plugins/omnirush-box.js",
-      env: { OMNIRUSH_BOX_HOME: tmp("boxhome-"), PATH: "", OMNIRUSH_BOX_RUNTIME: "/nonexistent/docker", ...env },
+      pluginPath: () => "/plugins/mars-box.js",
+      env: { MARS_BOX_HOME: tmp("boxhome-"), PATH: "", MARS_BOX_RUNTIME: "/nonexistent/docker", ...env },
       platform,
     });
   }
@@ -161,9 +161,9 @@ describe("host builds: the desktop's projects", () => {
     expect(on).toMatchObject({ mode: "on", on: true, source: "project" });
     expect(on.hostBuilds).toEqual({ native: false, things: "node_modules", notice: "This folder has Mac builds (node_modules) that won't run in the Linux sandbox; rebuilding them there replaces them with Linux builds that won't run on this Mac." });
     expect(on.boxNotice).toBe("Chats here run in a Linux sandbox, not on this Mac; turn it off for this project in Settings to run them here.");
-    // OMNIRUSH_BOX=1 is the user's choice too; the off switch for the rule leaves the server's default as it was.
-    expect(await service(stateDir, workspace, new Map(), "darwin", { OMNIRUSH_BOX: "1" }).status(workspace)).toMatchObject({ on: true, source: "env", hostBuilds: { native: false } });
-    expect(await service(stateDir, workspace, new Map(), "darwin", { OMNIRUSH_BOX_KEEP_NATIVE: "off" }).status(workspace)).toMatchObject({ on: true, source: "server", hostBuilds: null });
+    // MARS_BOX=1 is the user's choice too; the off switch for the rule leaves the server's default as it was.
+    expect(await service(stateDir, workspace, new Map(), "darwin", { MARS_BOX: "1" }).status(workspace)).toMatchObject({ on: true, source: "env", hostBuilds: { native: false } });
+    expect(await service(stateDir, workspace, new Map(), "darwin", { MARS_BOX_KEEP_NATIVE: "off" }).status(workspace)).toMatchObject({ on: true, source: "server", hostBuilds: null });
   });
 
   test("a clean project gets the box with the one line on macOS / Windows; Linux is unchanged", async () => {

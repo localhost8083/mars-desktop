@@ -6,11 +6,11 @@ import type { AddressInfo } from "node:net";
 import { trimTrailingSlashes } from "./strings.ts";
 
 const DEFAULT_DOMAIN = "acme.test";
-const DEFAULT_CLIENT_ID = "omnirush-eval-oidc-client";
-const DEFAULT_CLIENT_SECRET = "omnirush-eval-oidc-secret";
-const DEFAULT_ISSUER = "http://127.0.0.1/mock-omnirush-idp";
+const DEFAULT_CLIENT_ID = "mars-eval-oidc-client";
+const DEFAULT_CLIENT_SECRET = "mars-eval-oidc-secret";
+const DEFAULT_ISSUER = "http://127.0.0.1/mock-mars-idp";
 const DEFAULT_EVAL_ISSUER = "http://127.0.0.1:19190";
-const DEFAULT_GROUPS = ["Engineering", "OmniRush.ai Lab"];
+const DEFAULT_GROUPS = ["Engineering", "MarsAI Lab"];
 const DEFAULT_ROLE = "member";
 
 export const MOCK_IDP_BLOCKED_USER_PHRASE = "administrator has configured the application to block users";
@@ -225,8 +225,8 @@ function requestedIssuer(value: string | undefined): URL | null {
 }
 
 function configuredMockIdpIssuer(input: MockIdpConfig): URL | null {
-  const evalIssuer = process.env.OMNIRUSH_EVAL_DEN_API_URL?.trim() ? DEFAULT_EVAL_ISSUER : undefined;
-  return requestedIssuer(input.issuer) ?? requestedIssuer(process.env.OMNIRUSH_EVAL_MOCK_IDP_ISSUER) ?? requestedIssuer(evalIssuer);
+  const evalIssuer = process.env.MARS_EVAL_DEN_API_URL?.trim() ? DEFAULT_EVAL_ISSUER : undefined;
+  return requestedIssuer(input.issuer) ?? requestedIssuer(process.env.MARS_EVAL_MOCK_IDP_ISSUER) ?? requestedIssuer(evalIssuer);
 }
 
 export function normalizeDomain(value: string | undefined): string {
@@ -262,7 +262,7 @@ function defaultSubject(domain: string): MockIdpSubject {
   return {
     sub: email,
     email,
-    name: "OmniRush.ai SSO User",
+    name: "MarsAI SSO User",
   };
 }
 
@@ -440,7 +440,7 @@ export function buildOidcClaims(input: {
     email_verified: true,
     name: input.subject.name,
     preferred_username: input.subject.email,
-    picture: `https://avatar.omnirush.test/${encodeURIComponent(input.subject.email)}`,
+    picture: `https://avatar.mars.test/${encodeURIComponent(input.subject.email)}`,
     department: "Enterprise Lab",
   };
   if (input.nonce) {
@@ -533,7 +533,7 @@ function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => HTML_ENTITIES[character] ?? character);
 }
 
-export function buildBlockedUserResponse(subject: MockIdpSubjectInput, policyName = "OmniRush.ai Mock IdP policy"): BlockedUserResponseShape {
+export function buildBlockedUserResponse(subject: MockIdpSubjectInput, policyName = "MarsAI Mock IdP policy"): BlockedUserResponseShape {
   const label = subject.email?.trim() || subject.sub?.trim() || "this user";
   const errorDescription = `The ${MOCK_IDP_BLOCKED_USER_PHRASE} unless they are assigned to the enterprise application.`;
   const message = `${policyName} blocked ${label}. ${errorDescription} Ask an IdP administrator to assign the user or update the app assignment policy.`;
@@ -542,7 +542,7 @@ export function buildBlockedUserResponse(subject: MockIdpSubjectInput, policyNam
     error: "access_denied",
     errorDescription,
     message,
-    html: `<!doctype html><html><head><title>OmniRush.ai Mock IdP policy block</title></head><body><main style="font-family: sans-serif; max-width: 720px; margin: 48px auto;"><p>OmniRush.ai Mock IdP policy</p><h1>Sign-in blocked by identity provider policy</h1><p>${escapeHtml(message)}</p><p>error=access_denied</p></main></body></html>`,
+    html: `<!doctype html><html><head><title>MarsAI Mock IdP policy block</title></head><body><main style="font-family: sans-serif; max-width: 720px; margin: 48px auto;"><p>MarsAI Mock IdP policy</p><h1>Sign-in blocked by identity provider policy</h1><p>${escapeHtml(message)}</p><p>error=access_denied</p></main></body></html>`,
   };
 }
 
@@ -700,11 +700,11 @@ function samlMetadata(config: NormalizedMockIdpConfig, certificate: string): str
 
 function samlPostBindingPage(config: NormalizedMockIdpConfig): HtmlDocument {
   return {
-    title: "OmniRush.ai Mock IdP SAML endpoint",
+    title: "MarsAI Mock IdP SAML endpoint",
     heading: "SAML POST binding endpoint",
     paragraphs: [
-      "OmniRush.ai Mock IdP lab",
-      "This fixture exposes SAML metadata and a POST binding endpoint, but the OmniRush.ai eval lab drives OIDC because this checkout implements OIDC and SAML SSO and OIDC keeps the signed-token path dependency-free.",
+      "MarsAI Mock IdP lab",
+      "This fixture exposes SAML metadata and a POST binding endpoint, but the MarsAI eval lab drives OIDC because this checkout implements OIDC and SAML SSO and OIDC keeps the signed-token path dependency-free.",
       `Issuer: ${config.issuer}`,
     ],
   };
@@ -721,7 +721,7 @@ function authorize(state: MockIdpState, url: URL, response: ServerResponse): voi
   if (state.config.knobs.interactive && !url.searchParams.has("decision")) {
     const fields = [...url.searchParams].map(([name, value]) => `<input type="hidden" name="${escapeHtml(name)}" value="${escapeHtml(value)}">`).join("");
     response.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
-    response.end(`<!doctype html><html><head><title>Test organization sign-in</title></head><body style="font:16px system-ui;max-width:420px;margin:60px auto;padding:24px"><h1>Test organization sign-in</h1><p>Confirm your identity to return to OmniRush.ai.</p><form>${fields}<label>Email <input name="mock_email" type="email" value="${escapeHtml(url.searchParams.get("login_hint") ?? state.config.defaultSubject.email)}"></label><p></p><button name="decision" value="approve">Approve sign-in</button> <button name="decision" value="deny">Deny sign-in</button></form></body></html>`);
+    response.end(`<!doctype html><html><head><title>Test organization sign-in</title></head><body style="font:16px system-ui;max-width:420px;margin:60px auto;padding:24px"><h1>Test organization sign-in</h1><p>Confirm your identity to return to MarsAI.</p><form>${fields}<label>Email <input name="mock_email" type="email" value="${escapeHtml(url.searchParams.get("login_hint") ?? state.config.defaultSubject.email)}"></label><p></p><button name="decision" value="approve">Approve sign-in</button> <button name="decision" value="deny">Deny sign-in</button></form></body></html>`);
     return;
   }
   if (url.searchParams.get("decision") === "deny") {
@@ -739,9 +739,9 @@ function authorize(state: MockIdpState, url: URL, response: ServerResponse): voi
   if (matchesBlockedUser(subject, state.config.knobs.blockedUser)) {
     const blocked = buildBlockedUserResponse(subject);
     sendHtml(response, blocked.status, {
-      title: "OmniRush.ai Mock IdP policy block",
+      title: "MarsAI Mock IdP policy block",
       heading: "Sign-in blocked by identity provider policy",
-      paragraphs: ["OmniRush.ai Mock IdP policy", blocked.message, "error=access_denied"],
+      paragraphs: ["MarsAI Mock IdP policy", blocked.message, "error=access_denied"],
     });
     return;
   }

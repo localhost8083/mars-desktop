@@ -24,9 +24,9 @@ type Fixture = {
 };
 
 async function createFixture(): Promise<Fixture> {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-engine-registry-"));
-  const previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
-  process.env.OMNIRUSH_RUNTIME_DB = join(root, "runtime.sqlite");
+  const root = await mkdtemp(join(tmpdir(), "mars-engine-registry-"));
+  const previousRuntimeDb = process.env.MARS_RUNTIME_DB;
+  process.env.MARS_RUNTIME_DB = join(root, "runtime.sqlite");
   const config = { configPath: join(root, "server.json") } as unknown as ServerConfig;
   const cleanups: Array<() => void | Promise<void>> = [];
   return {
@@ -41,8 +41,8 @@ async function createFixture(): Promise<Fixture> {
           // Best-effort cleanup.
         }
       }
-      if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-      else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
+      if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+      else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
       await rm(root, { recursive: true, force: true });
     },
   };

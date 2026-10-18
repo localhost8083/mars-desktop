@@ -7,9 +7,9 @@ import { createInterface } from "node:readline";
 import { createServer } from "node:net";
 import { randomBytes } from "node:crypto";
 import { createRequire } from "node:module";
-import { needs, SkipError } from "@omnirush/env";
-import type { Place, Seed } from "@omnirush/env";
-import { desktop } from "@omnirush/hosts";
+import { needs, SkipError } from "@mars/env";
+import type { Place, Seed } from "@mars/env";
+import { desktop } from "@mars/hosts";
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -69,7 +69,7 @@ async function nativeFixtureClient(executable: string, args: string[]) {
   await new Promise<void>((resolve, reject) => { server.once("error", reject); server.listen(0, "127.0.0.1", resolve); });
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("No fixture endpoint.");
-  const child = spawn(executable, args, { stdio: ["ignore", "ignore", "pipe"], env: { ...process.env, OMNIRUSH_FIXTURE_PORT: String(address.port), OMNIRUSH_FIXTURE_TOKEN: token } });
+  const child = spawn(executable, args, { stdio: ["ignore", "ignore", "pipe"], env: { ...process.env, MARS_FIXTURE_PORT: String(address.port), MARS_FIXTURE_TOKEN: token } });
   let stderr = "";
   child.stderr.on("data", (chunk: Buffer) => { stderr = (stderr + chunk.toString()).slice(-2000); });
   const pending = new Map<number, { resolve(value: unknown): void; reject(error: Error): void; timer: NodeJS.Timeout }>();
@@ -140,10 +140,10 @@ export async function computerUseWorld(_seed: Seed, { place }: { place: Place })
   const checked = spawnSync(executable, ["--check"], { encoding: "utf8", timeout: 5000 });
   const permissions: unknown = JSON.parse(checked.stdout);
   if (!record(permissions) || permissions.ok !== true) throw new SkipError("macOS Accessibility and Screen Recording granted to the native helper by a person");
-  const directory = await mkdtemp(join(tmpdir(), "omnirush-computer-use-"));
+  const directory = await mkdtemp(join(tmpdir(), "mars-computer-use-"));
   const contents = join(directory, "Computer Use Fixture.app/Contents");
   await mkdir(join(contents, "MacOS"), { recursive: true });
-  await writeFile(join(contents, "Info.plist"), `<?xml version="1.0"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>org.example.omnirush.computer-use-fixture</string><key>CFBundleName</key><string>Computer Use Fixture</string><key>CFBundleExecutable</key><string>Fixture</string><key>CFBundlePackageType</key><string>APPL</string><key>CFBundleVersion</key><string>1</string><key>CFBundleShortVersionString</key><string>1.0</string><key>LSMinimumSystemVersion</key><string>14.0</string></dict></plist>`);
+  await writeFile(join(contents, "Info.plist"), `<?xml version="1.0"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>org.example.mars.computer-use-fixture</string><key>CFBundleName</key><string>Computer Use Fixture</string><key>CFBundleExecutable</key><string>Fixture</string><key>CFBundlePackageType</key><string>APPL</string><key>CFBundleVersion</key><string>1</string><key>CFBundleShortVersionString</key><string>1.0</string><key>LSMinimumSystemVersion</key><string>14.0</string></dict></plist>`);
   const fixtureExecutable = join(contents, "MacOS/Fixture");
   const compiled = spawnSync("swiftc", ["-target", `${process.arch === "arm64" ? "arm64" : "x86_64"}-apple-macosx14.0`, "-parse-as-library", join(root, "evals/packages/labs/fixtures/computer-use-app.swift"), "-o", fixtureExecutable], { encoding: "utf8", timeout: 90_000 });
   if (compiled.status !== 0) { await rm(directory, { recursive: true }); throw new Error(compiled.stderr); }
@@ -159,13 +159,13 @@ export async function computerUseWorld(_seed: Seed, { place }: { place: Place })
     await peer.request("initialize", { protocolVersion: "2025-11-25", clientInfo: { name: "peer-journey", version: "1" }, capabilities: {} });
     return {
       async launchableFixture() {
-        const appId = "org.example.omnirush.launch-fixture." + directory.split("-").at(-1);
+        const appId = "org.example.mars.launch-fixture." + directory.split("-").at(-1);
         // Launch Services deliberately excludes apps in the OS temporary directory.
         const appPath = join(root, "evals/results/.native-apps", `${appId}.app`);
         const launchContents = join(appPath, "Contents");
         await mkdir(join(launchContents, "MacOS"), { recursive: true });
         await copyFile(fixtureExecutable, join(launchContents, "MacOS/Fixture"));
-        await writeFile(join(launchContents, "Info.plist"), (await readFile(join(contents, "Info.plist"), "utf8")).replace("org.example.omnirush.computer-use-fixture", appId));
+        await writeFile(join(launchContents, "Info.plist"), (await readFile(join(contents, "Info.plist"), "utf8")).replace("org.example.mars.computer-use-fixture", appId));
         const register = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister";
         const result = spawnSync(register, ["-f", appPath], { encoding: "utf8", timeout: 10_000 });
         if (result.status !== 0) throw new Error(`Could not register disposable launch fixture: ${result.stderr}`);
@@ -221,11 +221,11 @@ export async function computerUseWorld(_seed: Seed, { place }: { place: Place })
         } catch (error) { await client.close(); throw error; }
       },
       desktop: () => desktop({ name: "computer-use-setup", host: place.host(), env: {
-        OMNIRUSH_COMPUTER_USE_BINARY: executable,
+        MARS_COMPUTER_USE_BINARY: executable,
         OPENCODE_DB: join(directory, "opencode.db"),
       } }),
       workspacePath: join(directory, "workspace"),
-      appId: "org.example.omnirush.computer-use-fixture",
+      appId: "org.example.mars.computer-use-fixture",
       appPid: fixture.pid,
       call: (name: string, args: Record<string, unknown> = {}) => helper.request("tools/call", { name, arguments: args }),
       peerCall: (name: string, args: Record<string, unknown> = {}) => peer.request("tools/call", { name, arguments: args }),
@@ -314,7 +314,7 @@ export async function portableComputerUseWorld(_seed: Seed, { place }: { place: 
   const requireDesktop = createRequire(join(root, "apps/desktop/package.json"));
   const executable = requireDesktop("electron");
   if (typeof executable !== "string") throw new Error("Electron executable unavailable.");
-  const directory = await mkdtemp(join(tmpdir(), "omnirush-native-journey-"));
+  const directory = await mkdtemp(join(tmpdir(), "mars-native-journey-"));
   const launchFlags = process.platform === "linux" ? ["--no-sandbox"] : [];
   const fixture = await nativeFixtureClient(executable, [...launchFlags, join(root, "evals/packages/labs/fixtures/portable-computer-use-app.mjs"), join(directory, "fixture")]);
   const controller = await nativeFixtureClient(executable, [...launchFlags, join(root, "evals/packages/labs/fixtures/portable-computer-use-host.mjs"), join(directory, "host")]).catch(async (error) => { await fixture.close(); await rm(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); throw error; });
@@ -339,7 +339,7 @@ export async function portableComputerUseWorld(_seed: Seed, { place }: { place: 
     if (!record(appInfo) || typeof appInfo.app_id !== "string") throw new Error("Fixture was not discoverable: " + JSON.stringify(discovery));
     const main = client, other = peer;
     return {
-      desktop: () => desktop({ name: "native-computer-use-setup", host: place.host(), profileDir: join(directory, "desktop-profile"), env: { OPENCODE_DB: join(directory, "desktop.db"), OMNIRUSH_GATEWAY_URL: "http://127.0.0.1:1", COREPACK_ENABLE_DOWNLOAD_PROMPT: "0", ELECTRON_DISABLE_SANDBOX: "1", OMNIRUSH_ELECTRON_USE_MOCK_KEYCHAIN: "1" } }),
+      desktop: () => desktop({ name: "native-computer-use-setup", host: place.host(), profileDir: join(directory, "desktop-profile"), env: { OPENCODE_DB: join(directory, "desktop.db"), MARS_GATEWAY_URL: "http://127.0.0.1:1", COREPACK_ENABLE_DOWNLOAD_PROMPT: "0", ELECTRON_DISABLE_SANDBOX: "1", MARS_ELECTRON_USE_MOCK_KEYCHAIN: "1" } }),
       workspacePath: join(directory, "workspace"),
       async hostedClient(command: unknown, environment: unknown) {
         if (!Array.isArray(command) || !command.every((part): part is string => typeof part === "string") || !record(environment)) throw new Error("Missing hosted MCP command.");

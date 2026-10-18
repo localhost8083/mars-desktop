@@ -249,7 +249,7 @@ export async function createTaskRecovery(
       const previous = records.get(key(record));
       if (previous) remove(previous);
       const admission = req.method === "POST" && ["/prompt_async", "/prompt", "/command"].includes(suffix)
-        && req.headers.get("x-omnirush-task-recovery") !== "off";
+        && req.headers.get("x-mars-task-recovery") !== "off";
       if (!stopped && admission && records.size < MAX_TASKS) {
         records.set(key(record), record);
         observingSince.set(key(record), Date.now());

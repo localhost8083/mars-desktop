@@ -76,7 +76,7 @@ function syntheticManagedHandle(url: string): ManagedOpencodeServer {
   };
 }
 
-async function startPooledOmniRushServer(input: { root: string; engineUrl: string }) {
+async function startPooledMarsServer(input: { root: string; engineUrl: string }) {
   const config: ServerConfig = {
     host: "127.0.0.1",
     port: 0,
@@ -132,16 +132,16 @@ async function startPooledOmniRushServer(input: { root: string; engineUrl: strin
 
 describe("engine event stream heartbeat", () => {
   test("emits data-bearing heartbeats on a quiet stream instead of SSE comments", async () => {
-    setEnv("OMNIRUSH_ENGINE_EVENT_HEARTBEAT_MS", "50");
-    const root = await mkdtemp(join(tmpdir(), "omnirush-event-heartbeat-"));
+    setEnv("MARS_ENGINE_EVENT_HEARTBEAT_MS", "50");
+    const root = await mkdtemp(join(tmpdir(), "mars-event-heartbeat-"));
     roots.push(root);
     await mkdir(join(root, ".opencode"), { recursive: true });
     const engine = startMockEngine();
-    const omnirush = await startPooledOmniRushServer({ root, engineUrl: engine.url });
+    const mars = await startPooledMarsServer({ root, engineUrl: engine.url });
 
     const controller = new AbortController();
-    const response = await fetch(`${omnirush.base}/workspace/ws_heartbeat/opencode/event`, {
-      headers: { Authorization: `Bearer ${omnirush.token}`, Accept: "text/event-stream" },
+    const response = await fetch(`${mars.base}/workspace/ws_heartbeat/opencode/event`, {
+      headers: { Authorization: `Bearer ${mars.token}`, Accept: "text/event-stream" },
       signal: controller.signal,
     });
     expect(response.status).toBe(200);

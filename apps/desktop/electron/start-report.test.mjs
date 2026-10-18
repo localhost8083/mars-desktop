@@ -22,16 +22,16 @@ import {
 } from "./start-report.mjs";
 
 function spawnError(code, errno = -2) {
-  return Object.assign(new Error(`spawn C:\\Users\\Ana\\AppData\\Local\\Programs\\omnirush.ai\\resources\\sidecars\\opencode.exe ${code}`), {
+  return Object.assign(new Error(`spawn C:\\Users\\Ana\\AppData\\Local\\Programs\\marsai.click\\resources\\sidecars\\opencode.exe ${code}`), {
     code,
     errno,
-    syscall: "spawn C:\\Users\\Ana\\AppData\\Local\\Programs\\omnirush.ai\\resources\\sidecars\\opencode.exe",
-    path: "C:\\Users\\Ana\\AppData\\Local\\Programs\\omnirush.ai\\resources\\sidecars\\opencode.exe",
+    syscall: "spawn C:\\Users\\Ana\\AppData\\Local\\Programs\\marsai.click\\resources\\sidecars\\opencode.exe",
+    path: "C:\\Users\\Ana\\AppData\\Local\\Programs\\marsai.click\\resources\\sidecars\\opencode.exe",
   });
 }
 
 function exitError(exitCode, output = "") {
-  return Object.assign(new Error(`OmniRush server exited with code ${exitCode}${output ? `\n${output}` : ""}`), { exitCode });
+  return Object.assign(new Error(`Mars server exited with code ${exitCode}${output ? `\n${output}` : ""}`), { exitCode });
 }
 
 test("start failures are classified from the error the start threw", () => {
@@ -39,7 +39,7 @@ test("start failures are classified from the error the start threw", () => {
     [spawnError("ENOENT"), "engine_missing", "engine_spawn", "ENOENT", "binary_missing"],
     [spawnError("EPERM"), "engine_blocked", "engine_spawn", "EPERM", "spawn_blocked"],
     [spawnError("UNKNOWN", -4094), "engine_blocked", "engine_spawn", "UNKNOWN", "spawn_blocked"],
-    [new Error("Timeout waiting for OmniRush server after 60000ms"), "engine_timeout", "engine_ready", null, "none"],
+    [new Error("Timeout waiting for Mars server after 60000ms"), "engine_timeout", "engine_ready", null, "none"],
     [exitError(3221225501), "engine_cpu_unsupported", "engine_ready", null, "none"],
     [exitError(1, "CPU lacks AVX support. Please consider upgrading to a newer CPU."), "engine_cpu_unsupported", "engine_ready", null, "none"],
     [exitError(3221225506), "engine_blocked", "engine_ready", null, "exec_status_blocked"],
@@ -49,9 +49,9 @@ test("start failures are classified from the error the start threw", () => {
     [exitError(1, "ConfigJsonError: C:\\Users\\Ana\\.config\\opencode\\opencode.json is not valid JSON"), "config_invalid", "engine_ready", null, "none"],
     [exitError(1, "SQLITE_CORRUPT: database disk image is malformed"), "store_error", "engine_ready", "SQLITE_CORRUPT", "none"],
     [exitError(1, "something else"), "engine_exit", "engine_ready", null, "none"],
-    [new Error("Managed OmniRush process did not exit after SIGKILL"), "engine_stuck", "engine_ready", null, "none"],
-    [new Error("Cannot find OmniRush.ai embedded server bundle. Checked: C:\\x"), "server_bundle_missing", "server", null, "none"],
-    [new Error("OmniRush.ai server did not stay running after startup."), "server_not_ready", "server_ready", null, "none"],
+    [new Error("Managed Mars process did not exit after SIGKILL"), "engine_stuck", "engine_ready", null, "none"],
+    [new Error("Cannot find MarsAI embedded server bundle. Checked: C:\\x"), "server_bundle_missing", "server", null, "none"],
+    [new Error("MarsAI server did not stay running after startup."), "server_not_ready", "server_ready", null, "none"],
     [Object.assign(new Error("ENOSPC: no space left on device, write"), { code: "ENOSPC" }), "disk_full", "server", "ENOSPC", "none"],
     [Object.assign(new Error("Configuration is invalid"), { name: "OpencodeConfigCompatError" }), "config_incompatible", "server", null, "none"],
     [new Error("boom"), "unknown", "unknown", null, "none"],
@@ -80,11 +80,11 @@ test("start failures are classified from the error the start threw", () => {
 });
 
 test("messages keep no paths, names, addresses or tokens", () => {
-  const roots = ["C:\\Users\\Ana Lucía", "C:\\Users\\Ana Lucía\\AppData\\Roaming\\ai.omnirush.desktop"];
+  const roots = ["C:\\Users\\Ana Lucía", "C:\\Users\\Ana Lucía\\AppData\\Roaming\\ai.marsai.desktop"];
   const samples = [
     spawnError("ENOENT"),
     new Error("Workspace path is not accessible: C:\\Users\\Ana Lucía\\OneDrive\\Documents\\work"),
-    new Error("EPERM: operation not permitted, open 'C:/Users/Ana Lucía/AppData/Roaming/omnirush/server.json'"),
+    new Error("EPERM: operation not permitted, open 'C:/Users/Ana Lucía/AppData/Roaming/mars/server.json'"),
     new Error("read \\\\fileserver\\profiles$\\ana\\x failed for ana@example.com"),
     new Error("cannot open /home/ana/.config/opencode/opencode.json (see https://example.com/help)"),
     new Error("token sk-abcdefghijklmnopqrstuvwxyz0123456789ABCD rejected for user anaLucia"),
@@ -101,7 +101,7 @@ test("messages keep no paths, names, addresses or tokens", () => {
   assert.match(scrubStartMessage(exitError(1, "line two\nerror: database is locked")), /exited with code 1 \| engine_error=sqlite_busy \| error: database is locked/);
 });
 
-// The server's last check (omnirush/crash_reports.py _PERSONAL): a message
+// The server's last check (mars/crash_reports.py _PERSONAL): a message
 // matching it is dropped. Scrubbed messages must never match it.
 const SERVER_DROP = new RegExp([
   String.raw`\\`,
@@ -354,7 +354,7 @@ test("an engine exit keeps the engine's own error line and its kind", () => {
   const cases = [
     ["attempt to write a readonly database", "sqlite_readonly"],
     ["database is locked", "sqlite_busy"],
-    ["EPERM: operation not permitted, rename 'C:\\Users\\Ana\\AppData\\Roaming\\ai.omnirush.desktop\\engine-data\\omnirush\\x.tmp'", "eperm"],
+    ["EPERM: operation not permitted, rename 'C:\\Users\\Ana\\AppData\\Roaming\\ai.marsai.desktop\\engine-data\\mars\\x.tmp'", "eperm"],
     ["Migration 20260101_session failed", "migration"],
     ["JSON Parse error: Unexpected EOF", "json"],
     // What the engine printed on the VM with a read-only opencode.db.
@@ -367,7 +367,7 @@ test("an engine exit keeps the engine's own error line and its kind", () => {
     assert.equal(engineErrorLine(error.message), line);
     assert.equal(engineErrorKind(line), kind);
     const text = scrubStartMessage(error, { roots: ["C:\\Users\\Ana"], userName: "Ana" });
-    assert.ok(text.startsWith(`OmniRush server exited with code 1 | engine_error=${kind} | `), text);
+    assert.ok(text.startsWith(`Mars server exited with code 1 | engine_error=${kind} | `), text);
     assert.doesNotMatch(text, /\u001b|Unexpected error|Ana|\\/, text);
     assert.doesNotMatch(text, SERVER_DROP, text);
   }

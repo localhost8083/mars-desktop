@@ -1,10 +1,10 @@
-import { createHeadlessThreadClient, toTranscript, type AgentSessionClient, type HeadlessThreadModel } from "@omnirush/headless-threads"
+import { createHeadlessThreadClient, toTranscript, type AgentSessionClient, type HeadlessThreadModel } from "@mars/headless-threads"
 import { and, eq, isNull } from "@omnirush-ee/den-db/drizzle"
 import { MemberTable } from "@omnirush-ee/den-db/schema/org"
 import { createDenTypeId, normalizeDenTypeId, type DenTypeId } from "@omnirush-ee/utils/typeid"
 import { z } from "zod"
-import { desktopRunnerConnected } from "@omnirush/automations"
-import { REMOTE_SESSION_DESKTOP_RUNNER_CAPABILITY } from "@omnirush/types/automations"
+import { desktopRunnerConnected } from "@mars/automations"
+import { REMOTE_SESSION_DESKTOP_RUNNER_CAPABILITY } from "@mars/types/automations"
 import { db } from "../db.js"
 import { env } from "../env.js"
 import {

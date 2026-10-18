@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 export async function paidUsageFixture() {
   const url = new URL(process.env.DATABASE_URL);
-  if (url.hostname !== "127.0.0.1" || !/^\/omnirush_eval_/.test(url.pathname)) throw new Error("Settlement fixture requires a disposable testkit database");
+  if (url.hostname !== "127.0.0.1" || !/^\/mars_eval_/.test(url.pathname)) throw new Error("Settlement fixture requires a disposable testkit database");
   const require = createRequire(new URL("../../env/package.json", import.meta.url));
   const { createConnection } = require("mysql2/promise");
   const connection = { host: url.hostname, port: Number(url.port || 3306), user: decodeURIComponent(url.username), password: decodeURIComponent(url.password), database: url.pathname.slice(1), timezone: "Z" };

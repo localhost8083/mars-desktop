@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Start the OmniRush.ai desktop dev stack inside a Daytona/devcontainer sandbox.
+# Start the MarsAI desktop dev stack inside a Daytona/devcontainer sandbox.
 # This is the sandbox equivalent of `pnpm dev`: it prepares the virtual display
 # and launches the desktop dev runner in the background with CDP enabled.
 
@@ -9,7 +9,7 @@ if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
   printf '%s\n' \
     "Usage: pnpm dev:sandbox" \
     "" \
-    "Starts the OmniRush.ai desktop dev stack inside a Daytona/devcontainer sandbox." \
+    "Starts the MarsAI desktop dev stack inside a Daytona/devcontainer sandbox." \
     "Use .devcontainer/test-on-daytona.sh [branch-or-commit] to provision a new Daytona sandbox."
   exit 0
 fi
@@ -20,8 +20,8 @@ if [ "$#" -gt 0 ]; then
   exit 1
 fi
 
-if [ -n "${OMNIRUSH_WORKSPACE_DIR:-}" ]; then
-  REPO_DIR="$OMNIRUSH_WORKSPACE_DIR"
+if [ -n "${MARS_WORKSPACE_DIR:-}" ]; then
+  REPO_DIR="$MARS_WORKSPACE_DIR"
 elif [ -f /workspace/package.json ]; then
   REPO_DIR="/workspace"
 else
@@ -29,12 +29,12 @@ else
 fi
 
 cd "$REPO_DIR"
-export OMNIRUSH_WORKSPACE_DIR="$REPO_DIR"
-export OMNIRUSH_DEV_MODE="${OMNIRUSH_DEV_MODE:-1}"
+export MARS_WORKSPACE_DIR="$REPO_DIR"
+export MARS_DEV_MODE="${MARS_DEV_MODE:-1}"
 export DISPLAY="${DISPLAY:-:99}"
 export ELECTRON_DISABLE_SANDBOX="${ELECTRON_DISABLE_SANDBOX:-1}"
-export OMNIRUSH_REACT_DEVTOOLS="${OMNIRUSH_REACT_DEVTOOLS:-0}"
-export OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT="${OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT:-9825}"
+export MARS_REACT_DEVTOOLS="${MARS_REACT_DEVTOOLS:-0}"
+export MARS_ELECTRON_REMOTE_DEBUG_PORT="${MARS_ELECTRON_REMOTE_DEBUG_PORT:-9825}"
 export DAYTONA_ELECTRON_EXTRA_LAUNCH_ARGS="${DAYTONA_ELECTRON_EXTRA_LAUNCH_ARGS:---disable-gpu --disable-dev-shm-usage --enable-unsafe-swiftshader}"
 
 VNC_SCRIPT="$REPO_DIR/.devcontainer/start-daytona-vnc.sh"
@@ -43,13 +43,13 @@ ELECTRON_SCRIPT="$REPO_DIR/.devcontainer/start-daytona-electron.sh"
 echo "==> Starting Daytona display stack..."
 bash "$VNC_SCRIPT"
 
-echo "==> Starting OmniRush.ai dev stack in background..."
+echo "==> Starting MarsAI dev stack in background..."
 bash "$ELECTRON_SCRIPT" --detach
 
-echo "==> Waiting for Electron CDP on :$OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT..."
+echo "==> Waiting for Electron CDP on :$MARS_ELECTRON_REMOTE_DEBUG_PORT..."
 for _ in $(seq 1 30); do
-  if curl -sf "http://127.0.0.1:$OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT/json/list" >/dev/null 2>&1; then
-    echo "OmniRush.ai sandbox dev stack is ready."
+  if curl -sf "http://127.0.0.1:$MARS_ELECTRON_REMOTE_DEBUG_PORT/json/list" >/dev/null 2>&1; then
+    echo "MarsAI sandbox dev stack is ready."
     echo "Electron log: /tmp/electron.log"
     exit 0
   fi

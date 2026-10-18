@@ -1,7 +1,7 @@
 import { getMcpServerName, type McpDirectoryInfo } from "../../../app/constants";
 import { CLOUD_MCP_SERVER_NAME } from "./cloud-mcp-user-state";
 
-export function conflictsWithOmniRushConnect(
+export function conflictsWithMarsConnect(
   entry: Pick<McpDirectoryInfo, "id" | "name" | "serverName" | "managedBy">,
 ): boolean {
   const serverName = entry.id ?? getMcpServerName({
@@ -9,6 +9,6 @@ export function conflictsWithOmniRushConnect(
     description: "",
     oauth: false,
   });
-  const reservedNames = new Set([CLOUD_MCP_SERVER_NAME, "omnirush-ai-cloud"]);
-  return entry.managedBy !== "omnirush-connect" && reservedNames.has(serverName);
+  const reservedNames = new Set([CLOUD_MCP_SERVER_NAME, "mars-ai-cloud"]);
+  return entry.managedBy !== "mars-connect" && reservedNames.has(serverName);
 }

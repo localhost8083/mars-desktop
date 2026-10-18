@@ -1,11 +1,11 @@
 {
   "version": "2026.10.2",
-  "registry": "ghcr.io/omnirush-ai",
+  "registry": "ghcr.io/mars-ai",
   "images": {
     "base": { "ref": "ghcr.io/omnirush-ai/box-base:2026.10.2", "digest": "sha256:f5946a636f4bee82c88b1b38380303a5e4f6ec6a196b19768ba183099b37c15e", "approx_mb": 260 },
-    "go": { "ref": "ghcr.io/omnirush-ai/box-go:2026.10.2", "digest": "sha256:d22f71e65f9379f3fc3a580be7f6552486bb9670d46dd985581557266d2e7bee", "approx_mb": 330 },
-    "rust": { "ref": "ghcr.io/omnirush-ai/box-rust:2026.10.2", "digest": "sha256:05630137659e704cad217b9da596716808656cc3e2983136fe7003a9204b49fe", "approx_mb": 490 },
-    "java": { "ref": "ghcr.io/omnirush-ai/box-java:2026.10.2", "digest": "sha256:079e0bd9dd5c1e2226621355f3e8767fc614f0c7e7291b4c19aeb86fd0a4751a", "approx_mb": 420 },
-    "ruby": { "ref": "ghcr.io/omnirush-ai/box-ruby:2026.10.2", "digest": "sha256:844cbfc91fb035d8b96887aa08c89eee1a8177d83d9bb0faf4dd1aaca23f6331", "approx_mb": 270 }
+    "go": { "ref": "ghcr.io/mars-ai/box-go:2026.10.2", "digest": "sha256:d22f71e65f9379f3fc3a580be7f6552486bb9670d46dd985581557266d2e7bee", "approx_mb": 330 },
+    "rust": { "ref": "ghcr.io/mars-ai/box-rust:2026.10.2", "digest": "sha256:05630137659e704cad217b9da596716808656cc3e2983136fe7003a9204b49fe", "approx_mb": 490 },
+    "java": { "ref": "ghcr.io/mars-ai/box-java:2026.10.2", "digest": "sha256:079e0bd9dd5c1e2226621355f3e8767fc614f0c7e7291b4c19aeb86fd0a4751a", "approx_mb": 420 },
+    "ruby": { "ref": "ghcr.io/mars-ai/box-ruby:2026.10.2", "digest": "sha256:844cbfc91fb035d8b96887aa08c89eee1a8177d83d9bb0faf4dd1aaca23f6331", "approx_mb": 270 }
   }
 }

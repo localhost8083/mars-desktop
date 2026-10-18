@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/testkit",
+  "name": "@mars/testkit",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,13 +12,13 @@
     "./stack": "./src/stack.ts"
   },
   "dependencies": {
-    "@omnirush/behaviors": "workspace:*",
-    "@omnirush/cdp": "workspace:*",
-    "@omnirush/env": "workspace:*",
-    "@omnirush/test-evidence": "workspace:*",
-    "@omnirush/test-artifacts": "workspace:*",
-    "@omnirush/hosts": "workspace:*",
-    "@omnirush/labs": "workspace:*",
+    "@mars/behaviors": "workspace:*",
+    "@mars/cdp": "workspace:*",
+    "@mars/env": "workspace:*",
+    "@mars/test-evidence": "workspace:*",
+    "@mars/test-artifacts": "workspace:*",
+    "@mars/hosts": "workspace:*",
+    "@mars/labs": "workspace:*",
     "mysql2": "^3.11.3",
     "vitest": "^3.2.4"
   }

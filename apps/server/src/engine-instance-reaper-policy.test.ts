@@ -6,7 +6,7 @@ import {
 } from "./engine-instance-reaper.js";
 
 const ENGINE_URL = "http://127.0.0.1:4101";
-const TTL_ENV = "OMNIRUSH_ENGINE_INSTANCE_IDLE_TTL_MS";
+const TTL_ENV = "MARS_ENGINE_INSTANCE_IDLE_TTL_MS";
 
 type Harness = {
   reaper: EngineInstanceReaper;

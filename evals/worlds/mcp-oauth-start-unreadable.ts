@@ -1,6 +1,6 @@
-import { allocateFreePorts } from "@omnirush/cdp";
-import { faultProxy as startFaultProxy, mcpMock } from "@omnirush/env";
-import type { MockHandle, Place, Seed } from "@omnirush/env";
+import { allocateFreePorts } from "@mars/cdp";
+import { faultProxy as startFaultProxy, mcpMock } from "@mars/env";
+import type { MockHandle, Place, Seed } from "@mars/env";
 
 /**
  * A member's browser talking to den-api through a proxy that can answer the

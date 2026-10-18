@@ -29,7 +29,7 @@ try {
     const build = spawnSync("pnpm", ["exec", "vite", "build", "--outDir", fileURLToPath(scratchDir)], {
       cwd: packageDir,
       stdio: "inherit",
-      env: { ...process.env, OMNIRUSH_MCP_APP: app.entry },
+      env: { ...process.env, MARS_MCP_APP: app.entry },
     })
     if (build.status !== 0) {
       throw new Error(`vite build failed for ${app.entry}`)

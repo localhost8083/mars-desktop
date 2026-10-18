@@ -5,7 +5,7 @@ import {
   type AutomationError,
   type AutomationRunEventType,
   type AutomationUsage,
-} from "@omnirush/types/automations"
+} from "@mars/types/automations"
 import {
   automationEngineAdmissionReceiptSchema,
   automationEngineAdmissionRequestSchema,

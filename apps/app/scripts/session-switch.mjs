@@ -70,13 +70,13 @@ try {
   let sessionB;
 
   await step("session.create A", async () => {
-    sessionA = await client.session.create({ title: "OmniRush.ai session A" });
+    sessionA = await client.session.create({ title: "MarsAI session A" });
     assert.ok(sessionA?.id);
     return { id: sessionA.id };
   });
 
   await step("session.create B", async () => {
-    sessionB = await client.session.create({ title: "OmniRush.ai session B" });
+    sessionB = await client.session.create({ title: "MarsAI session B" });
     assert.ok(sessionB?.id);
     return { id: sessionB.id };
   });

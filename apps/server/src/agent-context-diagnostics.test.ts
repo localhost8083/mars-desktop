@@ -20,7 +20,7 @@ import {
   AGENT_CONTEXT_DIAGNOSTIC_CHECK_IDS,
   agentContextDiagnosticsReportSchema,
   type AgentContextDiagnosticsRequest,
-} from "@omnirush/types/agent-context-diagnostics";
+} from "@mars/types/agent-context-diagnostics";
 
 import {
   classifyEngineMcpTransportCause,
@@ -29,7 +29,7 @@ import {
 } from "./agent-context-diagnostics.js";
 import type { InspectAgentDiagnosticsEngine } from "./agent-context-engine-inspection.js";
 import type { ConnectSnapshot } from "./connect-state.js";
-import { buildOmniRushRuntimeConfigObjectFromSnapshot } from "./omnirush-runtime-config.js";
+import { buildMarsRuntimeConfigObjectFromSnapshot } from "./mars-runtime-config.js";
 import { runtimeDbPath } from "./runtime-db.js";
 import {
   inspectEngineMcpRegistration,
@@ -67,7 +67,7 @@ const DYNAMIC_URL_CANARY = "https://labels.invalid/mcp?access_token=DYNAMIC_URL_
 const DYNAMIC_PATH_CANARY = "/Users/diagnostics/private/mcp.json";
 const execFileAsync = promisify(execFile);
 const nativeFetch = globalThis.fetch;
-const nativeTelemetry = globalThis.__omnirushDesktopTelemetry;
+const nativeTelemetry = globalThis.__marsDesktopTelemetry;
 const roots: string[] = [];
 const stops: Array<() => void | Promise<void>> = [];
 
@@ -87,10 +87,10 @@ function cloudConfig(): Record<string, unknown> {
 
 function diagnosticRuntimeConfig(): RuntimeOpencodeConfig {
   return {
-    default_agent: `omnirush ${DYNAMIC_BEARER_CANARY}`,
+    default_agent: `mars ${DYNAMIC_BEARER_CANARY}`,
     plugin: [`audit-label ${DYNAMIC_SECRET_ASSIGNMENT_CANARY}`],
     mcp: {
-      "omnirush-cloud": cloudConfig(),
+      "mars-cloud": cloudConfig(),
       "non-cloud-canary": {
         type: "remote",
         url: "https://non-cloud.invalid/mcp?token=CANARY_QUERY_SECRET",
@@ -130,31 +130,31 @@ function effectiveEngineInspection(
     hidden?: boolean;
     prompt?: string;
     pluginSpecs?: string[];
-    decisions?: Partial<Record<"omnirush-cloud_search_capabilities" | "omnirush-cloud_execute_capability", "allow" | "ask" | "deny">>;
+    decisions?: Partial<Record<"mars-cloud_search_capabilities" | "mars-cloud_execute_capability", "allow" | "ask" | "deny">>;
   },
 ): InspectAgentDiagnosticsEngine {
   const decisions = {
-    "omnirush-cloud_search_capabilities": "allow" as const,
-    "omnirush-cloud_execute_capability": "allow" as const,
+    "mars-cloud_search_capabilities": "allow" as const,
+    "mars-cloud_execute_capability": "allow" as const,
     ...options?.decisions,
   };
-  const canonicalConfig = buildOmniRushRuntimeConfigObjectFromSnapshot(runtime);
+  const canonicalConfig = buildMarsRuntimeConfigObjectFromSnapshot(runtime);
   const canonicalAgents = typeof canonicalConfig.agent === "object" && canonicalConfig.agent !== null
     && !Array.isArray(canonicalConfig.agent)
     ? canonicalConfig.agent as Record<string, unknown>
     : {};
-  const canonicalAgent = typeof canonicalAgents.omnirush === "object" && canonicalAgents.omnirush !== null
-    && !Array.isArray(canonicalAgents.omnirush)
-    ? canonicalAgents.omnirush as Record<string, unknown>
+  const canonicalAgent = typeof canonicalAgents.mars === "object" && canonicalAgents.mars !== null
+    && !Array.isArray(canonicalAgents.mars)
+    ? canonicalAgents.mars as Record<string, unknown>
     : {};
   return async () => ({
     config: {
-      default_agent: options?.defaultAgent === null ? undefined : options?.defaultAgent ?? "omnirush",
+      default_agent: options?.defaultAgent === null ? undefined : options?.defaultAgent ?? "mars",
       plugin: options?.pluginSpecs ?? openCodeNormalizedPluginSpecs(canonicalConfig.plugin),
       mcp: canonicalConfig.mcp,
     },
     agents: [{
-      name: options?.agentName ?? "omnirush",
+      name: options?.agentName ?? "mars",
       mode: options?.agentMode ?? "primary",
       hidden: options?.hidden,
       prompt: options?.prompt ?? String(canonicalAgent.prompt ?? ""),
@@ -168,7 +168,7 @@ function effectiveEngineInspection(
   });
 }
 
-async function createRoot(prefix = "omnirush-agent-context-diagnostics-"): Promise<string> {
+async function createRoot(prefix = "mars-agent-context-diagnostics-"): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), prefix));
   roots.push(root);
   return root;
@@ -184,7 +184,7 @@ function closeTlsServer(server: tls.Server): Promise<void> {
 }
 
 async function selfSignedCertificate(): Promise<{ key: string; cert: string }> {
-  const root = await createRoot("omnirush-agent-context-diagnostics-tls-");
+  const root = await createRoot("mars-agent-context-diagnostics-tls-");
   const keyPath = join(root, "key.pem");
   const certPath = join(root, "cert.pem");
   await execFileAsync("openssl", [
@@ -337,9 +337,9 @@ function checkById(
 
 function startRecordingServer() {
   const requests: Array<{ method: string; pathname: string; body: unknown }> = [];
-  const canonicalConfig = buildOmniRushRuntimeConfigObjectFromSnapshot({
+  const canonicalConfig = buildMarsRuntimeConfigObjectFromSnapshot({
     ...diagnosticRuntimeConfig(),
-    default_agent: "omnirush",
+    default_agent: "mars",
   });
   const canonicalAgents = canonicalConfig.agent as Record<string, Record<string, unknown>>;
   const server = Bun.serve({
@@ -355,19 +355,19 @@ function startRecordingServer() {
       });
       if (request.method === "GET" && url.pathname === "/config") {
         return Response.json({
-          default_agent: "omnirush",
+          default_agent: "mars",
           plugin: openCodeNormalizedPluginSpecs(canonicalConfig.plugin),
           mcp: canonicalConfig.mcp,
         });
       }
       if (request.method === "GET" && url.pathname === "/agent") {
         return Response.json([{
-          name: "omnirush",
+          name: "mars",
           mode: "primary",
-          prompt: canonicalAgents.omnirush?.prompt,
+          prompt: canonicalAgents.mars?.prompt,
           permission: [
-            { permission: "omnirush-cloud_search_capabilities", pattern: "*", action: "allow" },
-            { permission: "omnirush-cloud_execute_capability", pattern: "*", action: "allow" },
+            { permission: "mars-cloud_search_capabilities", pattern: "*", action: "allow" },
+            { permission: "mars-cloud_execute_capability", pattern: "*", action: "allow" },
           ],
           options: {},
         }]);
@@ -386,7 +386,7 @@ function startRecordingServer() {
   return { requests, baseUrl: `http://127.0.0.1:${server.port}` };
 }
 
-async function startOmniRush(config: ServerConfig) {
+async function startMars(config: ServerConfig) {
   const baseUrl = config.workspaces[0]?.baseUrl ?? config.opencodeBaseUrl;
   if (baseUrl) {
     registerTrustedOpencodeProcess(config, {
@@ -470,7 +470,7 @@ function clientHeaders(token = CLIENT_TOKEN) {
 }
 
 function hostHeaders() {
-  return { "x-omnirush-host-token": HOST_TOKEN, "Content-Type": "application/json" };
+  return { "x-mars-host-token": HOST_TOKEN, "Content-Type": "application/json" };
 }
 
 async function snapshotTree(root: string): Promise<Record<string, string>> {
@@ -501,12 +501,12 @@ async function snapshotTree(root: string): Promise<Record<string, string>> {
 
 beforeEach(() => {
   globalThis.fetch = nativeFetch;
-  globalThis.__omnirushDesktopTelemetry = nativeTelemetry;
+  globalThis.__marsDesktopTelemetry = nativeTelemetry;
 });
 
 afterEach(async () => {
   globalThis.fetch = nativeFetch;
-  globalThis.__omnirushDesktopTelemetry = nativeTelemetry;
+  globalThis.__marsDesktopTelemetry = nativeTelemetry;
   while (stops.length) await stops.pop()?.();
   while (roots.length) await rm(roots.pop()!, { recursive: true, force: true });
 });
@@ -567,7 +567,7 @@ describe("agent context diagnostics analyzer", () => {
     const opaqueUrlWithoutSlash = "mailto:OPAQUE_NO_SLASH_CANARY";
     const fixture = await createFixture({
       runtime: {
-        default_agent: "omnirush",
+        default_agent: "mars",
         plugin: [signedUrl, malformedUrl, opaqueUrl, opaqueUrlWithoutSlash],
         mcp: {},
       },
@@ -621,12 +621,12 @@ describe("agent context diagnostics analyzer", () => {
     expect(report.overall).toBe("warning");
     expect(report.firstFailedCheck).toBeNull();
     expect(report.observedCloudToolIds).toEqual(["search_capabilities", "execute_capability"]);
-    expect(report.mcps.find((mcp) => mcp.name === "omnirush-cloud")?.path).toBe("/private-prefix/mcp/agent");
+    expect(report.mcps.find((mcp) => mcp.name === "mars-cloud")?.path).toBe("/private-prefix/mcp/agent");
     expect(report.workspace.name).toBe("[redacted-sensitive-label]");
     expect(report.agent.evidenceSource).toBe("effective-engine");
-    expect(report.agent.defaultAgent).toBe("omnirush");
+    expect(report.agent.defaultAgent).toBe("mars");
     expect(report.agent.pluginLabels).toContain("[redacted-sensitive-label]");
-    expect(report.agent.configuredOmniRushAgent.connectToolPermissions).toEqual({
+    expect(report.agent.configuredMarsAgent.connectToolPermissions).toEqual({
       searchCapabilities: "allowed",
       executeCapability: "allowed",
       deniedRelevantToolCount: 0,
@@ -643,14 +643,14 @@ describe("agent context diagnostics analyzer", () => {
       name: "[redacted-sensitive-label]",
     }));
     expect(report.mcps).toContainEqual(expect.objectContaining({
-      name: "omnirush-cloud",
+      name: "mars-cloud",
       source: "config.remote",
       origin: "http://127.0.0.1:43123",
       path: "/private-prefix/mcp/agent",
       syncStatus: "connected",
     }));
     expect(report.mcps).toContainEqual(expect.objectContaining({
-      name: "omnirush-cloud",
+      name: "mars-cloud",
       source: "engine.config",
       syncStatus: "not-applicable",
     }));
@@ -694,7 +694,7 @@ describe("agent context diagnostics analyzer", () => {
     expect(agentContextDiagnosticsReportSchema.safeParse({
       ...report,
       mcps: report.mcps.filter((mcp) =>
-        !(mcp.source === "config.remote" && mcp.name === "omnirush-cloud"),
+        !(mcp.source === "config.remote" && mcp.name === "mars-cloud"),
       ),
     }).success).toBe(false);
     expect(fetchCalls).toHaveLength(4);
@@ -744,7 +744,7 @@ describe("agent context diagnostics analyzer", () => {
       dependencies: { fetchImpl: catalogFetch(["search_capabilities", "execute_capability"], fetchCalls) },
     });
 
-    expect(report.agent.configuredOmniRushAgent.connectToolPermissions).toEqual({
+    expect(report.agent.configuredMarsAgent.connectToolPermissions).toEqual({
       searchCapabilities: "unspecified",
       executeCapability: "unspecified",
       deniedRelevantToolCount: null,
@@ -782,7 +782,7 @@ describe("agent context diagnostics analyzer", () => {
         url: `https://bounded-${index}.invalid/mcp`,
       };
     }
-    manyMcps["omnirush-cloud"] = cloudConfig();
+    manyMcps["mars-cloud"] = cloudConfig();
     runtime.mcp = manyMcps;
     const fixture = await createFixture({ runtime });
     const fetchCalls: CatalogFetchCall[] = [];
@@ -800,7 +800,7 @@ describe("agent context diagnostics analyzer", () => {
 
     expect(report.mcps).toHaveLength(200);
     expect(report.mcps).toContainEqual(expect.objectContaining({
-      name: "omnirush-cloud",
+      name: "mars-cloud",
       source: "config.remote",
       path: "/private-prefix/mcp/agent",
       syncStatus: "connected",
@@ -829,13 +829,13 @@ describe("agent context diagnostics analyzer", () => {
       dependencies: {
         fetchImpl: catalogFetch(["search_capabilities", "execute_capability"], fetchCalls),
         inspectEffectiveEngine: effectiveEngineInspection(diagnosticRuntimeConfig(), {
-          decisions: { "omnirush-cloud_search_capabilities": "deny" },
+          decisions: { "mars-cloud_search_capabilities": "deny" },
         }),
       },
     });
 
     expect(report.agent.evidenceSource).toBe("effective-engine");
-    expect(report.agent.configuredOmniRushAgent.connectToolPermissions).toEqual({
+    expect(report.agent.configuredMarsAgent.connectToolPermissions).toEqual({
       searchCapabilities: "denied",
       executeCapability: "allowed",
       deniedRelevantToolCount: 1,
@@ -853,7 +853,7 @@ describe("agent context diagnostics analyzer", () => {
       details: { requestPerformed: true },
     });
     expect(report.mcps.find(
-      (mcp) => mcp.name === "omnirush-cloud" && mcp.source === "engine.config",
+      (mcp) => mcp.name === "mars-cloud" && mcp.source === "engine.config",
     )).toMatchObject({
       source: "engine.config",
       disabledByTools: true,
@@ -873,12 +873,12 @@ describe("agent context diagnostics analyzer", () => {
       dependencies: {
         fetchImpl: catalogFetch(["search_capabilities", "execute_capability"], fetchCalls),
         inspectEffectiveEngine: effectiveEngineInspection(diagnosticRuntimeConfig(), {
-          decisions: { "omnirush-cloud_search_capabilities": "ask" },
+          decisions: { "mars-cloud_search_capabilities": "ask" },
         }),
       },
     }));
 
-    expect(report.agent.configuredOmniRushAgent.connectToolPermissions).toEqual({
+    expect(report.agent.configuredMarsAgent.connectToolPermissions).toEqual({
       searchCapabilities: "approval-required",
       executeCapability: "allowed",
       deniedRelevantToolCount: 0,
@@ -923,7 +923,7 @@ describe("agent context diagnostics analyzer", () => {
       status: "warning",
       evidenceKind: "unavailable",
       code: "connect_state_unavailable",
-      owner: "omnirush-server",
+      owner: "mars-server",
       details: { connectStateStatus: "invalid" },
     });
   });
@@ -947,7 +947,7 @@ describe("agent context diagnostics analyzer", () => {
     });
 
     fixture.config.localManagedMcpVaultKey = async () => new Uint8Array(32);
-    const quarantinedTo = "local-managed-mcp-vault.json.omnirush-backup-20260815094500";
+    const quarantinedTo = "local-managed-mcp-vault.json.mars-backup-20260815094500";
     await writeFile(join(fixture.root, "state", "local-managed-mcp-vault.json"), JSON.stringify({
       schemaVersion: 2,
       index: {},
@@ -965,7 +965,7 @@ describe("agent context diagnostics analyzer", () => {
     });
   });
 
-  test("assigns missing and disabled client runtime cloud entries to the OmniRush.ai client", async () => {
+  test("assigns missing and disabled client runtime cloud entries to the MarsAI client", async () => {
     const missing = await createFixture({ runtime: {} });
     const missingReport = await runAgentContextDiagnostics({
       config: missing.config,
@@ -975,12 +975,12 @@ describe("agent context diagnostics analyzer", () => {
     });
     expect(checkById(missingReport, "cloud-tool-catalog")).toMatchObject({
       code: "cloud_mcp_missing",
-      owner: "omnirush-client",
+      owner: "mars-client",
     });
 
     const disabled = await createFixture({
       runtime: {
-        mcp: { "omnirush-cloud": { ...cloudConfig(), enabled: false } },
+        mcp: { "mars-cloud": { ...cloudConfig(), enabled: false } },
       },
     });
     const disabledReport = await runAgentContextDiagnostics({
@@ -991,14 +991,14 @@ describe("agent context diagnostics analyzer", () => {
     });
     expect(checkById(disabledReport, "cloud-tool-catalog")).toMatchObject({
       code: "cloud_mcp_disabled",
-      owner: "omnirush-client",
+      owner: "mars-client",
     });
   });
 
   test("names the trusted-origins environment variable for untrusted cloud endpoints", async () => {
     const runtime = diagnosticRuntimeConfig();
     if (!runtime.mcp) throw new Error("Expected the diagnostics MCP fixture.");
-    runtime.mcp["omnirush-cloud"] = {
+    runtime.mcp["mars-cloud"] = {
       ...cloudConfig(),
       url: "https://den.customer.example/custom/mcp/agent",
     };
@@ -1021,14 +1021,14 @@ describe("agent context diagnostics analyzer", () => {
       status: "warning",
       evidenceKind: "unavailable",
       code: "untrusted_endpoint",
-      owner: "omnirush-server",
+      owner: "mars-server",
       details: { requestPerformed: false, handshakePerformed: false, stage: "eligibility" },
     });
     // An untrusted origin means no request occurred; the report must describe
     // a trust-configuration state, never a network, TLS, or MCP failure.
     expect(check.message).toContain("not performed");
     expect(check.message).toContain("trust");
-    expect(check.action).toContain("OMNIRUSH_AGENT_DIAGNOSTICS_TRUSTED_ORIGINS");
+    expect(check.action).toContain("MARS_AGENT_DIAGNOSTICS_TRUSTED_ORIGINS");
     expect(checkById(report, "cloud-endpoint-differential")).toMatchObject({
       status: "skipped",
       code: "runtime_probe_not_performed",
@@ -1041,7 +1041,7 @@ describe("agent context diagnostics analyzer", () => {
   test("probes an on-prem endpoint this installation is activated against", async () => {
     const runtime = diagnosticRuntimeConfig();
     if (!runtime.mcp) throw new Error("Expected the diagnostics MCP fixture.");
-    runtime.mcp["omnirush-cloud"] = {
+    runtime.mcp["mars-cloud"] = {
       ...cloudConfig(),
       url: "https://den.customer.example/custom/mcp/agent",
     };
@@ -1078,7 +1078,7 @@ describe("agent context diagnostics analyzer", () => {
     });
     expect(fetchCalls).toHaveLength(4);
     // The handshake must reach the operator's own Den deployment. Trusting an
-    // origin never redirects the probe to OmniRush.ai-hosted Cloud.
+    // origin never redirects the probe to MarsAI-hosted Cloud.
     expect(fetchCalls.map((call) => call.url)).toEqual([
       "https://den.customer.example/custom/mcp/agent",
       "https://den.customer.example/custom/mcp/agent",
@@ -1087,7 +1087,7 @@ describe("agent context diagnostics analyzer", () => {
     ]);
     expect(fetchCalls.some((call) => new URL(call.url).origin !== "https://den.customer.example")).toBe(false);
     expect(report.mcps).toContainEqual(expect.objectContaining({
-      name: "omnirush-cloud",
+      name: "mars-cloud",
       source: "config.remote",
       origin: "https://den.customer.example",
       path: "/custom/mcp/agent",
@@ -1097,7 +1097,7 @@ describe("agent context diagnostics analyzer", () => {
   test("distinguishes an activation origin that does not match the configured cloud MCP", async () => {
     const runtime = diagnosticRuntimeConfig();
     if (!runtime.mcp) throw new Error("Expected the diagnostics MCP fixture.");
-    runtime.mcp["omnirush-cloud"] = {
+    runtime.mcp["mars-cloud"] = {
       ...cloudConfig(),
       url: "https://den.customer.example/custom/mcp/agent",
     };
@@ -1129,17 +1129,17 @@ describe("agent context diagnostics analyzer", () => {
 
   test("treats the retired hosted Den origins as untrusted", async () => {
     const retiredEndpoints = [
-      "https://app.omnirushlabs.com/api/den/mcp/agent",
-      "https://api.omnirushlabs.com/mcp/agent",
-      "https://api.app.omnirushlabs.com/mcp/agent",
-      "https://app.omnirush.software/api/den/mcp/agent",
-      "https://api.omnirush.software/mcp/agent",
+      "https://app.marslabs.com/api/den/mcp/agent",
+      "https://api.marslabs.com/mcp/agent",
+      "https://api.app.marslabs.com/mcp/agent",
+      "https://app.mars.software/api/den/mcp/agent",
+      "https://api.mars.software/mcp/agent",
     ];
     for (const url of retiredEndpoints) {
       for (const activatedOrigin of [null, "https://den.customer.example"]) {
         const runtime = diagnosticRuntimeConfig();
         if (!runtime.mcp) throw new Error("Expected the diagnostics MCP fixture.");
-        runtime.mcp["omnirush-cloud"] = { ...cloudConfig(), url };
+        runtime.mcp["mars-cloud"] = { ...cloudConfig(), url };
         const fixture = await createFixture({ runtime });
         const fetchCalls: CatalogFetchCall[] = [];
 
@@ -1168,7 +1168,7 @@ describe("agent context diagnostics analyzer", () => {
     const fixture = await createFixture();
     const fetchCalls: CatalogFetchCall[] = [];
     const inspectors: InspectAgentDiagnosticsEngine[] = [
-      async () => ({ config: { default_agent: "omnirush" }, agents: "not-an-array" }),
+      async () => ({ config: { default_agent: "mars" }, agents: "not-an-array" }),
       async () => {
         throw new Error("RAW_ENGINE_ERROR_CANARY");
       },
@@ -1207,7 +1207,7 @@ describe("agent context diagnostics analyzer", () => {
     expect(fetchCalls).toHaveLength(8);
   });
 
-  test("fails closed when the effective engine does not resolve the OmniRush.ai agent", async () => {
+  test("fails closed when the effective engine does not resolve the MarsAI agent", async () => {
     const fixture = await createFixture();
     const fetchCalls: CatalogFetchCall[] = [];
     const report = await runAgentContextDiagnostics({
@@ -1222,10 +1222,10 @@ describe("agent context diagnostics analyzer", () => {
     });
 
     expect(checkById(report, "engine-config")).toMatchObject({ status: "passed", evidenceKind: "observed" });
-    expect(checkById(report, "engine-agent")).toMatchObject({ status: "failed", code: "effective_omnirush_agent_missing" });
+    expect(checkById(report, "engine-agent")).toMatchObject({ status: "failed", code: "effective_mars_agent_missing" });
     expect(checkById(report, "agent-connect-tool-permissions")).toMatchObject({
       status: "warning",
-      details: { policyUnavailableReasons: ["effective_omnirush_agent_missing"] },
+      details: { policyUnavailableReasons: ["effective_mars_agent_missing"] },
     });
     expect(checkById(report, "cloud-tool-catalog")).toMatchObject({
       status: "passed",
@@ -1235,16 +1235,16 @@ describe("agent context diagnostics analyzer", () => {
     expect(fetchCalls).toHaveLength(4);
   });
 
-  test("rejects hidden and subagent-only OmniRush.ai defaults before cloud egress", async () => {
+  test("rejects hidden and subagent-only MarsAI defaults before cloud egress", async () => {
     const fixture = await createFixture();
     const cases = [
       {
         options: { hidden: true, agentMode: "primary" as const },
-        code: "effective_omnirush_agent_hidden",
+        code: "effective_mars_agent_hidden",
       },
       {
         options: { hidden: false, agentMode: "subagent" as const },
-        code: "effective_omnirush_agent_not_primary",
+        code: "effective_mars_agent_not_primary",
       },
     ];
 
@@ -1285,7 +1285,7 @@ describe("agent context diagnostics analyzer", () => {
       dependencies: {
         fetchImpl: catalogFetch(["search_capabilities", "execute_capability"], []),
         inspectEffectiveEngine: effectiveEngineInspection(diagnosticRuntimeConfig(), {
-          prompt: "search_capabilities execute_capability ## OmniRush.ai Artifacts",
+          prompt: "search_capabilities execute_capability ## MarsAI Artifacts",
         }),
       },
     });
@@ -1312,12 +1312,12 @@ describe("agent context diagnostics analyzer", () => {
       dependencies: {
         fetchImpl: catalogFetch(["search_capabilities", "execute_capability"], []),
         inspectEffectiveEngine: effectiveEngineInspection(diagnosticRuntimeConfig(), {
-          pluginSpecs: ["https://plugins.invalid/spoof/omnirush-extensions-preview.ts"],
+          pluginSpecs: ["https://plugins.invalid/spoof/mars-extensions-preview.ts"],
         }),
       },
     });
 
-    expect(report.agent.pluginLabels).toContain("omnirush-extensions-preview");
+    expect(report.agent.pluginLabels).toContain("mars-extensions-preview");
     expect(checkById(report, "plugin-registration")).toMatchObject({
       status: "failed",
       code: "connect_steering_plugin_missing",
@@ -1328,9 +1328,9 @@ describe("agent context diagnostics analyzer", () => {
 
   test("matches the canonical Connect plugin after OpenCode normalizes its absolute path to a file URL", async () => {
     const fixture = await createFixture();
-    const canonicalConfig = buildOmniRushRuntimeConfigObjectFromSnapshot(diagnosticRuntimeConfig());
+    const canonicalConfig = buildMarsRuntimeConfigObjectFromSnapshot(diagnosticRuntimeConfig());
     const normalizedPlugins = openCodeNormalizedPluginSpecs(canonicalConfig.plugin);
-    const canonicalConnectPlugin = normalizedPlugins.find((spec) => spec.includes("omnirush-extensions-preview"));
+    const canonicalConnectPlugin = normalizedPlugins.find((spec) => spec.includes("mars-extensions-preview"));
     if (!canonicalConnectPlugin) throw new Error("Expected the canonical Connect plugin fixture.");
     expect(canonicalConnectPlugin.startsWith("file://")).toBe(true);
 
@@ -1347,7 +1347,7 @@ describe("agent context diagnostics analyzer", () => {
       },
     });
 
-    expect(report.agent.pluginLabels).toContain("omnirush-extensions-preview");
+    expect(report.agent.pluginLabels).toContain("mars-extensions-preview");
     expect(checkById(report, "plugin-registration")).toMatchObject({
       status: "passed",
       code: "connect_steering_plugin_effective",
@@ -1529,14 +1529,14 @@ describe("agent context diagnostics analyzer", () => {
   test("scrubs endpoint-bearing registration errors without losing TLS transport cause", async () => {
     const fixture = await createFixture();
     const fetchCalls: CatalogFetchCall[] = [];
-    const endpointError = "failed to connect to https://omnirush-poc.blueyonder.com/api/den/mcp/agent: unable to verify the first certificate";
+    const endpointError = "failed to connect to https://mars-poc.blueyonder.com/api/den/mcp/agent: unable to verify the first certificate";
     const pathError = "request to /api/den/mcp/agent failed: self signed certificate in certificate chain";
     const report = agentContextDiagnosticsReportSchema.parse(await runAgentContextDiagnostics({
       config: fixture.config,
       workspace: fixture.workspace,
       request: emptyObservedRequest,
       inspectRegistration: (name) => {
-        if (name === "omnirush-cloud") {
+        if (name === "mars-cloud") {
           return { status: "failed", source: "engine_status", recordAgeMs: 1_000, errorSummary: endpointError };
         }
         if (name === "non-cloud-canary") {
@@ -1553,7 +1553,7 @@ describe("agent context diagnostics analyzer", () => {
     const failedRegistrations = checkById(report, "engine-mcp-sync").details.failedRegistrations;
     expect(failedRegistrations).toEqual([
       expect.objectContaining({
-        name: "omnirush-cloud",
+        name: "mars-cloud",
         errorSummary: "failed to connect to [url] unable to verify the first certificate",
         transportCause: "tls_incomplete_chain",
       }),
@@ -1571,7 +1571,7 @@ describe("agent context diagnostics analyzer", () => {
     const port = await startSelfSignedTlsServer();
     const runtime = diagnosticRuntimeConfig();
     if (!runtime.mcp) throw new Error("Expected the diagnostics MCP fixture.");
-    runtime.mcp["omnirush-cloud"] = {
+    runtime.mcp["mars-cloud"] = {
       ...cloudConfig(),
       url: `https://127.0.0.1:${port}/mcp/agent`,
     };
@@ -1638,7 +1638,7 @@ describe("agent context diagnostics analyzer", () => {
         status: "failed",
         source: "transport_failure",
         recordAgeMs: 61_000,
-        errorSummary: name === "omnirush-cloud" ? "unable to verify the first certificate" : null,
+        errorSummary: name === "mars-cloud" ? "unable to verify the first certificate" : null,
       }),
       dependencies: {
         fetchImpl: catalogFetch(["search_capabilities", "execute_capability"], fetchCalls),
@@ -1654,7 +1654,7 @@ describe("agent context diagnostics analyzer", () => {
     });
     expect(check.details.failedRegistrations).toEqual([
       {
-        name: "omnirush-cloud",
+        name: "mars-cloud",
         status: "failed",
         source: "transport_failure",
         recordAgeMs: 61_000,
@@ -1724,7 +1724,7 @@ describe("agent context diagnostics analyzer", () => {
   test("reports a missing credential without putting authorization-shaped text in the report", async () => {
     const runtime = diagnosticRuntimeConfig();
     if (!runtime.mcp) throw new Error("Expected the diagnostics MCP fixture.");
-    runtime.mcp["omnirush-cloud"] = { ...cloudConfig(), headers: {} };
+    runtime.mcp["mars-cloud"] = { ...cloudConfig(), headers: {} };
     const fixture = await createFixture({ runtime });
     const fetchCalls: CatalogFetchCall[] = [];
 
@@ -1742,7 +1742,7 @@ describe("agent context diagnostics analyzer", () => {
     expect(checkById(report, "cloud-tool-catalog")).toMatchObject({
       status: "failed",
       code: "credential_missing",
-      message: "The managed OmniRush.ai Cloud entry does not contain one unambiguous authentication value.",
+      message: "The managed MarsAI Cloud entry does not contain one unambiguous authentication value.",
     });
     expect(fetchCalls).toEqual([]);
   });
@@ -1751,12 +1751,12 @@ describe("agent context diagnostics analyzer", () => {
     const fixture = await createFixture();
     await writeFile(join(fixture.workspaceRoot, "opencode.jsonc"), JSON.stringify({
       permission: {
-        "omnirush-cloud_*": "allow",
+        "mars-cloud_*": "allow",
       },
       agent: {
-        omnirush: {
+        mars: {
           permission: {
-            "omnirush-cloud_search_capabilities": "deny",
+            "mars-cloud_search_capabilities": "deny",
           },
         },
       },
@@ -1773,7 +1773,7 @@ describe("agent context diagnostics analyzer", () => {
 
     expect(report.overall).toBe("failed");
     expect(report.firstFailedCheck).toBe("agent-connect-tool-permissions");
-    expect(report.agent.configuredOmniRushAgent.connectToolPermissions).toEqual({
+    expect(report.agent.configuredMarsAgent.connectToolPermissions).toEqual({
       searchCapabilities: "denied",
       executeCapability: "unspecified",
       deniedRelevantToolCount: 1,
@@ -1795,7 +1795,7 @@ describe("agent context diagnostics analyzer", () => {
       details: { requestPerformed: true },
     });
     expect(report.mcps.find((mcp) => (
-      mcp.name === "omnirush-cloud" && mcp.source === "config.remote"
+      mcp.name === "mars-cloud" && mcp.source === "config.remote"
     ))?.disabledByTools).toBe(true);
     expect(report.safety.cloudCatalogToolsListPerformed).toBe(true);
     expect(fetchCalls).toHaveLength(4);
@@ -1805,7 +1805,7 @@ describe("agent context diagnostics analyzer", () => {
     const fixture = await createFixture();
     await writeFile(join(fixture.workspaceRoot, "opencode.jsonc"), JSON.stringify({
       permission: {
-        "omnirush-cloud_*": ["deny"],
+        "mars-cloud_*": ["deny"],
       },
     }), "utf8");
     const fetchCalls: CatalogFetchCall[] = [];
@@ -1818,7 +1818,7 @@ describe("agent context diagnostics analyzer", () => {
       dependencies: { fetchImpl: catalogFetch(["search_capabilities", "execute_capability"], fetchCalls) },
     }));
 
-    expect(report.agent.configuredOmniRushAgent.connectToolPermissions).toEqual({
+    expect(report.agent.configuredMarsAgent.connectToolPermissions).toEqual({
       searchCapabilities: "unspecified",
       executeCapability: "unspecified",
       deniedRelevantToolCount: null,
@@ -1849,9 +1849,9 @@ describe("agent context diagnostics analyzer", () => {
       workspace: {
         path: "",
         workspaceType: "remote",
-        remoteType: "omnirush",
-        baseUrl: "https://remote-omnirush.invalid",
-        omnirushHostUrl: "https://remote-omnirush.invalid",
+        remoteType: "mars",
+        baseUrl: "https://remote-mars.invalid",
+        marsHostUrl: "https://remote-mars.invalid",
       },
     });
     const fetchCalls: CatalogFetchCall[] = [];
@@ -2003,17 +2003,17 @@ describe("agent context diagnostics analyzer", () => {
     const fixture = await createFixture({ workspace: { baseUrl: engine.baseUrl } });
     const exact = cloudConfig();
 
-    await startOmniRush(fixture.config);
+    await startMars(fixture.config);
     await syncAllWorkspacesRuntimeMcpToEngine(fixture.config);
 
-    expect(inspectEngineMcpRegistration(fixture.config, fixture.workspace, "omnirush-cloud", exact)).toBe("connected");
-    expect(inspectEngineMcpRegistration(fixture.config, fixture.workspace, "omnirush-cloud", {
+    expect(inspectEngineMcpRegistration(fixture.config, fixture.workspace, "mars-cloud", exact)).toBe("connected");
+    expect(inspectEngineMcpRegistration(fixture.config, fixture.workspace, "mars-cloud", {
       headers: { Authorization: CLOUD_BEARER },
       enabled: true,
       url: CLOUD_ENDPOINT,
       type: "remote",
     })).toBe("connected");
-    expect(inspectEngineMcpRegistration(fixture.config, fixture.workspace, "omnirush-cloud", {
+    expect(inspectEngineMcpRegistration(fixture.config, fixture.workspace, "mars-cloud", {
       ...exact,
       headers: { Authorization: "Bearer CHANGED_TOKEN" },
     })).toBe("not-recorded");
@@ -2041,12 +2041,12 @@ describe("agent context diagnostics route", () => {
       if (url === CLOUD_ENDPOINT) return runCatalogFetch(input, init);
       throw new Error("Diagnostics attempted an unexpected downstream endpoint");
     }) as unknown as typeof fetch;
-    const base = await startOmniRush(fixture.config);
+    const base = await startMars(fixture.config);
     await syncAllWorkspacesRuntimeMcpToEngine(fixture.config);
     expect(inspectEngineMcpRegistration(
       fixture.config,
       fixture.workspace,
-      "omnirush-cloud",
+      "mars-cloud",
       cloudConfig(),
     )).toBe("connected");
     const engineRequestCountBeforeDiagnostics = engine.requests.length;
@@ -2095,7 +2095,7 @@ describe("agent context diagnostics route", () => {
       downstreamFetches.push({ input: input instanceof Request ? input.url : String(input) });
       throw new Error("Selected engine is unavailable");
     }) as unknown as typeof fetch;
-    const base = await startOmniRush(fixture.config);
+    const base = await startMars(fixture.config);
     const before = await snapshotTree(fixture.root);
 
     const response = await nativeFetch(`${base}/workspace/${fixture.workspace.id}/diagnostics/agent-context`, {
@@ -2125,15 +2125,15 @@ describe("agent context diagnostics route", () => {
   });
 
   test.serial("types the server-owned diagnostics deadline without capturing it", async () => {
-    const previousTimeout = process.env.OMNIRUSH_AGENT_DIAGNOSTICS_TIMEOUT_MS;
-    process.env.OMNIRUSH_AGENT_DIAGNOSTICS_TIMEOUT_MS = "50";
+    const previousTimeout = process.env.MARS_AGENT_DIAGNOSTICS_TIMEOUT_MS;
+    process.env.MARS_AGENT_DIAGNOSTICS_TIMEOUT_MS = "50";
     const fixture = await createFixture({
       withRuntime: false,
       workspace: { id: "ws_agent_diagnostics_server_timeout" },
     });
-    const base = await startOmniRush(fixture.config);
+    const base = await startMars(fixture.config);
     const captured: unknown[] = [];
-    globalThis.__omnirushDesktopTelemetry = {
+    globalThis.__marsDesktopTelemetry = {
       captureException(error) {
         captured.push(error);
         return true;
@@ -2163,8 +2163,8 @@ describe("agent context diagnostics route", () => {
       expect(await response.json()).toMatchObject({ code: "agent_diagnostics_timeout" });
       expect(captured).toEqual([]);
     } finally {
-      if (previousTimeout === undefined) delete process.env.OMNIRUSH_AGENT_DIAGNOSTICS_TIMEOUT_MS;
-      else process.env.OMNIRUSH_AGENT_DIAGNOSTICS_TIMEOUT_MS = previousTimeout;
+      if (previousTimeout === undefined) delete process.env.MARS_AGENT_DIAGNOSTICS_TIMEOUT_MS;
+      else process.env.MARS_AGENT_DIAGNOSTICS_TIMEOUT_MS = previousTimeout;
     }
   });
 
@@ -2175,7 +2175,7 @@ describe("agent context diagnostics route", () => {
       downstreamFetches.push(String(input));
       throw new Error("Viewer request unexpectedly performed downstream fetch");
     }) as unknown as typeof fetch;
-    const base = await startOmniRush(fixture.config);
+    const base = await startMars(fixture.config);
     const issued = await nativeFetch(`${base}/tokens`, {
       method: "POST",
       headers: hostHeaders(),
@@ -2202,7 +2202,7 @@ describe("agent context diagnostics route", () => {
       downstreamFetches.push(String(input));
       throw new Error("Invalid request unexpectedly performed downstream fetch");
     }) as unknown as typeof fetch;
-    const base = await startOmniRush(fixture.config);
+    const base = await startMars(fixture.config);
 
     const response = await nativeFetch(`${base}/workspace/${fixture.workspace.id}/diagnostics/agent-context`, {
       method: "POST",
@@ -2220,7 +2220,7 @@ describe("agent context diagnostics route", () => {
       withRuntime: false,
       workspace: { id: "ws_agent_diagnostics_invalid_body_cooldown" },
     });
-    const base = await startOmniRush(fixture.config);
+    const base = await startMars(fixture.config);
 
     const invalid = await nativeFetch(`${base}/workspace/${fixture.workspace.id}/diagnostics/agent-context`, {
       method: "POST",
@@ -2244,7 +2244,7 @@ describe("agent context diagnostics route", () => {
       withRuntime: false,
       workspace: { id: "ws_agent_diagnostics_oversized_body_cooldown" },
     });
-    const base = await startOmniRush(fixture.config);
+    const base = await startMars(fixture.config);
     const oversizedBody = JSON.stringify({
       ...emptyObservedRequest,
       padding: "x".repeat(300 * 1024),
@@ -2273,7 +2273,7 @@ describe("agent context diagnostics route", () => {
       withRuntime: false,
       workspace: { id: "ws_agent_diagnostics_chunked_body_cap" },
     });
-    const base = await startOmniRush(fixture.config);
+    const base = await startMars(fixture.config);
     const bodyBytes = new TextEncoder().encode(JSON.stringify({
       ...emptyObservedRequest,
       padding: "x".repeat(300 * 1024),
@@ -2302,7 +2302,7 @@ describe("agent context diagnostics route", () => {
       withRuntime: false,
       workspace: { id: "ws_agent_diagnostics_slow_body_cooldown" },
     });
-    const base = await startOmniRush(fixture.config);
+    const base = await startMars(fixture.config);
     const slowSocket = await openSlowDiagnosticsRequest(base, fixture.workspace.id);
     try {
       // Let Bun dispatch the header-complete request while its declared body
@@ -2322,13 +2322,13 @@ describe("agent context diagnostics route", () => {
   });
 
   test("terminates an incomplete dripping body at the server's absolute deadline", async () => {
-    const previousDeadline = process.env.OMNIRUSH_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS;
-    process.env.OMNIRUSH_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS = "120";
+    const previousDeadline = process.env.MARS_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS;
+    process.env.MARS_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS = "120";
     const fixture = await createFixture({
       withRuntime: false,
       workspace: { id: "ws_agent_diagnostics_body_deadline" },
     });
-    const base = await startOmniRush(fixture.config);
+    const base = await startMars(fixture.config);
     const socket = await openSlowDiagnosticsRequest(base, fixture.workspace.id);
     const drip = setInterval(() => {
       if (!socket.destroyed && socket.writable) socket.write(" ");
@@ -2347,21 +2347,21 @@ describe("agent context diagnostics route", () => {
     } finally {
       clearInterval(drip);
       socket.destroy();
-      if (previousDeadline === undefined) delete process.env.OMNIRUSH_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS;
-      else process.env.OMNIRUSH_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS = previousDeadline;
+      if (previousDeadline === undefined) delete process.env.MARS_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS;
+      else process.env.MARS_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS = previousDeadline;
     }
   });
 
   test("rejects a concurrent incomplete request and releases its reservation after timeout", async () => {
-    const previousCooldown = process.env.OMNIRUSH_AGENT_DIAGNOSTICS_COOLDOWN_MS;
-    const previousDeadline = process.env.OMNIRUSH_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS;
-    process.env.OMNIRUSH_AGENT_DIAGNOSTICS_COOLDOWN_MS = "0";
-    process.env.OMNIRUSH_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS = "150";
+    const previousCooldown = process.env.MARS_AGENT_DIAGNOSTICS_COOLDOWN_MS;
+    const previousDeadline = process.env.MARS_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS;
+    process.env.MARS_AGENT_DIAGNOSTICS_COOLDOWN_MS = "0";
+    process.env.MARS_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS = "150";
     const fixture = await createFixture({
       withRuntime: false,
       workspace: { id: "ws_agent_diagnostics_in_flight_reservation" },
     });
-    const base = await startOmniRush(fixture.config);
+    const base = await startMars(fixture.config);
     const incomplete = await openSlowDiagnosticsRequest(base, fixture.workspace.id);
     let concurrentIncomplete: Socket | undefined;
     try {
@@ -2386,18 +2386,18 @@ describe("agent context diagnostics route", () => {
     } finally {
       incomplete.destroy();
       concurrentIncomplete?.destroy();
-      if (previousCooldown === undefined) delete process.env.OMNIRUSH_AGENT_DIAGNOSTICS_COOLDOWN_MS;
-      else process.env.OMNIRUSH_AGENT_DIAGNOSTICS_COOLDOWN_MS = previousCooldown;
-      if (previousDeadline === undefined) delete process.env.OMNIRUSH_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS;
-      else process.env.OMNIRUSH_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS = previousDeadline;
+      if (previousCooldown === undefined) delete process.env.MARS_AGENT_DIAGNOSTICS_COOLDOWN_MS;
+      else process.env.MARS_AGENT_DIAGNOSTICS_COOLDOWN_MS = previousCooldown;
+      if (previousDeadline === undefined) delete process.env.MARS_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS;
+      else process.env.MARS_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS = previousDeadline;
     }
   });
 
   test("caps incomplete diagnostics bodies across workspaces for one server", async () => {
-    const previousCooldown = process.env.OMNIRUSH_AGENT_DIAGNOSTICS_COOLDOWN_MS;
-    const previousDeadline = process.env.OMNIRUSH_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS;
-    process.env.OMNIRUSH_AGENT_DIAGNOSTICS_COOLDOWN_MS = "0";
-    process.env.OMNIRUSH_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS = "10000";
+    const previousCooldown = process.env.MARS_AGENT_DIAGNOSTICS_COOLDOWN_MS;
+    const previousDeadline = process.env.MARS_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS;
+    process.env.MARS_AGENT_DIAGNOSTICS_COOLDOWN_MS = "0";
+    process.env.MARS_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS = "10000";
     const fixture = await createFixture({
       withRuntime: false,
       workspace: { id: "ws_agent_diagnostics_capacity_0" },
@@ -2407,7 +2407,7 @@ describe("agent context diagnostics route", () => {
       id: `ws_agent_diagnostics_capacity_${index}`,
       name: `Diagnostics capacity ${index}`,
     }));
-    const base = await startOmniRush(fixture.config);
+    const base = await startMars(fixture.config);
     const held: Socket[] = [];
     let rejected: Socket | undefined;
     try {
@@ -2423,10 +2423,10 @@ describe("agent context diagnostics route", () => {
     } finally {
       for (const socket of held) socket.destroy();
       rejected?.destroy();
-      if (previousCooldown === undefined) delete process.env.OMNIRUSH_AGENT_DIAGNOSTICS_COOLDOWN_MS;
-      else process.env.OMNIRUSH_AGENT_DIAGNOSTICS_COOLDOWN_MS = previousCooldown;
-      if (previousDeadline === undefined) delete process.env.OMNIRUSH_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS;
-      else process.env.OMNIRUSH_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS = previousDeadline;
+      if (previousCooldown === undefined) delete process.env.MARS_AGENT_DIAGNOSTICS_COOLDOWN_MS;
+      else process.env.MARS_AGENT_DIAGNOSTICS_COOLDOWN_MS = previousCooldown;
+      if (previousDeadline === undefined) delete process.env.MARS_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS;
+      else process.env.MARS_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS = previousDeadline;
     }
   });
 
@@ -2435,7 +2435,7 @@ describe("agent context diagnostics route", () => {
       withRuntime: false,
       workspace: { id: "ws_agent_diagnostics_rate_limit" },
     });
-    const base = await startOmniRush(fixture.config);
+    const base = await startMars(fixture.config);
     const request = () => nativeFetch(`${base}/workspace/${fixture.workspace.id}/diagnostics/agent-context`, {
       method: "POST",
       headers: clientHeaders(),
@@ -2464,7 +2464,7 @@ describe("agent context diagnostics route", () => {
       downstreamFetches.push(String(input));
       throw new Error("Remote OpenCode diagnostics unexpectedly performed downstream fetch");
     }) as unknown as typeof fetch;
-    const base = await startOmniRush(fixture.config);
+    const base = await startMars(fixture.config);
 
     const response = await nativeFetch(`${base}/workspace/${fixture.workspace.id}/diagnostics/agent-context`, {
       method: "POST",
@@ -2477,24 +2477,24 @@ describe("agent context diagnostics route", () => {
     expect(downstreamFetches).toEqual([]);
   });
 
-  test("rejects remote OmniRush.ai shells so diagnostics run on the owning server", async () => {
+  test("rejects remote MarsAI shells so diagnostics run on the owning server", async () => {
     const fixture = await createFixture({
       withRuntime: false,
       workspace: {
-        id: "ws_agent_diagnostics_remote_omnirush",
+        id: "ws_agent_diagnostics_remote_mars",
         path: "",
         workspaceType: "remote",
-        remoteType: "omnirush",
-        baseUrl: "https://remote-omnirush.invalid",
-        omnirushHostUrl: "https://remote-omnirush.invalid",
+        remoteType: "mars",
+        baseUrl: "https://remote-mars.invalid",
+        marsHostUrl: "https://remote-mars.invalid",
       },
     });
     const downstreamFetches: string[] = [];
     globalThis.fetch = (async (input: Parameters<typeof fetch>[0]) => {
       downstreamFetches.push(String(input));
-      throw new Error("Remote OmniRush.ai shell unexpectedly performed downstream fetch");
+      throw new Error("Remote MarsAI shell unexpectedly performed downstream fetch");
     }) as unknown as typeof fetch;
-    const base = await startOmniRush(fixture.config);
+    const base = await startMars(fixture.config);
 
     const response = await nativeFetch(`${base}/workspace/${fixture.workspace.id}/diagnostics/agent-context`, {
       method: "POST",

@@ -6,7 +6,7 @@ import { applyBrandAppName } from "./brand-app-name.mjs";
 test("updates the macOS process and Electron application name before rebuilding the native menu", () => {
   const calls = [];
   const appName = applyBrandAppName("  Acme Work  ", {
-    fallbackName: "OmniRush.ai",
+    fallbackName: "MarsAI",
     platform: "darwin",
     updateElectronAppName: true,
     runtimeProcess: {
@@ -30,7 +30,7 @@ test("updates the macOS process and Electron application name before rebuilding 
 test("preserves the existing Windows live-update behavior", () => {
   const calls = [];
   const appName = applyBrandAppName("Acme Work", {
-    fallbackName: "OmniRush.ai",
+    fallbackName: "MarsAI",
     platform: "win32",
     updateElectronAppName: false,
     runtimeProcess: {
@@ -52,7 +52,7 @@ test("preserves the existing Windows live-update behavior", () => {
 test("keeps the startup fallback and branded-name limit on every platform", () => {
   const appliedNames = [];
   const dependencies = {
-    fallbackName: "OmniRush.ai",
+    fallbackName: "MarsAI",
     platform: "win32",
     updateElectronAppName: true,
     runtimeProcess: {
@@ -63,16 +63,16 @@ test("keeps the startup fallback and branded-name limit on every platform", () =
     applicationMenu: { setAppName: () => undefined },
   };
 
-  assert.equal(applyBrandAppName(null, dependencies), "OmniRush.ai");
+  assert.equal(applyBrandAppName(null, dependencies), "MarsAI");
   assert.equal(applyBrandAppName("A".repeat(80), dependencies), "A".repeat(64));
-  assert.deepEqual(appliedNames, ["OmniRush.ai", "A".repeat(64)]);
+  assert.deepEqual(appliedNames, ["MarsAI", "A".repeat(64)]);
 });
 
 test("shows the display name but keeps the Electron name that names the keychain item", () => {
   const calls = [];
   const appName = applyBrandAppName(null, {
-    fallbackName: "omnirush",
-    electronFallbackName: "omnirush.ai",
+    fallbackName: "mars",
+    electronFallbackName: "marsai.click",
     platform: "darwin",
     updateElectronAppName: true,
     runtimeProcess: {
@@ -87,12 +87,12 @@ test("shows the display name but keeps the Electron name that names the keychain
     window: { setTitle: (name) => calls.push(["window", name]) },
   });
 
-  assert.equal(appName, "omnirush");
+  assert.equal(appName, "mars");
   assert.deepEqual(calls, [
-    ["process", "omnirush"],
-    ["about", "omnirush"],
-    ["app", "omnirush.ai"],
-    ["menu", "omnirush"],
-    ["window", "omnirush"],
+    ["process", "mars"],
+    ["about", "mars"],
+    ["app", "marsai.click"],
+    ["menu", "mars"],
+    ["window", "mars"],
   ]);
 });

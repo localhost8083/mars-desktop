@@ -3,24 +3,24 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import type { DenMcpToken } from "../src/app/lib/den";
 import type { DenSettings } from "../src/app/lib/den-types";
 import type {
-  OmniRushCloudMcpFailure,
-  OmniRushCloudMcpHealth,
-  OmniRushMcpItem,
-} from "../src/app/lib/omnirush-server";
+  MarsCloudMcpFailure,
+  MarsCloudMcpHealth,
+  MarsMcpItem,
+} from "../src/app/lib/mars-server";
 import {
   __setCloudMcpUserStateStorageForTest,
   CLOUD_MCP_SERVER_NAME,
   writeCloudMcpUserState,
 } from "../src/react-app/domains/connections/cloud-mcp-user-state";
-import { runOmniRushCloudMcpReconciler } from "../src/react-app/domains/connections/cloud-mcp-reconciler";
+import { runMarsCloudMcpReconciler } from "../src/react-app/domains/connections/cloud-mcp-reconciler";
 import { syncCloudControlMcpInBackground } from "../src/react-app/domains/connections/use-session-mcp-maintenance";
 
 const NOW = Date.parse("2026-07-14T12:00:00.000Z");
-const LEGACY_USER_STATE_KEY = "omnirush.den.mcp.cloudControlUserState";
+const LEGACY_USER_STATE_KEY = "mars.den.mcp.cloudControlUserState";
 
 const scope = {
-  denBaseUrl: "https://app.omnirush.test",
-  serverBaseUrl: "https://worker.omnirush.test",
+  denBaseUrl: "https://app.mars.test",
+  serverBaseUrl: "https://worker.mars.test",
   orgId: "org_1",
   workspaceId: "ws_1",
 };
@@ -36,7 +36,7 @@ const settings: DenSettings = {
 const context = {
   ...scope,
   denAuthToken: settings.authToken,
-  providerModel: { provider: "omnirush", model: "gpt-5" },
+  providerModel: { provider: "mars", model: "gpt-5" },
 };
 
 const token: DenMcpToken = {
@@ -46,7 +46,7 @@ const token: DenMcpToken = {
   appHostExpiresAt: new Date(NOW + 7 * 24 * 60 * 60 * 1000).toISOString(),
   organizationId: scope.orgId,
   scopes: ["mcp:read", "mcp:write"],
-  resource: "https://api.omnirush.test/mcp",
+  resource: "https://api.mars.test/mcp",
 };
 
 let storageValues: Map<string, string>;
@@ -60,7 +60,7 @@ function installStorageStub(initial?: Record<string, string>) {
   });
 }
 
-function failure(code: string): OmniRushCloudMcpFailure {
+function failure(code: string): MarsCloudMcpFailure {
   return {
     code,
     stage: "engine_status",
@@ -70,7 +70,7 @@ function failure(code: string): OmniRushCloudMcpFailure {
   };
 }
 
-function health(input: { usable: boolean; failure?: OmniRushCloudMcpFailure | null }): OmniRushCloudMcpHealth {
+function health(input: { usable: boolean; failure?: MarsCloudMcpFailure | null }): MarsCloudMcpHealth {
   const usable = input.usable;
   return {
     schemaVersion: 1,
@@ -96,9 +96,9 @@ function health(input: { usable: boolean; failure?: OmniRushCloudMcpFailure | nu
     },
     engine: { status: usable ? "connected" : "failed" },
     tools: {
-      expected: ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
-      present: usable ? ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"] : [],
-      missing: usable ? [] : ["omnirush-cloud_search_capabilities"],
+      expected: ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
+      present: usable ? ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"] : [],
+      missing: usable ? [] : ["mars-cloud_search_capabilities"],
       direct: {
         checked: true,
         source: "mcp_tools_list",
@@ -108,37 +108,37 @@ function health(input: { usable: boolean; failure?: OmniRushCloudMcpFailure | nu
       },
       providerProjection: {
         checked: usable,
-        provider: "omnirush",
+        provider: "mars",
         model: "gpt-5",
         source: "experimental_tool",
-        present: usable ? ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"] : [],
-        missing: usable ? [] : ["omnirush-cloud_execute_capability"],
+        present: usable ? ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"] : [],
+        missing: usable ? [] : ["mars-cloud_execute_capability"],
       },
     },
     pluginCanaries: {
-      expected: ["omnirush_docs_search"],
-      present: usable ? ["omnirush_docs_search"] : [],
-      missing: usable ? [] : ["omnirush_docs_search"],
+      expected: ["mars_docs_search"],
+      present: usable ? ["mars_docs_search"] : [],
+      missing: usable ? [] : ["mars_docs_search"],
     },
     compatibility: {
-      omnirush: { serverVersion: "test", app: null },
+      mars: { serverVersion: "test", app: null },
       opencode: { expectedVersion: "1.17.11", actualVersion: "1.17.11", probe: "ok" },
       pluginFileHashes: [],
       supportedFeatures: { dynamicMcp: true, directoryScoping: true, toolIds: true, providerToolProjection: usable, pluginCanaries: true },
       experimentalToolIds: {
         checked: true,
-        expected: ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
-        present: usable ? ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"] : [],
-        missing: usable ? [] : ["omnirush-cloud_execute_capability"],
+        expected: ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
+        present: usable ? ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"] : [],
+        missing: usable ? [] : ["mars-cloud_execute_capability"],
         includesMcpTools: usable,
       },
       experimentalProviderTools: {
         checked: usable,
-        provider: "omnirush",
+        provider: "mars",
         model: "gpt-5",
-        expected: ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
-        present: usable ? ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"] : [],
-        missing: usable ? [] : ["omnirush-cloud_execute_capability"],
+        expected: ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
+        present: usable ? ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"] : [],
+        missing: usable ? [] : ["mars-cloud_execute_capability"],
         includesMcpTools: usable ? true : null,
       },
     },
@@ -148,13 +148,13 @@ function health(input: { usable: boolean; failure?: OmniRushCloudMcpFailure | nu
   };
 }
 
-function configuredItem(): OmniRushMcpItem {
+function configuredItem(): MarsMcpItem {
   return {
     name: CLOUD_MCP_SERVER_NAME,
     config: {
       type: "remote",
       enabled: true,
-      url: "https://api.omnirush.test/mcp/agent",
+      url: "https://api.mars.test/mcp/agent",
       headers: { Authorization: "Bearer owt_mcp_expired" },
     },
     source: "config.remote",
@@ -175,8 +175,8 @@ describe("cloud MCP maintenance user-state gate", () => {
       client: {
         baseUrl: scope.serverBaseUrl,
         listMcp: async () => ({ items: [configuredItem()] }),
-        getOmniRushCloudMcpHealth: async () => health({ usable: false, failure: failure("invalid_mcp_token") }),
-        reconcileOmniRushCloudMcp: async () => {
+        getMarsCloudMcpHealth: async () => health({ usable: false, failure: failure("invalid_mcp_token") }),
+        reconcileMarsCloudMcp: async () => {
           reconcileCount += 1;
           return health({ usable: true });
         },
@@ -203,8 +203,8 @@ describe("cloud MCP maintenance user-state gate", () => {
       client: {
         baseUrl: scope.serverBaseUrl,
         listMcp: async () => ({ items: [] }),
-        getOmniRushCloudMcpHealth: async () => health({ usable: false }),
-        reconcileOmniRushCloudMcp: async () => {
+        getMarsCloudMcpHealth: async () => health({ usable: false }),
+        reconcileMarsCloudMcp: async () => {
           reconcileCount += 1;
           return health({ usable: true });
         },
@@ -224,13 +224,13 @@ describe("cloud MCP maintenance user-state gate", () => {
 
   test("explicitly disabled entries stay skipped even without recorded intent", async () => {
     let mintCount = 0;
-    const disabled: OmniRushMcpItem = { ...configuredItem(), config: { ...configuredItem().config, enabled: false } };
+    const disabled: MarsMcpItem = { ...configuredItem(), config: { ...configuredItem().config, enabled: false } };
     const result = await syncCloudControlMcpInBackground({
       client: {
         baseUrl: scope.serverBaseUrl,
         listMcp: async () => ({ items: [disabled] }),
-        getOmniRushCloudMcpHealth: async () => health({ usable: false }),
-        reconcileOmniRushCloudMcp: async () => health({ usable: true }),
+        getMarsCloudMcpHealth: async () => health({ usable: false }),
+        reconcileMarsCloudMcp: async () => health({ usable: true }),
       },
       workspaceId: scope.workspaceId,
       settings,
@@ -248,12 +248,12 @@ describe("cloud MCP maintenance user-state gate", () => {
     writeCloudMcpUserState("removed", scope);
 
     let mintCount = 0;
-    const proceeding = await runOmniRushCloudMcpReconciler({
+    const proceeding = await runMarsCloudMcpReconciler({
       mode: "repair",
       client: {
         baseUrl: scope.serverBaseUrl,
-        getOmniRushCloudMcpHealth: async () => health({ usable: false }),
-        reconcileOmniRushCloudMcp: async () => health({ usable: true }),
+        getMarsCloudMcpHealth: async () => health({ usable: false }),
+        reconcileMarsCloudMcp: async () => health({ usable: true }),
       },
       context,
       mintToken: async () => {
@@ -267,12 +267,12 @@ describe("cloud MCP maintenance user-state gate", () => {
     expect(proceeding.status).toBe("repaired");
     expect(mintCount).toBe(1);
 
-    const blocked = await runOmniRushCloudMcpReconciler({
+    const blocked = await runMarsCloudMcpReconciler({
       mode: "repair",
       client: {
         baseUrl: scope.serverBaseUrl,
-        getOmniRushCloudMcpHealth: async () => health({ usable: false }),
-        reconcileOmniRushCloudMcp: async () => health({ usable: true }),
+        getMarsCloudMcpHealth: async () => health({ usable: false }),
+        reconcileMarsCloudMcp: async () => health({ usable: true }),
       },
       context,
       mintToken: async () => {

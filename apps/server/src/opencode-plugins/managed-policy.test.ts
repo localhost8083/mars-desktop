@@ -35,7 +35,7 @@ function gitGet(cwd: string, ...args: string[]): string {
 }
 
 async function temporaryRepository(): Promise<string> {
-  const root = await mkdtemp(path.join(tmpdir(), "omnirush-managed-policy-"));
+  const root = await mkdtemp(path.join(tmpdir(), "mars-managed-policy-"));
   roots.push(root);
   execFileSync("git", ["init", "-q", root]);
   return root;
@@ -67,14 +67,14 @@ function policyServer(options: { account: { name: string; email: string } | null
     },
   });
   stops.push(() => server.stop(true));
-  setEnv("OMNIRUSH_SERVER_URL", `http://127.0.0.1:${server.port}`);
-  setEnv("OMNIRUSH_POLICY_TOKEN", "policy-token");
+  setEnv("MARS_SERVER_URL", `http://127.0.0.1:${server.port}`);
+  setEnv("MARS_POLICY_TOKEN", "policy-token");
   return { calls };
 }
 
 beforeEach(async () => {
   // Keep the developer's own ~/.gitconfig identity out of the repositories under test.
-  const root = await mkdtemp(path.join(tmpdir(), "omnirush-gitconfig-"));
+  const root = await mkdtemp(path.join(tmpdir(), "mars-gitconfig-"));
   roots.push(root);
   await writeFile(path.join(root, "gitconfig"), "", "utf8");
   setEnv("GIT_CONFIG_GLOBAL", path.join(root, "gitconfig"));
@@ -102,7 +102,7 @@ describe("managed-policy engine plugin: git workflows", () => {
     expect(args.command).toBe(`git status && ${DESTRUCTIVE_MARKER} git push --force origin main`);
   });
 
-  test("defaults the commit identity from the omnirush.ai account for that repository and says so in the tool output", async () => {
+  test("defaults the commit identity from the marsai.click account for that repository and says so in the tool output", async () => {
     const { calls } = policyServer({ account: { name: "Sam Example", email: "sam@example.com" } });
     const repo = await temporaryRepository();
     const hooks = await managedPolicy({ directory: repo });
@@ -115,7 +115,7 @@ describe("managed-policy engine plugin: git workflows", () => {
     expect(gitGet(repo, "--global", "--get", "user.name")).toBe("");
     const output = { title: "git commit", output: "[main abc] feat: hello", metadata: {} };
     await hooks["tool.execute.after"]({ tool: "bash", callID: "call_2", sessionID: "ses_1", args }, output);
-    expect(output.output).toContain("[omnirush.ai] omnirush.ai set the commit identity for");
+    expect(output.output).toContain("[marsai.click] marsai.click set the commit identity for");
     expect(output.output).toContain("Sam Example <sam@example.com>");
     expect(output.output).toContain("never global");
     // The note is delivered once.
@@ -148,12 +148,12 @@ describe("managed-policy engine plugin: git workflows", () => {
     const repo = await temporaryRepository();
     const hooks = await managedPolicy({ directory: repo });
     const args: Record<string, unknown> = {
-      command: 'git config user.name "omnirush e2e" && git config user.email e2e@example.com && git add -A && git commit -m "feat: x"',
+      command: 'git config user.name "mars e2e" && git config user.email e2e@example.com && git add -A && git commit -m "feat: x"',
       workdir: ".",
     };
     await hooks["tool.execute.before"]({ tool: "bash", callID: "call_10", sessionID: "ses_1" }, { args });
     expect(calls.map((call) => call.action)).toEqual(["shell"]);
-    expect(args.command).toBe('git config user.name "omnirush e2e" && git config user.email e2e@example.com && git add -A && git commit -m "feat: x"');
+    expect(args.command).toBe('git config user.name "mars e2e" && git config user.email e2e@example.com && git add -A && git commit -m "feat: x"');
     // Inline config and an exported author/committer pair count as well.
     for (const command of [
       "git -c user.name=a -c user.email=a@example.com commit -m x",
@@ -201,7 +201,7 @@ describe("managed-policy engine plugin: git workflows", () => {
 
   test("skips the identity check outside a repository and for non-committing commands", async () => {
     const { calls } = policyServer({ account: null });
-    const root = await mkdtemp(path.join(tmpdir(), "omnirush-not-a-repo-"));
+    const root = await mkdtemp(path.join(tmpdir(), "mars-not-a-repo-"));
     roots.push(root);
     const hooks = await managedPolicy({ directory: root });
     await hooks["tool.execute.before"]({ tool: "bash", callID: "call_5", sessionID: "ses_1" }, { args: { command: "git commit -m x" } });
@@ -287,12 +287,12 @@ describe("managed-policy engine plugin: git workflows", () => {
     const hooks = await managedPolicy({ directory: await temporaryRepository() });
     const output: { env: Record<string, string> } = { env: {} };
     await hooks["shell.env"]({ cwd: "/", callID: "call_1", sessionID: "ses_1" }, output);
-    expect(output.env.OMNIRUSH_CALL).toBe("call_1");
-    expect(output.env.OMNIRUSH_SESSION).toBe("ses_1");
+    expect(output.env.MARS_CALL).toBe("call_1");
+    expect(output.env.MARS_SESSION).toBe("ses_1");
     const pty: { env: Record<string, string> } = { env: {} };
     await hooks["shell.env"]({ cwd: "/" }, pty);
-    expect(pty.env.OMNIRUSH_CALL).toBeUndefined();
-    expect(pty.env.OMNIRUSH_SESSION).toBeUndefined();
+    expect(pty.env.MARS_CALL).toBeUndefined();
+    expect(pty.env.MARS_SESSION).toBeUndefined();
   });
 
   test("the next-engine plugin applies the same rules through its structural hooks", async () => {

@@ -96,7 +96,7 @@ function windows() {
       callbacks.forEach((c) => koffi.unregister(c));
       hooks = [];
       callbacks = [];
-      fail("input_unavailable", "Windows input monitoring is unavailable. Restart OmniRush.ai on your normal desktop.");
+      fail("input_unavailable", "Windows input monitoring is unavailable. Restart MarsAI on your normal desktop.");
     }
   };
   const stopMonitoring = () => {

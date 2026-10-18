@@ -29,10 +29,10 @@ function useUpdatePreference(key: string) {
 function useUpdater() {
   const local = useLocal();
   const desktopConfig = useDesktopConfig();
-  const [updateAutoCheck, setUpdateAutoCheck] = useUpdatePreference("omnirush.react.settings.update-auto-check");
+  const [updateAutoCheck, setUpdateAutoCheck] = useUpdatePreference("mars.react.settings.update-auto-check");
   // Older Settings wrote "0" even when the user never touched the old opt-in.
   // Start the automatic-download default once, then retain future opt-outs.
-  const [updateAutoDownload, setUpdateAutoDownload] = useUpdatePreference("omnirush.react.settings.update-auto-download.v2");
+  const [updateAutoDownload, setUpdateAutoDownload] = useUpdatePreference("mars.react.settings.update-auto-download.v2");
   const onReleaseChannelChange = useCallback((next: "stable" | "alpha") => {
     local.setPrefs((previous) => ({ ...previous, releaseChannel: next }));
   }, [local.setPrefs]);

@@ -8,7 +8,7 @@ import { filterUploadDiff, redactDiffByFile, redactUploadJson } from "./session-
 // file's path selects, as the file's snapshot is; everything else in the trace
 // stays CONFIG. The cases in __fixtures__/scrub-file-mode.json are shared byte
 // for byte with the CLI (test/fixtures/scrub-file-mode.json) and the backend
-// (tests/omnirush/fixtures/scrub_file_mode.json), so the three scrubbers give
+// (tests/mars/fixtures/scrub_file_mode.json), so the three scrubbers give
 // the same output.
 type Case = { name: string; kind: "trace" | "git_diff"; input: unknown; expected: unknown };
 const cases = JSON.parse(readFileSync(join(import.meta.dir, "__fixtures__", "scrub-file-mode.json"), "utf8")) as Case[];

@@ -10,7 +10,7 @@ export async function enableScimFixtureSso(database: { url: string } | undefined
       execute(query: string, values: unknown[]): Promise<unknown>;
       end(): Promise<void>;
     }>;
-  } = createRequire(require.resolve("@omnirush/env"))("mysql2/promise");
+  } = createRequire(require.resolve("@mars/env"))("mysql2/promise");
   const connection = await mysql.createConnection(database.url);
   try {
     await connection.execute("UPDATE sso_connection SET status = 'enabled' WHERE organization_id = ?", [organizationId]);

@@ -15,13 +15,13 @@ describe("markdown code blocks", () => {
   test("renders fallback code blocks with subtle theme-aware styling, copy, and word-wrap affordances", () => {
     const html = renderMarkdownHtml(MARKDOWN);
 
-    expect(html).toContain("data-omnirush-code-block");
+    expect(html).toContain("data-mars-code-block");
     expect(html).toContain("bg-gray-2/60");
-    expect(html).toContain("data-omnirush-code-copy");
-    expect(html).toContain("data-omnirush-code-copy-icon");
-    expect(html).toContain("data-omnirush-code-copy-check-icon");
-    expect(html).toContain("data-omnirush-code-wrap");
-    expect(html).toContain("data-omnirush-code-scroll");
+    expect(html).toContain("data-mars-code-copy");
+    expect(html).toContain("data-mars-code-copy-icon");
+    expect(html).toContain("data-mars-code-copy-check-icon");
+    expect(html).toContain("data-mars-code-wrap");
+    expect(html).toContain("data-mars-code-scroll");
     expect(html).toContain("h-7 w-7");
     expect(html).toContain('aria-label="Copy code block"');
     expect(html).toContain('aria-live="polite"');
@@ -56,13 +56,13 @@ describe("markdown code blocks", () => {
   test("renders highlighted code blocks with the same copy affordance and dual Shiki themes", async () => {
     const html = await renderHighlightedMarkdownHtml(MARKDOWN);
 
-    expect(html).toContain("data-omnirush-code-block");
-    expect(html).toContain("data-omnirush-shiki");
-    expect(html).toContain("data-omnirush-code-copy");
-    expect(html).toContain("data-omnirush-code-copy-icon");
-    expect(html).toContain("data-omnirush-code-copy-check-icon");
-    expect(html).toContain("data-omnirush-code-wrap");
-    expect(html).toContain("data-omnirush-code-scroll");
+    expect(html).toContain("data-mars-code-block");
+    expect(html).toContain("data-mars-shiki");
+    expect(html).toContain("data-mars-code-copy");
+    expect(html).toContain("data-mars-code-copy-icon");
+    expect(html).toContain("data-mars-code-copy-check-icon");
+    expect(html).toContain("data-mars-code-wrap");
+    expect(html).toContain("data-mars-code-scroll");
     expect(html).toContain("--shiki-dark");
     expect(html).toContain("github-light");
     expect(html).toContain("github-dark");
@@ -73,13 +73,13 @@ describe("markdown code blocks", () => {
     expect(fallbackHtml).toContain("border-dls-border/70");
     expect(fallbackHtml).toContain("bg-gray-1/80");
     expect(fallbackHtml).toContain('class="language-ts"');
-    expect(fallbackHtml).not.toContain("data-omnirush-code-copy");
+    expect(fallbackHtml).not.toContain("data-mars-code-copy");
 
     const highlightedHtml = await renderPrimitiveHighlightedMarkdownHtml(MARKDOWN, "surface");
-    expect(highlightedHtml).toContain("data-omnirush-shiki");
+    expect(highlightedHtml).toContain("data-mars-shiki");
     expect(highlightedHtml).toContain("github-light");
     expect(highlightedHtml).not.toContain("github-dark");
-    expect(highlightedHtml).not.toContain("data-omnirush-code-copy");
+    expect(highlightedHtml).not.toContain("data-mars-code-copy");
   });
 });
 
@@ -95,33 +95,33 @@ describe("markdown safety and links", () => {
   });
 
   test("keeps chat file link actions separate from simple surface links", () => {
-    const markdown = `[Open docs](./docs/readme.md) and [OmniRush.ai](https://omnirush.ai)`;
+    const markdown = `[Open docs](./docs/readme.md) and [MarsAI](https://marsai.click)`;
     const chatHtml = renderMarkdownHtml(markdown);
-    expect(chatHtml).toContain("data-omnirush-link-chevron");
-    expect(chatHtml).toContain("data-omnirush-link-href");
-    expect(chatHtml).toContain('href="https://omnirush.ai"');
+    expect(chatHtml).toContain("data-mars-link-chevron");
+    expect(chatHtml).toContain("data-mars-link-href");
+    expect(chatHtml).toContain('href="https://marsai.click"');
 
     const surfaceHtml = renderPrimitiveMarkdownHtml(markdown, "surface");
-    expect(surfaceHtml).not.toContain("data-omnirush-link-chevron");
-    expect(surfaceHtml).not.toContain("data-omnirush-link-href");
+    expect(surfaceHtml).not.toContain("data-mars-link-chevron");
+    expect(surfaceHtml).not.toContain("data-mars-link-href");
     expect(surfaceHtml).toContain('href="./docs/readme.md"');
-    expect(surfaceHtml).toContain('href="https://omnirush.ai"');
+    expect(surfaceHtml).toContain('href="https://marsai.click"');
   });
 
   test("marks chat inline file paths as keyboard-accessible artifact links", () => {
     const chatHtml = renderMarkdownHtml("Open `apps/app/src/main.tsx` and inspect `status`.");
-    expect(chatHtml).toContain('data-omnirush-inline-code-path="apps/app/src/main.tsx"');
+    expect(chatHtml).toContain('data-mars-inline-code-path="apps/app/src/main.tsx"');
     expect(chatHtml).toContain('role="button"');
     expect(chatHtml).toContain('tabindex="0"');
-    expect(chatHtml).not.toContain('data-omnirush-inline-code-path="status"');
+    expect(chatHtml).not.toContain('data-mars-inline-code-path="status"');
 
     const surfaceHtml = renderPrimitiveMarkdownHtml("Open `apps/app/src/main.tsx`.", "surface");
-    expect(surfaceHtml).not.toContain("data-omnirush-inline-code-path");
+    expect(surfaceHtml).not.toContain("data-mars-inline-code-path");
   });
 
   test("does not mark unsafe or parent-relative inline paths", () => {
     const html = renderMarkdownHtml("Skip `../secrets/config.ts`, `https://example.com/file.ts`, and `a | b.ts`.");
-    expect(html).not.toContain("data-omnirush-inline-code-path");
+    expect(html).not.toContain("data-mars-inline-code-path");
   });
 });
 

@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto"
 import {
   automationDesktopRunnerCapabilitySchema,
   type AutomationDesktopRunnerCapability,
-} from "@omnirush/types/automations"
+} from "@mars/types/automations"
 import { z } from "zod"
 import { env } from "../env.js"
 import { firstForwardedValue, publicRequestUrl, trustedForwardedOrigin } from "../request-url.js"

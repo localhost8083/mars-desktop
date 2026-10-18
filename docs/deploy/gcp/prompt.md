@@ -1,9 +1,9 @@
 # GCP Deployment Agent Prompt Template
 
-Copy this prompt into your agent and replace every `{{PLACEHOLDER}}` before running it. The agent is expected to operate from a local OmniRush.ai repository checkout and use CLI/API tools for infrastructure. Any browser-only step should be handed back to the operator.
+Copy this prompt into your agent and replace every `{{PLACEHOLDER}}` before running it. The agent is expected to operate from a local MarsAI repository checkout and use CLI/API tools for infrastructure. Any browser-only step should be handed back to the operator.
 
 ```text
-You are deploying OmniRush.ai EE to Google Cloud from this repository checkout:
+You are deploying MarsAI EE to Google Cloud from this repository checkout:
 
 {{REPOSITORY_PATH}}
 
@@ -16,7 +16,7 @@ Read and obey `AGENTS.md`. Use the current repository documentation as the sourc
 - `packaging/helm/omnirush-ee/README.md`
 - `packaging/helm/omnirush-ee/examples/values.gcp-ingress.yaml`
 
-Goal: provision and deploy a production-like OmniRush.ai EE install on GCP using the latest published Helm chart that contains the documented first-administrator setup flow. Leave the deployment running unless I ask for cleanup.
+Goal: provision and deploy a production-like MarsAI EE install on GCP using the latest published Helm chart that contains the documented first-administrator setup flow. Leave the deployment running unless I ask for cleanup.
 
 Customer inputs:
 
@@ -28,17 +28,17 @@ Customer inputs:
 - Organization name: `{{ORGANIZATION_NAME}}`
 - Initial owner email: `{{INITIAL_OWNER_EMAIL}}`
 - Platform/bootstrap admin email, if separate: `{{PLATFORM_ADMIN_EMAIL_OR_SAME_AS_OWNER}}`
-- OmniRush.ai version: `{{OMNIRUSH_VERSION_OR_LATEST_RELEASE}}` where `latest` means check GitHub releases and the published Helm chart before deploying.
+- MarsAI version: `{{MARS_VERSION_OR_LATEST_RELEASE}}` where `latest` means check GitHub releases and the published Helm chart before deploying.
 - Administrator setup code: `{{OPERATOR_PROVIDES_CODE_OR_AGENT_GENERATES_ONE}}`. If the agent generates the code, give it to me through an agreed secure channel and never print it in task logs.
 
 Agent-created resource names and defaults (change if required):
 
 - GKE cluster name: Kubernetes cluster to create, default `omnirush-ee`.
-- Kubernetes namespace: Kubernetes namespace for OmniRush.ai workloads, default `omnirush-ee`.
+- Kubernetes namespace: Kubernetes namespace for MarsAI workloads, default `omnirush-ee`.
 - Helm release name: Helm's install/upgrade release name, default `omnirush-ee`.
 - Cloud SQL instance name: GCP Cloud SQL resource to create, default `omnirush-ee-mysql`.
 - Cloud SQL database name: MySQL database to create inside Cloud SQL, default `omnirush_den`.
-- Cloud SQL user: MySQL user to create for OmniRush.ai, default `omnirush`.
+- Cloud SQL user: MySQL user to create for MarsAI, default `mars`.
 - Reserved global address name: GCP resource name for the static global IPv4 address used by the HTTPS load balancer, default `omnirush-ee-ip`. This is not the IP address; the agent creates the address and reports the allocated IP.
 
 Operating rules:

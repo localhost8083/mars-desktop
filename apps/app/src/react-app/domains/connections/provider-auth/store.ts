@@ -14,16 +14,16 @@ import {
   type DenOrgLlmProvider,
   type DenOrgLlmProviderConnection,
 } from "../../../../app/lib/den";
-import { getOmniRushGatewayOrigin } from "../../../../app/lib/gateway-runtime";
+import { getMarsGatewayOrigin } from "../../../../app/lib/gateway-runtime";
 import { unwrap, waitForHealthy } from "../../../../app/lib/opencode";
 import {
   readOpencodeConfig,
   writeOpencodeConfig,
   engineRestart,
-  workspaceOmniRushRead,
-  workspaceOmniRushWrite,
+  workspaceMarsRead,
+  workspaceMarsWrite,
 } from "../../../../app/lib/desktop";
-import { OmniRushServerError } from "../../../../app/lib/omnirush-server";
+import { MarsServerError } from "../../../../app/lib/mars-server";
 import type {
   Client,
   ProviderListItem,
@@ -41,23 +41,23 @@ import {
   getConnectedProviderItems,
 } from "../../../infra/provider-list-query";
 import type {
-  OmniRushCloudProviderSyncRun,
-  OmniRushCloudProviderSyncSkippedProvider,
-} from "../../../../app/lib/omnirush-server";
-import type { OmniRushServerStoreSnapshot } from "../omnirush-server-store";
+  MarsCloudProviderSyncRun,
+  MarsCloudProviderSyncSkippedProvider,
+} from "../../../../app/lib/mars-server";
+import type { MarsServerStoreSnapshot } from "../mars-server-store";
 
 /**
- * The slice of the omnirush-server store this store actually consumes.
+ * The slice of the mars-server store this store actually consumes.
  * The settings route passes the full store; the session route passes a
  * lightweight endpoint-backed adapter (previously forced through `as never`).
  */
-export type ProviderAuthOmniRushServer = {
+export type ProviderAuthMarsServer = {
   getSnapshot: () => Pick<
-    OmniRushServerStoreSnapshot,
-    "omnirushServerStatus" | "omnirushServerClient"
+    MarsServerStoreSnapshot,
+    "marsServerStatus" | "marsServerClient"
   > & {
-    omnirushServerAuth?: { token?: string; hostToken?: string };
-    omnirushServerCapabilities: { config?: { read?: boolean; write?: boolean }; providerSync?: boolean } | null;
+    marsServerAuth?: { token?: string; hostToken?: string };
+    marsServerCapabilities: { config?: { read?: boolean; write?: boolean }; providerSync?: boolean } | null;
   };
 };
 import {
@@ -109,7 +109,7 @@ type CloudProviderSyncReason =
   | "settings_cloud_opened"
   | "manual";
 
-type CloudProviderSyncWorkResult = void | OmniRushCloudProviderSyncRun;
+type CloudProviderSyncWorkResult = void | MarsCloudProviderSyncRun;
 
 type GlobalCloudProviderSyncBatch = {
   contextKey: string;
@@ -250,7 +250,7 @@ export type ProviderOAuthStartResult = {
  */
 export type CloudProviderServerSyncState = {
   reloadPending: boolean;
-  skippedProviders: Record<string, OmniRushCloudProviderSyncSkippedProvider>;
+  skippedProviders: Record<string, MarsCloudProviderSyncSkippedProvider>;
 };
 
 export type ProviderAuthStoreSnapshot = {
@@ -279,7 +279,7 @@ type CreateProviderAuthStoreOptions = {
   selectedWorkspaceRoot: () => string;
   runtimeWorkspaceId: () => string | null;
   ensureRuntimeWorkspaceId?: () => Promise<string | null | undefined>;
-  omnirushServer: ProviderAuthOmniRushServer;
+  marsServer: ProviderAuthMarsServer;
   setProviders: (value: ProviderListItem[]) => void;
   setProviderDefaults: (value: Record<string, string>) => void;
   setProviderConnectedIds: (value: string[]) => void;
@@ -401,50 +401,50 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
     return Array.from(merged.values()).toSorted(compareProviders);
   };
 
-  const resolveOmniRushConfigTarget = async (mode: "read" | "write") => {
-    const omnirushSnapshot = options.omnirushServer.getSnapshot();
-    const omnirushClient = omnirushSnapshot.omnirushServerClient;
-    let omnirushWorkspaceId = options.runtimeWorkspaceId()?.trim() || null;
-    if (!omnirushWorkspaceId && omnirushSnapshot.omnirushServerStatus === "connected" && omnirushClient) {
-      omnirushWorkspaceId = (await options.ensureRuntimeWorkspaceId?.())?.trim() || null;
+  const resolveMarsConfigTarget = async (mode: "read" | "write") => {
+    const marsSnapshot = options.marsServer.getSnapshot();
+    const marsClient = marsSnapshot.marsServerClient;
+    let marsWorkspaceId = options.runtimeWorkspaceId()?.trim() || null;
+    if (!marsWorkspaceId && marsSnapshot.marsServerStatus === "connected" && marsClient) {
+      marsWorkspaceId = (await options.ensureRuntimeWorkspaceId?.())?.trim() || null;
     }
-    const hasOmniRushTarget =
-      omnirushSnapshot.omnirushServerStatus === "connected" &&
-      Boolean(omnirushClient && omnirushWorkspaceId);
-    const canUseOmniRushServer =
-      hasOmniRushTarget &&
-      omnirushSnapshot.omnirushServerCapabilities?.config?.[mode] !== false;
+    const hasMarsTarget =
+      marsSnapshot.marsServerStatus === "connected" &&
+      Boolean(marsClient && marsWorkspaceId);
+    const canUseMarsServer =
+      hasMarsTarget &&
+      marsSnapshot.marsServerCapabilities?.config?.[mode] !== false;
     return {
-      omnirushClient,
-      omnirushWorkspaceId,
-      hasOmniRushTarget,
-      canUseOmniRushServer,
+      marsClient,
+      marsWorkspaceId,
+      hasMarsTarget,
+      canUseMarsServer,
     };
   };
 
   const serverHandlesProviderSync = () => {
-    const omnirushSnapshot = options.omnirushServer.getSnapshot();
+    const marsSnapshot = options.marsServer.getSnapshot();
     return Boolean(
-      omnirushSnapshot.omnirushServerStatus === "connected" &&
-      omnirushSnapshot.omnirushServerCapabilities?.providerSync === true &&
-      omnirushSnapshot.omnirushServerAuth?.hostToken?.trim() &&
-      omnirushSnapshot.omnirushServerClient,
+      marsSnapshot.marsServerStatus === "connected" &&
+      marsSnapshot.marsServerCapabilities?.providerSync === true &&
+      marsSnapshot.marsServerAuth?.hostToken?.trim() &&
+      marsSnapshot.marsServerClient,
     );
   };
 
   const pushDenSession = (force = false): Promise<void> => {
-    const omnirushSnapshot = options.omnirushServer.getSnapshot();
-    const omnirushClient = omnirushSnapshot.omnirushServerClient;
+    const marsSnapshot = options.marsServer.getSnapshot();
+    const marsClient = marsSnapshot.marsServerClient;
     const settings = readDenSettings();
     const apiBaseUrl = settings.apiBaseUrl ?? resolveDenBaseUrls(settings).apiBaseUrl;
     const token = settings.authToken?.trim() ?? "";
     const orgId = settings.activeOrgId?.trim() ?? "";
-    if (!serverHandlesProviderSync() || !omnirushClient || !token || !orgId) return Promise.resolve();
+    if (!serverHandlesProviderSync() || !marsClient || !token || !orgId) return Promise.resolve();
     const key = `${apiBaseUrl}::${orgId}::${token}`;
     if (!force && key === lastDenSessionPushKey) return Promise.resolve();
     if (key === denSessionPushKey && denSessionPushInFlight) return denSessionPushInFlight;
     denSessionPushKey = key;
-    const request = omnirushClient.putDenSession({ baseUrl: apiBaseUrl, token, orgId });
+    const request = marsClient.putDenSession({ baseUrl: apiBaseUrl, token, orgId });
     denSessionPushInFlight = request;
     request.then(
       () => { lastDenSessionPushKey = key; },
@@ -506,8 +506,8 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
   ) => {
     const trimmedKey = apiKey.trim();
     if (!trimmedKey) return;
-    const omnirushClient = options.omnirushServer.getSnapshot().omnirushServerClient;
-    if (!omnirushClient) return;
+    const marsClient = options.marsServer.getSnapshot().marsServerClient;
+    if (!marsClient) return;
     const entries = [...resolvedEnvEntries];
     if (entries.length === 0) {
       entries.push(
@@ -516,37 +516,37 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
           .map((key) => ({ key, value: trimmedKey })),
       );
     }
-    if (provider.source === "omnirush") {
-      if (!entries.some((entry) => entry.key === "OMNIRUSH_API_KEY")) {
-        entries.unshift({ key: "OMNIRUSH_API_KEY", value: trimmedKey });
+    if (provider.source === "mars") {
+      if (!entries.some((entry) => entry.key === "MARS_API_KEY")) {
+        entries.unshift({ key: "MARS_API_KEY", value: trimmedKey });
       }
       const baseUrl = readCloudProviderBaseUrl(provider);
-      if (baseUrl) entries.push({ key: "OMNIRUSH_INFERENCE_BASE_URL", value: baseUrl });
+      if (baseUrl) entries.push({ key: "MARS_INFERENCE_BASE_URL", value: baseUrl });
     }
     if (entries.length === 0) return;
-    await omnirushClient.upsertUserEnv(entries);
+    await marsClient.upsertUserEnv(entries);
   };
 
-  const readWorkspaceOmniRushConfigRecord = async (): Promise<
+  const readWorkspaceMarsConfigRecord = async (): Promise<
     Record<string, unknown>
   > => {
     const root = options.selectedWorkspaceRoot().trim();
     const isLocalWorkspace =
       options.selectedWorkspaceDisplay().workspaceType === "local";
-    const { omnirushClient, omnirushWorkspaceId, hasOmniRushTarget, canUseOmniRushServer } =
-      await resolveOmniRushConfigTarget("read");
+    const { marsClient, marsWorkspaceId, hasMarsTarget, canUseMarsServer } =
+      await resolveMarsConfigTarget("read");
 
-    if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
-      const config = await omnirushClient.getConfig(omnirushWorkspaceId);
-      return config.omnirush ?? {};
+    if (canUseMarsServer && marsClient && marsWorkspaceId) {
+      const config = await marsClient.getConfig(marsWorkspaceId);
+      return config.mars ?? {};
     }
 
-    if (hasOmniRushTarget) {
+    if (hasMarsTarget) {
       return {};
     }
 
     if (isLocalWorkspace && isDesktopRuntime() && root) {
-      return (await workspaceOmniRushRead({
+      return (await workspaceMarsRead({
         workspacePath: root,
       })) as unknown as Record<string, unknown>;
     }
@@ -554,33 +554,33 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
     return {};
   };
 
-  const writeWorkspaceOmniRushConfigRecord = async (
+  const writeWorkspaceMarsConfigRecord = async (
     config: Record<string, unknown>,
   ) => {
     const root = options.selectedWorkspaceRoot().trim();
     const isLocalWorkspace =
       options.selectedWorkspaceDisplay().workspaceType === "local";
-    const { omnirushClient, omnirushWorkspaceId, hasOmniRushTarget, canUseOmniRushServer } =
-      await resolveOmniRushConfigTarget("write");
+    const { marsClient, marsWorkspaceId, hasMarsTarget, canUseMarsServer } =
+      await resolveMarsConfigTarget("write");
 
-    if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
-      await omnirushClient.patchConfig(omnirushWorkspaceId, { omnirush: config });
+    if (canUseMarsServer && marsClient && marsWorkspaceId) {
+      await marsClient.patchConfig(marsWorkspaceId, { mars: config });
       return true;
     }
 
-    if (hasOmniRushTarget) {
+    if (hasMarsTarget) {
       return false;
     }
 
     if (isLocalWorkspace && isDesktopRuntime() && root) {
-      const result = await workspaceOmniRushWrite({
+      const result = await workspaceMarsWrite({
         workspacePath: root,
         config: config as never,
       });
       const typed = result as { ok: boolean; stderr?: string; stdout?: string };
       if (!typed.ok) {
         throw new Error(
-          typed.stderr || typed.stdout || "Failed to write .opencode/omnirush.json",
+          typed.stderr || typed.stdout || "Failed to write .opencode/mars.json",
         );
       }
       return true;
@@ -592,9 +592,9 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
   const refreshImportedCloudProviders = async (refreshOptions?: { strict?: boolean }) => {
     try {
       if (serverHandlesProviderSync()) {
-        const omnirushClient = options.omnirushServer.getSnapshot().omnirushServerClient;
-        if (!omnirushClient) throw new Error("omnirush.ai server unavailable.");
-        const status = await omnirushClient.getCloudProviderSyncStatus();
+        const marsClient = options.marsServer.getSnapshot().marsServerClient;
+        if (!marsClient) throw new Error("marsai.click server unavailable.");
+        const status = await marsClient.getCloudProviderSyncStatus();
         const next = Object.fromEntries(status.providers.map((provider) => [provider.cloudProviderId, provider]));
         setStateField("importedCloudProviders", next);
         // Carry the server's truth alongside the records: rows must not show
@@ -613,7 +613,7 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
       if (state.cloudProviderServerSync !== null) {
         setStateField("cloudProviderServerSync", null);
       }
-      const config = await readWorkspaceOmniRushConfigRecord();
+      const config = await readWorkspaceMarsConfigRecord();
       const cloudImports = readWorkspaceCloudImports(config);
       const next = cloudImports.providers;
       // Guard: don't overwrite non-empty import state with an empty read.
@@ -637,7 +637,7 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
   const persistImportedCloudProviders = async (
     nextProviders: Record<string, CloudImportedProvider>,
   ) => {
-    const config = await readWorkspaceOmniRushConfigRecord();
+    const config = await readWorkspaceMarsConfigRecord();
     const cloudImports = readWorkspaceCloudImports(config);
     const nextCloudImports = {
       ...cloudImports,
@@ -646,10 +646,10 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
     const nextConfig = withWorkspaceCloudImports(config, {
       ...nextCloudImports,
     });
-    const persisted = await writeWorkspaceOmniRushConfigRecord(nextConfig);
+    const persisted = await writeWorkspaceMarsConfigRecord(nextConfig);
     if (!persisted) {
       throw new Error(
-        "omnirush.ai server unavailable. Connect to manage imported cloud providers.",
+        "marsai.click server unavailable. Connect to manage imported cloud providers.",
       );
     }
     setStateField("importedCloudProviders", nextProviders);
@@ -659,15 +659,15 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
     const root = options.selectedWorkspaceRoot().trim();
     const isLocalWorkspace =
       options.selectedWorkspaceDisplay().workspaceType === "local";
-    const { omnirushClient, omnirushWorkspaceId, hasOmniRushTarget, canUseOmniRushServer } =
-      await resolveOmniRushConfigTarget("read");
+    const { marsClient, marsWorkspaceId, hasMarsTarget, canUseMarsServer } =
+      await resolveMarsConfigTarget("read");
 
-    if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
-      return await omnirushClient.readOpencodeConfigFile(omnirushWorkspaceId, "project");
+    if (canUseMarsServer && marsClient && marsWorkspaceId) {
+      return await marsClient.readOpencodeConfigFile(marsWorkspaceId, "project");
     }
 
-    if (hasOmniRushTarget) {
-      throw new Error("omnirush.ai server config API is unavailable for this workspace.");
+    if (hasMarsTarget) {
+      throw new Error("marsai.click server config API is unavailable for this workspace.");
     }
 
     if (isLocalWorkspace && isDesktopRuntime() && root) {
@@ -681,12 +681,12 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
     const root = options.selectedWorkspaceRoot().trim();
     const isLocalWorkspace =
       options.selectedWorkspaceDisplay().workspaceType === "local";
-    const { omnirushClient, omnirushWorkspaceId, hasOmniRushTarget, canUseOmniRushServer } =
-      await resolveOmniRushConfigTarget("write");
+    const { marsClient, marsWorkspaceId, hasMarsTarget, canUseMarsServer } =
+      await resolveMarsConfigTarget("write");
 
-    if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
-      const result = await omnirushClient.writeOpencodeConfigFile(
-        omnirushWorkspaceId,
+    if (canUseMarsServer && marsClient && marsWorkspaceId) {
+      const result = await marsClient.writeOpencodeConfigFile(
+        marsWorkspaceId,
         "project",
         content,
       ) as { ok: boolean; stderr?: string; stdout?: string };
@@ -696,8 +696,8 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
       return true;
     }
 
-    if (hasOmniRushTarget) {
-      throw new Error("omnirush.ai server config API is unavailable for this workspace.");
+    if (hasMarsTarget) {
+      throw new Error("marsai.click server config API is unavailable for this workspace.");
     }
 
     if (isLocalWorkspace && isDesktopRuntime() && root) {
@@ -718,12 +718,12 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
    * is no read-modify-write race and no edit of the user's opencode.jsonc.
    */
   const patchRuntimeProviders = async (update: Record<string, unknown>) => {
-    const { omnirushClient, omnirushWorkspaceId, canUseOmniRushServer } =
-      await resolveOmniRushConfigTarget("write");
-    if (!canUseOmniRushServer || !omnirushClient || !omnirushWorkspaceId) {
-      throw new Error("omnirush.ai server unavailable. Connect to manage cloud providers.");
+    const { marsClient, marsWorkspaceId, canUseMarsServer } =
+      await resolveMarsConfigTarget("write");
+    if (!canUseMarsServer || !marsClient || !marsWorkspaceId) {
+      throw new Error("marsai.click server unavailable. Connect to manage cloud providers.");
     }
-    await omnirushClient.patchConfig(omnirushWorkspaceId, {
+    await marsClient.patchConfig(marsWorkspaceId, {
       opencode: { provider: update },
     });
   };
@@ -732,20 +732,20 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
     providerUpdate: Record<string, unknown>,
     nextProviders: Record<string, CloudImportedProvider>,
   ) => {
-    const { omnirushClient, omnirushWorkspaceId, canUseOmniRushServer } =
-      await resolveOmniRushConfigTarget("write");
-    if (!canUseOmniRushServer || !omnirushClient || !omnirushWorkspaceId) {
-      throw new Error("omnirush.ai server unavailable. Connect to manage cloud providers.");
+    const { marsClient, marsWorkspaceId, canUseMarsServer } =
+      await resolveMarsConfigTarget("write");
+    if (!canUseMarsServer || !marsClient || !marsWorkspaceId) {
+      throw new Error("marsai.click server unavailable. Connect to manage cloud providers.");
     }
-    const config = await readWorkspaceOmniRushConfigRecord();
+    const config = await readWorkspaceMarsConfigRecord();
     const cloudImports = readWorkspaceCloudImports(config);
     const nextConfig = withWorkspaceCloudImports(config, {
       ...cloudImports,
       providers: nextProviders,
     });
-    await omnirushClient.patchConfig(omnirushWorkspaceId, {
+    await marsClient.patchConfig(marsWorkspaceId, {
       opencode: { provider: providerUpdate },
-      omnirush: nextConfig,
+      mars: nextConfig,
     });
     setStateField("importedCloudProviders", nextProviders);
   };
@@ -793,10 +793,10 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
     }
 
     const c = options.client();
-    const omnirushSnapshot = options.omnirushServer.getSnapshot();
+    const marsSnapshot = options.marsServer.getSnapshot();
     const workspaceId = options.runtimeWorkspaceId();
     const workspaceType = options.selectedWorkspaceDisplay().workspaceType;
-    const canUseManagedRuntime = Boolean(omnirushSnapshot.omnirushServerClient && workspaceId?.trim() && workspaceType === "local");
+    const canUseManagedRuntime = Boolean(marsSnapshot.marsServerClient && workspaceId?.trim() && workspaceType === "local");
     if (!c && !canUseManagedRuntime) {
       throw new Error(t("providers.not_connected"));
     }
@@ -804,7 +804,7 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
     const next = fallbackUpdate(config);
     await updateManagedDisabledProviders({
       opencodeClient: c,
-      omnirushClient: omnirushSnapshot.omnirushServerClient,
+      marsClient: marsSnapshot.marsServerClient,
       workspaceId,
       workspaceType,
       disabledProviders: next.disabled_providers,
@@ -877,17 +877,17 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
     // the user's opencode.jsonc. Fall back to project config only when the
     // managed runtime endpoint is unavailable.
     const c = options.client();
-    const omnirushSnapshot = options.omnirushServer.getSnapshot();
+    const marsSnapshot = options.marsServer.getSnapshot();
     const workspaceId = options.runtimeWorkspaceId();
     const workspaceType = options.selectedWorkspaceDisplay().workspaceType;
     const canUseManagedRuntime = Boolean(
-      omnirushSnapshot.omnirushServerClient && workspaceId?.trim() && workspaceType === "local",
+      marsSnapshot.marsServerClient && workspaceId?.trim() && workspaceType === "local",
     );
 
     if (canUseManagedRuntime || c) {
       const result = await updateManagedDisabledProviders({
         opencodeClient: c,
-        omnirushClient: omnirushSnapshot.omnirushServerClient,
+        marsClient: marsSnapshot.marsServerClient,
         workspaceId,
         workspaceType,
         disabledProviders: nextDisabled,
@@ -955,10 +955,10 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
 
     // Runtime-managed orphans (`lpr_*` keys in the workspace runtime config).
     try {
-      const { omnirushClient, omnirushWorkspaceId, canUseOmniRushServer } =
-        await resolveOmniRushConfigTarget("write");
-      if (canUseOmniRushServer && omnirushClient && omnirushWorkspaceId) {
-        const merged = await omnirushClient.getConfig(omnirushWorkspaceId);
+      const { marsClient, marsWorkspaceId, canUseMarsServer } =
+        await resolveMarsConfigTarget("write");
+      if (canUseMarsServer && marsClient && marsWorkspaceId) {
+        const merged = await marsClient.getConfig(marsWorkspaceId);
         const runtimeProvider = isRecord(merged.opencode) ? merged.opencode.provider : null;
         const runtimeOrphans = isRecord(runtimeProvider)
           ? Object.keys(runtimeProvider).filter((key) => /^lpr_/i.test(key))
@@ -1006,7 +1006,7 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
   ) => {
     const localProviderId = getCloudManagedProviderId(provider);
     const existingImported = state.importedCloudProviders[provider.id] ?? null;
-    // `lpr_*` / `omnirush` keys are owned by the cloud-import system. When the
+    // `lpr_*` / `mars` keys are owned by the cloud-import system. When the
     // import baseline was lost or diverged (e.g. it lives in a different file
     // than the provider block, or a prior reconcile failed mid-flight), an
     // existing cloud-managed block must be treated as a re-import to reconcile,
@@ -1038,7 +1038,7 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
     if (
       !configFile?.content?.trim() ||
       existingImported ||
-      (cloudManagedKey && localProviderId !== "omnirush")
+      (cloudManagedKey && localProviderId !== "mars")
     ) {
       return;
     }
@@ -1456,7 +1456,7 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
       const shouldUseServerReload = !(
         isDesktopRuntime() && options.selectedWorkspaceDisplay().workspaceType === "local"
       );
-      // Prefer the omnirush.ai server engine reload: it disposes the engine AND
+      // Prefer the marsai.click server engine reload: it disposes the engine AND
       // re-registers runtime-DB MCPs, so non-primary workspaces and pending
       // changes are picked up instead of silently dropping (toggles "turn
       // off").
@@ -1465,19 +1465,19 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
         lastGlobalProviderDisposeRefreshAt = now;
         if (shouldUseServerReload) {
           try {
-            const omnirushSnapshot = options.omnirushServer.getSnapshot();
-            const omnirushClient = omnirushSnapshot.omnirushServerClient;
-            if (omnirushSnapshot.omnirushServerStatus === "connected" && omnirushClient) {
+            const marsSnapshot = options.marsServer.getSnapshot();
+            const marsClient = marsSnapshot.marsServerClient;
+            if (marsSnapshot.marsServerStatus === "connected" && marsClient) {
               const workspaceId =
                 options.runtimeWorkspaceId()?.trim() ||
                 (await options.ensureRuntimeWorkspaceId?.())?.trim() ||
                 "";
               if (workspaceId) {
                 try {
-                  await omnirushClient.reloadEngine(workspaceId);
+                  await marsClient.reloadEngine(workspaceId);
                 } catch (error) {
                   const unreachable =
-                    error instanceof OmniRushServerError && error.code === "opencode_engine_unreachable";
+                    error instanceof MarsServerError && error.code === "opencode_engine_unreachable";
                   if (!unreachable || !isDesktopRuntime()) {
                     throw error;
                   }
@@ -1666,7 +1666,7 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
     const token = settings.authToken?.trim() ?? "";
     const orgId = settings.activeOrgId?.trim() ?? "";
     if (!token || !orgId) {
-      throw new Error("Sign in to omnirush.ai Cloud and choose an organization first.");
+      throw new Error("Sign in to marsai.click Cloud and choose an organization first.");
     }
 
     try {
@@ -1689,15 +1689,15 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
       await assertCloudProviderImportSafe(provider);
 
       if (envEntries.length > 0) {
-        const omnirushClient = options.omnirushServer.getSnapshot().omnirushServerClient;
-        if (!omnirushClient) {
+        const marsClient = options.marsServer.getSnapshot().marsServerClient;
+        if (!marsClient) {
           throw new CloudProviderNeedsServerError(
             `${provider.name} needs environment variables (${envEntries
               .map((entry) => entry.key)
-              .join(", ")}) but the omnirush.ai server is not available.`,
+              .join(", ")}) but the marsai.click server is not available.`,
           );
         }
-        await omnirushClient.upsertUserEnv(envEntries);
+        await marsClient.upsertUserEnv(envEntries);
       }
       if (primaryApiKey) {
         await c.auth.set({
@@ -1933,19 +1933,19 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
       return;
     }
 
-    // Imports, baseline reads, and persistence all go through the omnirush.ai
+    // Imports, baseline reads, and persistence all go through the marsai.click
     // server target (patchRuntimeProviders throws without it). Running before
     // the target resolves made the baseline read fall back to an empty source
     // and re-import every org provider — engine dispose churn on settings open.
     const [readTarget, target] = await Promise.all([
-      resolveOmniRushConfigTarget("read"),
-      resolveOmniRushConfigTarget("write"),
+      resolveMarsConfigTarget("read"),
+      resolveMarsConfigTarget("write"),
     ]);
     if (
-      !readTarget.canUseOmniRushServer ||
-      !target.canUseOmniRushServer ||
-      !target.omnirushClient ||
-      !target.omnirushWorkspaceId
+      !readTarget.canUseMarsServer ||
+      !target.canUseMarsServer ||
+      !target.marsClient ||
+      !target.marsWorkspaceId
     ) {
       return;
     }
@@ -2083,7 +2083,7 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
       }
       return;
     }
-    if (getOmniRushGatewayOrigin()) {
+    if (getMarsGatewayOrigin()) {
       if (!loggedGatewayCloudProviderSyncSkip) {
         loggedGatewayCloudProviderSyncSkip = true;
         console.info(
@@ -2098,12 +2098,12 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
         const result = await enqueueGlobalCloudProviderSync(
           `server:${getCloudProviderSyncContextKey()}`,
           async () => {
-            const omnirushClient = options.omnirushServer.getSnapshot().omnirushServerClient;
-            if (!omnirushClient) throw new Error("omnirush.ai server unavailable.");
-            let result = await omnirushClient.runCloudProviderSyncNow(reason);
+            const marsClient = options.marsServer.getSnapshot().marsServerClient;
+            if (!marsClient) throw new Error("marsai.click server unavailable.");
+            let result = await marsClient.runCloudProviderSyncNow(reason);
             if (result.status === "no_session") {
               await pushDenSession(true);
-              result = await omnirushClient.runCloudProviderSyncNow(reason);
+              result = await marsClient.runCloudProviderSyncNow(reason);
             }
             return result;
           },
@@ -2373,7 +2373,7 @@ export function createProviderAuthStore(options: CreateProviderAuthStoreOptions)
           if (serverHandlesProviderSync()) {
             lastDenSessionPushKey = "";
             void (async () => {
-              await options.omnirushServer.getSnapshot().omnirushServerClient?.deleteDenSession().catch(() => undefined);
+              await options.marsServer.getSnapshot().marsServerClient?.deleteDenSession().catch(() => undefined);
               // The server removes cloud-owned environment entries from disk,
               // but a running OpenCode child retains its spawn environment.
               // Explicit desktop sign-out must replace that process so an

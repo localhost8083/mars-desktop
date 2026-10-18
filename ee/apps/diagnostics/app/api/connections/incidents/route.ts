@@ -1,4 +1,4 @@
-import { connectDiagnosticIncidentBatchSchema } from "@omnirush/types/den/connect-diagnostics"
+import { connectDiagnosticIncidentBatchSchema } from "@mars/types/den/connect-diagnostics"
 import { bearerAuthorized } from "../../../../src/auth"
 import { diagnosticsConfig } from "../../../../src/config"
 import {

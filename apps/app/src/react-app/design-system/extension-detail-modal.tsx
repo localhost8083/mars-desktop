@@ -42,7 +42,7 @@ export type ExtensionDetailModalProps = {
   iconSlug?: string;
   iconSrc?: string;
   taxonomy?: ExtensionTaxonomy;
-  /** Show the local stdio wrapper setup used by the omnirush.ai UI MCP. */
+  /** Show the local stdio wrapper setup used by the marsai.click UI MCP. */
   uiControl?: boolean;
   connected?: boolean;
   connectedLabel?: string;
@@ -123,7 +123,7 @@ const taxonomyDesc: Record<ExtensionTaxonomy, string> = {
   skill: "A reusable workflow that your agent can execute on demand.",
   command: "A slash command the composer can run in this workspace.",
   agent: "A named agent the composer can run a session as.",
-  plugin: "Extends omnirush.ai with additional capabilities managed by your organization.",
+  plugin: "Extends marsai.click with additional capabilities managed by your organization.",
 };
 
 // The UI-control MCP ships inside the desktop app and is not published on
@@ -132,7 +132,7 @@ function uiControlClientConfig(command: string[], environment?: Record<string, s
   const [executable, ...args] = command;
   return JSON.stringify({
     mcpServers: {
-      "omnirush-ui": {
+      "mars-ui": {
         command: executable,
         args,
         ...(environment ? { env: environment } : {}),
@@ -141,12 +141,12 @@ function uiControlClientConfig(command: string[], environment?: Record<string, s
   }, null, 2);
 }
 
-const uiControlLaunchUnavailable = "Open this page in the omnirush.ai desktop app to see the launch command.";
+const uiControlLaunchUnavailable = "Open this page in the marsai.click desktop app to see the launch command.";
 
 function uiControlOpencodeConfig(command: string[], environment?: Record<string, string>) {
   return JSON.stringify({
     mcp: {
-      "omnirush-ui": {
+      "mars-ui": {
         type: "local",
         command,
         ...(environment ? { environment } : {}),
@@ -794,8 +794,8 @@ function UiControlConnectionDetails(props: UiControlConnectionDetailsProps) {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-2 text-sm leading-relaxed text-muted-foreground">
-            <div>omnirush.ai desktop starts a private localhost bridge automatically.</div>
-            <div>Your MCP client starts the UI-control MCP bundled with omnirush.ai over stdio; it discovers the bridge and proxies UI tools to it. It is not an npm package, so never install it with npx.</div>
+            <div>marsai.click desktop starts a private localhost bridge automatically.</div>
+            <div>Your MCP client starts the UI-control MCP bundled with marsai.click over stdio; it discovers the bridge and proxies UI tools to it. It is not an npm package, so never install it with npx.</div>
             <div>Do not point clients at the random localhost bridge URL directly.</div>
           </div>
         </CardContent>
@@ -814,7 +814,7 @@ function UiControlConnectionDetails(props: UiControlConnectionDetailsProps) {
 
       <Card variant="outline" size="sm">
         <CardHeader>
-          <CardTitle>omnirush.ai</CardTitle>
+          <CardTitle>marsai.click</CardTitle>
         </CardHeader>
         <CardContent>
           <pre className="max-h-[180px] overflow-x-auto rounded-xl border border-border p-3 text-xs leading-relaxed text-card-foreground">
@@ -836,7 +836,7 @@ function UiControlConnectionDetails(props: UiControlConnectionDetailsProps) {
                     Production discovery file
                   </TableCell>
                   <TableCell className="py-2 whitespace-normal">
-                    <span className="font-mono text-xs break-all">~/Library/Application Support/ai.omnirush.desktop/omnirush-ui-control.json</span>
+                    <span className="font-mono text-xs break-all">~/Library/Application Support/ai.marsai.desktop/mars-ui-control.json</span>
                   </TableCell>
                 </TableRow>
                 <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
@@ -844,7 +844,7 @@ function UiControlConnectionDetails(props: UiControlConnectionDetailsProps) {
                     Dev discovery file
                   </TableCell>
                   <TableCell className="py-2 whitespace-normal">
-                    <span className="font-mono text-xs break-all">~/Library/Application Support/ai.omnirush.desktop.dev/omnirush-ui-control.json</span>
+                    <span className="font-mono text-xs break-all">~/Library/Application Support/ai.marsai.desktop.dev/mars-ui-control.json</span>
                   </TableCell>
                 </TableRow>
                 <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
@@ -852,16 +852,16 @@ function UiControlConnectionDetails(props: UiControlConnectionDetailsProps) {
                     Override
                   </TableCell>
                   <TableCell className="py-2 whitespace-normal">
-                    <span className="font-mono text-xs break-all">OMNIRUSH_UI_CONTROL_DISCOVERY=/path/to/omnirush-ui-control.json</span>
+                    <span className="font-mono text-xs break-all">MARS_UI_CONTROL_DISCOVERY=/path/to/mars-ui-control.json</span>
                   </TableCell>
                 </TableRow>
-                {props.environment?.OMNIRUSH_UI_CONTROL_DISCOVERY ? (
+                {props.environment?.MARS_UI_CONTROL_DISCOVERY ? (
                   <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
                     <TableCell className="bg-muted/50 py-2 text-xs font-medium">
                       Current override
                     </TableCell>
                     <TableCell className="py-2 whitespace-normal">
-                      <span className="font-mono text-xs break-all">{props.environment.OMNIRUSH_UI_CONTROL_DISCOVERY}</span>
+                      <span className="font-mono text-xs break-all">{props.environment.MARS_UI_CONTROL_DISCOVERY}</span>
                     </TableCell>
                   </TableRow>
                 ) : null}

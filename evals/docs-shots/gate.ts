@@ -1,4 +1,4 @@
-import type { ScreenshotArtifact } from "@omnirush/test-evidence";
+import type { ScreenshotArtifact } from "@mars/test-evidence";
 
 /** Transient product chrome that must never ship in a docs screenshot. */
 export const DEFAULT_NEVER = [

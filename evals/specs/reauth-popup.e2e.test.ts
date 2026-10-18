@@ -1,6 +1,6 @@
 import { expect } from "vitest";
-import { denFetch } from "@omnirush/behaviors";
-import { spec } from "@omnirush/testkit";
+import { denFetch } from "@mars/behaviors";
+import { spec } from "@mars/testkit";
 import { reauthPopup } from "../worlds/reauth-popup.ts";
 
 const test = spec.world(reauthPopup, { timeout: 900_000 });
@@ -35,7 +35,7 @@ test("workspace SSO verifies through a real popup and safely recovers from inter
   await step("blocked and closed windows preserve the pending change", async () => {
     await world.blockPopups(true);
     await user.click({ role: "button", label: "Continue with SSO" });
-    await user.see({ text: /Allow popups for OmniRush.ai/ });
+    await user.see({ text: /Allow popups for MarsAI/ });
     expect(await world.popupCount()).toBe(0);
     await world.blockPopups(false);
     await user.click({ role: "button", label: "Continue with SSO" });
@@ -94,7 +94,7 @@ test("workspace SSO verifies through a real popup and safely recovers from inter
     await user.see({ text: `Sign in as ${world.den.admin.email} to confirm this change.` }, { timeoutMs: 60_000 });
     expect(await world.storedName()).toBe(world.originalName);
     popup.client.close();
-    evidence.recordAssertionEvidence("A different identity cannot approve the original user's pending change", "The IdP authenticated a second synthetic identity, but OmniRush.ai required the original admin and the stored workspace name stayed unchanged.", true);
+    evidence.recordAssertionEvidence("A different identity cannot approve the original user's pending change", "The IdP authenticated a second synthetic identity, but MarsAI required the original admin and the stored workspace name stayed unchanged.", true);
   });
   await step("successful SSO resumes and persists the pending settings change", async () => {
     await user.see({ role: "button", label: "Continue with SSO" });
@@ -118,7 +118,7 @@ test("workspace SSO verifies through a real popup and safely recovers from inter
   const skillBody = { role: "textbox", label: /Skill body/ } as const;
   await step("shared content editing reuses confirmation beyond fifteen minutes", async () => {
     await world.ageSession(20);
-    const headers = { "x-omnirush-org-id": world.organizationId, authorization: `Bearer ${world.den.admin.token}` };
+    const headers = { "x-mars-org-id": world.organizationId, authorization: `Bearer ${world.den.admin.token}` };
     const renamed = await denFetch(world.den.admin, `/v1/plugins/${world.pluginId}`, {
       method: "PATCH", headers, body: JSON.stringify({ name: "Shared editing updated" }),
     });

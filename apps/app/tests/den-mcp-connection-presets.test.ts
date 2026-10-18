@@ -57,6 +57,6 @@ describe("Den MCP connection presets", () => {
     expect(requests).toHaveLength(1);
     expect(requests[0]?.url).toBe("https://api.den.example.test/v1/mcp-connections/presets");
     expect(requests[0]?.headers.get("authorization")).toBe("Bearer token");
-    expect(requests[0]?.headers.get("x-omnirush-org-id")).toBe("organization_test");
+    expect(requests[0]?.headers.get("x-mars-org-id")).toBe("organization_test");
   });
 });

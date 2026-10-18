@@ -27,10 +27,10 @@ const required: UpdateGateState = {
   minimum: "3.1.0",
   deadline: "2026-10-04T17:12:00.000Z",
   message: null,
-  downloadUrl: "https://omnirush.ai/download",
+  downloadUrl: "https://marsai.click/download",
   source: "header",
 };
-const blocked: UpdateGateState = { ...required, status: "blocked", message: "Update OmniRush.ai to 3.1.0 to keep using models.", source: "rejection" };
+const blocked: UpdateGateState = { ...required, status: "blocked", message: "Update MarsAI to 3.1.0 to keep using models.", source: "rejection" };
 
 function fakeUpdate(over: Partial<{ label: string; working: boolean; detail: string | null; command: string | null; installFailed: boolean }> = {}) {
   return {
@@ -72,16 +72,16 @@ describe("required-update banner", () => {
   });
 
   test("names the required version", () => {
-    expect(updateBannerText(required, "OmniRush.ai", NOW)).toBe("OmniRush.ai 3.1.0 is required in 5h 12m");
-    expect(updateBannerText({ ...required, minimum: null, deadline: null }, "OmniRush.ai", NOW)).toBe("A newer OmniRush.ai is required");
+    expect(updateBannerText(required, "MarsAI", NOW)).toBe("MarsAI 3.1.0 is required in 5h 12m");
+    expect(updateBannerText({ ...required, minimum: null, deadline: null }, "MarsAI", NOW)).toBe("A newer MarsAI is required");
   });
 
   test("renders the countdown and a button that says what it does, with no way to dismiss it", () => {
     const html = renderToStaticMarkup(
-      <RequiredUpdateBanner gate={required} appName="OmniRush.ai" update={fakeUpdate({ label: "Restart to update" })} />,
+      <RequiredUpdateBanner gate={required} appName="MarsAI" update={fakeUpdate({ label: "Restart to update" })} />,
     );
     expect(html).toContain("data-testid=\"update-required-banner\"");
-    expect(html).toMatch(/OmniRush\.ai 3\.1\.0 is required in \d+(d \d+h|h \d+m|m)|less than a minute/);
+    expect(html).toMatch(/Mars\.ai 3\.1\.0 is required in \d+(d \d+h|h \d+m|m)|less than a minute/);
     expect(html).toContain("Restart to update");
     expect(html.toLowerCase()).not.toContain("dismiss");
     expect(html).not.toContain("aria-label=\"Close\"");
@@ -91,7 +91,7 @@ describe("required-update banner", () => {
 describe("blocked view", () => {
   test("is full-screen, shows the server message, both versions and the download progress", () => {
     const html = renderToStaticMarkup(
-      <UpdateRequiredView gate={blocked} appName="OmniRush.ai" update={fakeUpdate({ label: "Downloading 3.1.1… 40%", working: true })} />,
+      <UpdateRequiredView gate={blocked} appName="MarsAI" update={fakeUpdate({ label: "Downloading 3.1.1… 40%", working: true })} />,
     );
     expect(html).toContain("data-testid=\"update-required-view\"");
     expect(html).toContain("fixed inset-0");
@@ -105,9 +105,9 @@ describe("blocked view", () => {
   });
 
   test("shows the install command for a package install", () => {
-    const command = "sudo apt install /home/pat/Downloads/omnirush-linux-amd64-3.1.1.deb";
+    const command = "sudo apt install /home/pat/Downloads/mars-linux-amd64-3.1.1.deb";
     const html = renderToStaticMarkup(
-      <UpdateRequiredView gate={blocked} appName="OmniRush.ai" update={fakeUpdate({ label: "Copy install command", command })} />,
+      <UpdateRequiredView gate={blocked} appName="MarsAI" update={fakeUpdate({ label: "Copy install command", command })} />,
     );
     expect(html).toContain("data-testid=\"update-install-command\"");
     expect(html).toContain(command);
@@ -165,11 +165,11 @@ describe("Update now", () => {
 
   test("a restart that did not go through offers the manual download beside the retry", () => {
     const failed = renderToStaticMarkup(
-      <RequiredUpdateBanner gate={required} appName="OmniRush.ai" update={fakeUpdate({ installFailed: true, detail: "The update did not finish: moved" })} />,
+      <RequiredUpdateBanner gate={required} appName="MarsAI" update={fakeUpdate({ installFailed: true, detail: "The update did not finish: moved" })} />,
     );
     expect(failed).toContain('data-testid="update-required-banner-download"');
     expect(failed).toContain("Download manually");
-    const fine = renderToStaticMarkup(<RequiredUpdateBanner gate={required} appName="OmniRush.ai" update={fakeUpdate()} />);
+    const fine = renderToStaticMarkup(<RequiredUpdateBanner gate={required} appName="MarsAI" update={fakeUpdate()} />);
     expect(fine).not.toContain("update-required-banner-download");
   });
 
@@ -226,7 +226,7 @@ describe("required version the feed does not offer", () => {
   test("the blocked view shows why instead of an idle button", () => {
     const message = requiredUpdateUnreachable({ gate: gated, updaterState: "idle", checkedAt: NOW, feedVersion: "3.3.8" });
     const html = renderToStaticMarkup(
-      <UpdateRequiredView gate={gated} appName="OmniRush.ai" update={fakeUpdate({ detail: message, label: "Open download page" })} />,
+      <UpdateRequiredView gate={gated} appName="MarsAI" update={fakeUpdate({ detail: message, label: "Open download page" })} />,
     );
     expect(html).toContain("nothing newer than 3.3.8");
     expect(html).toContain("Open download page");
@@ -249,7 +249,7 @@ describe("wiring", () => {
 
   test("the gate only covers the UI: it never stops the session uploader or signs out", () => {
     const gate = read("../src/react-app/shell/update-gate.tsx") + read("../src/app/lib/update-gate.ts");
-    for (const forbidden of ["signOut", "omnirushAccountSignOut", "omnirushServerRestart", "capture", "uploader", "nuke"]) {
+    for (const forbidden of ["signOut", "marsAccountSignOut", "marsServerRestart", "capture", "uploader", "nuke"]) {
       expect(gate).not.toContain(forbidden);
     }
     // The blocked view overlays the app instead of unmounting it.

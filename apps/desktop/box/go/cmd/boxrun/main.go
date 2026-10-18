@@ -1,11 +1,11 @@
 //go:build linux
 
-// boxrun runs an OmniRush box with no container engine: the pinned image is
+// boxrun runs an Mars box with no container engine: the pinned image is
 // pulled and unpacked by boxrun itself (no daemon, no root), and a project's
 // box is that root filesystem under a per-project overlay upper layer, in
 // its own user, mount, PID, IPC and UTS namespaces made by bubblewrap
 // (unprivileged), or by unshare(1) when boxrun runs as root (inside the
-// OmniRush WSL distro). The network is the host's, so installs work and
+// Mars WSL distro). The network is the host's, so installs work and
 // boxd (the same helper the container boxes run) listens on the host's
 // loopback. The upper layer stays on disk, so installs survive restarts.
 //
@@ -41,7 +41,7 @@ import (
 	"syscall"
 	"time"
 
-	"omnirush.ai/box/oci"
+	"marsai.click/box/oci"
 )
 
 var version = "dev"
@@ -752,14 +752,14 @@ func cmdUp(args []string) error {
 		env = append(env, "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
 	}
 	env = append(env, envs...)
-	sp := spec{Hostname: "omnirush-box", Env: env, AptRoot: ids.Mode == "single" && !root, NoKernel: *overlayMode == "fuse"}
+	sp := spec{Hostname: "mars-box", Env: env, AptRoot: ids.Mode == "single" && !root, NoKernel: *overlayMode == "fuse"}
 	if sp.NoKernel && fuseBin == "" {
 		return errors.New("--overlay fuse: fuse-overlayfs is not installed")
 	}
 	// /etc/hosts: this machine's (the network is shared) plus the box's own name, as a
 	// container runtime writes it (sudo looks its host name up).
 	hostsData, _ := os.ReadFile("/etc/hosts")
-	hostsText := strings.TrimRight(string(hostsData), "\n") + "\n127.0.1.1\tomnirush-box\n"
+	hostsText := strings.TrimRight(string(hostsData), "\n") + "\n127.0.1.1\tmars-box\n"
 	if err := os.WriteFile(filepath.Join(*box, "hosts"), []byte(hostsText), 0o644); err != nil {
 		return err
 	}
@@ -786,7 +786,7 @@ func cmdUp(args []string) error {
 		sp.Lower, sp.Upper, sp.Work, sp.Merged = "/.omni/lower", "/.omni/box/upper", "/.omni/box/work", "/.omni/merged"
 		sp.Boxd, sp.InitOut = "/.omni/boxd", "/.omni/box/init.json"
 		bargs := []string{"--unshare-user", "--uid", "0", "--gid", "0", "--unshare-pid", "--unshare-ipc", "--unshare-uts", "--unshare-cgroup-try",
-			"--hostname", "omnirush-box", "--cap-add", "ALL", "--new-session",
+			"--hostname", "mars-box", "--cap-add", "ALL", "--new-session",
 			"--dev", "/dev", "--proc", "/proc", "--ro-bind", "/sys", "/sys",
 			"--dir", "/.omni/merged",
 			"--ro-bind", st.RootFS(*image), "/.omni/lower",
@@ -1141,7 +1141,7 @@ func dirBytes(dir string) int64 {
 }
 
 // cmdEnter runs a command inside a running box (an interactive shell for
-// `omnirush sandbox shell`) with nsenter: the box's user (when bwrap made
+// `mars sandbox shell`) with nsenter: the box's user (when bwrap made
 // one), mount and PID namespaces, and its root.
 func cmdEnter(args []string) error {
 	fs := newFlags("enter")

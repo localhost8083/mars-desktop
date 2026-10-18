@@ -1,4 +1,4 @@
-import { readBaseUrlEnv } from "@omnirush/types/url";
+import { readBaseUrlEnv } from "@mars/types/url";
 import { denUrls } from "@omnirush-ee/utils";
 
 export function readPublicWebOrigin(env: NodeJS.ProcessEnv = process.env): string | null {

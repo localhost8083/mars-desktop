@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "bun:test";
-import type { WorkflowArtifactSnapshot, WorkflowDetail } from "@omnirush/types/workflows";
+import type { WorkflowArtifactSnapshot, WorkflowDetail } from "@mars/types/workflows";
 import { WorkflowEditTab } from "../app/(den)/dashboard/_components/workflow-edit-tab";
 import { WorkflowOverviewTab } from "../app/(den)/dashboard/_components/workflow-overview-tab";
 import { WorkflowRunsTab } from "../app/(den)/dashboard/_components/workflow-runs-tab";

@@ -103,13 +103,13 @@ function validRecoveryArtifactIdentity(artifact) {
   } catch {
     return false;
   }
-  const prefix = `/omnirush-ai/omnirush-gui/releases/download/v${version}/`;
+  const prefix = `/localhost8083/mars-desktop/releases/download/v${version}/`;
   if (url.protocol !== "https:" || url.hostname !== "github.com" || !url.pathname.startsWith(prefix)) return false;
   const assetArch = artifact.platform === "linux" && artifact.arch === "x64" ? "x86_64" : artifact.arch;
   const platformSlug = artifact.platform === "darwin" ? "mac" : artifact.platform === "win32" ? "win" : "linux";
   const fileName = path.basename(url.pathname);
   const distributionSlug = artifact.distribution === "public" ? "" : `${artifact.distribution}-`;
-  return fileName === `omnirush-${distributionSlug}${platformSlug}-${assetArch}-${version}${installerExtension(artifact.platform)}`;
+  return fileName === `mars-${distributionSlug}${platformSlug}-${assetArch}-${version}${installerExtension(artifact.platform)}`;
 }
 
 export function selectRecoveryArtifact(files, { version, platform, arch, distribution }) {
@@ -124,10 +124,10 @@ export function selectRecoveryArtifact(files, { version, platform, arch, distrib
     && typeof file.sha512 === "string"
     && file.sha512.trim(),
   );
-  const baseUrl = `https://github.com/omnirush-ai/omnirush-gui/releases/download/v${normalizedVersion}/`;
+  const baseUrl = `https://github.com/localhost8083/mars-desktop/releases/download/v${normalizedVersion}/`;
   for (const selected of matching) {
     const url = new URL(selected.url, baseUrl);
-    if (url.origin !== "https://github.com" || !url.pathname.startsWith(`/omnirush-ai/omnirush-gui/releases/download/v${normalizedVersion}/`)) {
+    if (url.origin !== "https://github.com" || !url.pathname.startsWith(`/localhost8083/mars-desktop/releases/download/v${normalizedVersion}/`)) {
       continue;
     }
     const artifact = {

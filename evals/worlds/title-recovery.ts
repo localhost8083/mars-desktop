@@ -1,8 +1,8 @@
 import { mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { join } from "node:path";
-import { SkipError, type Seed } from "@omnirush/env";
-import { bootManagedOmniRushServer, close, engineBinary, isRecord, listen, readBody, sendJson, sendStream } from "./omnirush-server-cli.ts";
+import { SkipError, type Seed } from "@mars/env";
+import { bootManagedMarsServer, close, engineBinary, isRecord, listen, readBody, sendJson, sendStream } from "./mars-server-cli.ts";
 
 export const GENERATED_TITLE = "Kites in a sunny meadow";
 export const REPLY = "A kite catches the breeze.";
@@ -11,7 +11,7 @@ export type WitnessRequest = { provider: string; url: string; model: string; tit
 
 export async function titleRecovery(seed: Seed) {
   const binary = engineBinary();
-  if (!binary) throw new SkipError("set OMNIRUSH_OPENCODE_BIN or install opencode");
+  if (!binary) throw new SkipError("set MARS_OPENCODE_BIN or install opencode");
   const root = seed.tmpPath("title-recovery");
   await mkdir(root, { recursive: true });
   const scratch = await realpath(root);
@@ -28,7 +28,7 @@ export async function titleRecovery(seed: Seed) {
       const responses = provider === "responses";
       const effort = isRecord(body.reasoning) ? body.reasoning.effort : body.reasoning_effort;
       requests.push({ provider, url: `http://${request.headers.host}${request.url}`, model: body.model, title, effort, temperature: body.temperature, topP: body.top_p,
-        marker: Boolean(request.headers["x-omnirush-title-attempt"]), auth: String(request.headers.authorization), body: raw });
+        marker: Boolean(request.headers["x-mars-title-attempt"]), auth: String(request.headers.authorization), body: raw });
       // Each provider accepts only its own model, protocol endpoint, and credential.
       if (responses !== ["gpt-6-astra", "gpt-6-default-effort"].includes(body.model) || request.url !== (responses ? "/v1/responses" : "/v1/chat/completions")) return sendJson(response, 404, {});
       if (request.headers.authorization !== `Bearer title-witness-${provider}`) return sendJson(response, 401, {});
@@ -92,7 +92,7 @@ export async function titleRecovery(seed: Seed) {
   const token = "title-recovery-test-client";
   const updates: { id: string; title: string }[] = [];
   const abort = new AbortController();
-  let managed: Awaited<ReturnType<typeof bootManagedOmniRushServer>> | undefined;
+  let managed: Awaited<ReturnType<typeof bootManagedMarsServer>> | undefined;
   let events: Promise<void> | undefined;
   const dispose = async () => {
     abort.abort();
@@ -102,7 +102,7 @@ export async function titleRecovery(seed: Seed) {
     await rm(scratch, { recursive: true, force: true });
   };
   try {
-    managed = await bootManagedOmniRushServer({ scratch, workspace, token, binary, sink: () => undefined });
+    managed = await bootManagedMarsServer({ scratch, workspace, token, binary, sink: () => undefined });
     const stream = await fetch(`${managed.base}/workspace/${managed.workspaceId}/opencode/event`, {
       headers: { authorization: `Bearer ${token}` }, signal: abort.signal,
     });

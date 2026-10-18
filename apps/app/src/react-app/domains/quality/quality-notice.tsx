@@ -6,11 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-import { omnirushAccountStatus, omnirushQualityDetails } from "../../../app/lib/desktop";
+import { marsAccountStatus, marsQualityDetails } from "../../../app/lib/desktop";
 import {
   CLIENT_GRADE_NOTE,
   GOOD_SESSION_STAR_LABEL,
   canSpinNow,
+  goodSessionWording,
   isCoachingNotice,
   qualityTierLabel,
   refreshAccountStatus,
@@ -19,12 +20,10 @@ import {
   type AccountQuality,
   type QualityNotice,
 } from "../../../app/lib/quality";
-import type { OmniRushQualitySession } from "@omnirush/types/desktop-ipc";
+import type { MarsQualitySession } from "@mars/types/desktop-ipc";
 import { BiggestWinTicker, NextSpinHint, QualityTierBadge, StreakLine } from "./quality-parts";
 import { QualitySpinDialog } from "./quality-spin-dialog";
 import { useQualityPopups } from "./use-quality-popups";
-import { GoodSessionGuide } from "./good-session";
-import { goodSessionWording } from "../../../app/lib/good-session";
 
 /** Used only when the server sends no `fail_labels` entry for a code. */
 const FALLBACK_FAIL_LABELS: Record<string, string> = {
@@ -44,9 +43,9 @@ export function failLabel(fail: string, labels: Record<string, string> = {}): st
   return label.replace(/\bold client\b/gi, "old app version").replace(/\bclient\b/gi, "app");
 }
 
-export type QualitySessionReasons = { sessions: OmniRushQualitySession[]; failLabels: Record<string, string> };
+export type QualitySessionReasons = { sessions: MarsQualitySession[]; failLabels: Record<string, string> };
 
-function workSummary(work: OmniRushQualitySession["work"]): string | null {
+function workSummary(work: MarsQualitySession["work"]): string | null {
   if (!work) return null;
   const parts = [`${work.codeFiles} code file${work.codeFiles === 1 ? "" : "s"}`, `${work.linesChanged} lines`];
   parts.push(work.testRuns > 0 ? `${work.testRuns} test run${work.testRuns === 1 ? "" : "s"}` : "no tests");
@@ -177,8 +176,6 @@ export function QualityNoticeCard(props: QualityNoticeCardProps) {
           <p className="text-xs font-medium text-foreground">How to earn spins</p>
         ) : null}
 
-        <GoodSessionGuide className="rounded-lg border border-border px-3 py-2" />
-
         {coaching ? (
           <div>
             <button
@@ -254,7 +251,7 @@ export function QualityRewards() {
   const { notice, nudge, dismissNotice, dismissNudge } = useQualityPopups(quality);
 
   useEffect(() => {
-    const read = () => void refreshAccountStatus(omnirushAccountStatus);
+    const read = () => void refreshAccountStatus(marsAccountStatus);
     read();
     const timer = window.setInterval(read, PROFILE_REFRESH_MS);
     return () => window.clearInterval(timer);
@@ -271,7 +268,7 @@ export function QualityRewards() {
   }, [dismissNotice]);
 
   const loadSessions = useCallback(async (): Promise<QualitySessionReasons | null> => {
-    const details = await omnirushQualityDetails();
+    const details = await marsQualityDetails();
     return details ? { sessions: details.sessions, failLabels: details.failLabels ?? {} } : null;
   }, []);
 

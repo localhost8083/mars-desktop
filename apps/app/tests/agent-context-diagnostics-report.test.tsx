@@ -6,7 +6,7 @@ import {
   agentContextDiagnosticsReportSchema,
   type AgentContextDiagnosticCheck,
   type AgentContextDiagnosticsReport,
-} from "@omnirush/types/agent-context-diagnostics";
+} from "@mars/types/agent-context-diagnostics";
 
 import { serializeAgentContextDiagnosticsReport } from "../src/app/lib/agent-context-diagnostics";
 import {
@@ -38,7 +38,7 @@ function healthyReport(): AgentContextDiagnosticsReport {
         : "observed",
     code: passiveEngineCheckIds.has(id) ? `${id}-not-queried` : `${id}-ok`,
     message: passiveEngineCheckIds.has(id) ? `${id} intentionally not queried.` : `${id} verified.`,
-    owner: "omnirush-server",
+    owner: "mars-server",
     action: "No action required.",
     details: id === "cloud-tool-catalog"
       ? {
@@ -67,8 +67,8 @@ function healthyReport(): AgentContextDiagnosticsReport {
     checks,
     agent: {
       evidenceSource: "configured-intent",
-      defaultAgent: "omnirush",
-      configuredOmniRushAgent: {
+      defaultAgent: "mars",
+      configuredMarsAgent: {
         state: "present",
         mode: "primary",
         prompt: {
@@ -86,11 +86,11 @@ function healthyReport(): AgentContextDiagnosticsReport {
           deniedRelevantToolCount: null,
         },
       },
-      pluginLabels: ["omnirush-extensions-preview", "omnirush-capabilities-knowledge"],
+      pluginLabels: ["mars-extensions-preview", "mars-capabilities-knowledge"],
     },
     mcps: [
       {
-        name: "omnirush-cloud",
+        name: "mars-cloud",
         source: "config.global",
         type: "remote",
         enabled: true,
@@ -103,7 +103,7 @@ function healthyReport(): AgentContextDiagnosticsReport {
         liveEngineStatus: "unavailable",
       },
       {
-        name: "omnirush-cloud",
+        name: "mars-cloud",
         source: "config.remote",
         type: "remote",
         enabled: true,
@@ -175,11 +175,11 @@ describe("AgentContextDiagnosticsReportView", () => {
     expect(html).toContain("Expected");
     expect(html).toContain("Client observed");
     expect(html).toContain("Observed");
-    expect(html).toContain("omnirush-extensions-preview");
+    expect(html).toContain("mars-extensions-preview");
     expect(html).toContain("config.remote");
     expect(html).toContain("Registration record: Connected");
     expect(html).toContain("Configured default-agent intent");
-    expect(html).toContain("Configured omnirush.ai agent");
+    expect(html).toContain("Configured marsai.click agent");
     expect(html).toContain("Configured enabled");
     expect(html).toContain("Configured headers present · values redacted");
     expect(html).toContain("Live connection status not queried");
@@ -210,7 +210,7 @@ describe("AgentContextDiagnosticsReportView", () => {
 
   test("announces false context markers and diagnostic errors without relying on color", () => {
     const report = healthyReport();
-    report.agent.configuredOmniRushAgent.prompt.markers.artifacts = false;
+    report.agent.configuredMarsAgent.prompt.markers.artifacts = false;
     const reportHtml = renderToStaticMarkup(
       <AgentContextDiagnosticsReportView report={report} copied={false} copying={false} onCopy={() => {}} />,
     );
@@ -243,7 +243,7 @@ describe("AgentContextDiagnosticsReportView", () => {
     );
 
     expect(html).toContain("Effective default agent");
-    expect(html).toContain("Effective omnirush.ai agent");
+    expect(html).toContain("Effective marsai.click agent");
     expect(html).toContain("Effective plugin labels");
     expect(html).toContain("Effective configuration observed");
     expect(html).toContain("Disabled by tool policy");
@@ -252,7 +252,7 @@ describe("AgentContextDiagnosticsReportView", () => {
 
   test("renders and serializes an effective ask rule as approval required", () => {
     const report = healthyReport();
-    report.agent.configuredOmniRushAgent.connectToolPermissions.searchCapabilities = "approval-required";
+    report.agent.configuredMarsAgent.connectToolPermissions.searchCapabilities = "approval-required";
 
     const html = renderToStaticMarkup(
       <AgentContextDiagnosticsReportView report={report} copied={false} copying={false} onCopy={() => {}} />,
@@ -371,7 +371,7 @@ describe("AgentContextDiagnosticsReportView", () => {
     const cloudProbeWithoutRetainedEntry = {
       ...healthyReport(),
       safety: { ...healthyReport().safety, cloudCatalogToolsListPerformed: true },
-      mcps: healthyReport().mcps.filter((mcp) => mcp.name !== "omnirush-cloud"),
+      mcps: healthyReport().mcps.filter((mcp) => mcp.name !== "mars-cloud"),
     };
     expect(agentContextDiagnosticsReportSchema.safeParse(cloudProbeWithoutRetainedEntry).success).toBe(false);
 
@@ -383,7 +383,7 @@ describe("AgentContextDiagnosticsReportView", () => {
   });
 
   test("does not export the obsolete client cloud-catalog probe contract", async () => {
-    const contract = await import("@omnirush/types/agent-context-diagnostics");
+    const contract = await import("@mars/types/agent-context-diagnostics");
     expect("agentContextCloudCatalogProbeSchema" in contract).toBe(false);
     expect("agentContextCloudCatalogProbeCodeSchema" in contract).toBe(false);
   });

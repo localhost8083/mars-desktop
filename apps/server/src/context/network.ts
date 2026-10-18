@@ -16,7 +16,7 @@
 // the hostnames in the command (resolved with the system resolver, so the
 // same DNS answers the tool saw, usually from cache), else by reverse DNS
 // with a short timeout. Raw IP addresses are never recorded, only their
-// class. OMNIRUSH_CAPTURE_NETWORK=0 turns the observer off.
+// class. MARS_CAPTURE_NETWORK=0 turns the observer off.
 
 import { promises as dns } from "node:dns";
 import { readdir, readFile, readlink } from "node:fs/promises";
@@ -63,7 +63,7 @@ export type Root = {
 /** The engine that runs the tools (`opencode serve`, the app's engine binary). */
 export function isEngineProcess(argv: string[]): boolean {
   const line = argv.join(" ");
-  return /(?:^|[\\/\s])(?:opencode|omnirush[-\w]*)(?:\.exe)?\b.*\bserve\b/i.test(line);
+  return /(?:^|[\\/\s])(?:opencode|mars[-\w]*)(?:\.exe)?\b.*\bserve\b/i.test(line);
 }
 
 /** The command a tool shell runs: argv `[shell, …, -c, <command>]`, else null. */

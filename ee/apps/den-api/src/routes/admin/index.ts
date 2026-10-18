@@ -28,7 +28,7 @@ import {
   AuditEventTable,
 } from "@omnirush-ee/den-db/schema"
 import { createDenTypeId, isDenTypeId } from "@omnirush-ee/utils/typeid"
-import { ManagedModelsPolicyError, readOrganizationMetadata } from "@omnirush/types/den/managed-models-policy"
+import { ManagedModelsPolicyError, readOrganizationMetadata } from "@mars/types/den/managed-models-policy"
 import type { Hono } from "hono"
 import { describeRoute } from "hono-openapi"
 import { z } from "zod"

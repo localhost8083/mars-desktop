@@ -1,7 +1,7 @@
 import type { DenSettings, DenUser } from "./den-types";
 
-export const denSessionUpdatedEvent = "omnirush-den-session-updated";
-export const denSettingsChangedEvent = "omnirush-den-settings-changed";
+export const denSessionUpdatedEvent = "mars-den-session-updated";
+export const denSettingsChangedEvent = "mars-den-settings-changed";
 
 export type DenSessionUpdatedDetail = {
   status?: "success" | "error" | "signed_out";

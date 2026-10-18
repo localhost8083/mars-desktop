@@ -1,0 +1,108 @@
+import { describe, expect, test } from "bun:test";
+import { MarsReasoningEffort } from "./mars-reasoning-effort.js";
+
+type Hooks = Awaited<ReturnType<typeof MarsReasoningEffort>>;
+
+const astra = { id: "gpt-6-astra", providerID: "mars" };
+const sol = { id: "gpt-5.6-sol", providerID: "mars" };
+
+async function run(
+  hooks: Hooks,
+  input: Parameters<Hooks["chat.params"]>[0],
+  options: Record<string, unknown>,
+) {
+  const params = { options };
+  await hooks["chat.params"](input, params);
+  const headers: { headers: Record<string, string> } = { headers: {} };
+  await hooks["chat.headers"](input, headers);
+  return { options: params.options, headers: headers.headers };
+}
+
+describe("MarsReasoningEffort", () => {
+  test("mirrors the max variant into reasoningEffort and the private header", async () => {
+    const hooks = await MarsReasoningEffort();
+    const result = await run(
+      hooks,
+      { agent: "mars", model: astra, message: { id: "msg_1", model: { variant: "max" } } },
+      { reasoning_effort: "max", temperature: 0.2 },
+    );
+    expect(result.options).toEqual({ reasoning_effort: "max", reasoningEffort: "max", temperature: 0.2 });
+    expect(result.headers).toEqual({ "x-mars-reasoning-effort": "max" });
+  });
+
+  test("applies to every marsai.click model", async () => {
+    const hooks = await MarsReasoningEffort();
+    for (const [index, model] of [astra, sol].entries()) {
+      const result = await run(
+        hooks,
+        { agent: "mars", model, message: { id: `msg_${index}`, model: { variant: "xhigh" } } },
+        { reasoning_effort: "xhigh" },
+      );
+      expect(result.options.reasoningEffort).toBe("xhigh");
+      expect(result.headers["x-mars-reasoning-effort"]).toBe("xhigh");
+    }
+  });
+
+  test("prefers the variant options over the variant name", async () => {
+    const hooks = await MarsReasoningEffort();
+    const result = await run(
+      hooks,
+      { agent: "mars", model: astra, message: { id: "msg_2", model: { variant: "max" } } },
+      { reasoning_effort: "max" },
+    );
+    expect(result.options.reasoningEffort).toBe("max");
+    expect(result.headers["x-mars-reasoning-effort"]).toBe("max");
+  });
+
+  test("falls back to the variant name when the options carry no effort", async () => {
+    const hooks = await MarsReasoningEffort();
+    const result = await run(
+      hooks,
+      { agent: "mars", model: astra, message: { id: "msg_3", model: { variant: "High" } } },
+      {},
+    );
+    expect(result.options).toEqual({ reasoningEffort: "high" });
+    expect(result.headers).toEqual({ "x-mars-reasoning-effort": "high" });
+  });
+
+  test("leaves requests without a selected effort untouched", async () => {
+    const hooks = await MarsReasoningEffort();
+    const result = await run(hooks, { agent: "mars", model: astra, message: { id: "msg_4", model: {} } }, { temperature: 0.2 });
+    expect(result.options).toEqual({ temperature: 0.2 });
+    expect(result.headers).toEqual({});
+  });
+
+  test("ignores unknown effort values", async () => {
+    const hooks = await MarsReasoningEffort();
+    const result = await run(
+      hooks,
+      { agent: "mars", model: astra, message: { id: "msg_5", model: { variant: "turbo" } } },
+      { reasoning_effort: "turbo" },
+    );
+    expect(result.options).toEqual({ reasoning_effort: "turbo" });
+    expect(result.headers).toEqual({});
+  });
+
+  test("skips other providers and title generation", async () => {
+    const hooks = await MarsReasoningEffort();
+    const external = await run(
+      hooks,
+      { agent: "mars", model: { id: "gpt-5.5", providerID: "openai" }, message: { id: "msg_6", model: { variant: "max" } } },
+      { reasoning_effort: "max" },
+    );
+    expect(external.options).toEqual({ reasoning_effort: "max" });
+    expect(external.headers).toEqual({});
+    const title = await run(
+      hooks,
+      { agent: "title", model: astra, message: { id: "msg_7", model: { variant: "max" } } },
+      {},
+    );
+    expect(title.options).toEqual({});
+    expect(title.headers).toEqual({});
+  });
+
+  test("module exposes only the plugin factory", async () => {
+    const mod = await import("./mars-reasoning-effort.js");
+    expect(Object.keys(mod)).toEqual(["MarsReasoningEffort"]);
+  });
+});

@@ -16,11 +16,11 @@ function sha512(bytes) {
 }
 
 async function writeFixture({ version = "1.2.3", manifestName = "latest-mac.yml", mutate = (manifest) => manifest } = {}) {
-  const distDir = await mkdtemp(path.join(os.tmpdir(), "omnirush-update-manifest-"));
+  const distDir = await mkdtemp(path.join(os.tmpdir(), "mars-update-manifest-"));
   const zipBytes = Buffer.from(`zip-${version}`);
   const dmgBytes = Buffer.from(`dmg-${version}-payload`);
-  const zipName = `omnirush-mac-arm64-${version}.zip`;
-  const dmgName = `omnirush-mac-arm64-${version}.dmg`;
+  const zipName = `mars-mac-arm64-${version}.zip`;
+  const dmgName = `mars-mac-arm64-${version}.dmg`;
   await writeFile(path.join(distDir, zipName), zipBytes);
   await writeFile(path.join(distDir, dmgName), dmgBytes);
   const manifest = mutate({
@@ -82,7 +82,7 @@ describe("verifyUpdateManifest", () => {
         files: [
           { ...manifest.files[0], size: manifest.files[0].size + 1 },
           { ...manifest.files[1], sha512: sha512(Buffer.from("tampered")) },
-          { url: "omnirush-mac-x64-1.2.3.dmg", sha512: sha512(Buffer.from("missing")), size: 7 },
+          { url: "mars-mac-x64-1.2.3.dmg", sha512: sha512(Buffer.from("missing")), size: 7 },
         ],
       }),
     });
@@ -92,7 +92,7 @@ describe("verifyUpdateManifest", () => {
       const text = result.errors.join("\n");
       assert.match(text, new RegExp(`${zipName}\\) size \\d+ does not match`));
       assert.match(text, new RegExp(`${dmgName}\\) sha512 does not match`));
-      assert.match(text, /omnirush-mac-x64-1\.2\.3\.dmg\) does not exist/);
+      assert.match(text, /mars-mac-x64-1\.2\.3\.dmg\) does not exist/);
     } finally {
       await rm(distDir, { recursive: true, force: true });
     }
@@ -100,7 +100,7 @@ describe("verifyUpdateManifest", () => {
 
   it("requires the legacy path entry to be listed and to match its checksum", async () => {
     const { distDir, manifestPath } = await writeFixture({
-      mutate: (manifest) => ({ ...manifest, path: "omnirush-mac-arm64-9.9.9.zip", sha512: "AAAA" }),
+      mutate: (manifest) => ({ ...manifest, path: "mars-mac-arm64-9.9.9.zip", sha512: "AAAA" }),
     });
     try {
       const result = await verifyUpdateManifest({ manifestPath, expectedVersion: "1.2.3" });
@@ -137,7 +137,7 @@ describe("verifyUpdateManifest", () => {
     const { distDir, manifestPath } = await writeFixture({
       mutate: (manifest) => ({
         ...manifest,
-        files: [manifest.files[0], { ...manifest.files[1], url: "https://tampered.invalid/omnirush-mac-arm64-1.2.3.dmg" }],
+        files: [manifest.files[0], { ...manifest.files[1], url: "https://tampered.invalid/mars-mac-arm64-1.2.3.dmg" }],
       }),
     });
     try {
@@ -150,7 +150,7 @@ describe("verifyUpdateManifest", () => {
   });
 
   it("fails the command when the manifest is missing", async () => {
-    const distDir = await mkdtemp(path.join(os.tmpdir(), "omnirush-update-manifest-missing-"));
+    const distDir = await mkdtemp(path.join(os.tmpdir(), "mars-update-manifest-missing-"));
     try {
       const { code, stderr } = await new Promise((resolve) => {
         execFile(process.execPath, [scriptPath, "--manifest", path.join(distDir, "latest-mac.yml"), "--version", "1.2.3"], (error, stdout, stderrOutput) => {

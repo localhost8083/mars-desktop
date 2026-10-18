@@ -1,6 +1,6 @@
 import { beforeAll, expect, test } from "bun:test"
 
-import { Tool } from "@omnirush/codemode"
+import { Tool } from "@mars/codemode"
 import { createDenTypeId } from "@omnirush-ee/utils/typeid"
 import { Effect } from "effect"
 import { Hono } from "hono"

@@ -1,8 +1,8 @@
 /**
- * Library entry point for the OmniRush.ai server.
+ * Library entry point for the MarsAI server.
  *
  * ```ts
- * import { startEmbeddedServer } from "omnirush-server";
+ * import { startEmbeddedServer } from "mars-server";
  *
  * const handle = await startEmbeddedServer({
  *   host: "127.0.0.1",

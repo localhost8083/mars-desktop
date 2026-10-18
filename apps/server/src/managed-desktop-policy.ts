@@ -1,5 +1,5 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
-import { desktopConfigSchema, type DesktopConfig } from "@omnirush/types/den/desktop-policies-runtime";
+import { desktopConfigSchema, type DesktopConfig } from "@mars/types/den/desktop-policies-runtime";
 import type { CloudProviderDenSession } from "./cloud-provider-sync.js";
 import type { ServerConfig } from "./types.js";
 import { isRecord } from "./workspace-kv-store.js";
@@ -61,7 +61,7 @@ class ManagedDesktopPolicy {
     let policy: DesktopConfig;
     try {
       const response = await externalFetch(`${session.baseUrl}/v1/me/desktop-config`, {
-        headers: { Authorization: `Bearer ${session.token}`, "x-omnirush-legacy-org-id": session.orgId },
+        headers: { Authorization: `Bearer ${session.token}`, "x-mars-legacy-org-id": session.orgId },
         signal: AbortSignal.timeout(10_000),
       });
       if (!response.ok) throw new Error("Policy request failed");
@@ -118,7 +118,7 @@ class ManagedDesktopPolicy {
     if (action === "git_identity") {
       // Not an organization rule: every desktop gets the commit identity
       // default, managed or not. Throws git_identity_required when neither the
-      // repository nor a connected omnirush.ai account provides one.
+      // repository nor a connected marsai.click account provides one.
       await ensureWorkspaceGitIdentity(this.config, typeof input.directory === "string" ? input.directory : "");
       return;
     }
@@ -138,18 +138,18 @@ class ManagedDesktopPolicy {
       let assigned = false;
       try {
         const response = await externalFetch(`${session.baseUrl}/v1/llm-providers`, {
-          headers: { Authorization: `Bearer ${session.token}`, "x-omnirush-legacy-org-id": session.orgId },
+          headers: { Authorization: `Bearer ${session.token}`, "x-mars-legacy-org-id": session.orgId },
           signal: AbortSignal.timeout(10_000),
         });
         if (!response.ok) throw new Error("Catalog unavailable");
         const catalog: unknown = await response.json();
         if (!isRecord(catalog) || !Array.isArray(catalog.llmProviders)) throw new Error("Invalid catalog");
         assigned = catalog.llmProviders.filter(isRecord).some((item) =>
-          (item.source === "omnirush" ? "omnirush" : item.id) === providerID && Array.isArray(item.models)
+          (item.source === "mars" ? "mars" : item.id) === providerID && Array.isArray(item.models)
           && item.models.filter(isRecord).some((model) => model.id === modelID));
       } catch { throw new ApiError(403, "policy_unavailable", "Your organization's assigned models could not be verified."); }
       if (generation !== this.generation) throw new ApiError(409, "policy_identity_changed", "The signed-in account changed. Retry the action.");
-      if (!(assigned && /^(?:lpr_|omnirush$)/i.test(providerID) && models && typeof models === "object" && Object.hasOwn(models, modelID))) {
+      if (!(assigned && /^(?:lpr_|mars$)/i.test(providerID) && models && typeof models === "object" && Object.hasOwn(models, modelID))) {
         throw new ApiError(403, "organization_model_denied", "Choose an AI model assigned by your organization.");
       }
     }

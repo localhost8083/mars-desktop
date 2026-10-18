@@ -62,8 +62,9 @@ function describeTrigger(
       : "MCP config changed. Reload to apply.";
   }
   if (trigger.type === "config") {
-    return trigger.name
-      ? `Config '${trigger.name}' ${verb}. Reload to apply.`
+    const name = trigger.name && /^opencode(\.jsonc)?$/i.test(trigger.name) ? "MarsAI" : trigger.name;
+    return name
+      ? `Config '${name}' ${verb}. Reload to apply.`
       : "Config changed. Reload to apply.";
   }
   if (trigger.type === "agent") {
@@ -96,10 +97,14 @@ function describeApplied(trigger: ReloadTrigger | null): string {
               ? "Command"
               : "Config";
 
-  if (trigger.name) {
+  // The engine reports its on-disk config file name; show the product name
+  // instead so notifications never leak engine internals.
+  const name = trigger.name && /^opencode(\.jsonc)?$/i.test(trigger.name) ? "MarsAI" : trigger.name;
+
+  if (name) {
     return trigger.action === "removed"
-      ? `${label} '${trigger.name}' was removed.`
-      : `${label} '${trigger.name}' is now active.`;
+      ? `${label} '${name}' was removed.`
+      : `${label} '${name}' is now active.`;
   }
   return `${label} changes are now active.`;
 }
@@ -125,7 +130,7 @@ type ReloadCoordinatorContextValue = {
   registerWorkspaceReloadControls: (controls: WorkspaceReloadControls | null) => () => void;
 };
 
-export const orgOnboardingVisibilityEvent = "omnirush-org-onboarding-visibility";
+export const orgOnboardingVisibilityEvent = "mars-org-onboarding-visibility";
 
 const ReloadCoordinatorContext = createContext<ReloadCoordinatorContextValue | null>(null);
 
@@ -212,9 +217,9 @@ export function ReloadCoordinatorProvider({ children }: { children: ReactNode })
       systemState.markReloadRequired(detail?.reason ?? "config", detail?.trigger);
     };
 
-    window.addEventListener("omnirush-reload-required", handler);
+    window.addEventListener("mars-reload-required", handler);
 
-    return () => window.removeEventListener("omnirush-reload-required", handler);
+    return () => window.removeEventListener("mars-reload-required", handler);
   }, [systemState.markReloadRequired]);
 
   // Track what is pending so the post-reload receipt can describe it.

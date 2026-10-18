@@ -1,4 +1,4 @@
-OmniRush.ai EE has been rendered with:
+MarsAI EE has been rendered with:
 
   DEN_BASE_URL={{ .Values.config.public.webOrigin }}
 

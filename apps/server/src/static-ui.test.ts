@@ -7,12 +7,12 @@ import { startServer } from "./server.js";
 import type { ServerConfig } from "./types.js";
 
 const IMMUTABLE_CACHE = "public, max-age=31536000, immutable";
-const WEB_BOOTSTRAP_TOKEN_ENV = "OMNIRUSH_WEB_BOOTSTRAP_TOKEN";
+const WEB_BOOTSTRAP_TOKEN_ENV = "MARS_WEB_BOOTSTRAP_TOKEN";
 
 async function createWebRoot() {
-  const root = join(tmpdir(), `omnirush-static-ui-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const root = join(tmpdir(), `mars-static-ui-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   await mkdir(join(root, "assets"), { recursive: true });
-  await writeFile(join(root, "index.html"), "<html><head><title>OmniRush.ai</title></head><body>App shell</body></html>");
+  await writeFile(join(root, "index.html"), "<html><head><title>MarsAI</title></head><body>App shell</body></html>");
   await writeFile(join(root, "overlay.html"), "<html><head></head><body>Overlay</body></html>");
   await writeFile(join(root, "assets", "app.123.js"), "console.log('app');");
   await writeFile(join(root, "assets", "style.123.css"), "body { color: black; }");
@@ -22,20 +22,20 @@ async function createWebRoot() {
 }
 
 async function withWebRoot(root: string | null, run: () => Promise<void>) {
-  const previous = process.env.OMNIRUSH_WEB_ROOT;
+  const previous = process.env.MARS_WEB_ROOT;
   if (root) {
-    process.env.OMNIRUSH_WEB_ROOT = root;
+    process.env.MARS_WEB_ROOT = root;
   } else {
-    delete process.env.OMNIRUSH_WEB_ROOT;
+    delete process.env.MARS_WEB_ROOT;
   }
 
   try {
     await run();
   } finally {
     if (previous === undefined) {
-      delete process.env.OMNIRUSH_WEB_ROOT;
+      delete process.env.MARS_WEB_ROOT;
     } else {
-      process.env.OMNIRUSH_WEB_ROOT = previous;
+      process.env.MARS_WEB_ROOT = previous;
     }
   }
 }
@@ -92,9 +92,9 @@ function serverConfig(root: string, port: number): ServerConfig {
 }
 
 describe("serveStaticUi", () => {
-  test("is a no-op when OMNIRUSH_WEB_ROOT is unset", async () => {
+  test("is a no-op when MARS_WEB_ROOT is unset", async () => {
     await withWebRoot(null, async () => {
-      const response = await serveStaticUi(new Request("http://omnirush.test/"), staticConfig());
+      const response = await serveStaticUi(new Request("http://mars.test/"), staticConfig());
       expect(response).toBeNull();
     });
   });
@@ -102,7 +102,7 @@ describe("serveStaticUi", () => {
   test("rejects path traversal", async () => {
     const root = await createWebRoot();
     await withWebRoot(root, async () => {
-      const response = await serveStaticUi(new Request("http://omnirush.test/safe%2F..%2F..%2Fsecret.txt"), staticConfig());
+      const response = await serveStaticUi(new Request("http://mars.test/safe%2F..%2F..%2Fsecret.txt"), staticConfig());
       if (!response) throw new Error("expected traversal response");
       expect(response.status).toBe(400);
       expect(await response.json()).toEqual({ code: "path_escape", message: "Path escapes workspace root" });
@@ -112,10 +112,10 @@ describe("serveStaticUi", () => {
   test("serves configured MIME types", async () => {
     const root = await createWebRoot();
     await withWebRoot(root, async () => {
-      const js = await serveStaticUi(new Request("http://omnirush.test/assets/app.123.js"), staticConfig());
-      const css = await serveStaticUi(new Request("http://omnirush.test/assets/style.123.css"), staticConfig());
-      const json = await serveStaticUi(new Request("http://omnirush.test/data.json"), staticConfig());
-      const svg = await serveStaticUi(new Request("http://omnirush.test/icon.svg"), staticConfig());
+      const js = await serveStaticUi(new Request("http://mars.test/assets/app.123.js"), staticConfig());
+      const css = await serveStaticUi(new Request("http://mars.test/assets/style.123.css"), staticConfig());
+      const json = await serveStaticUi(new Request("http://mars.test/data.json"), staticConfig());
+      const svg = await serveStaticUi(new Request("http://mars.test/icon.svg"), staticConfig());
       if (!js || !css || !json || !svg) throw new Error("expected static responses");
       expect(js.headers.get("Content-Type")).toBe("text/javascript; charset=utf-8");
       expect(css.headers.get("Content-Type")).toBe("text/css; charset=utf-8");
@@ -127,7 +127,7 @@ describe("serveStaticUi", () => {
   test("uses immutable cache headers for assets", async () => {
     const root = await createWebRoot();
     await withWebRoot(root, async () => {
-      const response = await serveStaticUi(new Request("http://omnirush.test/assets/app.123.js"), staticConfig());
+      const response = await serveStaticUi(new Request("http://mars.test/assets/app.123.js"), staticConfig());
       if (!response) throw new Error("expected asset response");
       expect(response.headers.get("Cache-Control")).toBe(IMMUTABLE_CACHE);
     });
@@ -136,7 +136,7 @@ describe("serveStaticUi", () => {
   test("falls back to index.html for SPA routes", async () => {
     const root = await createWebRoot();
     await withWebRoot(root, async () => {
-      const response = await serveStaticUi(new Request("http://omnirush.test/settings/general"), staticConfig(""));
+      const response = await serveStaticUi(new Request("http://mars.test/settings/general"), staticConfig(""));
       if (!response) throw new Error("expected SPA fallback response");
       expect(response.status).toBe(200);
       expect(response.headers.get("Content-Type")).toBe("text/html; charset=utf-8");
@@ -169,8 +169,8 @@ describe("serveStaticUi", () => {
   test("serves overlay.html directly without using it as the fallback", async () => {
     const root = await createWebRoot();
     await withWebRoot(root, async () => {
-      const overlay = await serveStaticUi(new Request("http://omnirush.test/overlay.html"), staticConfig());
-      const fallback = await serveStaticUi(new Request("http://omnirush.test/missing-route"), staticConfig(""));
+      const overlay = await serveStaticUi(new Request("http://mars.test/overlay.html"), staticConfig());
+      const fallback = await serveStaticUi(new Request("http://mars.test/missing-route"), staticConfig(""));
       if (!overlay || !fallback) throw new Error("expected overlay and fallback responses");
       expect(await overlay.text()).toContain("Overlay");
       expect(await fallback.text()).toContain("App shell");
@@ -181,10 +181,10 @@ describe("serveStaticUi", () => {
     const root = await createWebRoot();
     await withBootstrapTokenEnv(null, async () => {
       await withWebRoot(root, async () => {
-        const response = await serveStaticUi(new Request("http://omnirush.test/"), staticConfig("tok<\u2028>\u2029&"));
+        const response = await serveStaticUi(new Request("http://mars.test/"), staticConfig("tok<\u2028>\u2029&"));
         if (!response) throw new Error("expected index response");
         const body = await response.text();
-        expect(body).toContain("<script>window.__OMNIRUSH_BOOTSTRAP__ = {\"token\":\"tok\\u003c\\u2028\\u003e\\u2029\\u0026\"}</script></head>");
+        expect(body).toContain("<script>window.__MARS_BOOTSTRAP__ = {\"token\":\"tok\\u003c\\u2028\\u003e\\u2029\\u0026\"}</script></head>");
         expect(body).not.toContain("tok<");
       });
     });
@@ -195,11 +195,11 @@ describe("serveStaticUi", () => {
     for (const value of ["0", "false"]) {
       await withBootstrapTokenEnv(value, async () => {
         await withWebRoot(root, async () => {
-          const response = await serveStaticUi(new Request("http://omnirush.test/"), staticConfig("client-token"));
+          const response = await serveStaticUi(new Request("http://mars.test/"), staticConfig("client-token"));
           if (!response) throw new Error("expected index response");
           const body = await response.text();
           expect(body).toContain("App shell");
-          expect(body).not.toContain("__OMNIRUSH_BOOTSTRAP__");
+          expect(body).not.toContain("__MARS_BOOTSTRAP__");
         });
       });
     }

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { activeBrowserTabIdForSession, browserTabsForSession } from "@omnirush/browser-tabs";
+import { activeBrowserTabIdForSession, browserTabsForSession } from "@mars/browser-tabs";
 
 import type { BrowserStatePayload } from "@/app/lib/desktop";
 import { toast } from "@/components/ui/sonner";

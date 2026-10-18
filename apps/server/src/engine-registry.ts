@@ -2,7 +2,7 @@
  * Persisted registry of managed OpenCode engine processes.
  *
  * The engine URL/port live only in memory (ServerConfig), so an unclean
- * OmniRush.ai server exit orphans its engine child with no record to clean up.
+ * MarsAI server exit orphans its engine child with no record to clean up.
  * Packaged desktop builds have a `ps`-based sweep, but dev builds and Windows
  * have nothing. This registry records every managed spawn on disk so the next
  * server boot can reap provable orphans — and nothing else.
@@ -35,9 +35,9 @@ export type EngineInstanceRecord = {
   url: string;
   startedAt: number;
   role: EngineInstanceRole;
-  /** Unique per OmniRush.ai server boot that spawned this engine. */
+  /** Unique per MarsAI server boot that spawned this engine. */
   serverRunId: string;
-  /** Pid of the OmniRush.ai server process that owns this engine. */
+  /** Pid of the MarsAI server process that owns this engine. */
   ownerPid: number;
   /** `Basic <base64>` header for this spawn's random engine credentials. */
   authProbe: string;
@@ -248,7 +248,7 @@ async function delay(ms: number): Promise<void> {
 }
 
 /**
- * Kill engine processes recorded by dead OmniRush.ai servers, drop entries that
+ * Kill engine processes recorded by dead MarsAI servers, drop entries that
  * can no longer be verified, and keep entries whose owning server is alive.
  *
  * Kill requires all of: the recorded owner process is gone, the recorded pid
@@ -267,7 +267,7 @@ export async function reapOrphanEngineInstances(
 
   for (const entry of await readEngineRegistry(config)) {
     if (entry.ownerPid === process.pid || processAlive(entry.ownerPid)) {
-      // A live OmniRush.ai server (possibly the CLI next to the desktop) still
+      // A live MarsAI server (possibly the CLI next to the desktop) still
       // owns this engine.
       kept.push(entry);
       result.spared.push(entry.pid);
@@ -315,7 +315,7 @@ export async function reapOrphanEngineInstances(
   }
   for (const entry of toKill) {
     result.killed.push(entry.pid);
-    options?.logger?.log("info", `Reaped orphaned managed OmniRush engine (pid ${entry.pid}).`, {
+    options?.logger?.log("info", `Reaped orphaned managed Mars engine (pid ${entry.pid}).`, {
       "engine.pid": entry.pid,
       "engine.port": entry.port,
       "engine.owner_pid": entry.ownerPid,

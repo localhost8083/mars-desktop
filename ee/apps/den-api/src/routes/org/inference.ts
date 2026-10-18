@@ -1,7 +1,7 @@
 import type { Hono } from "hono"
 import { describeRoute } from "hono-openapi"
 import { z } from "zod"
-import { ManagedModelsPolicyError } from "@omnirush/types/den/managed-models-policy"
+import { ManagedModelsPolicyError } from "@mars/types/den/managed-models-policy"
 import { assertOrganizationManagedModelsAllowed } from "../../organization-metadata.js"
 import { getInferenceStatus, setInferenceEnabled } from "../../inference.js"
 import { organizationHasActiveInferenceSubscription } from "../../stripe-billing.js"

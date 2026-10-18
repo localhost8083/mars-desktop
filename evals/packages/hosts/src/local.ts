@@ -3,15 +3,15 @@ import { constants, existsSync, openSync } from "node:fs";
 import { access, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
-import { allocateFreePort, allocateFreePorts, listTargets, waitForCdp } from "@omnirush/cdp";
+import { allocateFreePort, allocateFreePorts, listTargets, waitForCdp } from "@mars/cdp";
 import {
   desktopBootstrapPath,
   globalOpencodeConfigDir,
   opencodeDbCandidates,
-  omnirushEnvStorePath,
-  omnirushServerConfigPath,
-  omnirushServerDataDir,
-} from "@omnirush/paths";
+  marsEnvStorePath,
+  marsServerConfigPath,
+  marsServerDataDir,
+} from "@mars/paths";
 import { ensureDenStack } from "./den-stack.ts";
 import { resolveEvalEngineValue } from "./eval-engine.ts";
 import type { ChildProcess } from "node:child_process";
@@ -377,7 +377,7 @@ async function runPrepareScript(scriptPath: string, outDir: string, desktopRoot:
 }
 
 async function prepareSharedElectronResources(repoRoot: string, log: (message: string) => void): Promise<void> {
-  if (process.env.OMNIRUSH_EVAL_ELECTRON_RESOURCES_PREPARED === "1") return;
+  if (process.env.MARS_EVAL_ELECTRON_RESOURCES_PREPARED === "1") return;
   if (!prepareSharedResourcesPromise) {
     prepareSharedResourcesPromise = (async () => {
       const desktopRoot = join(repoRoot, "apps", "desktop");
@@ -438,9 +438,9 @@ export function electronProfilePaths(root: string): ElectronProfilePaths {
     bootstrapPath: join(root, "bootstrap.json"),
     cacheHome: join(root, "xdg-cache"),
     configHome: join(root, "xdg-config"),
-    dataDir: join(root, "omnirush-data"),
+    dataDir: join(root, "mars-data"),
     dataHome: join(root, "xdg-data"),
-    envStorePath: join(root, "omnirush-env.json"),
+    envStorePath: join(root, "mars-env.json"),
     homeDir: join(root, "home"),
     localAppDataDir: join(root, "local-appdata"),
     opencodeConfigDir: join(root, "opencode-config"),
@@ -475,7 +475,7 @@ function hostPnpmHome(): string | null {
 }
 
 /** Nothing listens on the discard port: every account and gateway call from an eval surface fails at once. */
-export const EVAL_DEAD_GATEWAY_URL = "http://127.0.0.1:9/omnirush/v1";
+export const EVAL_DEAD_GATEWAY_URL = "http://127.0.0.1:9/mars/v1";
 
 export function electronSurfaceEnv(
   paths: ElectronProfilePaths,
@@ -488,29 +488,29 @@ export function electronSurfaceEnv(
   return {
     // No account: empty tokens and a dead gateway, so a source app on the
     // owner's Mac cannot sign in from the legacy keychain entries or reach
-    // omnirush.ai. A spec that needs an account passes its own.
-    OMNIRUSH_ACCESS_TOKEN: "",
-    OMNIRUSH_REFRESH_TOKEN: "",
-    OMNIRUSH_GATEWAY_URL: EVAL_DEAD_GATEWAY_URL,
+    // marsai.click. A spec that needs an account passes its own.
+    MARS_ACCESS_TOKEN: "",
+    MARS_REFRESH_TOKEN: "",
+    MARS_GATEWAY_URL: EVAL_DEAD_GATEWAY_URL,
     ...(pnpmHome ? { PNPM_HOME: pnpmHome } : {}),
     APPDATA: paths.appDataDir,
     HOME: paths.homeDir,
     LOCALAPPDATA: paths.localAppDataDir,
-    OMNIRUSH_DATA_DIR: paths.dataDir,
-    OMNIRUSH_DESKTOP_BOOTSTRAP_PATH: paths.bootstrapPath,
-    OMNIRUSH_DESKTOP_DISABLE_WORKSPACE_RECOVERY: "1",
-    OMNIRUSH_DEV_MODE: "1",
-    OMNIRUSH_ENV_STORE: paths.envStorePath,
-    ...(resolveEvalEngineValue(process.env.OMNIRUSH_EVAL_ENGINE) === "v2" ? { OMNIRUSH_ENGINE_V2_PREVIEW: "1" } : {}),
+    MARS_DATA_DIR: paths.dataDir,
+    MARS_DESKTOP_BOOTSTRAP_PATH: paths.bootstrapPath,
+    MARS_DESKTOP_DISABLE_WORKSPACE_RECOVERY: "1",
+    MARS_DEV_MODE: "1",
+    MARS_ENV_STORE: paths.envStorePath,
+    ...(resolveEvalEngineValue(process.env.MARS_EVAL_ENGINE) === "v2" ? { MARS_ENGINE_V2_PREVIEW: "1" } : {}),
     OPENCODE_CONFIG_DIR: paths.opencodeConfigDir,
-    VITE_DISABLE_OMNIRUSH_MODELS: "1",
-    OMNIRUSH_ELECTRON_APP_IDENTIFIER: options.appIdentifier,
-    OMNIRUSH_ELECTRON_APP_NAME: options.appName,
-    OMNIRUSH_ELECTRON_DISABLE_PROTOCOL_REGISTRATION: "1",
-    OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT: String(options.cdpPort),
-    OMNIRUSH_ELECTRON_SKIP_SHARED_PREPARE: "1",
-    OMNIRUSH_ELECTRON_USE_MOCK_KEYCHAIN: "1",
-    OMNIRUSH_ELECTRON_USERDATA: paths.userDataDir,
+    VITE_DISABLE_MARS_MODELS: "1",
+    MARS_ELECTRON_APP_IDENTIFIER: options.appIdentifier,
+    MARS_ELECTRON_APP_NAME: options.appName,
+    MARS_ELECTRON_DISABLE_PROTOCOL_REGISTRATION: "1",
+    MARS_ELECTRON_REMOTE_DEBUG_PORT: String(options.cdpPort),
+    MARS_ELECTRON_SKIP_SHARED_PREPARE: "1",
+    MARS_ELECTRON_USE_MOCK_KEYCHAIN: "1",
+    MARS_ELECTRON_USERDATA: paths.userDataDir,
     PORT: String(options.port),
     XDG_CACHE_HOME: paths.cacheHome,
     XDG_CONFIG_HOME: paths.configHome,
@@ -528,15 +528,15 @@ export function liveSharedProductionStateEnv(state: InstalledProductionDesktopSt
     XDG_DATA_HOME: join(state.homeDir, ".local", "share"),
     XDG_CACHE_HOME: join(state.homeDir, ".cache"),
     XDG_STATE_HOME: join(state.homeDir, ".local", "state"),
-    OMNIRUSH_DATA_DIR: state.dataDir,
-    OMNIRUSH_DESKTOP_BOOTSTRAP_PATH: state.bootstrapPath,
-    OMNIRUSH_DESKTOP_DISABLE_WORKSPACE_RECOVERY: "0",
-    OMNIRUSH_DESKTOP_WORKSPACE_STATE_PATH: state.workspaceStatePath,
-    OMNIRUSH_DEV_SHARED_STATE: "1",
-    OMNIRUSH_ENV_STORE: state.envStorePath,
-    OMNIRUSH_SERVER_CONFIG: state.serverConfigPath,
-    OMNIRUSH_SERVER_STATE_PATH: state.serverStatePath,
-    OMNIRUSH_SERVER_TOKEN_STORE_PATH: state.serverTokenStorePath,
+    MARS_DATA_DIR: state.dataDir,
+    MARS_DESKTOP_BOOTSTRAP_PATH: state.bootstrapPath,
+    MARS_DESKTOP_DISABLE_WORKSPACE_RECOVERY: "0",
+    MARS_DESKTOP_WORKSPACE_STATE_PATH: state.workspaceStatePath,
+    MARS_DEV_SHARED_STATE: "1",
+    MARS_ENV_STORE: state.envStorePath,
+    MARS_SERVER_CONFIG: state.serverConfigPath,
+    MARS_SERVER_STATE_PATH: state.serverStatePath,
+    MARS_SERVER_TOKEN_STORE_PATH: state.serverTokenStorePath,
     OPENCODE_DB: state.opencodeDb,
     OPENCODE_CONFIG_DIR: state.opencodeConfigDir,
   };
@@ -547,7 +547,7 @@ async function requireInstalledPath(path: string, kind: "directory" | "file", la
   try {
     metadata = await stat(path);
   } catch {
-    throw new Error(`${label} is unavailable at ${path}. Start the installed production OmniRush.ai desktop once and confirm its local state exists.`);
+    throw new Error(`${label} is unavailable at ${path}. Start the installed production MarsAI desktop once and confirm its local state exists.`);
   }
   const matches = kind === "directory" ? metadata.isDirectory() : metadata.isFile();
   if (!matches) throw new Error(`${label} at ${path} is not a ${kind}.`);
@@ -563,14 +563,14 @@ export async function resolveInstalledProductionDesktopState(
   }
   const env = options.env ?? process.env;
   const homeDir = options.homeDir ?? homedir();
-  const dataDir = omnirushServerDataDir({ env, homeDir, platform });
-  await requireInstalledPath(dataDir, "directory", "Installed production OmniRush.ai data directory");
-  const userDataDir = join(homeDir, "Library", "Application Support", "ai.omnirush.desktop");
-  const workspaceStatePath = join(userDataDir, "omnirush-workspaces.json");
-  const serverTokenStorePath = join(userDataDir, "omnirush-server-tokens.json");
-  const serverStatePath = join(userDataDir, "omnirush-server-state.json");
-  const serverConfigPath = omnirushServerConfigPath({ env, homeDir, platform });
-  const envStorePath = omnirushEnvStorePath({ env, homeDir, platform });
+  const dataDir = marsServerDataDir({ env, homeDir, platform });
+  await requireInstalledPath(dataDir, "directory", "Installed production MarsAI data directory");
+  const userDataDir = join(homeDir, "Library", "Application Support", "ai.marsai.desktop");
+  const workspaceStatePath = join(userDataDir, "mars-workspaces.json");
+  const serverTokenStorePath = join(userDataDir, "mars-server-tokens.json");
+  const serverStatePath = join(userDataDir, "mars-server-state.json");
+  const serverConfigPath = marsServerConfigPath({ env, homeDir, platform });
+  const envStorePath = marsEnvStorePath({ env, homeDir, platform });
   const bootstrapPath = desktopBootstrapPath({ env, homeDir, platform, userDataDir });
   const opencodeConfigDir = globalOpencodeConfigDir({ env, homeDir, platform });
   for (const [path, label] of [
@@ -695,7 +695,7 @@ export async function stopOwnedElectronSurface(pid: number, profileDir: string):
       resolveDescription(stdout);
     });
   });
-  if (!processDescription.includes(`OMNIRUSH_ELECTRON_USERDATA=${join(profileDir, "electron-userdata")}`)) {
+  if (!processDescription.includes(`MARS_ELECTRON_USERDATA=${join(profileDir, "electron-userdata")}`)) {
     throw new Error(`Refusing to stop pid ${pid}: it does not own the expected eval Electron profile.`);
   }
   await killLocalPid(pid);
@@ -758,7 +758,7 @@ export function createLocalHost(options: LocalHostOptions): DisposableHost {
   // generate Makefiles with unquoted include paths under that HOME, so a repo
   // checkout on a path containing spaces breaks every native rebuild. The env
   // override lets such machines park surfaces on a space-free path (e.g. /tmp).
-  const surfacesRootOverride = process.env.OMNIRUSH_EVAL_SURFACES_DIR?.trim();
+  const surfacesRootOverride = process.env.MARS_EVAL_SURFACES_DIR?.trim();
   const rootDir = options.rootDir ?? (surfacesRootOverride
     ? surfacesRootOverride
     : join(options.repoRoot, "evals", "results", ".surfaces", String(process.pid)));
@@ -783,7 +783,7 @@ export function createLocalHost(options: LocalHostOptions): DisposableHost {
 // so pass the container-safe switches when we detect a sandbox.
 function insideContainerSandbox(env: NodeJS.ProcessEnv = process.env): boolean {
   if ((env.DAYTONA_SANDBOX_ID ?? "").trim().length > 0) return true;
-  if ((env.OMNIRUSH_EVAL_CONTAINER_ELECTRON ?? "").trim() === "1") return true;
+  if ((env.MARS_EVAL_CONTAINER_ELECTRON ?? "").trim() === "1") return true;
   return existsSync("/daytona-secrets") || existsSync("/daytona-artifacts");
 }
 
@@ -865,8 +865,8 @@ async function ensureDisplay(repoRoot: string, env: NodeJS.ProcessEnv, log: (mes
       await writeBootstrap(paths.bootstrapPath, opts.bootstrap);
       const [port, cdpPort] = await allocateFreePorts(2);
       if (port === undefined || cdpPort === undefined) throw new Error("Could not allocate Electron Vite/CDP ports.");
-      const appName = `OmniRush.ai Eval ${name}`;
-      const appIdentifier = `ai.omnirush.desktop.eval.${sanitizeSlug(name)}`;
+      const appName = `MarsAI Eval ${name}`;
+      const appIdentifier = `ai.marsai.desktop.eval.${sanitizeSlug(name)}`;
       const isolationEnv = electronSurfaceEnv(paths, { appName, appIdentifier, port, cdpPort }, opts.env);
       const env: NodeJS.ProcessEnv = { ...process.env, ...isolationEnv };
       const launchArgs = containerLaunchArgs(env.ELECTRON_EXTRA_LAUNCH_ARGS);
@@ -881,12 +881,12 @@ async function ensureDisplay(repoRoot: string, env: NodeJS.ProcessEnv, log: (mes
       if (insideContainerSandbox() && (env.DISPLAY ?? "").trim().length === 0) env.DISPLAY = ":99";
       const logPath = join(profileRoot, "electron.log");
       const packagedBinary = opts.devCommand === undefined
-        ? process.env.OMNIRUSH_EVAL_ELECTRON_BINARY?.trim()
+        ? process.env.MARS_EVAL_ELECTRON_BINARY?.trim()
         : undefined;
       let spawned: SpawnedDetached;
       if (packagedBinary) {
         await access(packagedBinary, constants.F_OK).catch(() => {
-          throw new Error(`OMNIRUSH_EVAL_ELECTRON_BINARY does not exist: ${packagedBinary}`);
+          throw new Error(`MARS_EVAL_ELECTRON_BINARY does not exist: ${packagedBinary}`);
         });
         log(`Starting local Electron surface ${name} from packaged binary ${packagedBinary} (CDP :${cdpPort})...`);
         // An installed artifact must not resolve assets from the checkout's cwd.
@@ -947,7 +947,7 @@ async function ensureDisplay(repoRoot: string, env: NodeJS.ProcessEnv, log: (mes
       const cdpUrl = `http://127.0.0.1:${cdpPort}`;
       const launch = async (headless: boolean): Promise<SpawnedDetached> => {
         const spawned = spawnDetached(binary, chromeArgs(cdpPort, profileDir, startUrl, headless), { cwd: profileRoot, env, logPath });
-        await writeFile(join(profileDir, "omnirush-eval-chrome.pid"), `${spawned.pid}\n`, "utf8");
+        await writeFile(join(profileDir, "mars-eval-chrome.pid"), `${spawned.pid}\n`, "utf8");
         try {
           await waitForCdpOrExit("Chrome", cdpUrl, spawned, logPath);
         } catch (error) {
@@ -960,7 +960,7 @@ async function ensureDisplay(repoRoot: string, env: NodeJS.ProcessEnv, log: (mes
       };
       let spawned: SpawnedDetached;
       try {
-        spawned = await launch(opts.headless === true || process.env.OMNIRUSH_EVAL_CHROME_HEADLESS === "1");
+        spawned = await launch(opts.headless === true || process.env.MARS_EVAL_CHROME_HEADLESS === "1");
       } catch (error) {
         if (!messageText(error).includes("SIGTRAP")) throw error;
         log(`Chrome surface ${name} exited with SIGTRAP under the windowed launch; retrying with --headless=new.`);
@@ -984,9 +984,9 @@ async function ensureDisplay(repoRoot: string, env: NodeJS.ProcessEnv, log: (mes
         log("seed:none requested; local Den stack currently keeps the Acme demo seed, so continuing with the default seed.");
       }
       await ensureDenStack({ log, cdpCandidates: [], skipApp: true, orgMode: opts.orgMode });
-      const apiUrl = process.env.OMNIRUSH_EVAL_DEN_API_URL?.trim();
-      const webUrl = process.env.OMNIRUSH_EVAL_DEN_WEB_URL?.trim();
-      if (!apiUrl || !webUrl) throw new Error("Den stack did not export OMNIRUSH_EVAL_DEN_API_URL / OMNIRUSH_EVAL_DEN_WEB_URL.");
+      const apiUrl = process.env.MARS_EVAL_DEN_API_URL?.trim();
+      const webUrl = process.env.MARS_EVAL_DEN_WEB_URL?.trim();
+      if (!apiUrl || !webUrl) throw new Error("Den stack did not export MARS_EVAL_DEN_API_URL / MARS_EVAL_DEN_WEB_URL.");
       const orgMode = await runtimeOrgMode(webUrl);
       const apiPort = explicitPort(apiUrl);
       const webPort = explicitPort(webUrl);
@@ -997,8 +997,8 @@ async function ensureDisplay(repoRoot: string, env: NodeJS.ProcessEnv, log: (mes
 
     async share(): Promise<ShareLinks> {
       const links: ShareLinks = [];
-      const webUrl = process.env.OMNIRUSH_EVAL_DEN_WEB_URL?.trim();
-      const apiUrl = process.env.OMNIRUSH_EVAL_DEN_API_URL?.trim();
+      const webUrl = process.env.MARS_EVAL_DEN_WEB_URL?.trim();
+      const apiUrl = process.env.MARS_EVAL_DEN_API_URL?.trim();
       if (webUrl) links.push({ label: "Den Web", url: webUrl });
       if (apiUrl) links.push({ label: "Den API", url: apiUrl });
       return links;

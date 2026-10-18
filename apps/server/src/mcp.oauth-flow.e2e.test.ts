@@ -17,7 +17,7 @@ import { join, resolve } from "node:path";
  *
  * The test plays the role of the user's browser by following the
  * authorization URL and the resulting redirect to the engine's loopback
- * callback. This is the same flow the OmniRush.ai desktop app drives through
+ * callback. This is the same flow the MarsAI desktop app drives through
  * the OAuth modal (apps/app .../connections/mcp-auth-modal.tsx).
  *
  * Skipped automatically when the opencode sidecar binary is not present
@@ -89,8 +89,8 @@ describeMaybe("mcp oauth flow against mock provider", () => {
     return fetch(url, { ...init, headers });
   }
 
-  /** Where the engine keeps MCP OAuth tokens (OmniRush.ai's engine build keeps its data in `<data>/omnirush`). */
-  const authFile = () => join(dataDir, "xdg-data", "omnirush", "mcp-auth.json");
+  /** Where the engine keeps MCP OAuth tokens (MarsAI's engine build keeps its data in `<data>/mars`). */
+  const authFile = () => join(dataDir, "xdg-data", "mars", "mcp-auth.json");
   type SavedAuth = Record<string, { tokens?: { accessToken?: string; refreshToken?: string } }>;
 
   beforeAll(async () => {

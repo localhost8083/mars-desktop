@@ -14,12 +14,12 @@ import { NEW_PROVIDERS_DEDUPE_KEY, useNotificationStore } from "@/react-app/kern
 import { notifyEvent } from "./notifications";
 import { orgOnboardingVisibilityEvent } from "./reload-coordinator";
 
-const PENDING_MODEL_PICKER_KEY = "omnirush.pendingModelPickerProviderIds";
+const PENDING_MODEL_PICKER_KEY = "mars.pendingModelPickerProviderIds";
 
 /** Custom event to request the model picker to open. */
-export const openModelPickerEvent = "omnirush-open-model-picker";
+export const openModelPickerEvent = "mars-open-model-picker";
 /** Custom event to request the provider auth (connect API keys) modal to open. */
-export const openProviderAuthEvent = "omnirush-open-provider-auth";
+export const openProviderAuthEvent = "mars-open-provider-auth";
 export const pendingModelPickerProviderIdsKey = PENDING_MODEL_PICKER_KEY;
 
 

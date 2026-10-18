@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a problem in OmniRush.ai
+description: Report a problem in MarsAI
 title: "[Bug]: "
 labels:
   - bug
@@ -49,10 +49,10 @@ body:
     attributes:
       label: OW version & Desktop info (optional) 
       description: |
-        Include OS and OmniRush.ai version if possible.
-        OmniRush.ai version: Settings > General.
+        Include OS and MarsAI version if possible.
+        MarsAI version: Settings > General.
       placeholder: |
-        - OmniRush.ai version: [e.g. 0.1.166]
+        - MarsAI version: [e.g. 0.1.166]
         - OS: [e.g. macOS Tahoe 26.2]
     validations:
       required: false

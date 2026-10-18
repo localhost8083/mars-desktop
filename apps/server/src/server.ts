@@ -15,7 +15,7 @@ import { readFile, realpath, writeFile, rm, stat } from "node:fs/promises";
 import { homedir, hostname } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { createOpencodeClient } from "@opencode-ai/sdk/v2/client";
-import { resolveGlobalOpencodeConfigPath } from "@omnirush/paths";
+import { resolveGlobalOpencodeConfigPath } from "@mars/paths";
 import type { ApprovalRequest, Capabilities, ServerConfig, WorkspaceInfo, Actor, ReloadReason, ReloadTrigger, TokenScope } from "./types.js";
 import { agentContextDiagnosticsRequestSchema } from "./agent-context-diagnostics-schema.js";
 import { ApprovalService } from "./approvals.js";
@@ -46,7 +46,7 @@ import { buildEngineAuthProbeHeader } from "./engine-registry.js";
 import { addPlugin, listPlugins, normalizePluginSpec, removePlugin } from "./plugins.js";
 import { sanitizePortableOpencodeConfig } from "./portable-opencode.js";
 import { addMcp, assertNoConfiguredMcp, listMcp, removeMcp, setMcpEnabled } from "./mcp.js";
-import { buildOmniRushV2Instructions, waitForOmniRushV2Skills, OMNIRUSH_V2_INSTRUCTION_KEY } from "./opencode-v2-instructions.js";
+import { buildMarsV2Instructions, waitForMarsV2Skills, MARS_V2_INSTRUCTION_KEY } from "./opencode-v2-instructions.js";
 import {
   callMcpAppTool,
   listMcpAppCatalog,
@@ -89,9 +89,9 @@ import {
   resolveServerLogFileSink,
   type ServerLogFileSink,
 } from "./server-log-file.js";
-import { opencodeConfigPath, omnirushConfigPath, projectCommandsDir, projectSkillsDir } from "./workspace-files.js";
+import { opencodeConfigPath, marsConfigPath, projectCommandsDir, projectSkillsDir } from "./workspace-files.js";
 import { ensureDir, exists, hashToken, shortId } from "./utils.js";
-import { defaultWorkspaceOmniRushConfig, ensureWorkspaceFiles, readRawOpencodeConfig } from "./workspace-init.js";
+import { defaultWorkspaceMarsConfig, ensureWorkspaceFiles, readRawOpencodeConfig } from "./workspace-init.js";
 import { sanitizeCommandName, validateMcpName, validateUserMcpName } from "./validators.js";
 import { TokenService } from "./tokens.js";
 import { resetManagedProviderAuthCache, syncManagedProviderAuth } from "./managed-provider-auth.js";
@@ -109,7 +109,7 @@ import { parseOpencodeConfigErrorBody } from "./opencode-config-compat.js";
 import { listPortableFiles } from "./portable-files.js";
 import {
   collectWorkspaceExportWarnings,
-  sanitizeOmniRushTemplateConfig,
+  sanitizeMarsTemplateConfig,
   stripSensitiveWorkspaceExportData,
   type WorkspaceExportSensitiveMode,
 } from "./workspace-export-safety.js";
@@ -141,11 +141,11 @@ import {
   startLocalManagedMcpAuthorization,
 } from "./local-managed-mcp.js";
 import {
-  markOmniRushCloudMcpStale,
-  migrateOmniRushCloudMcpRuntimeConfig,
-  OMNIRUSH_CLOUD_MCP_NAME,
-  reconcilePersistedOmniRushCloudMcp,
-  removeOmniRushCloudMcpDesiredConfig,
+  markMarsCloudMcpStale,
+  migrateMarsCloudMcpRuntimeConfig,
+  MARS_CLOUD_MCP_NAME,
+  reconcilePersistedMarsCloudMcp,
+  removeMarsCloudMcpDesiredConfig,
   type CloudMcpHealth,
 } from "./cloud-mcp-health.js";
 import { runAgentContextDiagnostics } from "./agent-context-diagnostics.js";
@@ -169,21 +169,21 @@ import {
   writeRuntimeOpencodeConfig,
 } from "./runtime-opencode-config-store.js";
 import {
-  hasOmniRushWorkspaceConfig,
-  mergeOmniRushWorkspaceConfigs,
-  readOmniRushWorkspaceConfig,
-  seedOmniRushWorkspaceConfigIfEmpty,
-  writeOmniRushWorkspaceConfig,
-} from "./omnirush-workspace-config-store.js";
+  hasMarsWorkspaceConfig,
+  mergeMarsWorkspaceConfigs,
+  readMarsWorkspaceConfig,
+  seedMarsWorkspaceConfigIfEmpty,
+  writeMarsWorkspaceConfig,
+} from "./mars-workspace-config-store.js";
 import { boxServiceFor } from "./box/desktop.js";
 import { boxHome } from "./box/common.js";
 import { buildathonProjectsFile, reproStateFromBody, writeReproState } from "./buildathon-repro.js";
 import { prepareBoxInstallLog } from "./box/install-log.js";
 import { rememberServerDefault, watchServerDefault } from "./box/launch.js";
 import { normalizeBackend } from "./box/backends/index.js";
-import { buildOmniRushRuntimeConfigObject, omnirushGatewayConfigured, omnirushRuntimeConfigFilePath, writeOmniRushRuntimeConfigFile } from "./omnirush-runtime-config.js";
+import { buildMarsRuntimeConfigObject, marsGatewayConfigured, marsRuntimeConfigFilePath, writeMarsRuntimeConfigFile } from "./mars-runtime-config.js";
 import { assertMcpAllowed, mcpAllowed, mcpPolicyForConfig, MCP_DISABLED_MESSAGE } from "./mcp-policy.js";
-import { omnirushModelWantsReasoningSummary, readOmniRushModelCatalog } from "./omnirush-model-catalog.js";
+import { marsModelWantsReasoningSummary, readMarsModelCatalog } from "./mars-model-catalog.js";
 import {
   SUBAGENT_MODEL_FALLBACK_TRACE,
   readSubagentModelSetting,
@@ -194,8 +194,8 @@ import {
   writeSubagentModelSetting,
   type EngineModelRef,
   type SubagentModelSetting,
-} from "./omnirush-subagent-model.js";
-import { modelsNamedIn } from "./omnirush-swarm.js";
+} from "./mars-subagent-model.js";
+import { modelsNamedIn } from "./mars-swarm.js";
 import { findManagedEngineWorkspace } from "./workspaces.js";
 import { startThreadApprovalReplayer, type ThreadApprovalReplayer } from "./thread-approvals.js";
 import { CloudProviderSync, parseCloudProviderDenSession } from "./cloud-provider-sync.js";
@@ -207,10 +207,9 @@ import { buildOpencodeProxyUrl, engineTarget, turnsBeforeCapture, type EngineTar
 import { claimSteerId, claimedSteerIds, createSteerTracker, steerRecord } from "./turn-steer.js";
 import { AutoCompactor, type AutoCompactOutcome } from "./session-archive/auto-compact.js";
 import { brokerAutoCompactPolicy, desktopAutoCompactEngine } from "./auto-compact-engine.js";
-import { OmniRushGatewayBroker } from "./omnirush-gateway-broker.js";
-import { awaitOmniRushModelCatalogSettled, startOmniRushModelCatalogSync } from "./omnirush-model-catalog-sync.js";
-import { OmniRushVoiceService, voiceProjectContext } from "./omnirush-voice.js";
-import { GOOD_SESSION_ID_PATTERN, readGoodSession } from "./omnirush-good-session.js";
+import { MarsGatewayBroker } from "./mars-gateway-broker.js";
+import { awaitMarsModelCatalogSettled, kickMarsModelCatalog, startMarsModelCatalogSync } from "./mars-model-catalog-sync.js";
+import { MarsVoiceService, voiceProjectContext } from "./mars-voice.js";
 import { PROJECT_ARCHIVE_BASE_IDLE_MS, PROJECT_ARCHIVE_BASE_MAX_DEFER_MS, projectArchiveSettings } from "./project-archive.js";
 import type { ArchiveApiRequestInit } from "./session-archive/upload.js";
 import { runtimeStorageDir } from "./runtime-db.js";
@@ -236,6 +235,8 @@ const agentDiagnosticsLastRunByServer = new WeakMap<ServerConfig, Map<string, nu
 const agentDiagnosticsInFlightByServer = new WeakMap<ServerConfig, Set<string>>();
 const commandAdmissionsByServer = new WeakMap<ServerConfig, Map<string, { fingerprint: string; admittedAt: number }>>();
 const captureServicesByServer = new WeakMap<ServerConfig, CaptureService>();
+/** Servers with a linked marsai.click credential (OAuth session or API key): prompt dispatch never needs the capture uploader. */
+const marsLinkedByServer = new WeakMap<ServerConfig, boolean>();
 /** Automatic compaction (session-archive/auto-compact.ts), one per server: its counts live as long as the app. */
 const autoCompactorsByServer = new WeakMap<ServerConfig, AutoCompactor>();
 /**
@@ -265,10 +266,9 @@ export function stopTurnActivity(config: ServerConfig): void {
   turnActivityByServer.get(config)?.stop();
   turnActivityByServer.delete(config);
 }
-/** Voice dictation's broker hop (omnirush-voice.ts), per server. */
-const voiceServicesByServer = new WeakMap<ServerConfig, OmniRushVoiceService>();
+/** Voice dictation's broker hop (mars-voice.ts), per server. */
+const voiceServicesByServer = new WeakMap<ServerConfig, MarsVoiceService>();
 /** The broker's integrity read (rate-limited there), per server, for the checklist bar's "Good session ★". */
-const sessionIntegrityByServer = new WeakMap<ServerConfig, OmniRushGatewayBroker["sessionIntegrity"]>();
 
 /** Recent gateway fallbacks per sub-agent session, for the swarm plugin's task-result note. */
 const subagentGatewayFallbacks = new WeakMap<ServerConfig, Map<string, Array<Record<string, unknown>>>>();
@@ -313,7 +313,7 @@ const AGENT_DIAGNOSTICS_DEFAULT_BODY_DEADLINE_MS = 2_000;
 const AGENT_DIAGNOSTICS_ERROR_FLUSH_MS = 25;
 const COMMAND_ADMISSION_CAPACITY = 10_000;
 const UPLOAD_EVENTS_MAX_REQUEST_BYTES = 1024 * 1024;
-/** Where engine plugins report browser visits (opencode-plugins/omnirush-session-upload-client.ts). */
+/** Where engine plugins report browser visits (opencode-plugins/mars-session-upload-client.ts). */
 const SESSION_UPLOAD_EVENTS_ROUTE = "/session-upload/events";
 /** The same route under its pre-2.2.2 name. */
 const LEGACY_SESSION_UPLOAD_EVENTS_ROUTE = "/collector/events";
@@ -338,7 +338,7 @@ function agentDiagnosticsActorWorkspaceKey(actor: Actor | undefined, workspaceId
 
 function requireAgentDiagnosticsRateLimit(config: ServerConfig, actor: Actor | undefined, workspaceId: string): void {
   const now = Date.now();
-  const configured = Number(process.env.OMNIRUSH_AGENT_DIAGNOSTICS_COOLDOWN_MS ?? "3000");
+  const configured = Number(process.env.MARS_AGENT_DIAGNOSTICS_COOLDOWN_MS ?? "3000");
   const cooldownMs = Number.isFinite(configured) && configured >= 0 ? configured : 3_000;
   const key = agentDiagnosticsActorWorkspaceKey(actor, workspaceId);
   const agentDiagnosticsLastRun = agentDiagnosticsLastRunByServer.get(config) ?? new Map<string, number>();
@@ -476,7 +476,7 @@ async function readManagedRuntimeConfigDebug(config: ServerConfig): Promise<{
   managedFileRebuiltAt: number | null;
   managedFileContentRedacted: string | null;
 }> {
-  const managedFilePath = omnirushRuntimeConfigFilePath(config);
+  const managedFilePath = marsRuntimeConfigFilePath(config);
   try {
     const [metadata, content] = await Promise.all([
       stat(managedFilePath),
@@ -583,10 +583,10 @@ export function createServerLogger(
   writeLine: ServerLogWriter = writeStdoutLogLine,
   fileSink: ServerLogFileSink | null = resolveServerLogFileSink(),
 ): ServerLogger {
-  const runId = process.env.OMNIRUSH_RUN_ID ?? shortId();
+  const runId = process.env.MARS_RUN_ID ?? shortId();
   const host = hostname().trim();
   const resource: Record<string, string> = {
-    "service.name": "omnirush-server",
+    "service.name": "mars-server",
     "service.version": SERVER_VERSION,
     "service.instance.id": runId,
   };
@@ -780,13 +780,13 @@ async function assertWorkspaceOwnsProxiedSessionRead(
       throw new ApiError(404, "session_not_found", "Session not found");
     }
     if (result.response?.status === 500 && isEngineUnknownError(result.error)) {
-      throw new ApiError(502, "opencode_session_unreadable", "This chat could not be read right now. Restart OmniRush.ai to repair it; your chats are kept.", {
+      throw new ApiError(502, "opencode_session_unreadable", "This chat could not be read right now. Restart MarsAI to repair it; your chats are kept.", {
         status: result.response.status,
         body: result.error,
         path: `/session/${encodeURIComponent(sessionId)}`,
       });
     }
-    throw new ApiError(502, "opencode_request_failed", "OmniRush request failed", {
+    throw new ApiError(502, "opencode_request_failed", "Mars request failed", {
       ...(result.response ? { status: result.response.status } : {}),
       body: result.error,
       path: `/session/${encodeURIComponent(sessionId)}`,
@@ -821,7 +821,7 @@ export function assertOpencodeProxyAllowed(actor: Actor, method: string, proxyPa
   // Prevent viewers from self-approving OpenCode permission requests via the
   // proxy. OpenCode uses /permission/:requestId/reply (and historically also
   // a session-scoped variant). Collaborators must be allowed: the SPA's only
-  // credential is the collaborator-scoped client token (OMNIRUSH_TOKEN), so
+  // credential is the collaborator-scoped client token (MARS_TOKEN), so
   // an owner-only gate made every interactive permission dialog un-answerable
   // (403 "Only owner tokens can reply") and left tool calls stuck in
   // "running" forever (#1918).
@@ -886,20 +886,20 @@ function isUploadPromptDispatch(method: string, proxyPath: string): boolean {
 }
 
 /**
- * Sign-in gate. A local workspace only runs sessions the omnirush.ai
+ * Sign-in gate. A local workspace only runs sessions the marsai.click
  * session uploader can capture; without a connected account the engine prompt
  * dispatch is refused so no uncaptured turn ever starts. The bypass exists
  * for development and tests, and requires both flags on purpose.
  */
-export const OMNIRUSH_ACCOUNT_REQUIRED_MESSAGE = "Sign in to omnirush.ai from Settings to start a session.";
+export const MARS_ACCOUNT_REQUIRED_MESSAGE = "Sign in to marsai.click from Settings to start a session.";
 
 export function uploadGateBypassed(env: NodeJS.ProcessEnv = process.env): boolean {
-  // OMNIRUSH_COLLECTION_OPTIONAL is the pre-2.2.2 name of the second flag, still honoured.
-  return env.OMNIRUSH_DEV_MODE === "1" && (env.OMNIRUSH_SESSION_UPLOAD_OPTIONAL === "1" || env.OMNIRUSH_COLLECTION_OPTIONAL === "1");
+  // MARS_COLLECTION_OPTIONAL is the pre-2.2.2 name of the second flag, still honoured.
+  return env.MARS_DEV_MODE === "1" && (env.MARS_SESSION_UPLOAD_OPTIONAL === "1" || env.MARS_COLLECTION_OPTIONAL === "1");
 }
 
 function uploadAccountRequiredResponse(): Response {
-  return jsonResponse({ error: "omnirush_account_required", message: OMNIRUSH_ACCOUNT_REQUIRED_MESSAGE }, 403);
+  return jsonResponse({ error: "mars_account_required", message: MARS_ACCOUNT_REQUIRED_MESSAGE }, 403);
 }
 
 /**
@@ -910,13 +910,16 @@ function uploadAccountRequiredResponse(): Response {
  */
 function uploadDispatchRefused(config: ServerConfig, workspace: WorkspaceInfo | undefined): boolean {
   if (!workspace || workspace.workspaceType === "remote") return false;
+  // A linked credential (API key or account) can always reach the gateway:
+  // turns dispatch even when the turn-capture uploader is not running.
+  if (marsLinkedByServer.get(config)) return false;
   return !captureServicesByServer.get(config)?.uploadEnabled && !uploadGateBypassed();
 }
 
 /** The gate as an ApiError, for dispatches that are not proxied HTTP requests. */
 export function assertUploadDispatchAllowed(config: ServerConfig, workspace: WorkspaceInfo | undefined): void {
   if (uploadDispatchRefused(config, workspace)) {
-    throw new ApiError(403, "omnirush_account_required", OMNIRUSH_ACCOUNT_REQUIRED_MESSAGE);
+    throw new ApiError(403, "mars_account_required", MARS_ACCOUNT_REQUIRED_MESSAGE);
   }
 }
 
@@ -1072,16 +1075,16 @@ export async function startServer(config: ServerConfig): Promise<ServeResult> {
   const env = new EnvService();
   envServicesByConfig.set(config, env);
   const logger = createServerLogger(config);
-  const gatewayCredentials = config.omnirushGatewayCredentials ?? (
-    process.env.OMNIRUSH_GATEWAY_URL && process.env.OMNIRUSH_ACCESS_TOKEN && process.env.OMNIRUSH_REFRESH_TOKEN
+  const gatewayCredentials = config.marsGatewayCredentials ?? (
+    process.env.MARS_GATEWAY_URL && process.env.MARS_ACCESS_TOKEN && process.env.MARS_REFRESH_TOKEN
       ? {
-          gatewayUrl: process.env.OMNIRUSH_GATEWAY_URL,
-          accessToken: process.env.OMNIRUSH_ACCESS_TOKEN,
-          refreshToken: process.env.OMNIRUSH_REFRESH_TOKEN,
+          gatewayUrl: process.env.MARS_GATEWAY_URL,
+          accessToken: process.env.MARS_ACCESS_TOKEN,
+          refreshToken: process.env.MARS_REFRESH_TOKEN,
         }
       : undefined
   );
-  const gatewayBroker = new OmniRushGatewayBroker({
+  const gatewayBroker = new MarsGatewayBroker({
     log: (level, message, attributes) => logger.log(level, message, attributes),
     credentials: gatewayCredentials
       ? {
@@ -1096,7 +1099,7 @@ export async function startServer(config: ServerConfig): Promise<ServeResult> {
           },
         }
       : undefined,
-    engineToken: config.omnirushEngineToken,
+    engineToken: config.marsEngineToken,
     ...(config.captureFileUpload ? { uploadFile: config.captureFileUpload } : {}),
     // A sub-agent request moved to the main model: new sub-agent prompts skip
     // the refused model for a while, and the session uploader records the model the
@@ -1104,11 +1107,11 @@ export async function startServer(config: ServerConfig): Promise<ServeResult> {
     subagentModelRefused: (model) => subagentModelRefusals(config).isRefused(model),
     // Reasoning summaries for every reasoning model the account's catalog
     // lists on the Codex route (not a hardcoded pair of ids).
-    reasoningSummaryFor: async (model) => omnirushModelWantsReasoningSummary(await readOmniRushModelCatalog(config), model),
+    reasoningSummaryFor: async (model) => marsModelWantsReasoningSummary(await readMarsModelCatalog(config), model),
     // The desktop's update gate (banner, blocked view); session uploads and
     // project archives go on whatever it says.
-    ...(config.omnirushGatewayCredentials?.onUpdateSignal ? { onUpdateSignal: config.omnirushGatewayCredentials.onUpdateSignal } : {}),
-    // Under the desktop: X-OmniRush-Client: gui/<app version> on every call.
+    ...(config.marsGatewayCredentials?.onUpdateSignal ? { onUpdateSignal: config.marsGatewayCredentials.onUpdateSignal } : {}),
+    // Under the desktop: X-Mars-Client: gui/<app version> on every call.
     ...(config.appVersion?.trim() ? { clientVersion: config.appVersion.trim() } : {}),
     onSubagentFallback: (event) => {
       if (event.reason !== "refused_recently") subagentModelRefusals(config).mark(event.requested, event.reason);
@@ -1137,14 +1140,13 @@ export async function startServer(config: ServerConfig): Promise<ServeResult> {
       notify: (sessionID, stage) => { void uiControl.request("query", { id: "auto.compact.notice", args: { sessionID, stage } }); },
     }));
   }
-  if (gatewayBroker.enabled) sessionIntegrityByServer.set(config, (sessionId, options) => gatewayBroker.sessionIntegrity(sessionId, options));
-  voiceServicesByServer.set(config, new OmniRushVoiceService(gatewayBroker, {
+  voiceServicesByServer.set(config, new MarsVoiceService(gatewayBroker, {
     log: (level, message, attributes) => logger.log(level, message, attributes),
   }));
   // Under the desktop the embedding host passes the Electron app version
   // through ServerConfig; a standalone server reports its own version.
   const appVersion = config.appVersion?.trim()
-    || process.env.OMNIRUSH_APP_VERSION?.trim()
+    || process.env.MARS_APP_VERSION?.trim()
     || SERVER_VERSION;
   // The session uploader, and whole-folder archives of git projects beside
   // it (session-archive/README.md), run on the capture worker: their file
@@ -1198,6 +1200,7 @@ export async function startServer(config: ServerConfig): Promise<ServeResult> {
     },
   });
   captureServicesByServer.set(config, capture);
+  marsLinkedByServer.set(config, Boolean(gatewayCredentials));
   // The Linux sandbox (box/): every workspace whose box is on is planned in the background (a missing
   // image starts downloading), and the server's default (local_box) is read for the engine config.
   const boxes = boxServiceFor(config, (level, message, attributes) => logger.log(level, message, attributes));
@@ -1225,7 +1228,7 @@ export async function startServer(config: ServerConfig): Promise<ServeResult> {
   try {
     await reconcileLocalManagedMcpRuntimeEntries(config);
   } catch (error) {
-    logger.log("warn", "Failed to reconcile OmniRush.ai-managed MCP connections during startup.", {
+    logger.log("warn", "Failed to reconcile MarsAI-managed MCP connections during startup.", {
       error: error instanceof Error ? error.message : "unknown",
     });
   }
@@ -1417,7 +1420,7 @@ export async function startServer(config: ServerConfig): Promise<ServeResult> {
         return finalize(new Response(null, { status: 204 }));
       }
 
-      const gatewayMount = url.pathname.match(/^\/omnirush-gateway\/v1\/(.+)$/);
+      const gatewayMount = url.pathname.match(/^\/mars-gateway\/v1\/(.+)$/);
       if (gatewayMount?.[1]) {
         authMode = "client";
         try {
@@ -1428,14 +1431,14 @@ export async function startServer(config: ServerConfig): Promise<ServeResult> {
           // readable, retryable error instead of a bare 500 from serve-node.
           const requestCanceled = isExpectedRequestCancellation(error, request.signal);
           if (requestCanceled) return finalize(jsonResponse({ code: "request_aborted", message: "Request was canceled" }, 499));
-          captureServerException(error, { method: request.method, route: "/omnirush-gateway/v1", requestSignal: request.signal });
-          logger.log("error", "omnirush.ai gateway request failed", {
+          captureServerException(error, { method: request.method, route: "/mars-gateway/v1", requestSignal: request.signal });
+          logger.log("error", "marsai.click gateway request failed", {
             path: gatewayMount[1],
             error: error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 300) : "unknown",
           });
           errorMessage = "gateway_error";
           return finalize(new Response(JSON.stringify({
-            error: { message: "omnirush.ai: the model request failed inside the app. Retrying shortly.", type: "omnirush_error", code: "gateway_local_error" },
+            error: { message: "marsai.click: the model request failed inside the app. Retrying shortly.", type: "mars_error", code: "gateway_local_error" },
           }), { status: 502, headers: { "content-type": "application/json", "retry-after": "2" } }));
         }
       }
@@ -1537,7 +1540,7 @@ export async function startServer(config: ServerConfig): Promise<ServeResult> {
         const requestCanceled = isExpectedRequestCancellation(error, request.signal);
         if (!(error instanceof ApiError) && !requestCanceled) {
           captureServerException(error, { method: request.method, route: url.pathname, requestSignal: request.signal });
-          console.error("[omnirush-server] Unhandled error:", error);
+          console.error("[mars-server] Unhandled error:", error);
         }
         const apiError = error instanceof ApiError
           ? error
@@ -1601,7 +1604,7 @@ export async function startServer(config: ServerConfig): Promise<ServeResult> {
     try {
       await reconcileLocalManagedMcpRuntimeEntries(config);
     } catch (error) {
-      logger.log("warn", "Failed to update OmniRush.ai-managed MCP loopback routes after binding the server port.", {
+      logger.log("warn", "Failed to update MarsAI-managed MCP loopback routes after binding the server port.", {
         error: error instanceof Error ? error.message : "unknown",
       });
     }
@@ -1626,16 +1629,16 @@ export async function startServer(config: ServerConfig): Promise<ServeResult> {
     .catch(() => undefined);
 
   engineInstanceReaper.start();
-  // The account's model catalog (omnirush-model-catalog-sync.ts): a change
+  // The account's model catalog (mars-model-catalog-sync.ts): a change
   // reloads the engine like a cloud provider sync, without stopping a run.
-  const modelCatalogSync = startOmniRushModelCatalogSync({
+  const modelCatalogSync = startMarsModelCatalogSync({
     config,
     broker: gatewayBroker,
     reloadEngine: async () => {
       if (config.workspaces.length === 0) return;
       await reloadOpencodeEngine(config, resolveEngineRuntimeWorkspace(config), engineMcpServerState, {
         forceStandby: true,
-        reason: "omnirush_model_catalog",
+        reason: "mars_model_catalog",
       });
     },
     // A catalog change waits until no session runs: a standby engine next to
@@ -1651,7 +1654,7 @@ export async function startServer(config: ServerConfig): Promise<ServeResult> {
     log: (level, message, attributes) => logger.log(level, message, attributes),
   });
 
-  /** Whether the omnirush.ai account is still stored as the server stops (null from `latest()` after a sign-out). */
+  /** Whether the marsai.click account is still stored as the server stops (null from `latest()` after a sign-out). */
   const accountStillStored = async (): Promise<boolean> => {
     if (!gatewayCredentials) return false;
     if (!gatewayCredentials.latest) return true;
@@ -1742,7 +1745,7 @@ export async function proxyOpencodeV2Request(input: {
   if (/^(?:\/api)?\/mcp(?:\/|$)/.test(decodedPath)) {
     assertMcpAllowed(input.config);
     if (method !== "GET" && method !== "HEAD") {
-      throw new ApiError(403, "engine_mcp_managed", "Manage connections through OmniRush.ai");
+      throw new ApiError(403, "engine_mcp_managed", "Manage connections through MarsAI");
     }
   }
   const sessionMatch = routePath.match(/^\/api\/session\/([^/]+)(?:\/|$)/);
@@ -1765,7 +1768,7 @@ export async function proxyOpencodeV2Request(input: {
       await input.request.arrayBuffer().catch(() => undefined);
       return jsonResponse({ error: "invalid_session_id", message: "The session identifier is not valid." }, 400);
     }
-    await awaitOmniRushModelCatalogSettled(input.config);
+    await awaitMarsModelCatalogSettled(input.config);
   }
   // The agent works from here (the prompt is on its way) until the engine runs no session.
   const turnActivity = promptDispatch && collectible && sessionId !== null ? turnActivityFor(input.config) : null;
@@ -1782,8 +1785,8 @@ export async function proxyOpencodeV2Request(input: {
 
   const headers = new Headers(input.request.headers);
   headers.delete("authorization");
-  headers.delete("x-omnirush-host-token");
-  headers.delete("x-omnirush-client-id");
+  headers.delete("x-mars-host-token");
+  headers.delete("x-mars-client-id");
   headers.delete("host");
   headers.delete("origin");
   headers.set("authorization", `Basic ${Buffer.from(`opencode:${input.connection.password}`).toString("base64")}`);
@@ -1819,8 +1822,8 @@ export async function proxyOpencodeV2Request(input: {
   }
 
   if (method !== "GET" && method !== "HEAD"
-    && decodedPath.endsWith(`/instructions/entries/${OMNIRUSH_V2_INSTRUCTION_KEY}`)) {
-    throw new ApiError(403, "engine_instructions_managed", "OmniRush.ai instructions are managed by the server");
+    && decodedPath.endsWith(`/instructions/entries/${MARS_V2_INSTRUCTION_KEY}`)) {
+    throw new ApiError(403, "engine_instructions_managed", "MarsAI instructions are managed by the server");
   }
 
   if (method === "POST" && sessionId && /^\/api\/session\/[^/]+\/(?:prompt|command|generate)$/.test(routePath)) {
@@ -1829,18 +1832,18 @@ export async function proxyOpencodeV2Request(input: {
     const internalHeaders = new Headers({ authorization: headers.get("authorization") ?? "", "content-type": "application/json" });
     const skillUrl = new URL(target);
     skillUrl.pathname = "/api/skill";
-    await waitForOmniRushV2Skills(input.workspace.path, async () => {
+    await waitForMarsV2Skills(input.workspace.path, async () => {
       const response = await loopbackFetch(skillUrl.toString(), { headers: internalHeaders, signal: AbortSignal.timeout(5_000) });
       if (!response.ok) throw new ApiError(502, "engine_skill_sync_failed", "Native skills are unavailable");
       return response.json();
     });
-    const value = buildOmniRushV2Instructions(false);
+    const value = buildMarsV2Instructions(false);
     const instructionUrl = new URL(target);
-    instructionUrl.pathname = `/api/session/${encodeURIComponent(sessionId)}/instructions/entries/${OMNIRUSH_V2_INSTRUCTION_KEY}`;
+    instructionUrl.pathname = `/api/session/${encodeURIComponent(sessionId)}/instructions/entries/${MARS_V2_INSTRUCTION_KEY}`;
     const synced = await loopbackFetch(instructionUrl.toString(), {
       method: "PUT", headers: internalHeaders, body: JSON.stringify({ value }), signal: AbortSignal.timeout(15_000),
     });
-    if (!synced.ok) throw new ApiError(502, "engine_instruction_sync_failed", "OmniRush.ai instructions could not be updated");
+    if (!synced.ok) throw new ApiError(502, "engine_instruction_sync_failed", "MarsAI instructions could not be updated");
   }
 
   const requestBody = method === "GET" || method === "HEAD"
@@ -1938,7 +1941,7 @@ export async function proxyOpencodeV2Request(input: {
       },
       async transform(chunk, controller) {
         const parsed = frames.push(chunk);
-        if (parsed.overflow) throw new Error("OmniRush v2 event frame exceeded the size limit");
+        if (parsed.overflow) throw new Error("Mars v2 event frame exceeded the size limit");
         for (const frame of parsed.frames) {
           let scopedFrame = frame;
           let payload = parseSsePayload(frame);
@@ -2007,7 +2010,7 @@ const ENGINE_ROLLOVER_RETRIES = 2;
 
 /** How long a request that failed on an engine being replaced waits for the replacement to serve. */
 function engineRolloverRetryWaitMs(): number {
-  const configured = Number(process.env.OMNIRUSH_ENGINE_ROLLOVER_RETRY_WAIT_MS);
+  const configured = Number(process.env.MARS_ENGINE_ROLLOVER_RETRY_WAIT_MS);
   return Number.isFinite(configured) && configured >= 0 ? configured : 30_000;
 }
 
@@ -2035,14 +2038,14 @@ function engineNeverReceivedRequest(error: unknown): boolean {
 }
 
 function opencodeUnreachableError(error: unknown, path: string): ApiError {
-  return new ApiError(502, "opencode_unreachable", "OmniRush engine is unavailable", {
+  return new ApiError(502, "opencode_unreachable", "Mars engine is unavailable", {
     path,
     cause: error instanceof Error ? error.message : String(error),
   });
 }
 
 function agentDiagnosticsTimeoutMs(): number {
-  const configured = Number(process.env.OMNIRUSH_AGENT_DIAGNOSTICS_TIMEOUT_MS);
+  const configured = Number(process.env.MARS_AGENT_DIAGNOSTICS_TIMEOUT_MS);
   return Number.isFinite(configured) && configured > 0 ? configured : 24_000;
 }
 
@@ -2105,7 +2108,7 @@ export function createWorkspaceOpencodeClient(
     : resolveWorkspaceOpencodeConnection(config, workspace);
   const baseUrl = connection.baseUrl?.trim();
   if (!baseUrl) {
-    throw new ApiError(400, "opencode_unconfigured", "OmniRush base URL is missing for this workspace", {
+    throw new ApiError(400, "opencode_unconfigured", "Mars base URL is missing for this workspace", {
       workspaceId: workspace.id,
       workspaceType: workspace.workspaceType,
     });
@@ -2135,10 +2138,10 @@ export function unwrapOpencodeResult<T, E>(result: OpencodeClientResult<T, E>, p
     return result.data;
   }
   if (result.error === undefined) {
-    throw new ApiError(502, "opencode_empty_response", "OmniRush returned an empty response", { path });
+    throw new ApiError(502, "opencode_empty_response", "Mars returned an empty response", { path });
   }
   if (!result.response) {
-    throw new ApiError(502, "opencode_unreachable", "OmniRush request failed before a response was received", {
+    throw new ApiError(502, "opencode_unreachable", "Mars request failed before a response was received", {
       body: result.error,
       path,
     });
@@ -2157,7 +2160,7 @@ export function unwrapOpencodeResult<T, E>(result: OpencodeClientResult<T, E>, p
       path,
     });
   }
-  throw new ApiError(502, "opencode_request_failed", "OmniRush request failed", {
+  throw new ApiError(502, "opencode_request_failed", "Mars request failed", {
     status: result.response.status,
     body: result.error,
     path,
@@ -2198,20 +2201,28 @@ export async function proxyOpencodeRequest(input: {
     }
     // A prompt right after launch waits (briefly) for the first model catalog
     // sync: the engine must know the account's models before the turn starts.
-    await awaitOmniRushModelCatalogSettled(input.config);
+    await awaitMarsModelCatalogSettled(input.config);
+  }
+  if (method === "GET" && /\/provider\/?$/.test(proxyPath)) {
+    // The client is about to show its model picker: pull the gateway's live
+    // catalog now, so a change lands on the next picker open.
+    void kickMarsModelCatalog(input.config);
   }
   const pool = workspace?.workspaceType === "remote" ? null : enginePoolForConfig(input.config);
-  const route = pool?.routeRequest(method, decodeEngineRoutePath(proxyPath)) ?? null;
+  // A request sent while the engine generation is still starting (a fresh
+  // sign-in restarts the engine) waits for it instead of failing with
+  // "engine unavailable" — bounded, so a dead engine still fails fast.
+  const route = (await pool?.routeRequestWhenReady(method, decodeEngineRoutePath(proxyPath))) ?? null;
   const baseUrl = route?.target.baseUrl ??
     (workspace ? resolveWorkspaceOpencodeConnection(input.config, workspace).baseUrl?.trim() ?? "" : "");
   if (!baseUrl) {
-    throw new ApiError(400, "opencode_unconfigured", "OmniRush base URL is missing for this workspace");
+    throw new ApiError(400, "opencode_unconfigured", "Mars base URL is missing for this workspace");
   }
 
   let headers = new Headers(input.request.headers);
   headers.delete("authorization");
-  headers.delete("x-omnirush-host-token");
-  headers.delete("x-omnirush-client-id");
+  headers.delete("x-mars-host-token");
+  headers.delete("x-mars-client-id");
   headers.delete("host");
   headers.delete("origin");
 
@@ -2555,9 +2566,9 @@ async function serveLocalSessionList(
             headers: { Authorization: buildEngineAuthProbeHeader(engine.username, engine.password) },
             signal: AbortSignal.timeout(10_000),
           });
-          if (!response.ok) throw new Error(`OmniRush session index failed with status ${response.status}`);
+          if (!response.ok) throw new Error(`Mars session index failed with status ${response.status}`);
           const payload: unknown = await response.json();
-          if (!Array.isArray(payload)) throw new Error("OmniRush session index returned an unreadable page");
+          if (!Array.isArray(payload)) throw new Error("Mars session index returned an unreadable page");
           return { items: payload, nextCursor: response.headers.get("x-next-cursor") };
         },
       });
@@ -2633,7 +2644,7 @@ async function proxyEngineAggregateRead(input: {
   }));
   const results = settled.flatMap((entry) => entry.status === "fulfilled" ? [entry.value] : []);
   const primary = results.find((entry) => entry.connection.role === "primary");
-  if (!primary) throw new ApiError(502, "opencode_unreachable", "No OmniRush engine is available");
+  if (!primary) throw new ApiError(502, "opencode_unreachable", "No Mars engine is available");
   if (!primary.response.ok) return sanitizeProxyResponse(primary.response);
 
   if (input.kind === "status") {
@@ -2768,7 +2779,7 @@ function mergedEventBody(input: {
 // Read lazily so tests can shrink the deadline at runtime. Matches the 5s
 // bound proxyEngineAggregateRead puts on its per-connection fan-out.
 function engineEventStreamEstablishTimeoutMs(): number {
-  const parsed = Number(process.env.OMNIRUSH_ENGINE_EVENT_ESTABLISH_TIMEOUT_MS ?? "5000");
+  const parsed = Number(process.env.MARS_ENGINE_EVENT_ESTABLISH_TIMEOUT_MS ?? "5000");
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 5_000;
 }
 
@@ -2776,7 +2787,7 @@ function engineEventStreamEstablishTimeoutMs(): number {
 // one lost beat never churns a healthy connection. Read lazily so tests can
 // shrink the interval at runtime.
 function engineEventStreamHeartbeatIntervalMs(): number {
-  const parsed = Number(process.env.OMNIRUSH_ENGINE_EVENT_HEARTBEAT_MS ?? "15000");
+  const parsed = Number(process.env.MARS_ENGINE_EVENT_HEARTBEAT_MS ?? "15000");
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 15_000;
 }
 
@@ -2800,7 +2811,7 @@ async function proxyEngineEventStreams(input: {
     lease.signal.addEventListener("abort", onLeaseAbort, { once: true });
     if (lease.signal.aborted) onLeaseAbort();
     const timer = setTimeout(
-      () => establish.abort(new Error("OmniRush event stream establishment timed out")),
+      () => establish.abort(new Error("Mars event stream establishment timed out")),
       engineEventStreamEstablishTimeoutMs(),
     );
     timer.unref?.();
@@ -2829,7 +2840,7 @@ async function proxyEngineEventStreams(input: {
   if (!primary) {
     lease.release();
     discard(successful);
-    throw new ApiError(502, "opencode_unreachable", "The primary OmniRush event stream is unavailable");
+    throw new ApiError(502, "opencode_unreachable", "The primary Mars event stream is unavailable");
   }
   if (!primary.response.ok || !primary.response.body) {
     lease.release();
@@ -2895,7 +2906,7 @@ async function applyServerBoxDefault(config: ServerConfig, boxes: ReturnType<typ
  */
 async function applyBoxEngineConfig(config: ServerConfig, reason: string): Promise<{ status: "unchanged" | "applied" | "deferred" | "failed" | "unmanaged" }> {
   try {
-    const written = await writeOmniRushRuntimeConfigFile(config);
+    const written = await writeMarsRuntimeConfigFile(config);
     if (!written.changed) return { status: "unchanged" };
     const pool = enginePoolForConfig(config);
     const workspaces = config.workspaces.filter((workspace) => resolveWorkspaceOpencodeConnection(config, workspace).baseUrl?.trim());
@@ -2930,7 +2941,7 @@ function withCors(response: Response, request: Request, config: ServerConfig) {
   headers.set("Access-Control-Allow-Origin", allowOrigin);
   headers.set(
     "Access-Control-Allow-Headers",
-    "Authorization, Content-Type, X-OmniRush-Host-Token, X-OmniRush-Client-Id, X-OpenCode-Directory, X-Opencode-Directory, x-opencode-directory",
+    "Authorization, Content-Type, X-Mars-Host-Token, X-Mars-Client-Id, X-OpenCode-Directory, X-Opencode-Directory, x-opencode-directory",
   );
   headers.set("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
   headers.set("Vary", "Origin");
@@ -2948,12 +2959,12 @@ async function requireClient(request: Request, config: ServerConfig, tokens: Tok
   if (!scope) {
     throw new ApiError(401, "unauthorized", "Invalid bearer token");
   }
-  const clientId = request.headers.get("x-omnirush-client-id") ?? undefined;
+  const clientId = request.headers.get("x-mars-client-id") ?? undefined;
   return { type: "remote", clientId, tokenHash: hashToken(token), scope };
 }
 
 function requireHostToken(request: Request, config: ServerConfig): Actor {
-  const hostToken = request.headers.get("x-omnirush-host-token");
+  const hostToken = request.headers.get("x-mars-host-token");
   if (hostToken && hostToken === config.hostToken) {
     return { type: "host", tokenHash: hashToken(hostToken), scope: "owner" };
   }
@@ -2961,7 +2972,7 @@ function requireHostToken(request: Request, config: ServerConfig): Actor {
 }
 
 async function requireHost(request: Request, config: ServerConfig, tokens: TokenService): Promise<Actor> {
-  const hostToken = request.headers.get("x-omnirush-host-token");
+  const hostToken = request.headers.get("x-mars-host-token");
   if (hostToken && hostToken === config.hostToken) {
     return { type: "host", tokenHash: hashToken(hostToken), scope: "owner" };
   }
@@ -2976,7 +2987,7 @@ async function requireHost(request: Request, config: ServerConfig, tokens: Token
   if (scope !== "owner") {
     throw new ApiError(401, "unauthorized", "Invalid host token");
   }
-  const clientId = request.headers.get("x-omnirush-client-id") ?? undefined;
+  const clientId = request.headers.get("x-mars-client-id") ?? undefined;
   return { type: "remote", clientId, tokenHash: hashToken(bearer), scope };
 }
 
@@ -2995,7 +3006,7 @@ function buildCapabilities(config: ServerConfig): Capabilities {
     serverVersion: SERVER_VERSION,
     opencodeVersion: OPENCODE_VERSION,
     providerSync: true,
-    skills: { read: true, write: writeEnabled, source: "omnirush" },
+    skills: { read: true, write: writeEnabled, source: "mars" },
     plugins: { read: true, write: writeEnabled },
     mcp: { read: mcpAllowed(config), write: writeEnabled && mcpAllowed(config) },
     commands: { read: true, write: writeEnabled },
@@ -3013,8 +3024,8 @@ function buildCapabilities(config: ServerConfig): Capabilities {
       files: {
         injection: writeEnabled && inboxEnabled,
         outbox: outboxEnabled,
-        inboxPath: ".opencode/omnirush/inbox/",
-        outboxPath: ".opencode/omnirush/outbox/",
+        inboxPath: ".opencode/mars/inbox/",
+        outboxPath: ".opencode/mars/outbox/",
         maxBytes,
       },
     },
@@ -3022,33 +3033,33 @@ function buildCapabilities(config: ServerConfig): Capabilities {
 }
 
 function resolveSandboxBackend(): Capabilities["sandbox"]["backend"] {
-  const raw = (process.env.OMNIRUSH_SANDBOX_BACKEND ?? "").trim().toLowerCase();
+  const raw = (process.env.MARS_SANDBOX_BACKEND ?? "").trim().toLowerCase();
   if (raw === "docker") return "docker";
   if (raw === "container") return "container";
   return "none";
 }
 
 function resolveSandboxEnabled(backend: Capabilities["sandbox"]["backend"]): boolean {
-  const raw = (process.env.OMNIRUSH_SANDBOX_ENABLED ?? "").trim().toLowerCase();
+  const raw = (process.env.MARS_SANDBOX_ENABLED ?? "").trim().toLowerCase();
   if (["1", "true", "yes", "on"].includes(raw)) return true;
   if (["0", "false", "no", "off"].includes(raw)) return false;
   return backend !== "none";
 }
 
 function resolveInboxEnabled(): boolean {
-  const raw = (process.env.OMNIRUSH_INBOX_ENABLED ?? "").trim().toLowerCase();
+  const raw = (process.env.MARS_INBOX_ENABLED ?? "").trim().toLowerCase();
   if (!raw) return true;
   return ["1", "true", "yes", "on"].includes(raw);
 }
 
 function resolveOutboxEnabled(): boolean {
-  const raw = (process.env.OMNIRUSH_OUTBOX_ENABLED ?? "").trim().toLowerCase();
+  const raw = (process.env.MARS_OUTBOX_ENABLED ?? "").trim().toLowerCase();
   if (!raw) return true;
   return ["1", "true", "yes", "on"].includes(raw);
 }
 
 function resolveInboxMaxBytes(): number {
-  const raw = (process.env.OMNIRUSH_INBOX_MAX_BYTES ?? "").trim();
+  const raw = (process.env.MARS_INBOX_MAX_BYTES ?? "").trim();
   const parsed = raw ? Number(raw) : NaN;
   if (Number.isFinite(parsed) && parsed > 0) {
     return Math.trunc(parsed);
@@ -3059,17 +3070,17 @@ function resolveInboxMaxBytes(): number {
   return 250_000_000;
 }
 
-// Dev-only log sink target. When OMNIRUSH_DEV_LOG_FILE is set to a path, the
+// Dev-only log sink target. When MARS_DEV_LOG_FILE is set to a path, the
 // /dev/log endpoint accepts JSON payloads and appends them to that file so an
 // operator can `tail -f` the file to see live browser activity. Returning null
 // disables the endpoint entirely.
 function resolveDevLogPath(): string | null {
-  const raw = (process.env.OMNIRUSH_DEV_LOG_FILE ?? "").trim();
+  const raw = (process.env.MARS_DEV_LOG_FILE ?? "").trim();
   return raw.length > 0 ? raw : null;
 }
 
 function resolveBrowserProvider(): Capabilities["toolProviders"]["browser"] {
-  const raw = (process.env.OMNIRUSH_BROWSER_PROVIDER ?? "").trim().toLowerCase();
+  const raw = (process.env.MARS_BROWSER_PROVIDER ?? "").trim().toLowerCase();
   if (raw === "sandbox-headless") {
     return { enabled: true, placement: "in-sandbox", mode: "headless" };
   }
@@ -3359,7 +3370,7 @@ function createRoutes(
       throw new ApiError(
         400,
         "agent_diagnostics_workspace_unsupported",
-        "Agent diagnostics must run on the OmniRush.ai server that owns a local workspace",
+        "Agent diagnostics must run on the MarsAI server that owns a local workspace",
       );
     }
     // Reserve before consuming untrusted bytes and hold the reservation through
@@ -3417,7 +3428,7 @@ function createRoutes(
 
   addRoute(routes, "GET", "/workspace/:id/config", "client", async (ctx) => {
     const workspace = await resolveWorkspace(config, ctx.params.id);
-    const omnirush = await readOmniRushConfigForWorkspace(config, workspace);
+    const mars = await readMarsConfigForWorkspace(config, workspace);
     // Effective runtime view (ENGINE_GLOBAL ⊕ workspace row): providers,
     // plugins, and authorized folders live in the global row now, and the UI
     // must keep seeing them after migration.
@@ -3426,13 +3437,13 @@ function createRoutes(
       await readEffectiveRuntimeOpencodeConfig(config, workspace.id),
     );
     const lastAudit = await readLastAudit(workspace.path, workspace.id);
-    return jsonResponse({ opencode, omnirush, updatedAt: lastAudit?.timestamp ?? null });
+    return jsonResponse({ opencode, mars, updatedAt: lastAudit?.timestamp ?? null });
   });
 
   addRoute(routes, "GET", "/workspace/:id/desktop-cloud-sync", "client", async (ctx) => {
     const workspace = await resolveWorkspace(config, ctx.params.id);
-    const omnirush = await readOmniRushConfigForWorkspace(config, workspace);
-    return jsonResponse(readDesktopCloudSyncState(omnirush));
+    const mars = await readMarsConfigForWorkspace(config, workspace);
+    return jsonResponse(readDesktopCloudSyncState(mars));
   });
 
   addRoute(routes, "POST", "/workspace/:id/desktop-cloud-sync", "client", async (ctx) => {
@@ -3446,17 +3457,17 @@ function createRoutes(
     }
 
     const result = await enqueueDesktopCloudSync(async () => {
-      const omnirush = await readOmniRushConfigForWorkspace(config, workspace);
+      const mars = await readMarsConfigForWorkspace(config, workspace);
       const installed = await readInstalledCloudPlugins(config, workspace.id);
       const cloudImports = {
         ...installed,
-        providers: readWorkspaceCloudImports(omnirush).providers,
+        providers: readWorkspaceCloudImports(mars).providers,
       };
-      const next = syncDesktopCloudResources({ omnirush: { ...omnirush, cloudImports }, snapshot });
+      const next = syncDesktopCloudResources({ mars: { ...mars, cloudImports }, snapshot });
       // The plugin DB owns plugins/marketplaces, but provider import baselines live in
       // the workspace config. Writing the merged cloudImports back erased providers
       // and drove the provider-sync dispose/create loop.
-      await writeOmniRushWorkspaceConfig(config, workspace.id, (current) => ({
+      await writeMarsWorkspaceConfig(config, workspace.id, (current) => ({
         ...current,
         desktopCloudSync: next.state,
       }));
@@ -3465,7 +3476,7 @@ function createRoutes(
         workspaceId: workspace.id,
         actor: ctx.actor ?? { type: "remote" },
         action: "desktop_cloud_sync.update",
-        target: omnirushConfigPath(workspace.path),
+        target: marsConfigPath(workspace.path),
         summary: "Updated desktop cloud sync state",
         timestamp: Date.now(),
       });
@@ -3497,7 +3508,7 @@ function createRoutes(
       workspaceId: workspace.id,
       action: "cloud_plugins.install",
       summary: `Install cloud plugin ${resolved.plugin.name}`,
-      paths: [omnirushConfigPath(workspace.path), join(workspace.path, ".opencode")],
+      paths: [marsConfigPath(workspace.path), join(workspace.path, ".opencode")],
     });
 
     const result = await installCloudPlugin({
@@ -3521,7 +3532,7 @@ function createRoutes(
       workspaceId: workspace.id,
       actor: ctx.actor ?? { type: "remote" },
       action: "cloud_plugins.install",
-      target: omnirushConfigPath(workspace.path),
+      target: marsConfigPath(workspace.path),
       summary: `Installed cloud plugin ${resolved.plugin.name}`,
       timestamp: Date.now(),
     });
@@ -3569,7 +3580,7 @@ function createRoutes(
       workspaceId: workspace.id,
       action: "cloud_plugins.install",
       summary: `Install Claude plugin ${bundle.resolved.plugin.name} from ${bundle.preview.source.owner}/${bundle.preview.source.repo}`,
-      paths: [omnirushConfigPath(workspace.path), join(workspace.path, ".opencode")],
+      paths: [marsConfigPath(workspace.path), join(workspace.path, ".opencode")],
     });
 
     const result = await installCloudPlugin({
@@ -3586,7 +3597,7 @@ function createRoutes(
       workspaceId: workspace.id,
       actor: ctx.actor ?? { type: "remote" },
       action: "cloud_plugins.install",
-      target: omnirushConfigPath(workspace.path),
+      target: marsConfigPath(workspace.path),
       summary: `Installed Claude plugin ${bundle.resolved.plugin.name} from ${url}`,
       timestamp: Date.now(),
     });
@@ -3621,7 +3632,7 @@ function createRoutes(
       workspaceId: workspace.id,
       action: "cloud_plugins.remove",
       summary: `Remove cloud plugin ${pluginId}`,
-      paths: [omnirushConfigPath(workspace.path), join(workspace.path, ".opencode")],
+      paths: [marsConfigPath(workspace.path), join(workspace.path, ".opencode")],
     });
 
     const removed = await removeCloudPlugin({
@@ -3636,7 +3647,7 @@ function createRoutes(
       workspaceId: workspace.id,
       actor: ctx.actor ?? { type: "remote" },
       action: "cloud_plugins.remove",
-      target: omnirushConfigPath(workspace.path),
+      target: marsConfigPath(workspace.path),
       summary: `Removed cloud plugin ${removed.name}`,
       timestamp: Date.now(),
     });
@@ -3656,7 +3667,7 @@ function createRoutes(
   const runModeState = async (workspace: WorkspaceInfo): Promise<WorkspaceRunModeState & { path: string }> => {
     const state = await readWorkspaceRunMode(workspace.path);
     if (engineV2Preview.status().chatRouting) {
-      return { ...state, supported: false, reason: "Workspace run modes are unavailable while OmniRush v2 chat routing is enabled." };
+      return { ...state, supported: false, reason: "Workspace run modes are unavailable while Mars v2 chat routing is enabled." };
     }
     if (workspace.workspaceType === "remote" || resolve(resolveOpencodeDirectory(workspace) ?? workspace.path) !== resolve(workspace.path)) {
       return { ...state, supported: false, reason: "Workspace run modes require an engine using this local workspace directory." };
@@ -3714,7 +3725,7 @@ function createRoutes(
       if (pendingRunModeRefresh.has(current.path)) {
         refresh = "deferred";
         try {
-          if (engineV2Preview.status().chatRouting) throw new Error("OmniRush v2 chat routing is enabled");
+          if (engineV2Preview.status().chatRouting) throw new Error("Mars v2 chat routing is enabled");
           await requireWorkspaceRunModeIdle(config, workspace);
           // Directory-scoped disposal leaves other workspaces alone. The
           // detached MCP sync uses the same fence, so do not await it here.
@@ -3745,7 +3756,7 @@ function createRoutes(
 
   addRoute(routes, "GET", "/workspace/:id/permissions/effective", "client", async (ctx) => {
     const workspace = await resolveWorkspace(config, ctx.params.id);
-    // The engine's own evaluated ruleset decides; OmniRush.ai only names the
+    // The engine's own evaluated ruleset decides; MarsAI only names the
     // layer each winning rule came from.
     const opencode = createWorkspaceOpencodeClient(config, workspace, { boundedDiagnosticsReads: true });
     const [configResult, agentResult] = await Promise.all([opencode.config.get({}), opencode.app.agents({})]);
@@ -3754,24 +3765,24 @@ function createRoutes(
       agents: unwrapOpencodeResult(agentResult, "/agent"),
     });
     if (!snapshot) {
-      throw new ApiError(502, "opencode_invalid_response", "OmniRush returned an unreadable agent list", { workspaceId: workspace.id });
+      throw new ApiError(502, "opencode_invalid_response", "Mars returned an unreadable agent list", { workspaceId: workspace.id });
     }
     const agent = selectGoverningAgent(snapshot.agents, snapshot.defaultAgent);
     if (!agent) {
-      throw new ApiError(502, "opencode_agent_missing", "OmniRush reported no agent for this workspace", { workspaceId: workspace.id });
+      throw new ApiError(502, "opencode_agent_missing", "Mars reported no agent for this workspace", { workspaceId: workspace.id });
     }
     const globalPath = resolveOpencodeConfigFilePath("global", workspace.path);
     const emptyConfig: Record<string, unknown> = {};
     const [workspaceConfig, globalConfig, injected] = await Promise.all([
       readOpencodeConfig(workspace.path),
       readJsoncFile(globalPath, emptyConfig, { allowInvalid: true }).then((result) => result.data),
-      buildOmniRushRuntimeConfigObject(config),
+      buildMarsRuntimeConfigObject(config),
     ]);
     return jsonResponse({
       agent: agent.name,
       rows: summarizeEffectivePermissions(agent.permission, {
         global: globalConfig.permission,
-        omnirush: injected.permission,
+        mars: injected.permission,
         workspace: workspaceConfig.permission,
       }),
       files: { workspace: opencodeConfigPath(workspace.path), global: globalPath },
@@ -3797,7 +3808,7 @@ function createRoutes(
     const workspace = await resolveWorkspace(config, ctx.params.id);
     const body = await readJsonBody(ctx.request);
     const folders = parseAuthorizedFoldersPayload(body.folders, workspace.path);
-    const configPath = omnirushConfigPath(workspace.path);
+    const configPath = marsConfigPath(workspace.path);
 
     await requireApproval(ctx, {
       workspaceId: workspace.id,
@@ -3875,7 +3886,7 @@ function createRoutes(
     }));
 
     if (result.changed) {
-      emitReloadEvent(ctx.reloadEvents, workspace, "config", buildConfigTrigger(omnirushRuntimeConfigFilePath(config)));
+      emitReloadEvent(ctx.reloadEvents, workspace, "config", buildConfigTrigger(marsRuntimeConfigFilePath(config)));
     }
 
     return jsonResponse({
@@ -3889,7 +3900,7 @@ function createRoutes(
     return jsonResponse({ provider: runtimeProviderMap(runtime) });
   });
 
-  // Engine approval mode: OMNIRUSH_APPROVALS in the server environment wins
+  // Engine approval mode: MARS_APPROVALS in the server environment wins
   // over the persisted setting (source "environment"), so Settings shows the
   // switch disabled while the environment forces it.
   addRoute(routes, "GET", "/runtime-config/approvals", "client", async () =>
@@ -3904,7 +3915,7 @@ function createRoutes(
     const result = await writeGlobalRuntimeOpencodeConfig(config, (current) => ({ ...current, approvals: { mode } }));
     // The injected engine config file must carry the new rules before the
     // client's engine reload re-reads it.
-    await writeOmniRushRuntimeConfigFile(config);
+    await writeMarsRuntimeConfigFile(config);
     return jsonResponse({ ok: true, changed: result.changed, ...resolveApprovalMode(result.config) });
   });
 
@@ -3973,7 +3984,7 @@ function createRoutes(
     return jsonResponse(await boxServiceFor(config).reset(workspace));
   });
 
-  // Files used (session-archive/files-used.ts): what omnirush.ai says, for the app's one-time notice of its line.
+  // Files used (session-archive/files-used.ts): what marsai.click says, for the app's one-time notice of its line.
   addRoute(routes, "GET", "/runtime-config/files-used", "client", async () => {
     const status = await captureServicesByServer.get(config)?.filesUsedStatus().catch(() => null);
     return jsonResponse(status ?? { active: null, available: null, consentText: null });
@@ -3997,7 +4008,7 @@ function createRoutes(
     // Return a separate application status so the UI never calls it applied early.
     try {
       const pool = enginePoolForConfig(config);
-      await writeOmniRushRuntimeConfigFile(config);
+      await writeMarsRuntimeConfigFile(config);
       const workspaces = config.workspaces.filter((workspace) => resolveWorkspaceOpencodeConnection(config, workspace).baseUrl?.trim());
       const workspace = findManagedEngineWorkspace(workspaces) ?? workspaces[0];
       if (!workspace) {
@@ -4088,14 +4099,14 @@ function createRoutes(
   // The route's pre-2.2.2 path, kept so an engine plugin built before the rename still reports.
   addRoute(routes, "POST", LEGACY_SESSION_UPLOAD_EVENTS_ROUTE, "policy", sessionUploadEvents);
 
-  // Sub-agent model and effort (omnirush-subagent-model.ts). The app reads
+  // Sub-agent model and effort (mars-subagent-model.ts). The app reads
   // and writes the setting; the swarm engine plugin resolves every sub-agent
   // prompt against it with the evaluation token it already holds.
-  addRoute(routes, "GET", "/omnirush/subagent-model", "client", async () => {
-    const catalog = await readOmniRushModelCatalog(config);
+  addRoute(routes, "GET", "/mars/subagent-model", "client", async () => {
+    const catalog = await readMarsModelCatalog(config);
     return jsonResponse({
       setting: await readSubagentModelSetting(config),
-      signedIn: omnirushGatewayConfigured(config),
+      signedIn: marsGatewayConfigured(config),
       models: catalog.map((model) => ({
         id: model.id,
         name: model.display_name,
@@ -4106,7 +4117,7 @@ function createRoutes(
     });
   });
 
-  addRoute(routes, "PUT", "/omnirush/subagent-model", "client", async (ctx) => {
+  addRoute(routes, "PUT", "/mars/subagent-model", "client", async (ctx) => {
     ensureWritable(config);
     requireClientScope(ctx, "collaborator");
     const body = await readJsonBody(ctx.request);
@@ -4133,17 +4144,17 @@ function createRoutes(
 
   // Whether the user's message names a model a task asked for, by id or by its catalog name
   // (the swarm plugin keeps the task's model only then).
-  addRoute(routes, "POST", "/omnirush/subagent-model/named", "policy", async (ctx) => {
+  addRoute(routes, "POST", "/mars/subagent-model/named", "policy", async (ctx) => {
     const body = await readJsonBody(ctx.request);
     const model = typeof body.model === "string" ? body.model.trim() : "";
     const text = typeof body.text === "string" ? body.text.slice(0, 100_000) : "";
     if (!model) throw new ApiError(400, "invalid_payload", "model is required");
-    const catalog = await readOmniRushModelCatalog(config);
+    const catalog = await readMarsModelCatalog(config);
     const models = [...catalog.map((entry) => ({ id: entry.id, name: entry.display_name })), { id: model }];
     return jsonResponse({ named: modelsNamedIn(text, models).has(model) });
   });
 
-  addRoute(routes, "POST", "/omnirush/subagent-model/resolve", "policy", async (ctx) => {
+  addRoute(routes, "POST", "/mars/subagent-model/resolve", "policy", async (ctx) => {
     const body = await readJsonBody(ctx.request);
     const inherited = engineModelRef(body.inherited);
     if (!inherited) throw new ApiError(400, "invalid_payload", "inherited model is required");
@@ -4152,8 +4163,8 @@ function createRoutes(
     const refusals = subagentModelRefusals(config);
     const resolution = resolveSubagentModel({
       setting,
-      catalog: await readOmniRushModelCatalog(config),
-      gateway: omnirushGatewayConfigured(config),
+      catalog: await readMarsModelCatalog(config),
+      gateway: marsGatewayConfigured(config),
       inherited,
       main: engineModelRef(body.main),
       refused: (model) => refusals.isRefused(model),
@@ -4172,20 +4183,20 @@ function createRoutes(
     return jsonResponse(resolution);
   });
 
-  addRoute(routes, "GET", "/omnirush/subagent-model/fallbacks", "policy", async (ctx) => {
+  addRoute(routes, "GET", "/mars/subagent-model/fallbacks", "policy", async (ctx) => {
     const session = ctx.url.searchParams.get("session") ?? "";
     const events = subagentGatewayFallbacks.get(config)?.get(session) ?? [];
-    const catalog = await readOmniRushModelCatalog(config);
+    const catalog = await readMarsModelCatalog(config);
     const name = (id: unknown) => catalog.find((model) => model.id === id)?.display_name ?? id;
     return jsonResponse({
       fallbacks: events.map((event) => ({ ...event, requested_name: name(event.requested_model), used_name: name(event.used_model) })),
     });
   });
 
-  // Voice dictation (omnirush-voice.ts): whether the account may use it, and
-  // one speech segment at a time forwarded to omnirush.ai. Audio is never
+  // Voice dictation (mars-voice.ts): whether the account may use it, and
+  // one speech segment at a time forwarded to marsai.click. Audio is never
   // stored, logged or captured; only the text the user sends is a prompt.
-  addRoute(routes, "GET", "/omnirush/voice/status", "client", async (ctx) => {
+  addRoute(routes, "GET", "/mars/voice/status", "client", async (ctx) => {
     const voice = voiceServicesByServer.get(config);
     const workspaceId = ctx.url.searchParams.get("workspace")?.trim();
     const workspace = workspaceId ? config.workspaces.find((entry) => entry.id === workspaceId) : undefined;
@@ -4196,18 +4207,10 @@ function createRoutes(
     return jsonResponse({ signedIn: voice?.signedIn ?? false, ...availability, ...project });
   });
 
-  addRoute(routes, "POST", "/omnirush/voice/transcribe", "client", async (ctx) => {
+  addRoute(routes, "POST", "/mars/voice/transcribe", "client", async (ctx) => {
     const voice = voiceServicesByServer.get(config);
     if (!voice) throw new ApiError(503, "voice_unavailable", "Voice input is not available.");
     return voice.transcribe(ctx.request);
-  });
-
-  // "Good session ★" for one chat (omnirush-good-session.ts): never an error
-  // the bar would show; 404, 429, offline or signed out read "pending".
-  addRoute(routes, "GET", "/omnirush/integrity/:sessionId", "client", async (ctx) => {
-    const sessionId = ctx.params.sessionId ?? "";
-    if (!GOOD_SESSION_ID_PATTERN.test(sessionId)) throw new ApiError(400, "invalid_session_id", "A valid session id is required");
-    return jsonResponse(await readGoodSession(sessionIntegrityByServer.get(config) ?? null, sessionId));
   });
 
   addRoute(routes, "GET", "/managed-policy", "client", async () =>
@@ -4224,7 +4227,7 @@ function createRoutes(
 
   // Where session capture runs (capture-client.ts), for the app's banner while it is not running.
   // Signed out nothing is captured (the sign-in gate stops prompts): "off" shows no banner.
-  addRoute(routes, "GET", "/omnirush/capture/status", "client", async () => {
+  addRoute(routes, "GET", "/mars/capture/status", "client", async () => {
     const capture = captureServicesByServer.get(config);
     if (!capture?.uploadEnabled) return jsonResponse({ running: true, mode: "off", since: null, restarts: 0 });
     const { mode, since, restarts } = capture.status();
@@ -4268,7 +4271,7 @@ function createRoutes(
       provider: mergeRuntimeProviderUpdate(current.provider, providerPatch),
     }));
 
-    const fileResult = await writeOmniRushRuntimeConfigFile(config);
+    const fileResult = await writeMarsRuntimeConfigFile(config);
     // Auth must land before the reload so the replacement provider instance is
     // constructed with its credential. This also refreshes SDK clients after
     // a key rotation even when provider config itself did not change.
@@ -4287,7 +4290,7 @@ function createRoutes(
       ok: true,
       changed: result.changed,
       provider: runtimeProviderMap(result.config),
-      runtimeConfigPath: omnirushRuntimeConfigFilePath(config),
+      runtimeConfigPath: marsRuntimeConfigFilePath(config),
       reload: shouldReload ? (reloadDeferred ? "deferred" : "reloaded") : "skipped",
     });
   });
@@ -4303,7 +4306,7 @@ function createRoutes(
     const globalOpencode = (await readJsoncFile(globalOpencodePath, emptyGlobalOpencode, { allowInvalid: true })).data;
     // The injected file is rendered from the ENGINE_GLOBAL row only; the
     // workspace runtime row reaches the engine via the dynamic MCP push.
-    const effectiveRuntime = await buildOmniRushRuntimeConfigObject(config);
+    const effectiveRuntime = await buildMarsRuntimeConfigObject(config);
     const managedFile = await readManagedRuntimeConfigDebug(config);
 
     return jsonResponse({
@@ -4380,7 +4383,7 @@ function createRoutes(
     await requireApproval(ctx, {
       workspaceId: workspace.id,
       action: scope === "global" ? "config.global.write" : "config.write",
-      summary: `Write ${scope} OmniRush config`,
+      summary: `Write ${scope} Mars config`,
       paths: [configPath],
     });
 
@@ -4398,7 +4401,7 @@ function createRoutes(
       actor: ctx.actor ?? { type: "remote" },
       action: scope === "global" ? "config.global.write" : "config.write",
       target: configPath,
-      summary: `Updated ${scope} OmniRush config`,
+      summary: `Updated ${scope} Mars config`,
       timestamp: Date.now(),
     });
 
@@ -4429,22 +4432,22 @@ function createRoutes(
     const workspace = await resolveWorkspace(config, ctx.params.id);
     const body = await readJsonBody(ctx.request);
     const opencode = body.opencode as Record<string, unknown> | undefined;
-    const omnirush = body.omnirush as Record<string, unknown> | undefined;
+    const mars = body.mars as Record<string, unknown> | undefined;
     let runtimeChanged = false;
 
-    if (!opencode && !omnirush) {
-      throw new ApiError(400, "invalid_payload", "opencode or omnirush updates required");
+    if (!opencode && !mars) {
+      throw new ApiError(400, "invalid_payload", "opencode or mars updates required");
     }
 
     await requireApproval(ctx, {
       workspaceId: workspace.id,
       action: "config.patch",
       summary: "Patch workspace config",
-      paths: [opencode || omnirush ? omnirushConfigPath(workspace.path) : null].filter(Boolean) as string[],
+      paths: [opencode || mars ? marsConfigPath(workspace.path) : null].filter(Boolean) as string[],
     });
 
     if (opencode) {
-      const configPath = omnirushConfigPath(workspace.path);
+      const configPath = marsConfigPath(workspace.path);
       const nextOpencode = ensurePlainObject(opencode);
       if (Object.prototype.hasOwnProperty.call(nextOpencode, "mcp")) {
         assertMcpAllowed(config);
@@ -4502,10 +4505,10 @@ function createRoutes(
         runtimeChanged = result.changed || runtimeChanged;
       }
     }
-    if (omnirush) {
-      await writeOmniRushWorkspaceConfig(config, workspace.id, (current) => ({
+    if (mars) {
+      await writeMarsWorkspaceConfig(config, workspace.id, (current) => ({
         ...current,
-        ...omnirush,
+        ...mars,
       }));
     }
 
@@ -4514,7 +4517,7 @@ function createRoutes(
       workspaceId: workspace.id,
       actor: ctx.actor ?? { type: "remote" },
       action: "config.patch",
-      target: omnirushConfigPath(workspace.path),
+      target: marsConfigPath(workspace.path),
       summary: "Patched workspace config",
       timestamp: Date.now(),
     });
@@ -4522,7 +4525,7 @@ function createRoutes(
     // A no-op provider patch (for example cloud sync reconciling an identical
     // block) must not force an engine reload; that caused a dispose/create loop.
     if (opencode && runtimeChanged) {
-      emitReloadEvent(ctx.reloadEvents, workspace, "config", buildConfigTrigger(omnirushConfigPath(workspace.path)));
+      emitReloadEvent(ctx.reloadEvents, workspace, "config", buildConfigTrigger(marsConfigPath(workspace.path)));
     }
 
     return jsonResponse({ updatedAt: Date.now() });
@@ -4574,7 +4577,7 @@ function createRoutes(
       workspaceId: workspace.id,
       action: "plugins.add",
       summary: `Add plugin ${spec}`,
-      paths: [omnirushConfigPath(workspace.path)],
+      paths: [marsConfigPath(workspace.path)],
     });
     const changed = await addPlugin(config, spec);
     await recordAudit(workspace.path, {
@@ -4582,7 +4585,7 @@ function createRoutes(
       workspaceId: workspace.id,
       actor: ctx.actor ?? { type: "remote" },
       action: "plugins.add",
-      target: omnirushConfigPath(workspace.path),
+      target: marsConfigPath(workspace.path),
       summary: `Added ${spec}`,
       timestamp: Date.now(),
     });
@@ -4607,7 +4610,7 @@ function createRoutes(
       workspaceId: workspace.id,
       action: "plugins.remove",
       summary: `Remove plugin ${name}`,
-      paths: [omnirushConfigPath(workspace.path)],
+      paths: [marsConfigPath(workspace.path)],
     });
     const removed = await removePlugin(config, name);
     await recordAudit(workspace.path, {
@@ -4615,7 +4618,7 @@ function createRoutes(
       workspaceId: workspace.id,
       actor: ctx.actor ?? { type: "remote" },
       action: "plugins.remove",
-      target: omnirushConfigPath(workspace.path),
+      target: marsConfigPath(workspace.path),
       summary: `Removed ${name}`,
       timestamp: Date.now(),
     });
@@ -4919,13 +4922,13 @@ function createRoutes(
       workspaceId: workspace.id,
       action: "mcp.remove",
       summary: `Remove MCP ${name}`,
-      paths: [omnirushConfigPath(workspace.path)],
+      paths: [marsConfigPath(workspace.path)],
     });
-    const managedRemoved = name === OMNIRUSH_CLOUD_MCP_NAME
+    const managedRemoved = name === MARS_CLOUD_MCP_NAME
       ? false
       : await deleteLocalManagedMcp(config, workspace.id, name);
-    const cloudRemoval = name === OMNIRUSH_CLOUD_MCP_NAME
-      ? await removeOmniRushCloudMcpDesiredConfig(config)
+    const cloudRemoval = name === MARS_CLOUD_MCP_NAME
+      ? await removeMarsCloudMcpDesiredConfig(config)
       : null;
     const removed = cloudRemoval
       ? cloudRemoval.changed
@@ -4935,7 +4938,7 @@ function createRoutes(
       workspaceId: workspace.id,
       actor: ctx.actor ?? { type: "remote" },
       action: "mcp.remove",
-      target: omnirushConfigPath(workspace.path),
+      target: marsConfigPath(workspace.path),
       summary: `Removed MCP ${name}`,
       timestamp: Date.now(),
     });
@@ -4977,7 +4980,7 @@ function createRoutes(
       workspaceId: workspace.id,
       action,
       summary,
-      paths: [omnirushConfigPath(workspace.path)],
+      paths: [marsConfigPath(workspace.path)],
     });
     const managedUpdated = await setLocalManagedMcpEnabled(config, workspace.id, name, enabled);
     const updated = managedUpdated || await setMcpEnabled(config, workspace.id, name, enabled);
@@ -4996,7 +4999,7 @@ function createRoutes(
       workspaceId: workspace.id,
       actor: ctx.actor ?? { type: "remote" },
       action,
-      target: omnirushConfigPath(workspace.path),
+      target: marsConfigPath(workspace.path),
       summary: `${enabled ? "Enabled" : "Disabled"} MCP ${name}`,
       timestamp: Date.now(),
     });
@@ -5025,8 +5028,8 @@ function createRoutes(
         workspaceId: workspace.id,
         actor: ctx.actor ?? { type: "remote" },
         action: "mcp.auth.remove",
-        target: omnirushConfigPath(workspace.path),
-        summary: `Logged out OmniRush.ai-managed MCP ${name}`,
+        target: marsConfigPath(workspace.path),
+        summary: `Logged out MarsAI-managed MCP ${name}`,
         timestamp: Date.now(),
       });
       return jsonResponse({ ok: true });
@@ -5290,7 +5293,7 @@ async function readAgentDiagnosticsJsonBody(request: Request): Promise<unknown> 
     "agent_diagnostics_request_timeout",
     "Agent diagnostics request body timed out",
   );
-  const configuredDeadlineMs = Number(process.env.OMNIRUSH_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS);
+  const configuredDeadlineMs = Number(process.env.MARS_AGENT_DIAGNOSTICS_BODY_TIMEOUT_MS);
   const deadlineMs = Number.isFinite(configuredDeadlineMs) && configuredDeadlineMs >= 50
     ? Math.min(configuredDeadlineMs, 10_000)
     : AGENT_DIAGNOSTICS_DEFAULT_BODY_DEADLINE_MS;
@@ -5434,8 +5437,8 @@ export function resolveOpencodeConfigFilePath(scope: "project" | "global", works
 }
 
 function getRuntimeControlConfig(): { baseUrl: string; token: string } | null {
-  const baseUrl = process.env.OMNIRUSH_CONTROL_BASE_URL?.trim() ?? "";
-  const token = process.env.OMNIRUSH_CONTROL_TOKEN?.trim() ?? "";
+  const baseUrl = process.env.MARS_CONTROL_BASE_URL?.trim() ?? "";
+  const token = process.env.MARS_CONTROL_TOKEN?.trim() ?? "";
   if (!baseUrl || !token) return null;
   return { baseUrl: baseUrl.replace(/\/+$/, ""), token };
 }
@@ -5466,23 +5469,23 @@ async function readOpencodeConfig(workspaceRoot: string): Promise<Record<string,
   return data;
 }
 
-async function readOmniRushConfig(workspaceRoot: string): Promise<Record<string, unknown>> {
-  const path = omnirushConfigPath(workspaceRoot);
+async function readMarsConfig(workspaceRoot: string): Promise<Record<string, unknown>> {
+  const path = marsConfigPath(workspaceRoot);
   if (!(await exists(path))) return {};
   try {
     const raw = await readFile(path, "utf8");
     return JSON.parse(raw) as Record<string, unknown>;
   } catch {
-    throw new ApiError(422, "invalid_json", "Failed to parse omnirush.json");
+    throw new ApiError(422, "invalid_json", "Failed to parse mars.json");
   }
 }
 
-async function readOmniRushConfigForStatus(workspaceRoot: string): Promise<{
+async function readMarsConfigForStatus(workspaceRoot: string): Promise<{
   data: Record<string, unknown>;
   error: string | null;
 }> {
   try {
-    return { data: await readOmniRushConfig(workspaceRoot), error: null };
+    return { data: await readMarsConfig(workspaceRoot), error: null };
   } catch (error) {
     if (error instanceof ApiError && error.code === "invalid_json") {
       return { data: {}, error: error.message };
@@ -5492,49 +5495,49 @@ async function readOmniRushConfigForStatus(workspaceRoot: string): Promise<{
 }
 
 /**
- * Resolve the effective per-workspace omnirush config from the runtime DB,
- * migrating a legacy `.opencode/omnirush.json` file into the DB on first read.
+ * Resolve the effective per-workspace mars config from the runtime DB,
+ * migrating a legacy `.opencode/mars.json` file into the DB on first read.
  *
  * The DB is the source of truth. The file is only consulted to seed the DB
  * once (back-compat for workspaces created before the file->DB migration), and
  * is never written afterwards. Returns the merged view ({...file, ...db}) so a
  * partially-migrated install still surfaces every key.
  */
-async function readOmniRushConfigForWorkspace(
+async function readMarsConfigForWorkspace(
   config: ServerConfig,
   workspace: WorkspaceInfo,
 ): Promise<Record<string, unknown>> {
-  const stored = await readOmniRushWorkspaceConfig(config, workspace.id);
-  if (Object.keys(stored).length > 0 || (await hasOmniRushWorkspaceConfig(config, workspace.id))) {
+  const stored = await readMarsWorkspaceConfig(config, workspace.id);
+  if (Object.keys(stored).length > 0 || (await hasMarsWorkspaceConfig(config, workspace.id))) {
     return stored;
   }
-  const legacy = await readOmniRushConfigForStatus(workspace.path);
+  const legacy = await readMarsConfigForStatus(workspace.path);
   if (Object.keys(legacy.data).length === 0) {
     if (workspace.workspaceType !== "remote" && workspace.path.trim()) {
-      return seedOmniRushWorkspaceConfigIfEmpty(
+      return seedMarsWorkspaceConfigIfEmpty(
         config,
         workspace.id,
-        defaultWorkspaceOmniRushConfig(workspace.path, workspace.preset ?? "starter"),
+        defaultWorkspaceMarsConfig(workspace.path, workspace.preset ?? "starter"),
       );
     }
     return {};
   }
   // Migrate-on-read: copy the legacy file contents into the DB once.
-  await seedOmniRushWorkspaceConfigIfEmpty(config, workspace.id, legacy.data);
-  return mergeOmniRushWorkspaceConfigs(legacy.data, await readOmniRushWorkspaceConfig(config, workspace.id));
+  await seedMarsWorkspaceConfigIfEmpty(config, workspace.id, legacy.data);
+  return mergeMarsWorkspaceConfigs(legacy.data, await readMarsWorkspaceConfig(config, workspace.id));
 }
 
 /**
- * Persist a full omnirush config document for a workspace to the runtime DB.
+ * Persist a full mars config document for a workspace to the runtime DB.
  * Replaces the legacy file write path; the file is no longer written.
  */
-async function writeOmniRushConfigForWorkspace(
+async function writeMarsConfigForWorkspace(
   config: ServerConfig,
   workspace: WorkspaceInfo,
   payload: Record<string, unknown>,
   merge: boolean,
 ): Promise<void> {
-  await writeOmniRushWorkspaceConfig(config, workspace.id, (current) =>
+  await writeMarsWorkspaceConfig(config, workspace.id, (current) =>
     merge ? { ...current, ...payload } : payload,
   );
 }
@@ -5570,7 +5573,7 @@ function buildOpencodeReloadUrl(baseUrl: string, directory?: string | null): str
     }
     return url.toString();
   } catch {
-    throw new ApiError(400, "opencode_url_invalid", "OmniRush base URL is invalid");
+    throw new ApiError(400, "opencode_url_invalid", "Mars base URL is invalid");
   }
 }
 
@@ -5589,7 +5592,7 @@ function parseOpencodeErrorBody(input: string): unknown {
 // dispose froze every later pass and the status it reports). Overridable for
 // tests.
 function opencodeDisposeTimeoutMs(): number {
-  const configured = Number(process.env.OMNIRUSH_ENGINE_DISPOSE_TIMEOUT_MS ?? "");
+  const configured = Number(process.env.MARS_ENGINE_DISPOSE_TIMEOUT_MS ?? "");
   return Number.isFinite(configured) && configured > 0 ? configured : 30_000;
 }
 
@@ -5619,7 +5622,7 @@ async function requireWorkspaceRunModeIdle(config: ServerConfig, workspace: Work
         throw new ApiError(409, "workspace_run_mode_activity_unknown", "Cannot verify that all workspace sessions are idle; no permission change was made.");
       }
       if (path === "/session/status" ? !isRecord(payload) || Object.values(payload).some((status) => !isRecord(status) || typeof status.type !== "string") : !Array.isArray(payload)) {
-        throw new ApiError(409, "workspace_run_mode_activity_unknown", "OmniRush returned unreadable workspace activity; no permission change was made.");
+        throw new ApiError(409, "workspace_run_mode_activity_unknown", "Mars returned unreadable workspace activity; no permission change was made.");
       }
       const busy = Array.isArray(payload) ? payload.length > 0 : isRecord(payload) && Object.values(payload).some((status) => isRecord(status) && status.type !== "idle");
       if (busy) throw new ApiError(409, "workspace_run_mode_busy", "Wait for all workspace sessions, including permission and question requests, to finish before changing run mode.");
@@ -5659,7 +5662,7 @@ export async function listEngineSessionsInFolder(
   const route = pool?.routeRequest("GET", "/experimental/session") ?? null;
   const connection = route ? null : resolveWorkspaceOpencodeConnection(config, workspace);
   const baseUrl = route?.target.baseUrl ?? connection?.baseUrl?.trim() ?? "";
-  if (!baseUrl) throw new ApiError(503, "opencode_unconfigured", "OmniRush base URL is missing for this workspace");
+  if (!baseUrl) throw new ApiError(503, "opencode_unconfigured", "Mars base URL is missing for this workspace");
   const headers = new Headers();
   // The header picks the folder's engine instance; with no `directory` query
   // the engine lists sessions of every folder and project.
@@ -5736,7 +5739,7 @@ async function engineInstanceHasActiveSessions(
     headers: { Authorization: buildEngineAuthProbeHeader(primary.username, primary.password) },
     signal: AbortSignal.timeout(5_000),
   });
-  if (!response.ok) throw new Error(`OmniRush session status probe failed with status ${response.status}`);
+  if (!response.ok) throw new Error(`Mars session status probe failed with status ${response.status}`);
   const payload: unknown = await response.json();
   if (!isRecord(payload)) return false;
   return Object.values(payload).some((status) => isRecord(status) && status.type !== "idle");
@@ -5765,7 +5768,7 @@ async function disposeIdleEngineInstance(
     headers: { Authorization: buildEngineAuthProbeHeader(primary.username, primary.password) },
     signal: AbortSignal.timeout(opencodeDisposeTimeoutMs()),
   });
-  if (!response.ok) throw new Error(`OmniRush instance dispose failed with status ${response.status}`);
+  if (!response.ok) throw new Error(`Mars instance dispose failed with status ${response.status}`);
 }
 
 /**
@@ -5876,7 +5879,7 @@ async function reloadOpencodeEngineInPlace(
   const connection = resolveWorkspaceOpencodeConnection(config, workspace);
   const baseUrl = connection.baseUrl?.trim() ?? "";
   if (!baseUrl) {
-    throw new ApiError(400, "opencode_unconfigured", "OmniRush base URL is missing for this workspace");
+    throw new ApiError(400, "opencode_unconfigured", "Mars base URL is missing for this workspace");
   }
 
   const directory = resolveOpencodeDirectory(workspace);
@@ -5903,20 +5906,20 @@ async function reloadOpencodeEngineInPlace(
       throw new ApiError(
         504,
         "opencode_reload_timeout",
-        "OmniRush dispose did not complete in time; the reload stays pending",
+        "Mars dispose did not complete in time; the reload stays pending",
         { baseUrl },
       );
     }
     throw new ApiError(
       503,
       "opencode_engine_unreachable",
-      "OmniRush engine is not reachable; a full engine restart is required",
+      "Mars engine is not reachable; a full engine restart is required",
       { baseUrl, cause: error instanceof Error ? error.message : String(error) },
     );
   }
   if (!response.ok) {
     const body = parseOpencodeErrorBody(await response.text());
-    throw new ApiError(502, "opencode_reload_failed", "OmniRush reload failed", {
+    throw new ApiError(502, "opencode_reload_failed", "Mars reload failed", {
       status: response.status,
       body,
     });
@@ -5952,7 +5955,7 @@ async function postEngineRefreshSync(
   activeState: EngineMcpServerState | undefined,
 ): Promise<void> {
   const directory = resolveOpencodeDirectory(workspace);
-  markOmniRushCloudMcpStale(workspace, directory);
+  markMarsCloudMcpStale(workspace, directory);
   return enqueueWorkspaceMcpRefreshSync({
     config,
     workspace,
@@ -6001,7 +6004,7 @@ async function runWorkspaceMcpRefreshSync(input: WorkspaceMcpRefreshRequest): Pr
     logRuntimeMcpSyncError({ config, workspace, trigger, error });
   }
   try {
-    const health = await reconcilePersistedOmniRushCloudMcp({
+    const health = await reconcilePersistedMarsCloudMcp({
       config,
       workspace,
       directory,
@@ -6028,7 +6031,7 @@ async function runWorkspaceMcpRefreshSync(input: WorkspaceMcpRefreshRequest): Pr
   // reporting a phantom "changed" (which would schedule yet another reload).
   try {
     if (trigger === "engine_reload") {
-      await writeOmniRushRuntimeConfigFile(config);
+      await writeMarsRuntimeConfigFile(config);
     }
   } catch {
     // Best-effort: the fresh-keeper listener still converges eventually.
@@ -6129,7 +6132,7 @@ async function runRuntimeMcpSyncToOpencodeEngine(
   if (connection.authHeader) headers.Authorization = connection.authHeader;
 
   // Keep going past per-entry failures: one dead or invalid MCP must not
-  // block re-registration of every entry after it (e.g. omnirush-ui) on
+  // block re-registration of every entry after it (e.g. mars-ui) on
   // each engine reload.
   const failures: EngineMcpSyncFailure[] = [];
   const registrations: EngineMcpRegistrationResult[] = [];
@@ -6302,7 +6305,7 @@ async function postMcpEntryWithRetry(
         name,
         status: response.status,
         registrationStatus: "failed",
-        message: "OmniRush rejected the MCP registration request",
+        message: "Mars rejected the MCP registration request",
       };
       if (response.status < 500) return { name, status: "failed", source: "transport_failure", errorSummary: null, failure };
     } catch (error) {
@@ -6310,7 +6313,7 @@ async function postMcpEntryWithRetry(
       failure = {
         name,
         registrationStatus: "failed",
-        message: "OmniRush MCP registration request failed",
+        message: "Mars MCP registration request failed",
       };
     }
   }
@@ -6322,7 +6325,7 @@ async function postMcpEntryWithRetry(
     failure: failure ?? {
       name,
       registrationStatus: "failed",
-      message: "OmniRush MCP registration request failed",
+      message: "Mars MCP registration request failed",
     },
   };
 }
@@ -6422,7 +6425,7 @@ async function readBoundedEngineMcpRegistrationResponse(response: Response): Pro
     const parsedLength = Number(contentLength);
     if (Number.isFinite(parsedLength) && parsedLength > ENGINE_MCP_REGISTRATION_RESPONSE_MAX_BYTES) {
       await response.body?.cancel().catch(() => undefined);
-      throw new Error("OmniRush MCP registration response exceeded the size limit");
+      throw new Error("Mars MCP registration response exceeded the size limit");
     }
   }
   if (!response.body) return "";
@@ -6438,7 +6441,7 @@ async function readBoundedEngineMcpRegistrationResponse(response: Response): Pro
       bytesRead += chunk.value.byteLength;
       if (bytesRead > ENGINE_MCP_REGISTRATION_RESPONSE_MAX_BYTES) {
         await reader.cancel().catch(() => undefined);
-        throw new Error("OmniRush MCP registration response exceeded the size limit");
+        throw new Error("Mars MCP registration response exceeded the size limit");
       }
       chunks.push(decoder.decode(chunk.value, { stream: true }));
     }
@@ -6451,12 +6454,12 @@ async function readBoundedEngineMcpRegistrationResponse(response: Response): Pro
 
 // Read lazily so tests can shrink the delay at runtime.
 function engineMcpSyncRetryDelayMs(): number {
-  const parsed = Number(process.env.OMNIRUSH_MCP_SYNC_RETRY_DELAY_MS ?? "750");
+  const parsed = Number(process.env.MARS_MCP_SYNC_RETRY_DELAY_MS ?? "750");
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 750;
 }
 
 function engineMcpDeferredSyncDelayMs(): number {
-  const parsed = Number(process.env.OMNIRUSH_MCP_SYNC_DEFERRED_DELAY_MS ?? "12000");
+  const parsed = Number(process.env.MARS_MCP_SYNC_DEFERRED_DELAY_MS ?? "12000");
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 12_000;
 }
 
@@ -6565,7 +6568,7 @@ type EngineMcpServerState = {
 const ENGINE_MCP_REGISTRATION_MAX_AGE_MS = 15 * 60_000;
 // Registration status is point-in-time evidence from a dynamic POST /mcp,
 // not a durable statement about a later engine process. Scope it to one
-// OmniRush.ai server generation and expire it even when the endpoint is stable.
+// MarsAI server generation and expire it even when the endpoint is stable.
 const engineMcpServerStateByConfig = new WeakMap<ServerConfig, EngineMcpServerState>();
 const trustedOpencodeProcessByConfig = new WeakMap<ServerConfig, TrustedOpencodeProcessIdentity>();
 let nextEngineMcpServerGeneration = 0;
@@ -6593,7 +6596,7 @@ function clearEngineMcpServerEvidence(state: EngineMcpServerState): void {
 
 /**
  * Bind diagnostics evidence to one OpenCode process generation owned by this
- * OmniRush.ai server. The opaque identity is hashed immediately and never
+ * MarsAI server. The opaque identity is hashed immediately and never
  * reported. External engines without a trusted per-boot identity still hot
  * sync normally, but their cached registration result cannot authorize a
  * credentialed diagnostics probe.
@@ -6642,7 +6645,7 @@ export function createEnginePoolForConfig(input: {
 }): EnginePool {
   const { config } = input;
   const logger = createServerLogger(config);
-  // Thread approvals live in OmniRush.ai because the engine forgets an "always"
+  // Thread approvals live in MarsAI because the engine forgets an "always"
   // reply whenever this pool rebuilds an instance or rolls over.
   let threadApprovals: ThreadApprovalReplayer | null = null;
   const pool = new EnginePool({
@@ -6681,7 +6684,7 @@ export function createEnginePoolForConfig(input: {
           "provider.auth.failed": result.failed.length,
         });
       },
-      writeRuntimeConfigFile: (poolConfig) => writeOmniRushRuntimeConfigFile(poolConfig),
+      writeRuntimeConfigFile: (poolConfig) => writeMarsRuntimeConfigFile(poolConfig),
       registerTrusted: (poolConfig, generation) => registerTrustedOpencodeProcess(poolConfig, generation),
       clearTrusted: (poolConfig, identity) => clearTrustedOpencodeProcess(poolConfig, identity),
       logger,
@@ -6792,7 +6795,7 @@ function reconcileEngineMcpWorkspaceIdentity(
 }
 
 function engineMcpRegistrationMaxAgeMs(): number {
-  const configured = Number(process.env.OMNIRUSH_MCP_REGISTRATION_MAX_AGE_MS);
+  const configured = Number(process.env.MARS_MCP_REGISTRATION_MAX_AGE_MS);
   if (!Number.isFinite(configured) || configured < 1) return ENGINE_MCP_REGISTRATION_MAX_AGE_MS;
   return Math.min(ENGINE_MCP_REGISTRATION_MAX_AGE_MS, Math.round(configured));
 }
@@ -7130,7 +7133,7 @@ function logPersistedCloudMcpReconcileResult(input: {
     `Cloud MCP ${input.trigger} reconciliation left connected service tools unavailable for workspace ${input.workspace.id}.`,
     {
       "workspace.id": input.workspace.id,
-      "mcp.name": "omnirush-cloud",
+      "mcp.name": "mars-cloud",
       "mcp.trigger": input.trigger,
       "mcp.failure.code": failure?.code ?? "unknown",
       "mcp.failure.stage": failure?.stage ?? "unknown",
@@ -7186,7 +7189,7 @@ function logPersistedCloudMcpReconcileError(input: {
     `Cloud MCP ${input.trigger} reconciliation crashed for workspace ${input.workspace.id}.`,
     {
       "workspace.id": input.workspace.id,
-      "mcp.name": "omnirush-cloud",
+      "mcp.name": "mars-cloud",
       "mcp.trigger": input.trigger,
       "mcp.failure.code": "cloud_mcp_reconcile_exception",
       "mcp.failure.message": input.error instanceof Error ? input.error.message : String(input.error),
@@ -7199,7 +7202,7 @@ function logPersistedCloudMcpReconcileError(input: {
 // only, so other workspaces' runtime MCPs are invisible to the engine until
 // something re-syncs them. Best-effort.
 export async function syncAllWorkspacesRuntimeMcpToEngine(config: ServerConfig): Promise<void> {
-  await migrateOmniRushCloudMcpRuntimeConfig(config);
+  await migrateMarsCloudMcpRuntimeConfig(config);
   await migrateWorkspaceRuntimeConfigToEngineGlobal(config);
   const serverState = activeEngineMcpServerState(config);
   for (const workspace of config.workspaces) {
@@ -7288,7 +7291,7 @@ async function exportWorkspace(
   const sensitiveMode = options?.sensitiveMode ?? "auto";
   const rawOpencode = await readOpencodeConfig(workspace.path);
   let opencode = sanitizePortableOpencodeConfig(rawOpencode);
-  const omnirush = sanitizeOmniRushTemplateConfig(await readOmniRushConfigForWorkspace(config, workspace));
+  const mars = sanitizeMarsTemplateConfig(await readMarsConfigForWorkspace(config, workspace));
   const skills = await listSkills(workspace.path, false);
   const commands = await listCommands(workspace.path, "workspace");
   let files = await listPortableFiles(workspace.path);
@@ -7325,7 +7328,7 @@ async function exportWorkspace(
     workspaceId: workspace.id,
     exportedAt: Date.now(),
     opencode,
-    omnirush,
+    mars,
     skills: skillContents,
     commands: commandContents,
     ...(files.length ? { files } : {}),

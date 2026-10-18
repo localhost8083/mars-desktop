@@ -1,8 +1,8 @@
 export type ThemeMode = "light" | "dark" | "system";
 export type ResolvedThemeMode = "light" | "dark";
 
-const THEME_PREF_KEY = "omnirush.react.settings.theme-mode";
-const LEGACY_THEME_PREF_KEYS = ["omnirush.themePref"];
+const THEME_PREF_KEY = "mars.react.settings.theme-mode";
+const LEGACY_THEME_PREF_KEYS = ["mars.themePref"];
 
 const mediaQuery = "(prefers-color-scheme: dark)";
 const listeners = new Set<() => void>();
@@ -58,7 +58,7 @@ const emitThemeChange = () => {
 
 const syncNativeTheme = (mode: ThemeMode) => {
   if (typeof window === "undefined") return;
-  void window.__OMNIRUSH_ELECTRON__?.invokeDesktop?.("__setNativeTheme", mode);
+  void window.__MARS_ELECTRON__?.invokeDesktop?.("__setNativeTheme", mode);
 };
 
 const getCurrentMode = () => {

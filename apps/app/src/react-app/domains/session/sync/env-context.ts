@@ -1,14 +1,14 @@
 import { sideChatSystemContext } from "../chat/workbench-store";
-import type { OmniRushServerClient } from "../../../../app/lib/omnirush-server";
-import { readOmniRushEnvPendingChanges } from "../../../../app/lib/omnirush-env-runtime";
-import { readOmniRushRuntimeFacts, renderOmniRushRuntimeContext } from "./runtime-context";
+import type { MarsServerClient } from "../../../../app/lib/mars-server";
+import { readMarsEnvPendingChanges } from "../../../../app/lib/mars-env-runtime";
+import { readMarsRuntimeFacts, renderMarsRuntimeContext } from "./runtime-context";
 
-const DEFAULT_CACHE_KEY = "__omnirush_env_default__";
+const DEFAULT_CACHE_KEY = "__mars_env_default__";
 const MAX_CONTEXT_CACHE_ENTRIES = 100;
 
 const envSystemContextCache = new Map<string, string | undefined>();
 
-export function clearOmniRushEnvSystemContextCache(): void {
+export function clearMarsEnvSystemContextCache(): void {
   envSystemContextCache.clear();
 }
 
@@ -23,8 +23,8 @@ function normalizeEnvKeys(keys: string[]): string[] {
   ).sort((a, b) => a.localeCompare(b));
 }
 
-export async function buildOmniRushEnvSystemContext(
-  client: OmniRushServerClient | null,
+export async function buildMarsEnvSystemContext(
+  client: MarsServerClient | null,
   options: {
     cacheKey?: string;
     runtimeKey?: string | null;
@@ -33,7 +33,7 @@ export async function buildOmniRushEnvSystemContext(
 ): Promise<string | undefined> {
   if (!client) return undefined;
   const readPendingChanges = options.readPendingChanges ??
-    (() => readOmniRushEnvPendingChanges(options.runtimeKey));
+    (() => readMarsEnvPendingChanges(options.runtimeKey));
   if (readPendingChanges()) return undefined;
 
   const cacheKey = `${client.baseUrl}:${options.cacheKey ?? DEFAULT_CACHE_KEY}`;
@@ -52,7 +52,7 @@ export async function buildOmniRushEnvSystemContext(
     const keyList = keys.map((key) => `- ${key}`).join("\n");
 
     const context = [
-      "omnirush.ai environment variables configured:",
+      "marsai.click environment variables configured:",
       keyList,
       "Only names are shown; values are secret. Use these names when relevant.",
     ].join("\n");
@@ -77,8 +77,8 @@ function rememberEnvSystemContext(cacheKey: string, context: string | undefined)
  * crosses midnight correctly), followed by the cached environment-key names
  * when the workspace has any.
  */
-export async function buildOmniRushSessionSystemContext(
-  client: OmniRushServerClient | null,
+export async function buildMarsSessionSystemContext(
+  client: MarsServerClient | null,
   options: {
     workspaceId?: string;
     cacheKey?: string;
@@ -86,8 +86,8 @@ export async function buildOmniRushSessionSystemContext(
     readPendingChanges?: () => boolean;
   } = {},
 ): Promise<string> {
-  const envContext = await buildOmniRushEnvSystemContext(client, options);
-  const runtimeContext = renderOmniRushRuntimeContext(readOmniRushRuntimeFacts());
+  const envContext = await buildMarsEnvSystemContext(client, options);
+  const runtimeContext = renderMarsRuntimeContext(readMarsRuntimeFacts());
   const sideChatContext = options.workspaceId && options.cacheKey
     ? sideChatSystemContext(options.workspaceId, options.cacheKey) : undefined;
   return [runtimeContext, envContext, sideChatContext].filter(Boolean).join("\n\n");

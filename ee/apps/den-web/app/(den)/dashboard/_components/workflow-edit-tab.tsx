@@ -1,7 +1,7 @@
 "use client";
 
 import { Save, TestTube2 } from "lucide-react";
-import type { WorkflowCapability, WorkflowDetail, WorkflowTestResult } from "@omnirush/types/workflows";
+import type { WorkflowCapability, WorkflowDetail, WorkflowTestResult } from "@mars/types/workflows";
 import { DenButton } from "../../_components/ui/button";
 import { DenCard } from "../../_components/ui/card";
 import { DenChip } from "../../_components/ui/chip";

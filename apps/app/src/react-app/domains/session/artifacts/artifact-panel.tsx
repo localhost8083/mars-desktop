@@ -3,7 +3,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Ellipsis, ExternalLink, FolderOpen, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 
-import type { OmniRushServerClient, OmniRushWorkspaceCatalogEntry } from "@/app/lib/omnirush-server";
+import type { MarsServerClient, MarsWorkspaceCatalogEntry } from "@/app/lib/mars-server";
 import { openDesktopPath, revealDesktopItemInDir } from "@/app/lib/desktop";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,7 +36,7 @@ const EMPTY_TRANSCRIPT_TARGETS: OpenTarget[] = [];
 type ArtifactPanelProps = {
   sessionId: string;
   tab: ArtifactPanelTab;
-  client: OmniRushServerClient | null;
+  client: MarsServerClient | null;
   workspaceId: string | null;
   workspaceRoot: string;
   isRemoteWorkspace?: boolean;
@@ -45,7 +45,7 @@ type ArtifactPanelProps = {
 
 type ArtifactPanelViewProps = {
   sessionId: string;
-  client: OmniRushServerClient;
+  client: MarsServerClient;
   workspaceId: string;
   workspaceRoot: string;
   isRemoteWorkspace?: boolean;
@@ -109,7 +109,7 @@ function ArtifactPanelView({ sessionId, client, workspaceId, workspaceRoot, isRe
   const canUseDesktopFileActions = target.kind === "file" && canUseDesktopWorkspaceActions;
   const workspaceName = workspaceRoot.split(/[/\\]/).filter(Boolean).pop() ?? "Workspace";
 
-  const omniRushspaceFile = (entry: { path: string; size: number; mtimeMs: number }) => {
+  const marsspaceFile = (entry: { path: string; size: number; mtimeMs: number }) => {
     const nextTarget = openTargetFromWorkspaceFile(entry.path, { size: entry.size, updatedAt: entry.mtimeMs });
     if (!nextTarget) return;
     usePanelTabStore.getState().openTab(sessionId, {
@@ -386,13 +386,13 @@ function ArtifactPanelView({ sessionId, client, workspaceId, workspaceRoot, isRe
               workspaceId={workspaceId}
               workspaceName={workspaceName}
               selectedPath={target.value}
-              onOpenFile={omniRushspaceFile}
+              onOpenFile={marsspaceFile}
               fileActions={[
                 { id: "download", label: "Download", run: (entry) => void downloadFile(entry.path, entry.path.split(/[/\\]/).pop() ?? entry.path) },
                 ...(canUseDesktopWorkspaceActions
                   ? [
-                    { id: "reveal", label: "Show in folder", run: (entry: OmniRushWorkspaceCatalogEntry) => void revealFile(entry.path) },
-                    { id: "open-external", label: "Open externally", run: (entry: OmniRushWorkspaceCatalogEntry) => void openFileExternally(entry.path) },
+                    { id: "reveal", label: "Show in folder", run: (entry: MarsWorkspaceCatalogEntry) => void revealFile(entry.path) },
+                    { id: "open-external", label: "Open externally", run: (entry: MarsWorkspaceCatalogEntry) => void openFileExternally(entry.path) },
                   ]
                   : []),
               ]}

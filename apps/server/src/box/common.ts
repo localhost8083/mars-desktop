@@ -1,10 +1,10 @@
-// Ported from the CLI (omnirush-cli src/box/common.js,
+// Ported from the CLI (mars-cli src/box/common.js,
 // feat/local-box-backends); keep the two in step. Desktop differences, each
 // marked "Desktop:": types; the helpers' folder is the desktop's sidecars
 // (setToolsRoot) and there is no checkout box/bin fallback beyond
-// OMNIRUSH_BOX_BIN_DIR (helperPath is null when missing); the shell link
+// MARS_BOX_BIN_DIR (helperPath is null when missing); the shell link
 // lives in <home>/shell-desktop (the CLI's own is <home>/shell); a
-// container-name prefix override for test rigs (OMNIRUSH_BOX_CONTAINER_PREFIX).
+// container-name prefix override for test rigs (MARS_BOX_CONTAINER_PREFIX).
 //
 // Shared by the box and its backends: where things are, the helper
 // binaries, the box record, small file helpers.
@@ -21,10 +21,10 @@ type Env = NodeJS.ProcessEnv;
 export type BoxLog = (level: "info" | "warn" | "error", message: string, attributes?: Record<string, unknown>) => void;
 
 export const RECORD_SCHEMA = 2;
-export const LABEL = "ai.omnirush.box";
+export const LABEL = "ai.mars.box";
 export const BOX_PORT = 7777;
-export const RUN_DIR = "/run/omnirush";
-export const SHIMS_DIR = "/opt/omnirush/pkglog";
+export const RUN_DIR = "/run/mars";
+export const SHIMS_DIR = "/opt/mars/pkglog";
 export const HOME_IN_BOX = "/root";
 /** One snapshot tar past this is cut (system paths first, then dependency folders). */
 export const TAR_MAX_BYTES = 256 * 1024 * 1024;
@@ -42,7 +42,7 @@ export type BoxInstallLog = { root: string; bin: string; py: string };
 // --- where things are ------------------------------------------------------
 
 export function boxHome(env: Env = process.env, home = os.homedir()): string {
-  return path.resolve(String(env.OMNIRUSH_BOX_HOME || "").trim() || path.join(home, ".omnirush", "box"));
+  return path.resolve(String(env.MARS_BOX_HOME || "").trim() || path.join(home, ".mars", "box"));
 }
 
 /** The canonical form of a project folder (the box key hashes it). */
@@ -56,10 +56,10 @@ export function boxKey(root: string, opts: { platform?: NodeJS.Platform; realpat
   return createHash("sha256").update(canonicalRoot(root, opts)).digest("hex").slice(0, 12);
 }
 
-/** Desktop: OMNIRUSH_BOX_CONTAINER_PREFIX renames the containers (test rigs on shared machines). */
+/** Desktop: MARS_BOX_CONTAINER_PREFIX renames the containers (test rigs on shared machines). */
 export function containerName(key: string, env: Env = process.env): string {
-  const prefix = String(env.OMNIRUSH_BOX_CONTAINER_PREFIX || "").trim();
-  return `${/^[a-z0-9][a-z0-9_.-]*$/.test(prefix) ? prefix : "omnirush-box-"}${key}`;
+  const prefix = String(env.MARS_BOX_CONTAINER_PREFIX || "").trim();
+  return `${/^[a-z0-9][a-z0-9_.-]*$/.test(prefix) ? prefix : "mars-box-"}${key}`;
 }
 
 /** Where the project folder is inside: the same path; on Windows C:\x\y -> /c/x/y. */
@@ -106,12 +106,12 @@ export const GOOS: Partial<Record<string, string>> = { linux: "linux", darwin: "
 export const GOARCH: Partial<Record<string, string>> = { x64: "amd64", arm64: "arm64", amd64: "amd64", aarch64: "arm64" };
 
 /**
- * Folders holding the helpers, best first: OMNIRUSH_BOX_BIN_DIR, then the
+ * Folders holding the helpers, best first: MARS_BOX_BIN_DIR, then the
  * desktop's sidecars folder's box/ (setToolsRoot). Each has
  * <goos>-<goarch>/boxsh, linux-<arch>/boxd and linux-<arch>/boxrun.
  */
 export function helperDirs({ env = process.env, toolsRoot = null }: { env?: Env; toolsRoot?: string | null } = {}): string[] {
-  const asked = String(env.OMNIRUSH_BOX_BIN_DIR || "").trim();
+  const asked = String(env.MARS_BOX_BIN_DIR || "").trim();
   return [...(asked ? [asked] : []), ...(toolsRoot ? [path.join(toolsRoot, "box")] : [])];
 }
 

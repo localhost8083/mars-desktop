@@ -16,6 +16,13 @@ import {
   type ComposerSettingsSection,
 } from "@/react-app/domains/settings/library";
 import { ModelSelect } from "@/components/model-select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { LexicalPromptEditor, syncAttachmentChipStatus, type ComposerAttachmentToken, type LexicalPromptEditorHandle } from "./editor";
 import { listRunningAppsForMention } from "./app-mentions";
 import { COMPUTER_MENTIONS } from "./computer-mentions";
@@ -75,8 +82,8 @@ type ComposerProps = {
   modelOptions?: readonly ModelOption[];
   /** When set, the full model picker opened from here targets this session. */
   sessionId?: string;
-  omniRushModelsEntitled?: boolean;
-  omniRushModelsSyncing?: boolean;
+  marsModelsEntitled?: boolean;
+  marsModelsSyncing?: boolean;
   onRefreshOrganizationModels?: () => void | Promise<void>;
   onModelPickerOpenChange: (open: boolean) => void;
   onModelChange: (model: ModelRef, variant?: string | null) => void;
@@ -136,9 +143,53 @@ type ComposerProps = {
   voiceWorkspaceId?: string | null;
 };
 
-const FLUSH_PROMPT_EVENT = "omnirush:flushPromptDraft";
-const FOCUS_PROMPT_EVENT = "omnirush:focusPrompt";
-const DEFAULT_AGENT_NAME = "omnirush";
+const FLUSH_PROMPT_EVENT = "mars:flushPromptDraft";
+const FOCUS_PROMPT_EVENT = "mars:focusPrompt";
+const DEFAULT_AGENT_NAME = "mars";
+
+/**
+ * Reasoning effort, split out of the model menu: the model selector lists
+ * models only, and this pill next to it picks the selected model's effort
+ * level. Hidden when the selected model offers no effort levels.
+ */
+function EffortSelect(props: {
+  label: string;
+  options: { value: string | null; label: string }[];
+  value: string | null;
+  disabled?: boolean;
+  onChange: (value: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const current = props.value ?? props.options[0]?.value ?? null;
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger
+        disabled={props.disabled}
+        aria-label="Reasoning effort"
+        data-testid="effort-select-trigger"
+        className="flex h-9 max-h-9 min-w-9 max-w-40 shrink items-center gap-1 overflow-hidden rounded-md px-2.5 text-sm text-gray-10 transition-colors hover:bg-gray-3 hover:text-gray-12 disabled:pointer-events-none disabled:opacity-60"
+      >
+        <span className="min-w-0 truncate">{props.label}</span>
+        <ChevronDown className="h-3 w-3 shrink-0" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-44 p-1">
+        <DropdownMenuRadioGroup
+          value={current ?? ""}
+          onValueChange={(next) => {
+            setOpen(false);
+            props.onChange(next === "" ? null : next);
+          }}
+        >
+          {props.options.map((option) => (
+            <DropdownMenuRadioItem key={option.value ?? ""} value={option.value ?? ""}>
+              {option.label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 function isNonDefaultAgent(agent: Agent) {
   return agent.name !== DEFAULT_AGENT_NAME;
@@ -174,7 +225,7 @@ function isImageAttachment(attachment: ComposerAttachment) {
 }
 
 function isLocalCapability(origin: SkillCard["origin"] | McpServerEntry["origin"]) {
-  return origin !== "omnirush-connect";
+  return origin !== "mars-connect";
 }
 
 function formatPluginObjectType(type: string) {
@@ -795,7 +846,7 @@ export const ReactSessionComposer = memo(function ReactSessionComposer(props: Co
       origin: "local" as const,
     })),
     ...skills.filter((skill) =>
-      skill.origin === "omnirush-connect" || !localCommandSkillNames.has(skill.name)
+      skill.origin === "mars-connect" || !localCommandSkillNames.has(skill.name)
     ),
   ];
   const connectionInventory = useMemo(
@@ -908,7 +959,7 @@ export const ReactSessionComposer = memo(function ReactSessionComposer(props: Co
     const skill = typeof input === "string"
       ? { name: input, path: "", origin: "local" as const }
       : input;
-    if (skill.origin === "omnirush-connect") {
+    if (skill.origin === "mars-connect") {
       const slug = skillSlashCommandName(skill);
       const token = encodeConnectSkillToken({
         slug,
@@ -948,11 +999,11 @@ export const ReactSessionComposer = memo(function ReactSessionComposer(props: Co
   };
 
   const applyPluginFileSelection = (file: CloudImportedPluginFile) => {
-    if (file.skillOrigin === "omnirush-connect") {
+    if (file.skillOrigin === "mars-connect") {
       applySkillSelection({
         name: file.skillName ?? file.title,
         path: file.path,
-        origin: "omnirush-connect",
+        origin: "mars-connect",
         marketplaceName: file.marketplaceName,
         pluginName: file.pluginName,
         connectCapabilityName: file.connectCapabilityName,
@@ -1618,7 +1669,7 @@ export const ReactSessionComposer = memo(function ReactSessionComposer(props: Co
                                         ) : null}
                                       </div>
                                       {skill.description ? <div className="truncate text-xs text-gray-10">{skill.description}</div> : null}
-                                      {skill.origin === "omnirush-connect" ? (
+                                      {skill.origin === "mars-connect" ? (
                                         <div className="truncate text-[10px] text-gray-9">
                                           {[skill.marketplaceName, skill.pluginName].filter(Boolean).join(" · ")}
                                         </div>
@@ -1809,8 +1860,8 @@ export const ReactSessionComposer = memo(function ReactSessionComposer(props: Co
                   }}
                   disabled={props.steering}
                   sessionId={props.sessionId}
-                  omniRushModelsEntitled={props.omniRushModelsEntitled}
-                  omniRushModelsSyncing={props.omniRushModelsSyncing}
+                  marsModelsEntitled={props.marsModelsEntitled}
+                  marsModelsSyncing={props.marsModelsSyncing}
                   fallbackOptions={props.modelOptions}
                   behaviorValue={props.modelVariant}
                   behaviorLabel={props.modelVariantLabel}
@@ -1819,6 +1870,17 @@ export const ReactSessionComposer = memo(function ReactSessionComposer(props: Co
                     if (!props.steering) props.onModelVariantChange(value);
                   }}
                 />
+                {props.modelBehaviorOptions && props.modelBehaviorOptions.length > 0 ? (
+                  <EffortSelect
+                    label={props.modelVariantLabel}
+                    options={props.modelBehaviorOptions}
+                    value={props.modelVariant}
+                    disabled={props.steering}
+                    onChange={(value) => {
+                      if (!props.steering) props.onModelVariantChange(value);
+                    }}
+                  />
+                ) : null}
                 {props.subagentModelControl}
                 {props.fullPermissionsControl}
                 {props.sandboxControl}

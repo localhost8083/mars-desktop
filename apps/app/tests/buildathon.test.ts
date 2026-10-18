@@ -48,15 +48,15 @@ function memoryStorage(initial: Record<string, string> = {}) {
 
 const EVENT: BuildathonEvent = {
   id: "frontier-2026",
-  name: "OmniRush Frontier Buildathon 2026",
+  name: "Mars Frontier Buildathon 2026",
   startsAt: "2026-10-13T18:30:00Z",
   registrationEndsAt: "2026-10-19T18:29:59Z",
   deadlineAt: "2026-10-20T18:29:59Z",
   resultsAt: "2026-10-25T06:30:00Z",
   phase: "building",
   pageUrl: "https://unstop.com/p/x",
-  submitUrl: "https://omnirush.ai/console/buildathon",
-  rules: ["Individual only.", "OmniRush must be the only generative AI tool you use."],
+  submitUrl: "https://marsai.click/console/buildathon",
+  rules: ["Individual only.", "Mars must be the only generative AI tool you use."],
   tracks: [{ id: "agents", label: "Agents & Automation" }, { id: "devtools", label: "Developer Tools & Open Source" }],
   reminders: [
     { beforeSeconds: 86_400, text: "24 hours left" },
@@ -212,7 +212,7 @@ describe("reproducibility mode: buildathon projects", () => {
   });
 
   test("older entries (the track alone) still read", () => {
-    const storage = memoryStorage({ "omnirush.buildathon.tracks.v1": JSON.stringify({ "/p/old": "agents" }) });
+    const storage = memoryStorage({ "mars.buildathon.tracks.v1": JSON.stringify({ "/p/old": "agents" }) });
     expect(readProjectTrack("/p/old", storage)).toBe("agents");
     expect(buildathonProjectPaths(EVENT, readProjectEntries(storage))).toEqual(["/p/old"]);
   });
@@ -242,7 +242,7 @@ describe("reproducibility mode: buildathon projects", () => {
 describe("promo (non-participants)", () => {
   const promo: BuildathonPromo = {
     id: "frontier-2026-reg", title: "Frontier Buildathon 2026", text: "$300 prize pool", ctaLabel: "Join the Buildathon",
-    ctaUrl: "https://omnirush.ai/buildathon", endsAt: "2026-10-19T18:29:59Z", join: false, joinUrl: null,
+    ctaUrl: "https://marsai.click/buildathon", endsAt: "2026-10-19T18:29:59Z", join: false, joinUrl: null,
   };
   const before = Date.parse("2026-10-15T00:00:00Z");
 

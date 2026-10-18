@@ -56,7 +56,7 @@ export function iframeAllowsTools(allow, parentOrigin, childOrigin, sourceOrigin
 }
 
 async function readIsolatedFramePolicy(frame, childIndex = null) {
-  const replyChannel = `omnirush:webmcp:policy-result:${randomUUID()}`;
+  const replyChannel = `mars:webmcp:policy-result:${randomUUID()}`;
   let ipc;
   let listener;
   let timer;
@@ -70,7 +70,7 @@ async function readIsolatedFramePolicy(frame, childIndex = null) {
       listener = (event, value) => resolve(event.senderFrame === frame ? value : null);
       ipc.once(replyChannel, listener);
       timer = setTimeout(() => resolve(null), 3_000);
-      frame.send("omnirush:webmcp:read-policy", replyChannel, childIndex);
+      frame.send("mars:webmcp:read-policy", replyChannel, childIndex);
     });
     if (frame.detached || frame.isDestroyed() || frame.origin !== origin || frame.url !== url) return null;
     return result;

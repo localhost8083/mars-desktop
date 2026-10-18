@@ -2,12 +2,12 @@
 import { useCallback, useMemo } from "react";
 
 import type { createClient } from "../../../../app/lib/opencode";
-import type { OmniRushServerClient, OmniRushWorkspaceInfo } from "../../../../app/lib/omnirush-server";
+import type { MarsServerClient, MarsWorkspaceInfo } from "../../../../app/lib/mars-server";
 import { deleteRouteSession } from "../../../shell/route-workspaces";
 import { setSessionArchived } from "../../../../app/lib/opencode-session";
 import type { ResolvedWorkspaceEndpoint } from "../../../../app/lib/workspace-endpoint";
 import { getDisplaySessionTitle } from "../../../../app/lib/session-title";
-import { useControlAction, type OmniRushControlAction } from "../../../shell/control/control-provider";
+import { useControlAction, type MarsControlAction } from "../../../shell/control/control-provider";
 import { useSessionManagementStore } from "../sidebar/session-management-store";
 import { isSameWorkbenchSession, useWorkbenchStore } from "../chat/workbench-store";
 
@@ -20,7 +20,7 @@ type SessionLike = {
   };
 };
 
-type SessionControlWorkspace = OmniRushWorkspaceInfo & {
+type SessionControlWorkspace = MarsWorkspaceInfo & {
   displayNameResolved: string;
 };
 
@@ -31,7 +31,7 @@ type UseSessionControlActionsInput = {
   selectedWorkspaceRoot: string;
   selectedSessionId: string | null;
   canCreateTask: boolean;
-  omnirushClient: OmniRushServerClient | null;
+  marsClient: MarsServerClient | null;
   opencodeClient: ReturnType<typeof createClient> | null;
   archiveDisabledReason?: string;
   endpointForWorkspace: (workspace: SessionControlWorkspace | null | undefined) => ResolvedWorkspaceEndpoint | null;
@@ -80,7 +80,7 @@ export function useSessionControlActions(input: UseSessionControlActionsInput) {
     navigateToSession,
     navigateToSessionRoot,
     openModelPicker,
-    omnirushClient,
+    marsClient,
     opencodeClient,
     archiveDisabledReason,
     refreshRouteState,
@@ -92,7 +92,7 @@ export function useSessionControlActions(input: UseSessionControlActionsInput) {
   } = input;
   const pinnedIds = useSessionManagementStore((s) => s.pinnedIds);
 
-  const createTaskControlAction = useMemo<OmniRushControlAction>(() => ({
+  const createTaskControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.create_task",
     label: "Create a new task",
     description: "Create a new session in the selected workspace.",
@@ -107,7 +107,7 @@ export function useSessionControlActions(input: UseSessionControlActionsInput) {
   }), [canCreateTask, createTaskInWorkspace, selectedWorkspaceId]);
   useControlAction(createTaskControlAction);
 
-  const listSessionsControlAction = useMemo<OmniRushControlAction>(() => ({
+  const listSessionsControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.list_sessions",
     label: "List available sessions",
     description: "Return sessions across workspaces. Entries include `pinned`, and pinned sessions come first.",
@@ -132,7 +132,7 @@ export function useSessionControlActions(input: UseSessionControlActionsInput) {
   }), [pinnedIds, sessionsByWorkspaceId, workspaces]);
   useControlAction(listSessionsControlAction);
 
-  const openSessionControlAction = useMemo<OmniRushControlAction>(() => ({
+  const openSessionControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.open",
     label: "Open a session by ID",
     description: "Focus a visible session or reuse its existing tab. Use list_sessions first to get the session ID.",
@@ -169,7 +169,7 @@ export function useSessionControlActions(input: UseSessionControlActionsInput) {
   }), [navigateToSession, sessionsByWorkspaceId, workspaces]);
   useControlAction(openSessionControlAction);
 
-  const renameSessionControlAction = useMemo<OmniRushControlAction>(() => ({
+  const renameSessionControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.rename",
     label: "Rename a session",
     description: "Rename a session by ID. Use list_sessions first to match the title the user said.",
@@ -185,7 +185,7 @@ export function useSessionControlActions(input: UseSessionControlActionsInput) {
       const title = stringArg(args, "title");
       if (!sessionId) return { ok: false, error: "sessionId is required" };
       if (!title) return { ok: false, error: "title is required" };
-      if (!opencodeClient) return { ok: false, error: "omnirush.ai client is not connected" };
+      if (!opencodeClient) return { ok: false, error: "marsai.click client is not connected" };
 
       const targetWorkspace = findSessionWorkspace(workspaces, sessionsByWorkspaceId, sessionId);
       await opencodeClient.session.update({
@@ -199,7 +199,7 @@ export function useSessionControlActions(input: UseSessionControlActionsInput) {
   }), [opencodeClient, refreshRouteState, selectedWorkspaceRoot, sessionsByWorkspaceId, workspaces]);
   useControlAction(renameSessionControlAction);
 
-  const deleteSessionControlAction = useMemo<OmniRushControlAction>(() => ({
+  const deleteSessionControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.delete",
     label: "Delete a session",
     description: "Delete a session by ID. Destructive: only run after explicit user confirmation.",
@@ -210,13 +210,13 @@ export function useSessionControlActions(input: UseSessionControlActionsInput) {
       { name: "sessionId", type: "string", required: true, description: "Session ID from session.list_sessions." },
       { name: "confirmed", type: "boolean", required: true, description: "Must be true after explicit user confirmation." },
     ],
-    disabled: !omnirushClient,
+    disabled: !marsClient,
     execute: async (args) => {
       const sessionId = stringArg(args, "sessionId");
       const confirmed = booleanArg(args, "confirmed");
       if (!sessionId) return { ok: false, error: "sessionId is required" };
       if (!confirmed) return { ok: false, error: "Deletion requires confirmed: true after explicit user confirmation" };
-      if (!omnirushClient) return { ok: false, error: "omnirush.ai server is not connected" };
+      if (!marsClient) return { ok: false, error: "marsai.click server is not connected" };
 
       const targetWorkspace = findSessionWorkspace(workspaces, sessionsByWorkspaceId, sessionId);
       if (!targetWorkspace) return { ok: false, error: "Session was not found in the current session list" };
@@ -230,10 +230,10 @@ export function useSessionControlActions(input: UseSessionControlActionsInput) {
       await refreshRouteState();
       return { ok: true, sessionId, deleted: true };
     },
-  }), [endpointForWorkspace, forgetDeletedSession, navigateToSessionRoot, omnirushClient, refreshRouteState, selectedSessionId, sessionsByWorkspaceId, workspaces]);
+  }), [endpointForWorkspace, forgetDeletedSession, navigateToSessionRoot, marsClient, refreshRouteState, selectedSessionId, sessionsByWorkspaceId, workspaces]);
   useControlAction(deleteSessionControlAction);
 
-  const modelPickerControlAction = useMemo<OmniRushControlAction>(() => ({
+  const modelPickerControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.model_picker.open",
     label: "Open the model picker",
     description: "Open the current session model picker.",
@@ -267,7 +267,7 @@ export function useSessionControlActions(input: UseSessionControlActionsInput) {
     return selectedWorkspaceId || undefined;
   }, [selectedWorkspaceId, workspaces]);
 
-  const pinControlAction = useMemo<OmniRushControlAction>(() => ({
+  const pinControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.pin",
     label: "Pin or unpin a session",
     description: "Toggle pin on a session. Pinned sessions appear in a global section at the top of the sidebar.",
@@ -284,7 +284,7 @@ export function useSessionControlActions(input: UseSessionControlActionsInput) {
   }), []);
   useControlAction(pinControlAction);
 
-  const archiveControlAction = useMemo<OmniRushControlAction>(() => ({
+  const archiveControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.archive",
     label: "Archive or unarchive a session",
     description: archiveDisabledReason ?? "Archive a session (non-destructive, preserves context). Archived sessions move to the Archived section. Pass archived=false to unarchive.",
@@ -300,7 +300,7 @@ export function useSessionControlActions(input: UseSessionControlActionsInput) {
       const archived = booleanArg(args, "archived");
       if (archiveDisabledReason) return { ok: false, error: archiveDisabledReason };
       if (!sessionId) return { ok: false, error: "sessionId is required" };
-      if (!opencodeClient) return { ok: false, error: "omnirush.ai client is not connected" };
+      if (!opencodeClient) return { ok: false, error: "marsai.click client is not connected" };
       const targetWorkspace = findSessionWorkspace(workspaces, sessionsByWorkspaceId, sessionId);
       await setSessionArchived(opencodeClient, sessionId, archived, targetWorkspace?.path || selectedWorkspaceRoot || undefined);
       await refreshRouteState();
@@ -309,7 +309,7 @@ export function useSessionControlActions(input: UseSessionControlActionsInput) {
   }), [archiveDisabledReason, opencodeClient, refreshRouteState, selectedWorkspaceRoot, sessionsByWorkspaceId, workspaces]);
   useControlAction(archiveControlAction);
 
-  const groupCreateControlAction = useMemo<OmniRushControlAction>(() => ({
+  const groupCreateControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.group.create",
     label: "Create a session group",
     description: "Create a new group (folder/separator) in the current workspace sidebar. Sessions can then be moved into it.",
@@ -333,7 +333,7 @@ export function useSessionControlActions(input: UseSessionControlActionsInput) {
   }), [resolveWorkspaceId]);
   useControlAction(groupCreateControlAction);
 
-  const groupMoveControlAction = useMemo<OmniRushControlAction>(() => ({
+  const groupMoveControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.group.move",
     label: "Move a session to a group",
     description: "Assign a session to a group (folder). Pass groupId=null or omit to remove from current group. Use session.group.list to see available groups.",
@@ -357,7 +357,7 @@ export function useSessionControlActions(input: UseSessionControlActionsInput) {
   }), [resolveWorkspaceId, sessionsByWorkspaceId, workspaces]);
   useControlAction(groupMoveControlAction);
 
-  const groupRemoveControlAction = useMemo<OmniRushControlAction>(() => ({
+  const groupRemoveControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.group.remove",
     label: "Remove a session group",
     description: "Remove a group from the workspace. Sessions in the group become ungrouped (not deleted).",
@@ -383,7 +383,7 @@ export function useSessionControlActions(input: UseSessionControlActionsInput) {
   }), [resolveWorkspaceId]);
   useControlAction(groupRemoveControlAction);
 
-  const groupListControlAction = useMemo<OmniRushControlAction>(() => ({
+  const groupListControlAction = useMemo<MarsControlAction>(() => ({
     id: "session.group.list",
     label: "List session groups",
     description: "List all groups in a workspace with their IDs and labels.",

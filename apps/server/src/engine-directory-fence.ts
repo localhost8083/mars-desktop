@@ -13,7 +13,7 @@ function directoryKey(workspace: WorkspaceInfo): string {
 
 /**
  * Serialize target-directory instance disposal with prompt admission routed
- * through OmniRush.ai. Different directories intentionally use different queues.
+ * through MarsAI. Different directories intentionally use different queues.
  */
 export async function withEngineDirectoryFence<T>(
   config: ServerConfig,

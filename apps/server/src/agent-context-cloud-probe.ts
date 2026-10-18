@@ -18,7 +18,7 @@ const MAX_ACTIVE_PROBES = 16;
 const STALE_ENGINE_EVIDENCE_MS = 60_000;
 const MCP_ACCEPT = "application/json, text/event-stream";
 const MCP_PROTOCOL_VERSION = "2025-06-18";
-const INITIALIZE_REQUEST_ID = "omnirush-agent-diagnostics-initialize";
+const INITIALIZE_REQUEST_ID = "mars-agent-diagnostics-initialize";
 const TOOL_ID = /^[A-Za-z][A-Za-z0-9_.:-]*$/;
 const SAFE_RESPONSE_HEADER = /^[!-~]+$/;
 const SAFE_REFERENCE_ID = /^[A-Za-z0-9._:-]{1,64}$/;
@@ -109,7 +109,7 @@ export type CloudEngineRegistrationStatus =
   | "not-recorded";
 
 /**
- * Cached engine-side evidence for the exact managed OmniRush.ai Cloud entry.
+ * Cached engine-side evidence for the exact managed MarsAI Cloud entry.
  * This is a comparison input for the differential verdict; it never gates
  * whether the independent runtime probe is allowed to run.
  */
@@ -176,7 +176,7 @@ export type CloudCatalogProbeFetch = (
   init?: RequestInit,
 ) => Promise<Response>;
 
-export type ProbeOmniRushCloudCatalogInput = {
+export type ProbeMarsCloudCatalogInput = {
   workspaceId: string;
   workspaceType: "local" | "remote";
   runtimeConfigAvailable?: boolean;
@@ -291,7 +291,7 @@ function isLoopbackHostname(hostname: string): boolean {
 /**
  * Origins the credentialed diagnostic request may reach: the activated
  * enterprise/on-prem Den origin plus exact administrator-configured diagnostic
- * origins. There are no built-in hosted origins: omnirush.ai runs no hosted
+ * origins. There are no built-in hosted origins: marsai.click runs no hosted
  * Den, and the retired hosted Den domains are not ours to send credentials to.
  */
 function configuredTrustedOrigins(activatedEnterpriseOrigin?: string | null): Set<string> {
@@ -300,7 +300,7 @@ function configuredTrustedOrigins(activatedEnterpriseOrigin?: string | null): Se
   // provisioned (written only after a signed activation claim verifies), so
   // it joins the allowlist as an exact origin without an explicit override.
   if (activatedEnterpriseOrigin) origins.add(activatedEnterpriseOrigin);
-  const configured = process.env.OMNIRUSH_AGENT_DIAGNOSTICS_TRUSTED_ORIGINS ?? "";
+  const configured = process.env.MARS_AGENT_DIAGNOSTICS_TRUSTED_ORIGINS ?? "";
   for (const entry of configured.split(",")) {
     const raw = entry.trim().replace(/\/+$/u, "");
     if (!raw || raw.includes("?") || raw.includes("#")) continue;
@@ -356,7 +356,7 @@ function authorizationHeader(config: Record<string, unknown>): { value: string |
  * by its own check. Only structural, trust, credential, and privacy
  * boundaries can skip the probe.
  */
-function prepare(input: ProbeOmniRushCloudCatalogInput): PreparedProbe | CloudCatalogProbeCode {
+function prepare(input: ProbeMarsCloudCatalogInput): PreparedProbe | CloudCatalogProbeCode {
   if (input.workspaceType !== "local") return "remote_workspace_unavailable";
   if (input.runtimeConfigAvailable === false) return "runtime_config_unavailable";
   if (!isRecord(input.config)) return "cloud_mcp_missing";
@@ -805,7 +805,7 @@ async function performProbe(
         method: "initialize",
         params: {
           capabilities: {},
-          clientInfo: { name: "omnirush-server-agent-context-diagnostics", version: "1.0.0" },
+          clientInfo: { name: "mars-server-agent-context-diagnostics", version: "1.0.0" },
           protocolVersion: MCP_PROTOCOL_VERSION,
         },
       },
@@ -827,7 +827,7 @@ async function performProbe(
           method: "initialize",
           params: {
             capabilities: {},
-            clientInfo: { name: "omnirush-server-agent-context-diagnostics", version: "1.0.0" },
+            clientInfo: { name: "mars-server-agent-context-diagnostics", version: "1.0.0" },
             protocolVersion: MCP_PROTOCOL_VERSION,
           },
         },
@@ -1001,15 +1001,15 @@ export function differentialCloudVerdict(
 
 /**
  * Performs one credential-safe direct verification of the exact
- * runtime-managed OmniRush.ai Cloud entry supplied by the caller, running the
+ * runtime-managed MarsAI Cloud entry supplied by the caller, running the
  * complete bounded MCP handshake (initialize, initialized notification,
- * tools/list, best-effort session termination) on the OmniRush.ai runtime's own
+ * tools/list, best-effort session termination) on the MarsAI runtime's own
  * fetch stack. This function never discovers another MCP, follows redirects,
  * calls a tool, mutates configuration, or returns endpoint, credential,
  * header, response-body, or caught-error values.
  */
-export async function probeOmniRushCloudCatalog(
-  input: ProbeOmniRushCloudCatalogInput,
+export async function probeMarsCloudCatalog(
+  input: ProbeMarsCloudCatalogInput,
 ): Promise<CloudCatalogProbe> {
   const clock = input.clock ?? input.now ?? Date.now;
   const startedAt = clock();

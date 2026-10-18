@@ -10,12 +10,12 @@ import {
   defaultDaytonaExec,
   deleteSandboxes,
   execInSandbox,
-} from "@omnirush/hosts";
-import { progress, trackResource } from "@omnirush/world";
+} from "@mars/hosts";
+import { progress, trackResource } from "@mars/world";
 import type { Server, ServerResponse } from "node:http";
 import { SkipError } from "./needs.ts";
 import type { Place } from "./place.ts";
-import type { DaytonaExec, DaytonaExecResult } from "@omnirush/hosts";
+import type { DaytonaExec, DaytonaExecResult } from "@mars/hosts";
 
 const IMAGE = "ghcr.io/berriai/litellm:v1.97.0@sha256:468c25f35f3e5ec4e414974f00deab93337b1b4d9953cabcfd3722e59415f834";
 const POSTGRES_IMAGE = "postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685";
@@ -27,10 +27,10 @@ const EXEC_READY_TIMEOUT_MS = 180_000;
 const PREVIEW_EXPIRY_SECONDS = 7_200;
 const DAYTONA_PROXY_PORT = 4_000;
 const DAYTONA_WITNESS_PORT = 4_001;
-const DAYTONA_CONFIG = "/tmp/omnirush-litellm-config.json";
-const DAYTONA_WITNESS = "/tmp/omnirush-litellm-witness.py";
-const DAYTONA_LOG = "/tmp/omnirush-litellm.log";
-const DAYTONA_WITNESS_LOG = "/tmp/omnirush-litellm-witness.log";
+const DAYTONA_CONFIG = "/tmp/mars-litellm-config.json";
+const DAYTONA_WITNESS = "/tmp/mars-litellm-witness.py";
+const DAYTONA_LOG = "/tmp/mars-litellm.log";
+const DAYTONA_WITNESS_LOG = "/tmp/mars-litellm-witness.log";
 const BASE64_CHUNK_LENGTH = 8 * 1_024;
 const MAX_DAYTONA_COMMAND_LENGTH = 12 * 1_024;
 const steps = progress();
@@ -87,10 +87,10 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/v1/models":
             self.send_json(200, {
                 "object": "list",
-                "data": [{"id": MODEL, "object": "model", "owned_by": "omnirush-testkit"}],
+                "data": [{"id": MODEL, "object": "model", "owned_by": "mars-testkit"}],
             })
             return
-        if parsed.path not in ("/__omnirush_litellm/health", "/__omnirush_litellm/requests"):
+        if parsed.path not in ("/__mars_litellm/health", "/__mars_litellm/requests"):
             self.send_json(404, {"error": {"message": "not found"}})
             return
         if not self.control_authorized():
@@ -98,7 +98,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         with LOCK:
             sequence = SEQUENCE
-            if parsed.path == "/__omnirush_litellm/health":
+            if parsed.path == "/__mars_litellm/health":
                 self.send_json(200, {"ok": True, "sequence": sequence})
                 return
             values = parse_qs(parsed.query).get("after", ["0"])
@@ -146,7 +146,7 @@ class Handler(BaseHTTPRequestHandler):
         if not hmac.compare_digest(token_id, OPTIONS.upstream_token_id):
             self.send_json(401, {"error": {"message": "unauthorized"}})
             return
-        completion_id = "chatcmpl-omnirush-" + str(sequence)
+        completion_id = "chatcmpl-mars-" + str(sequence)
         if isinstance(body, dict) and body.get("stream") is True:
             self.send_response(200)
             self.send_header("content-type", "text/event-stream")
@@ -336,7 +336,7 @@ function makeHandle(input: HandleInput): LiteLlmHandle {
     const cursor = validCursor(after);
     try {
       return parseRequests(
-        await controlJson(input.fetchImpl, input.controlUrl, input.controlKey, `/__omnirush_litellm/requests?after=${cursor}`),
+        await controlJson(input.fetchImpl, input.controlUrl, input.controlKey, `/__mars_litellm/requests?after=${cursor}`),
         cursor,
       );
     } catch (error) {
@@ -354,7 +354,7 @@ function makeHandle(input: HandleInput): LiteLlmHandle {
           input.fetchImpl,
           input.controlUrl,
           input.controlKey,
-          "/__omnirush_litellm/health",
+          "/__mars_litellm/health",
         ));
       } catch (error) {
         throw redactedError(error, secrets);
@@ -402,16 +402,16 @@ function startWitness(
   const server = createServer((request, response) => {
     const url = new URL(request.url ?? "/", "http://127.0.0.1");
     if (request.method === "GET" && url.pathname === "/v1/models") {
-      writeJson(response, 200, { object: "list", data: [{ id: modelId, object: "model", owned_by: "omnirush-testkit" }] });
+      writeJson(response, 200, { object: "list", data: [{ id: modelId, object: "model", owned_by: "mars-testkit" }] });
       return;
     }
     if (request.method === "GET"
-      && (url.pathname === "/__omnirush_litellm/health" || url.pathname === "/__omnirush_litellm/requests")) {
+      && (url.pathname === "/__mars_litellm/health" || url.pathname === "/__mars_litellm/requests")) {
       if (tokenId(bearerToken(request.headers.authorization)) !== controlTokenId) {
         writeJson(response, 401, { error: "unauthorized" });
         return;
       }
-      if (url.pathname === "/__omnirush_litellm/health") {
+      if (url.pathname === "/__mars_litellm/health") {
         writeJson(response, 200, { ok: true, sequence: state.sequence });
         return;
       }
@@ -447,7 +447,7 @@ function startWitness(
         writeJson(response, 401, { error: { message: "unauthorized" } });
         return;
       }
-      const id = `chatcmpl-omnirush-${sequence}`;
+      const id = `chatcmpl-mars-${sequence}`;
       if (isRecord(body) && body.stream === true) {
         response.writeHead(200, {
           "content-type": "text/event-stream",
@@ -641,8 +641,8 @@ async function startLocalLiteLlm(
   }
 
   const state: WitnessState = { requests: [], sequence: 0 };
-  const container = `omnirush-litellm-${randomBytes(8).toString("hex")}`;
-  const postgresContainer = input.database ? `omnirush-litellm-postgres-${randomBytes(8).toString("hex")}` : "";
+  const container = `mars-litellm-${randomBytes(8).toString("hex")}`;
+  const postgresContainer = input.database ? `mars-litellm-postgres-${randomBytes(8).toString("hex")}` : "";
   const postgresPassword = input.database ? randomBytes(32).toString("hex") : "";
   let root = "";
   let witness: Server | null = null;
@@ -658,7 +658,7 @@ async function startLocalLiteLlm(
     );
     await witnessStep.ok(String(startedWitness.port));
     witness = startedWitness.server;
-    root = await realpath(await mkdtemp(join(tmpdir(), "omnirush-litellm-")));
+    root = await realpath(await mkdtemp(join(tmpdir(), "mars-litellm-")));
     await trackResource({ kind: "tmpdir", id: root, label: "litellm-config" });
     const configPath = join(root, "config.json");
     await writeFile(
@@ -753,7 +753,7 @@ async function startLocalLiteLlm(
 }
 
 export function liteLlmSandboxName(): string {
-  return `omnirush-litellm-eval-${process.pid}-${Date.now().toString(36)}-${randomBytes(4).toString("hex")}`;
+  return `mars-litellm-eval-${process.pid}-${Date.now().toString(36)}-${randomBytes(4).toString("hex")}`;
 }
 
 function uploadCommands(content: string, remotePath: string): string[] {
@@ -832,7 +832,7 @@ async function waitForDaytonaReady(
   while (Date.now() < deadline) {
     let healthResponse: Response;
     try {
-      healthResponse = await fetchImpl(`${controlUrl}/__omnirush_litellm/health`, {
+      healthResponse = await fetchImpl(`${controlUrl}/__mars_litellm/health`, {
         headers: { authorization: `Bearer ${secrets.controlKey}` },
         signal: AbortSignal.timeout(5_000),
       });
@@ -914,7 +914,7 @@ async function startDaytonaLiteLlm(
   let root = "";
   let createAttempted = false;
   try {
-    root = await realpath(await mkdtemp(join(tmpdir(), "omnirush-litellm-daytona-")));
+    root = await realpath(await mkdtemp(join(tmpdir(), "mars-litellm-daytona-")));
     const dockerfile = join(root, "Dockerfile");
     await writeFile(dockerfile, DAYTONA_DOCKERFILE, { mode: 0o600 });
     createAttempted = true;
@@ -1007,9 +1007,9 @@ export async function liteLlm(input: {
   fetchImpl?: typeof fetch;
 }): Promise<LiteLlmHandle> {
   const secrets: LiteLlmSecrets = {
-    masterKey: `sk-omnirush-master-${randomBytes(24).toString("hex")}`,
-    upstreamKey: `sk-omnirush-upstream-${randomBytes(24).toString("hex")}`,
-    controlKey: `sk-omnirush-control-${randomBytes(24).toString("hex")}`,
+    masterKey: `sk-mars-master-${randomBytes(24).toString("hex")}`,
+    upstreamKey: `sk-mars-upstream-${randomBytes(24).toString("hex")}`,
+    controlKey: `sk-mars-control-${randomBytes(24).toString("hex")}`,
   };
   if (input.database && input.place.kind === "daytona") {
     throw new SkipError("LiteLLM database mode currently requires docker placement");

@@ -1,7 +1,7 @@
-// Ported from the CLI (omnirush-cli src/box/plugin-lib.js, feat/local-box);
+// Ported from the CLI (mars-cli src/box/plugin-lib.js, feat/local-box);
 // keep the two in step. Desktop: types, and desktopProjects() (below).
 //
-// Helpers of the box engine plugin (opencode-plugins/omnirush-box.ts), apart
+// Helpers of the box engine plugin (opencode-plugins/mars-box.ts), apart
 // because the engine calls every function a plugin module exports.
 import { readFileSync, realpathSync } from "node:fs";
 import os from "node:os";
@@ -11,7 +11,7 @@ import { createHash } from "node:crypto";
 export const FILE_TOOLS = new Set(["read", "write", "edit", "glob", "grep", "list", "ls", "apply_patch", "patch", "multiedit"]);
 
 export function boxHome(): string {
-  return path.resolve(String(process.env.OMNIRUSH_BOX_HOME || "").trim() || path.join(os.homedir(), ".omnirush", "box"));
+  return path.resolve(String(process.env.MARS_BOX_HOME || "").trim() || path.join(os.homedir(), ".mars", "box"));
 }
 
 export function keyOf(dir: string): string {
@@ -58,7 +58,7 @@ export function within(child: string, parent: string): boolean {
 /** The engine's own folders (config, data incl. truncated tool output, cache, state). */
 export function engineDirs(): string[] {
   const home = os.homedir();
-  const xdg = (name: string, fallback: string[]) => path.join(process.env[name] || path.join(home, ...fallback), "omnirush");
+  const xdg = (name: string, fallback: string[]) => path.join(process.env[name] || path.join(home, ...fallback), "mars");
   return [
     xdg("XDG_CONFIG_HOME", [".config"]), xdg("XDG_DATA_HOME", [".local", "share"]),
     xdg("XDG_CACHE_HOME", [".cache"]), xdg("XDG_STATE_HOME", [".local", "state"]),

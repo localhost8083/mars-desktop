@@ -80,12 +80,12 @@ function fakeSession() {
 }
 
 function setup({ pollIntervalMs = 0, watchSource = null } = {}) {
-  const home = mkdtempSync(join(tmpdir(), "omnirush-login-sync-"));
+  const home = mkdtempSync(join(tmpdir(), "mars-login-sync-"));
   const profileDirectory = join(home, "Library", "Application Support", "Firefox", "Profiles", "chosen");
   mkdirSync(profileDirectory, { recursive: true });
   const cookiesPath = join(profileDirectory, "cookies.sqlite");
   writeFileSync(cookiesPath, "synthetic source remains unchanged");
-  const statePath = join(home, "omnirush", "browser-login-sync.json");
+  const statePath = join(home, "mars", "browser-login-sync.json");
   let sourceRows = [
     { originAttributes: "", name: "sid", value: "first-secret", host: ".example.com", path: "/", expiry: nowSeconds + 3600, lastAccessed: (nowSeconds - 10) * 1e6, isSecure: 1, isHttpOnly: 1, sameSite: 1 },
     { originAttributes: "", name: "theme", value: "dark", host: "app.example.com", path: "/", expiry: nowSeconds + 3600, lastAccessed: 0, isSecure: 0, isHttpOnly: 0, sameSite: 0 },
@@ -215,7 +215,7 @@ test("setup exposes no values, keeps sensitive sites unchecked, and reads values
 });
 
 test("Chrome setup looks up the Keychain service rather than its account name", async (t) => {
-  const home = mkdtempSync(join(tmpdir(), "omnirush-login-sync-chrome-"));
+  const home = mkdtempSync(join(tmpdir(), "mars-login-sync-chrome-"));
   t.after(() => rmSync(home, { recursive: true, force: true }));
   const profile = join(home, "Library", "Application Support", "Google", "Chrome", "Default");
   mkdirSync(profile, { recursive: true });

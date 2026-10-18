@@ -6,7 +6,7 @@ description: Screenshots, recording, and presentation artifacts.
 # Daytona Recording Artifacts
 
 Use this skill to collect supplementary presentation artifacts for a Daytona UI
-journey. Pass/fail evidence comes from an `@omnirush/testkit` spec and its
+journey. Pass/fail evidence comes from an `@mars/testkit` spec and its
 ambient test evidence; use `run-tests` before declaring a verdict. Custom
 screenshots or recordings never replace the test run.
 
@@ -24,7 +24,7 @@ frame cannot capture. When video is used, embed it inside the frame-by-frame
 HTML page alongside the static frames.
 
 First run the relevant `evals/specs/**/*.test.ts` through `run-tests`. The spec
-imports `test` from `@omnirush/testkit`; screenshots and validation claims are
+imports `test` from `@mars/testkit`; screenshots and validation claims are
 recorded ambiently in its test evidence. Use `publish-evidence` for that existing test run,
 then create the custom index here only if useful.
 
@@ -103,7 +103,7 @@ though CDP is driving the browser or Electron window.
 The reusable Daytona volume is:
 
 ```text
-omnirush-eval-artifacts:/daytona-artifacts
+mars-eval-artifacts:/daytona-artifacts
 ```
 
 The helper serves it on port `8090` when `--artifacts-volume` or

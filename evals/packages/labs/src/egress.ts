@@ -454,11 +454,11 @@ function pkiPaths(dir: string) {
 export function opensslCertificateCommands(input: OpenSslCommandInput): OpenSslCommand[] {
   const files = pkiPaths(input.dir);
   const rootSubject = input.corporateIssuer
-    ? "/CN=OmniRush.ai Egress Lab Corporate Root CA"
-    : "/CN=OmniRush.ai Egress Lab Root CA";
+    ? "/CN=MarsAI Egress Lab Corporate Root CA"
+    : "/CN=MarsAI Egress Lab Root CA";
   const intermediateSubject = input.corporateIssuer
-    ? "/CN=OmniRush.ai Egress Lab Corporate Interception CA"
-    : "/CN=OmniRush.ai Egress Lab Intermediate CA";
+    ? "/CN=MarsAI Egress Lab Corporate Interception CA"
+    : "/CN=MarsAI Egress Lab Intermediate CA";
   return [
     { label: "root-key", args: ["genrsa", "-out", files.rootKey, "2048"] },
     { label: "root-csr", args: ["req", "-new", "-key", files.rootKey, "-out", files.rootCsr, "-subj", rootSubject] },
@@ -527,7 +527,7 @@ export function opensslCertificateCommands(input: OpenSslCommandInput): OpenSslC
 }
 
 function opensslBinary(env: NodeJS.ProcessEnv = process.env): string {
-  return env.OMNIRUSH_EVAL_OPENSSL?.trim() || "openssl";
+  return env.MARS_EVAL_OPENSSL?.trim() || "openssl";
 }
 
 export function opensslFlavor(env: NodeJS.ProcessEnv = process.env): Promise<OpenSslFlavor> {
@@ -605,7 +605,7 @@ function assertGeneratedCa(label: "root" | "intermediate", pem: string): void {
 }
 
 async function generateCertificateMaterial(input: { hostname: string; aiaUrl: string | null; corporateIssuer: boolean }): Promise<CertificateMaterial> {
-  const dir = await mkdtemp(path.join(tmpdir(), "omnirush-egress-lab-"));
+  const dir = await mkdtemp(path.join(tmpdir(), "mars-egress-lab-"));
   const files = pkiPaths(dir);
   await writeFile(files.rootExt, rootExtFile(), "utf8");
   await writeFile(files.intermediateExt, intermediateExtFile(), "utf8");
@@ -766,7 +766,7 @@ function createSlowServer(config: ResolvedEgressProfileConfig): HttpServer {
       response.writeHead(200, {
         "content-type": "application/octet-stream",
         "content-length": String(totalBytes),
-        "x-omnirush-egress-lab": "slow",
+        "x-mars-egress-lab": "slow",
       });
       const writeNext = () => {
         if (sent >= totalBytes) {
@@ -881,7 +881,7 @@ async function handleMcpAgentRequest(request: IncomingMessage, response: ServerR
       result: {
         capabilities: {},
         protocolVersion: "2025-06-18",
-        serverInfo: { name: "omnirush-egress-lab", version: "1.0.0" },
+        serverInfo: { name: "mars-egress-lab", version: "1.0.0" },
       },
     }, {
       "mcp-session-id": "egress-lab-session",
@@ -932,7 +932,7 @@ function createHttpsServer(profile: EgressLabProfile, material: CertificateMater
       profile,
       path: requestPath(request),
       upstream: null,
-    }, { "x-omnirush-egress-lab": profile });
+    }, { "x-mars-egress-lab": profile });
   });
 }
 
@@ -1096,7 +1096,7 @@ export async function stageTrustedEnterpriseTlsRoot(
 
   let stagingDir: string;
   try {
-    stagingDir = await mkdtemp(path.join(tmpdir(), "omnirush-enterprise-tls-trust-"));
+    stagingDir = await mkdtemp(path.join(tmpdir(), "mars-enterprise-tls-trust-"));
   } catch (error) {
     throw enterpriseTlsTrustError("ENTERPRISE_TLS_ROOT_PEM_UNTRUSTED", `cannot create staging directory: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -1116,7 +1116,7 @@ export async function stageTrustedEnterpriseTlsRoot(
 }
 
 export function linuxTrustStorePlan(rootPemPath: string): LinuxTrustStorePlan {
-  const certificatePath = "/usr/local/share/ca-certificates/omnirush-enterprise-tls-edge.crt";
+  const certificatePath = "/usr/local/share/ca-certificates/mars-enterprise-tls-edge.crt";
   const update = (updateCaCertificatesPath = "/usr/sbin/update-ca-certificates"): LinuxTrustCommand => ({
     file: updateCaCertificatesPath,
     args: [],
@@ -1360,7 +1360,7 @@ export async function startEgressLab(options: StartEgressLabOptions): Promise<Eg
 }
 
 export async function writeTempPemBundle(pems: string[]): Promise<string> {
-  const dir = await mkdtemp(path.join(tmpdir(), "omnirush-egress-ca-bundle-"));
+  const dir = await mkdtemp(path.join(tmpdir(), "mars-egress-ca-bundle-"));
   await mkdir(dir, { recursive: true });
   const bundlePath = path.join(dir, `${randomUUID()}.pem`);
   await writeFile(bundlePath, `${pems.map((pem) => pem.trim()).filter(Boolean).join("\n")}\n`, "utf8");

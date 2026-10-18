@@ -2,8 +2,8 @@ import { expect } from "vitest";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import { denFetch, type DenSession } from "@omnirush/behaviors";
-import { server, test } from "@omnirush/testkit";
+import { denFetch, type DenSession } from "@mars/behaviors";
+import { server, test } from "@mars/testkit";
 import { parseTeamAdminContext } from "./helpers/team-admin-context.ts";
 import { enableScimFixtureSso } from "./helpers/scim-fixture.ts";
 
@@ -36,7 +36,7 @@ test("team Admin grants are live, scoped, protected, and cleared across SCIM lif
   const orgId = text(record(orgs.find((org) => record(org).name === "Team Admin Grants")).id);
   const request = (session: DenSession, path: string, method = "GET", body?: unknown) => denFetch(session, path, {
     method,
-    headers: { authorization: `Bearer ${session.token}`, "x-omnirush-org-id": orgId },
+    headers: { authorization: `Bearer ${session.token}`, "x-mars-org-id": orgId },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const context = async (session = owner) => {
@@ -96,7 +96,7 @@ test("team Admin grants are live, scoped, protected, and cleared across SCIM lif
   expect((await request(inherited, `/v1/teams/${primary}`, "DELETE")).response.status).toBe(403);
   expect((await request(direct, `/v1/members/${inheritedId}`, "DELETE")).response.status).toBe(403);
   expect((await request(inherited, `/v1/members/${controlId}/role`, "POST", { role: "owner" })).response.status).toBe(403);
-  expect((await request(inherited, "/v1/invitations", "POST", { email: "escalated@omnirush.test", role: "admin" })).response.status).toBe(403);
+  expect((await request(inherited, "/v1/invitations", "POST", { email: "escalated@mars.test", role: "admin" })).response.status).toBe(403);
   const ordinary = await createTeam("Ordinary", [controlId], undefined, inherited);
   await patchTeam(ordinary, { memberIds: [] }, inherited);
 
@@ -117,7 +117,7 @@ test("team Admin grants are live, scoped, protected, and cleared across SCIM lif
 
   // Pending placeholders can already belong to a team; refreshing/canceling their
   // invitation is also a privileged mutation even though its direct role is member.
-  const pendingEmail = `pending-${Date.now()}@omnirush.test`;
+  const pendingEmail = `pending-${Date.now()}@mars.test`;
   const invitation = await request(owner, "/v1/invitations", "POST", { email: pendingEmail, role: "member" });
   expect([201, 502]).toContain(invitation.response.status);
   const pending = (await context()).members.find((member) => member.user.email === pendingEmail);
@@ -139,7 +139,7 @@ test("team Admin grants are live, scoped, protected, and cleared across SCIM lif
     ["remove-team", { teamId: primary }],
     ["add-team-member", { teamId: primary, userId: initial.currentMember.userId }],
     ["remove-team-member", { teamId: primary, userId: initial.currentMember.userId }],
-    ["invite-member", { email: "raw@omnirush.test", role: "member", organizationId: orgId, teamId: primary }],
+    ["invite-member", { email: "raw@mars.test", role: "member", organizationId: orgId, teamId: primary }],
     ["cancel-invitation", { invitationId: pending.inviteId }],
     ["accept-invitation", { invitationId: pending.inviteId }],
     ["add-member", { userId: initial.currentMember.userId, organizationId: orgId, role: "member", teamId: primary }],
@@ -157,16 +157,16 @@ test("team Admin grants are live, scoped, protected, and cleared across SCIM lif
   const foreignOrg = await denFetch(control, "/v1/org", { method: "POST", headers: { authorization: `Bearer ${control.token}` }, body: JSON.stringify({ name: "Foreign Control" }) });
   expect(foreignOrg.response.status, foreignOrg.text).toBe(201);
   const foreignOrgId = text(record(record(foreignOrg.body).organization).id);
-  const foreignContext = await denFetch(control, "/v1/org", { headers: { authorization: `Bearer ${control.token}`, "x-omnirush-org-id": foreignOrgId } });
+  const foreignContext = await denFetch(control, "/v1/org", { headers: { authorization: `Bearer ${control.token}`, "x-mars-org-id": foreignOrgId } });
   const foreignMemberId = text(record(record(foreignContext.body).currentMember).id);
   await patchTeam(primary, { memberIds: [foreignMemberId] }, owner, 404);
-  const foreignEdit = await denFetch(control, `/v1/teams/${primary}`, { method: "PATCH", headers: { authorization: `Bearer ${control.token}`, "x-omnirush-org-id": foreignOrgId }, body: JSON.stringify({ grantsOrganizationAdmin: true }) });
+  const foreignEdit = await denFetch(control, `/v1/teams/${primary}`, { method: "PATCH", headers: { authorization: `Bearer ${control.token}`, "x-mars-org-id": foreignOrgId }, body: JSON.stringify({ grantsOrganizationAdmin: true }) });
   expect(foreignEdit.response.status).toBe(404);
 
   const ownerSignIn = await denFetch(owner, "/api/auth/sign-in/email", { method: "POST", body: JSON.stringify({ email: owner.email, password: owner.password }) });
   const ownerCookie = ownerSignIn.response.headers.get("set-cookie")?.split(";")[0];
   if (!ownerCookie) throw new Error("Missing owner cookie");
-  const ownerHeaders = { authorization: `Bearer ${owner.token}`, cookie: ownerCookie, "x-omnirush-org-id": orgId };
+  const ownerHeaders = { authorization: `Bearer ${owner.token}`, cookie: ownerCookie, "x-mars-org-id": orgId };
   const sso = await denFetch(owner, "/v1/sso/saml", { method: "POST", headers: ownerHeaders, body: JSON.stringify({ issuer: `http://127.0.0.1/team-admin-${Date.now()}`, domain: "team-scim.test", entryPoint: "https://okta.example.test/sso", cert: "test-signing-certificate", audience: den.ref.apiUrl }) });
   expect(sso.response.status, sso.text).toBe(201);
   await enableScimFixtureSso(den.database, orgId);
@@ -232,17 +232,17 @@ test("team Admin grants are live, scoped, protected, and cleared across SCIM lif
   await patchTeam(nextTeam.id, { grantsOrganizationAdmin: true });
   const background = await promisify(execFile)(process.execPath, ["--input-type=module", "-e", `
     import { createRequire } from 'node:module';
-    const { createConnection } = createRequire(import.meta.resolve('@omnirush/env'))('mysql2/promise');
+    const { createConnection } = createRequire(import.meta.resolve('@mars/env'))('mysql2/promise');
     const db = await createConnection(process.env.DATABASE_URL);
     const input = JSON.parse(process.env.TEAM_ADMIN_TEST_INPUT);
-    await db.execute("UPDATE organization SET metadata = JSON_SET(metadata, '$.complimentaryAccess', JSON_OBJECT('omnirushWeb', true)) WHERE id = ?", [input.organizationId]);
+    await db.execute("UPDATE organization SET metadata = JSON_SET(metadata, '$.complimentaryAccess', JSON_OBJECT('marsWeb', true)) WHERE id = ?", [input.organizationId]);
     const suffix = input.teamId.slice(4);
     const action = { kind: 'saved_script', script: {
       pluginId: 'plg_' + suffix, configObjectId: 'cob_' + suffix,
       configObjectVersionId: 'cov_' + suffix,
     }, input: {} };
     const check = async (token) => {
-      const headers = { authorization: 'Bearer ' + token, 'x-omnirush-org-id': input.organizationId, 'content-type': 'application/json' };
+      const headers = { authorization: 'Bearer ' + token, 'x-mars-org-id': input.organizationId, 'content-type': 'application/json' };
       const context = await (await fetch(input.apiUrl + '/v1/org', { headers })).json();
       const response = await fetch(input.apiUrl + '/v1/cloud-automations', { method: 'POST', headers, body: JSON.stringify({ name: 'Authorization boundary', schedule: { kind: 'once', timezone: 'UTC', at: Date.now() + 86400000 }, action }) });
       const result = await response.json();
@@ -266,7 +266,7 @@ test("team Admin grants are live, scoped, protected, and cleared across SCIM lif
       DEN_DB_ENCRYPTION_KEY: "local-dev-db-encryption-key-please-change-1234567890",
       BETTER_AUTH_SECRET: "local-testkit-secret-not-for-production-use!!",
       DEN_BASE_URL: den.ref.apiUrl,
-      OMNIRUSH_DEV_MODE: "1",
+      MARS_DEV_MODE: "1",
       TEAM_ADMIN_TEST_INPUT: JSON.stringify({ organizationId: orgId, teamId: nextTeam.id, apiUrl: den.ref.apiUrl, memberToken: inherited.token, directToken: direct.token }),
     },
   });

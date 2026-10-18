@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from "bun:test"
-import { Tool } from "@omnirush/codemode"
+import { Tool } from "@mars/codemode"
 import { and, eq, inArray } from "@omnirush-ee/den-db/drizzle"
 import {
   AuthUserTable,

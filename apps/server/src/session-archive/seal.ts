@@ -1,8 +1,8 @@
 /**
- * ORSEAL01: seals a byte stream to the omnirush.ai archive key (X25519 +
+ * ORSEAL01: seals a byte stream to the marsai.click archive key (X25519 +
  * HKDF-SHA256 + AES-256-GCM in authenticated frames). The format, the key id
  * and the decoder's error rules are normative in
- * docs/omnirush-project-archive.md section 6 of the backend repository; the
+ * docs/mars-project-archive.md section 6 of the backend repository; the
  * shared vectors are in __fixtures__/orseal_vectors.json.
  */
 import {
@@ -30,7 +30,7 @@ export const SEAL_MAX_CHUNK = 1 << 24;
 export const SEAL_MAX_HEADER_LEN = 4096;
 const TAG_LEN = 16;
 const MAX_FRAMES = 2 ** 32;
-const HKDF_INFO = Buffer.from("omnirush-seal-v1", "ascii");
+const HKDF_INFO = Buffer.from("mars-seal-v1", "ascii");
 const HEADER_KEYS = new Set(["alg", "chunk", "content", "epk", "kid", "salt", "v"]);
 // DER wrappers that turn a raw 32-byte X25519 key into PKCS#8 / SPKI for Node's key objects.
 const PKCS8_X25519_PREFIX = Buffer.from("302e020100300506032b656e04220420", "hex");
@@ -136,7 +136,7 @@ function decryptFrame(key: Buffer, headerHash: Buffer, index: number, final: boo
 }
 
 export type SealOptions = {
-  /** The recipient's raw 32-byte X25519 public key (GET /omnirush/archives/key). */
+  /** The recipient's raw 32-byte X25519 public key (GET /mars/archives/key). */
   publicKey: Uint8Array;
   /** Plaintext bytes per frame. Production MUST leave the default (1 MiB); the vectors use 16. */
   chunk?: number;

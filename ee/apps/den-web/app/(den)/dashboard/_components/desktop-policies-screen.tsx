@@ -8,7 +8,7 @@ import {
   isRestrictedDesktopPolicyValue,
   type DesktopPolicyDocument,
   type DesktopPolicyValue,
-} from "@omnirush/types/den/desktop-policies";
+} from "@mars/types/den/desktop-policies";
 import { DenButton, buttonVariants } from "../../_components/ui/button";
 import { DenCatalogList, DenCatalogRow } from "../../_components/ui/catalog-row";
 import { DenNotice } from "../../_components/ui/notice";

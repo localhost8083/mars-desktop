@@ -38,14 +38,14 @@ import {
 import { LazyMotion, Reorder, domMax, m, useDragControls } from "motion/react";
 
 import { getDisplaySessionTitle } from "../../../../app/lib/session-title";
-import { omnirushAccountStatus, type WorkspaceInfo } from "../../../../app/lib/desktop";
-import { omnirushUsageSummary } from "../../../../app/lib/omnirush-usage";
+import { marsAccountStatus, type WorkspaceInfo } from "../../../../app/lib/desktop";
+import { marsUsageSummary } from "../../../../app/lib/mars-usage";
 import { isDesktopRuntime } from "../../../../app/lib/runtime-env";
 import { refreshAccountStatus, setQualitySessionId, useAccountStatusStore, useQualityUiStore, type AccountQuality } from "../../../../app/lib/quality";
-import { goodSessionWording } from "../../../../app/lib/good-session";
+import { goodSessionWording } from "../../../../app/lib/quality";
 import { ProgressRing, QualityTierBadge, SpinCounts, spinRowTitle } from "../../quality/quality-parts";
 import { buildathonProjects, useBuildathonStore } from "../../../../app/lib/buildathon";
-import { OmniRushDenHelpLink } from "../../workspace/omnirush-den-help-link";
+import { MarsDenHelpLink } from "../../workspace/mars-den-help-link";
 import { NotificationBell } from "../../../shell/notification-center";
 import { useUiStateStore } from "../../../shell/ui-state-store";
 import type {
@@ -172,7 +172,7 @@ import { SidebarDestination } from "./sidebar-destination";
 import { SessionTitle } from "./session-title";
 import { AuditTrailMiniPanel } from "../../audit/audit-trail-mini-panel";
 import { useAuditTrailController } from "../../audit/use-audit-trail-controller";
-import type { OmniRushServerClient } from "../../../../app/lib/omnirush-server";
+import type { MarsServerClient } from "../../../../app/lib/mars-server";
 import { LocalWorkflowsPanel } from "../../local-workflows/local-workflows-panel";
 
 /** Paper Desktop: unread #2FBE54, needs-action #E8933A (14px artboard → ~8px app). */
@@ -817,7 +817,7 @@ function RemoteConnectionIssueCard(props: {
             >
               {props.message}
             </div>
-            <OmniRushDenHelpLink />
+            <MarsDenHelpLink />
             <div className="mt-2 flex flex-wrap gap-1.5">
               {props.canRecover ? (
                 <Button
@@ -955,7 +955,7 @@ export type AppSidebarProps = {
   onOpenDashboard?: () => void;
   /** Opens the cross-session message search dialog (Cmd/Ctrl+Shift+F). */
   onOpenSessionSearch?: () => void;
-  auditClient?: OmniRushServerClient | null;
+  auditClient?: MarsServerClient | null;
   /** Back/forward across recently viewed conversations, rendered at the top of the sidebar. */
   conversationHistory?: {
     canGoBack: boolean;
@@ -971,12 +971,13 @@ export type AppSidebarProps = {
   status: Omit<AccountStatusMenuProps, "onOpenAccountSettings">;
 };
 
-type NativeAccountStatus = Awaited<ReturnType<typeof omnirushAccountStatus>>;
+type NativeAccountStatus = Awaited<ReturnType<typeof marsAccountStatus>>;
 
-function OmniRushWordmark({ className }: { className?: string }) {
+function MarsWordmark({ className }: { className?: string }) {
+  // The wordmark wears the Mars logo's own orange (sampled from Images/logo.jpg).
   return (
-    <span className={className} aria-label="omnirush.ai">
-      <span>omnirush</span><span className="text-[#b9f45a]">.ai</span>
+    <span className={className} aria-label="MarsAI" style={{ color: "#ff6c2c" }}>
+      MarsAI
     </span>
   );
 }
@@ -1031,7 +1032,7 @@ function NativeAccountFooter({ onOpenAccountSettings }: { onOpenAccountSettings:
   const status: NativeAccountStatus | null = useAccountStatusStore((store) => store.status);
 
   React.useEffect(() => {
-    const refresh = () => void refreshAccountStatus(omnirushAccountStatus);
+    const refresh = () => void refreshAccountStatus(marsAccountStatus);
     refresh();
     window.addEventListener("focus", refresh);
     return () => window.removeEventListener("focus", refresh);
@@ -1040,10 +1041,10 @@ function NativeAccountFooter({ onOpenAccountSettings }: { onOpenAccountSettings:
   const connected = status?.connected === true;
   const accountLabel = connected
     ? status?.displayName?.trim() || status?.email?.trim() || "Your account"
-    : "sign in to omnirush.ai";
-  const usage = connected && status?.usage ? omnirushUsageSummary(status.usage) : null;
+    : "sign in to marsai.click";
+  const usage = connected && status?.usage ? marsUsageSummary(status.usage) : null;
   const quality = connected ? status?.quality ?? null : null;
-  // The account server label ("omnirush.ai", "localhost:8090 (local API)")
+  // The account server label ("marsai.click", "localhost:8090 (local API)")
   // only matters while connected; a signed-out footer keeps the sign-in hint.
   const serverHost = connected ? status?.gatewayHost?.trim() || null : null;
   const accountDetail = usage
@@ -1051,15 +1052,15 @@ function NativeAccountFooter({ onOpenAccountSettings }: { onOpenAccountSettings:
     : connected
       ? serverHost
         ? `connected to ${serverHost}`
-        : "omnirush.ai models ready"
+        : "marsai.click models ready"
       : status?.reauthorizationRequired
         ? "Sign in again to continue"
-        : "Use omnirush.ai models with your account";
+        : "Use marsai.click models with your account";
   const accountTooltip = connected
     ? serverHost
       ? `${accountLabel} · ${serverHost}`
       : accountLabel
-    : "Sign in to omnirush.ai";
+    : "Sign in to marsai.click";
 
   return (
     <SidebarFooter className="border-t border-sidebar-border/60 p-1.5 pe-0">
@@ -1070,7 +1071,7 @@ function NativeAccountFooter({ onOpenAccountSettings }: { onOpenAccountSettings:
             className="h-auto min-h-12 py-1.5"
             onClick={onOpenAccountSettings}
             tooltip={accountTooltip}
-            aria-label={connected ? `${accountLabel} account` : "Sign in to omnirush.ai"}
+            aria-label={connected ? `${accountLabel} account` : "Sign in to marsai.click"}
             data-testid="native-account-profile"
             data-account-server={serverHost ?? undefined}
           >
@@ -1308,9 +1309,9 @@ export function AppSidebar(props: AppSidebarProps) {
           </div>
         ) : (
           <div data-sidebar-brand className="flex h-11 shrink-0 items-center gap-2 px-4 mac:titlebar-drag">
-            <img src={resolveExtensionIconSrc("/omnirush-mark.png")} alt="" className="size-5 shrink-0 object-contain dark:invert" />
-            {brandAppName.toLowerCase() === "omnirush.ai" ? (
-              <OmniRushWordmark className="truncate text-[15px] font-medium tracking-[-0.4px]" />
+            <img src={resolveExtensionIconSrc("/mars-mark.png")} alt="" className="size-5 shrink-0 object-contain dark:invert" />
+            {brandAppName.toLowerCase() === "marsai.click" ? (
+              <MarsWordmark className="truncate text-[15px] font-medium tracking-[-0.4px]" />
             ) : (
               <span className="truncate text-[15px] font-medium tracking-[-0.4px]" title={brandAppName}>{brandAppName}</span>
             )}
@@ -2013,9 +2014,9 @@ function WorkspaceSidebarGroup({
   );
 }
 
-const SESSION_DRAG_TYPE = "application/x-omnirush-session-id";
+const SESSION_DRAG_TYPE = "application/x-mars-session-id";
 const EMPTY_PINNED_IDS = new Set<string>();
-const UNGROUPED_GROUP_ID = "__omnirush_ungrouped";
+const UNGROUPED_GROUP_ID = "__mars_ungrouped";
 
 function SessionGroupActions({ group, groups, workspaceId, count }: {
   group: SessionGroupDefinition;

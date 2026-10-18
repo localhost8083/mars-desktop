@@ -1,4 +1,4 @@
-# Releasing OmniRush.ai
+# Releasing MarsAI
 
 Desktop releases are built by GitHub Actions for macOS, Windows, and Linux. A semantic-version tag is the release source of truth; committed package versions remain `0.0.0-dev` and are stamped only inside the build jobs.
 
@@ -8,7 +8,7 @@ Desktop releases are built by GitHub Actions for macOS, Windows, and Linux. A se
 2. Create and push a semantic-version tag:
 
    ```bash
-   git tag -a v1.0.0 -m "OmniRush.ai v1.0.0"
+   git tag -a v1.0.0 -m "MarsAI v1.0.0"
    git push origin v1.0.0
    ```
 
@@ -32,7 +32,7 @@ Build on the target operating system when possible:
 ```bash
 pnpm install --frozen-lockfile
 node scripts/release/stamp-version.mjs --version 1.0.0
-pnpm --filter @omnirush/desktop build:electron
+pnpm --filter @mars/desktop build:electron
 pnpm --dir apps/desktop exec electron-builder --config electron-builder.yml --publish never
 ```
 

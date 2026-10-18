@@ -3,6 +3,6 @@ import type { NextConfig } from "next";
 
 const config: NextConfig = {
   outputFileTracingRoot: resolve(import.meta.dirname, "../.."),
-  transpilePackages: ["@omnirush/review"],
+  transpilePackages: ["@mars/review"],
 };
 export default config;

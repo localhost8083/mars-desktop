@@ -13,11 +13,11 @@ title: "Changelog"
 ---
 <Update label="August 27th" tags={["🚀 New Features"]}>
 
-  ## [v0.18.39](https://github.com/omnirush-ai/omnirush-gui/compare/v0.18.38...v0.18.39): Newer release title
+  ## [v0.18.39](https://github.com/mars-ai/mars-gui/compare/v0.18.38...v0.18.39): Newer release title
 
   - Newer bullet that must not leak into the older release.
 
-  ## [v0.18.38](https://github.com/omnirush-ai/omnirush-gui/compare/v0.18.37...v0.18.38): Target release title
+  ## [v0.18.38](https://github.com/mars-ai/mars-gui/compare/v0.18.37...v0.18.38): Target release title
 
   - First target bullet.
   - Second target bullet.
@@ -26,7 +26,7 @@ title: "Changelog"
 
 <Update label="August 26th" tags={["🐛 Bug Fixes"]}>
 
-  ## [v0.18.37](https://github.com/omnirush-ai/omnirush-gui/compare/v0.18.36...v0.18.37): Older release title
+  ## [v0.18.37](https://github.com/mars-ai/mars-gui/compare/v0.18.36...v0.18.37): Older release title
 
   - Older bullet that must not leak into the target release.
 
@@ -35,9 +35,9 @@ title: "Changelog"
 
 const staticBody = `## What's new
 
-OmniRush.ai v0.18.38 desktop release.
+MarsAI v0.18.38 desktop release.
 
-- Public artifacts use the omnirush-* naming convention.
+- Public artifacts use the mars-* naming convention.
 
 *Windows installers are signed using Microsoft Artifact Signing.*
 `
@@ -61,14 +61,14 @@ test("release notes are extracted for exactly one version and keep the signing n
     assert(notes.startsWith("## Target release title\n"))
     assert(notes.includes("- First target bullet.\n- Second target bullet."))
     const links = new Set(notes.match(/https?:\/\/[^\s)]+/g))
-    assert(links.has("https://github.com/omnirush-ai/omnirush-gui/compare/v0.18.37...v0.18.38"))
-    assert(links.has("https://github.com/omnirush-ai/omnirush-gui/blob/main/packages/docs/changelog.mdx"))
+    assert(links.has("https://github.com/mars-ai/mars-gui/compare/v0.18.37...v0.18.38"))
+    assert(links.has("https://github.com/mars-ai/mars-gui/blob/main/packages/docs/changelog.mdx"))
     assert(notes.trimEnd().endsWith("*Windows installers are signed using Microsoft Artifact Signing.*"))
 
     assert(!notes.includes("Newer bullet"))
     assert(!notes.includes("Older bullet"))
     assert(!notes.includes("<Update"))
-    assert(!notes.includes("omnirush-* naming convention"))
+    assert(!notes.includes("mars-* naming convention"))
   } finally {
     rmSync(join(docs, ".."), { recursive: true, force: true })
   }

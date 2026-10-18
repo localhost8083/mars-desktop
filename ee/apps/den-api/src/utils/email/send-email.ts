@@ -1,4 +1,4 @@
-import { EmailSendError, emailSubjects, renderEmailHtml, sendEmail as sendSharedEmail, type EmailTemplate, type SendEmailInput } from "@omnirush/email"
+import { EmailSendError, emailSubjects, renderEmailHtml, sendEmail as sendSharedEmail, type EmailTemplate, type SendEmailInput } from "@mars/email"
 import { env } from "../../env.js"
 import { appLogger } from "../../observability/logger.js"
 

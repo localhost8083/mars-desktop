@@ -99,21 +99,21 @@ test("the setting: on by default, saved off, toggled live", async () => {
   assert.equal(await readKeepAwakeSetting(path.join(os.tmpdir(), "missing-keep-awake.json")), true);
 });
 
-test("skipped over SSH, in CI and with OMNIRUSH_KEEP_AWAKE=0", async () => {
+test("skipped over SSH, in CI and with MARS_KEEP_AWAKE=0", async () => {
   assert.equal(keepAwakeSkipReason({}), null);
   assert.equal(keepAwakeSkipReason({ SSH_CONNECTION: "1 2 3 4" }), "ssh");
   assert.equal(keepAwakeSkipReason({ SSH_TTY: "/dev/pts/1" }), "ssh");
   assert.equal(keepAwakeSkipReason({ CI: "true" }), "ci");
   assert.equal(keepAwakeSkipReason({ CI: "false" }), null);
-  assert.equal(keepAwakeSkipReason({ OMNIRUSH_KEEP_AWAKE: "0" }), "env");
-  for (const env of [{ SSH_CONNECTION: "x" }, { CI: "1" }, { OMNIRUSH_KEEP_AWAKE: "off" }]) {
+  assert.equal(keepAwakeSkipReason({ MARS_KEEP_AWAKE: "0" }), "env");
+  for (const env of [{ SSH_CONNECTION: "x" }, { CI: "1" }, { MARS_KEEP_AWAKE: "off" }]) {
     const { awake, blocker } = await setup({ env });
     awake.setTurnRunning(true);
     awake.hold();
     assert.equal(blocker.calls.length, 0, JSON.stringify(env));
   }
   assert.deepEqual(await (await setup({ env: { SSH_CONNECTION: "x" } })).awake.status(), { enabled: true, active: false, available: false, forcedOff: false });
-  assert.deepEqual(await (await setup({ env: { OMNIRUSH_KEEP_AWAKE: "0" } })).awake.status(), { enabled: true, active: false, available: true, forcedOff: true });
+  assert.deepEqual(await (await setup({ env: { MARS_KEEP_AWAKE: "0" } })).awake.status(), { enabled: true, active: false, available: true, forcedOff: true });
 });
 
 test("a blocker that cannot start never fails the turn", async () => {

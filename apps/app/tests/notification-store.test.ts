@@ -135,7 +135,7 @@ describe("loading a save from an older version", () => {
     updatedAt: now - 60_000,
     readAt: null,
     dedupeKey: "new-providers",
-    action: { type: "open-model-picker", providerIds: ["omnirush", "opencode"] },
+    action: { type: "open-model-picker", providerIds: ["mars", "opencode"] },
   };
   const otherEntry = {
     id: "ntf_old_system",

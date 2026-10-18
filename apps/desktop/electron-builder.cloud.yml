@@ -1,18 +1,18 @@
 extends: ./electron-builder.base.yml
-appId: ai.omnirush.desktop
-productName: OmniRush.ai Cloud
+appId: ai.marsai.desktop
+productName: MarsAI Cloud
 extraMetadata:
-  omnirushDistribution: cloud
+  marsDistribution: cloud
 protocols:
-  - name: OmniRush.ai Cloud
+  - name: MarsAI Cloud
     schemes:
-      - omnirush
+      - mars
 publish:
   - provider: github
-    owner: omnirush-ai
-    repo: omnirush-gui
+    owner: mars-ai
+    repo: mars-gui
     releaseType: release
     channel: cloud
 linux:
-  executableName: omnirush-cloud
-artifactName: omnirush-cloud-${os}-${arch}-${version}.${ext}
+  executableName: mars-cloud
+artifactName: mars-cloud-${os}-${arch}-${version}.${ext}

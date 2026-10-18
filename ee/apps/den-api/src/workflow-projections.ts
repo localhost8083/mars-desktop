@@ -1,4 +1,4 @@
-import type { WorkflowGraph, WorkflowGraphNode, WorkflowVersion } from "@omnirush/types/workflows"
+import type { WorkflowGraph, WorkflowGraphNode, WorkflowVersion } from "@mars/types/workflows"
 
 function redactWorkflowGraphNodeLabel(node: WorkflowGraphNode): WorkflowGraphNode {
   switch (node.kind) {

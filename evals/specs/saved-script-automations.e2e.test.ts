@@ -3,7 +3,7 @@ import {
   createCloudAutomation,
   createOrgConnection,
   denFetch,
-  grantOmniRushWebAccess,
+  grantMarsWebAccess,
   listWorkflows,
   patchAutomation,
   readAutomation,
@@ -13,11 +13,11 @@ import {
   runAutomationNow,
   runWorkflow,
   saveWorkflow,
-} from "@omnirush/behaviors"
-import { mcpMock, needs, server, test } from "@omnirush/testkit"
+} from "@mars/behaviors"
+import { mcpMock, needs, server, test } from "@mars/testkit"
 
 const requirements = {
-  optIn: ["OMNIRUSH_EVAL_E2E_TESTS", "OMNIRUSH_EVAL_SAVED_SCRIPT_AUTOMATIONS_E2E_TEST"],
+  optIn: ["MARS_EVAL_E2E_TESTS", "MARS_EVAL_SAVED_SCRIPT_AUTOMATIONS_E2E_TEST"],
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -91,10 +91,10 @@ test("a Code Mode result becomes a cloud Automation and a durable artifact resul
   const organizationId = String(orgRows[0]?.id ?? "")
   expect(organizationId).not.toBe("")
 
-  // Cloud Automations require OmniRush.ai Web access for the organization. The
+  // Cloud Automations require MarsAI Web access for the organization. The
   // launched Den seeds this admin into the platform-admin allowlist, so the
   // spec grants the audited complimentary entitlement inline.
-  await grantOmniRushWebAccess(
+  await grantMarsWebAccess(
     den.admin,
     organizationId,
     "saved-script-automations spec exercises Cloud Automations",
@@ -129,7 +129,7 @@ test("a Code Mode result becomes a cloud Automation and a durable artifact resul
     method: "POST",
     headers: {
       authorization: `Bearer ${den.admin.token}`,
-      "x-omnirush-org-id": organizationId,
+      "x-mars-org-id": organizationId,
     },
     body: JSON.stringify({ scopes: ["mcp:read", "mcp:write"] }),
   })
@@ -239,7 +239,7 @@ test("a Code Mode result becomes a cloud Automation and a durable artifact resul
   expect(view.id).toBe(emptyDraftError.artifactViewId)
   const revision = records(view.revisions)[0]
   expect(revision?.buildStatus).toBe("ready")
-  expect(requireRecord(draft._meta, "draft host metadata")["omnirush/appDraft"]).toEqual({
+  expect(requireRecord(draft._meta, "draft host metadata")["mars/appDraft"]).toEqual({
     appId: view.id, revisionId: revision?.id, receiptId: manualResult.receiptId, title: "Briefing app",
   })
   const appPath = `/v1/apps/${view.id}`
@@ -335,7 +335,7 @@ test("a Code Mode result becomes a cloud Automation and a durable artifact resul
     executionLocation: "cloud",
     automationId,
     automationRunId: scheduledRunId,
-    engineKind: "omnirush-cloud-codemode-v1",
+    engineKind: "mars-cloud-codemode-v1",
   })
 
   const toolList = await agentRpc(den.ref.apiUrl, mcpToken, "tools/list", {})
@@ -343,16 +343,16 @@ test("a Code Mode result becomes a cloud Automation and a durable artifact resul
   const renderTool = tools.find((candidate) => candidate.name === "render_workflow_artifact")
   const renderToolMeta = isRecord(renderTool?._meta) ? renderTool._meta : {}
   const modernUi = isRecord(renderToolMeta.ui) ? renderToolMeta.ui : {}
-  expect(modernUi.resourceUri).toBe("ui://omnirush/workflow-artifact/v1/view.html")
-  expect(renderToolMeta["ui/resourceUri"]).toBe("ui://omnirush/workflow-artifact/v1/view.html")
+  expect(modernUi.resourceUri).toBe("ui://mars/workflow-artifact/v1/view.html")
+  expect(renderToolMeta["ui/resourceUri"]).toBe("ui://mars/workflow-artifact/v1/view.html")
 
   const resourceList = await agentRpc(den.ref.apiUrl, mcpToken, "resources/list", {})
   const resources = records(resourceList.resources)
-  const appResource = resources.find((candidate) => candidate.uri === "ui://omnirush/workflow-artifact/v1/view.html")
+  const appResource = resources.find((candidate) => candidate.uri === "ui://mars/workflow-artifact/v1/view.html")
   expect(appResource?.mimeType).toBe("text/html;profile=mcp-app")
 
   const resourceRead = await agentRpc(den.ref.apiUrl, mcpToken, "resources/read", {
-    uri: "ui://omnirush/workflow-artifact/v1/view.html",
+    uri: "ui://mars/workflow-artifact/v1/view.html",
   })
   const resourceContents = records(resourceRead.contents)
   expect(resourceContents[0]?.mimeType).toBe("text/html;profile=mcp-app")

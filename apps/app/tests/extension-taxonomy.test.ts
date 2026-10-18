@@ -14,7 +14,7 @@ function builtInEntry(id: string): McpDirectoryInfo {
 
 describe("extension taxonomy", () => {
   test("built-ins are apps because they run on this device", () => {
-    for (const id of ["omnirush-browser", ...(COMPUTER_USE_PAUSED ? [] : ["computer-use"]), "ollama"]) {
+    for (const id of ["mars-browser", ...(COMPUTER_USE_PAUSED ? [] : ["computer-use"]), "ollama"]) {
       expect(taxonomyForDirectoryEntry(builtInEntry(id))).toBe("app");
     }
   });

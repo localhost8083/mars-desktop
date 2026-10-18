@@ -1,10 +1,10 @@
 import { useCallback, useState } from "react";
 
-import { omnirushServerRestart, type OmniRushServerInfo } from "../../../app/lib/desktop";
+import { marsServerRestart, type MarsServerInfo } from "../../../app/lib/desktop";
 import {
-  readOmniRushServerSettings,
-  writeOmniRushServerSettings,
-} from "../../../app/lib/omnirush-server";
+  readMarsServerSettings,
+  writeMarsServerSettings,
+} from "../../../app/lib/mars-server";
 import { t } from "../../../i18n";
 
 export type RemoteAccessRestartPhase =
@@ -15,7 +15,7 @@ export type RemoteAccessRestartPhase =
 
 type UseRemoteAccessRestartOptions = {
   isEnabled: () => boolean;
-  onHostInfo: (info: OmniRushServerInfo) => void;
+  onHostInfo: (info: MarsServerInfo) => void;
   onSettingsChanged: () => void;
 };
 
@@ -27,21 +27,21 @@ export function useRemoteAccessRestart(options: UseRemoteAccessRestartOptions) {
     async (enabled: boolean) => {
       if (phase === "restarting" || phase === "reconnecting") return;
 
-      const previous = readOmniRushServerSettings();
+      const previous = readMarsServerSettings();
       const next = { ...previous, remoteAccessEnabled: enabled };
 
       setPhase("restarting");
       setError(null);
-      writeOmniRushServerSettings(next);
+      writeMarsServerSettings(next);
       options.onSettingsChanged();
 
       try {
-        const info = await omnirushServerRestart({
+        const info = await marsServerRestart({
           reason: "remote_access_toggled",
           userInitiated: true,
           remoteAccessEnabled: enabled,
-        }) as OmniRushServerInfo;
-        writeOmniRushServerSettings({
+        }) as MarsServerInfo;
+        writeMarsServerSettings({
           urlOverride: info.baseUrl?.trim() || undefined,
           token:
             info.ownerToken?.trim() ||
@@ -55,7 +55,7 @@ export function useRemoteAccessRestart(options: UseRemoteAccessRestartOptions) {
         options.onSettingsChanged();
         setPhase("idle");
       } catch (caught) {
-        writeOmniRushServerSettings(previous);
+        writeMarsServerSettings(previous);
         options.onSettingsChanged();
         setError(caught instanceof Error ? caught.message : t("app.error_remote_access"));
         setPhase("failed");

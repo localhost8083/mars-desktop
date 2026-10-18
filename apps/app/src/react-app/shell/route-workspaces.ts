@@ -8,7 +8,7 @@ import type { Session } from "@opencode-ai/sdk/v2/client";
 import { createClient, unwrap } from "@/app/lib/opencode";
 import { createClientV2, isOpencodeV2BaseUrl } from "@/app/lib/opencode-v2-adapter";
 import { deleteNativeSession, unwrapNativeSessionResult } from "@/app/lib/opencode-session-native";
-import { OmniRushServerError, type OmniRushWorkspaceInfo } from "@/app/lib/omnirush-server";
+import { MarsServerError, type MarsWorkspaceInfo } from "@/app/lib/mars-server";
 import type { ResolvedWorkspaceEndpoint } from "@/app/lib/workspace-endpoint";
 import type { WorkspaceInfo } from "@/app/lib/desktop-types";
 import type { WorkspaceSessionGroup } from "@/app/types";
@@ -19,7 +19,7 @@ import {
 } from "@/app/utils";
 import { t } from "@/i18n";
 
-export type RouteWorkspace = OmniRushWorkspaceInfo & {
+export type RouteWorkspace = MarsWorkspaceInfo & {
   displayNameResolved: string;
 };
 
@@ -45,7 +45,7 @@ export type RouteSessionListTransport = (input: {
 
 const nativeRouteSessionList: RouteSessionListTransport = async ({ endpoint, limit }) => {
   const client = createClient(endpoint.opencodeBaseUrl, undefined, {
-    mode: "omnirush",
+    mode: "mars",
     token: endpoint.token,
   });
   // The engine's /session list only returns sessions filed under the folder's
@@ -95,7 +95,7 @@ export const v2RouteSessionList: RouteSessionListTransport = async ({ endpoint, 
 async function routeSessionEndpoint(endpoint: ResolvedWorkspaceEndpoint): Promise<ResolvedWorkspaceEndpoint> {
   const status = await endpoint.client.getEngineV2PreviewStatus().catch((error: unknown) => {
     // Servers predating the preview endpoint still use v1.
-    if (error instanceof OmniRushServerError && error.status === 404) return null;
+    if (error instanceof MarsServerError && error.status === 404) return null;
     throw error;
   });
   return status?.enabled && status.chatRouting
@@ -107,7 +107,7 @@ export async function createRouteSession(endpoint: ResolvedWorkspaceEndpoint, di
   const native = await routeSessionEndpoint(endpoint);
   const client = isOpencodeV2BaseUrl(native.opencodeBaseUrl)
     ? createClientV2(native.opencodeBaseUrl, directory, { token: native.token })
-    : createClient(native.opencodeBaseUrl, directory, { token: native.token, mode: "omnirush" });
+    : createClient(native.opencodeBaseUrl, directory, { token: native.token, mode: "mars" });
   return unwrap(await client.session.create({ directory }));
 }
 
@@ -156,7 +156,7 @@ export async function removeRouteWorkspace(input: {
     try {
       await input.deleteFromServer(input.workspaceId);
     } catch (error) {
-      if (!(error instanceof OmniRushServerError && error.status === 404)) throw error;
+      if (!(error instanceof MarsServerError && error.status === 404)) throw error;
     }
   }
   await input.forgetOnDesktop?.(input.workspaceId);
@@ -180,20 +180,20 @@ export function mapDesktopWorkspace(workspace: WorkspaceInfo): RouteWorkspace {
   };
 }
 
-export function workspaceLabel(workspace: OmniRushWorkspaceInfo) {
+export function workspaceLabel(workspace: MarsWorkspaceInfo) {
   const label = (
     workspace.displayName?.trim() ||
-    workspace.omnirushWorkspaceName?.trim() ||
+    workspace.marsWorkspaceName?.trim() ||
     workspace.name?.trim() ||
     workspace.path?.trim() ||
     t("session.workspace_fallback")
   );
-  return /^(?:OmniRush\.ai Chat|omnirush\.ai)$/i.test(label) ? "omnirush.ai" : label;
+  return /^(?:Mars\.ai Chat|mars\.ai)$/i.test(label) ? "marsai.click" : label;
 }
 
-export function workspaceExportFilename(workspace: OmniRushWorkspaceInfo) {
+export function workspaceExportFilename(workspace: MarsWorkspaceInfo) {
   const slug = workspaceLabel(workspace).replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
-  return `${slug || "workspace"}-omnirush-export.json`;
+  return `${slug || "workspace"}-mars-export.json`;
 }
 
 export function downloadWorkspaceJson(filename: string, payload: unknown) {
@@ -385,7 +385,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function isOmniRushWorkspaceArray(value: unknown): value is OmniRushWorkspaceInfo[] {
+function isMarsWorkspaceArray(value: unknown): value is MarsWorkspaceInfo[] {
   return Array.isArray(value);
 }
 
@@ -407,7 +407,7 @@ export function resolveRouteWorkspaceListState(input: {
   previousWorkspaces: RouteWorkspace[];
   orderIds: string[];
 }): RouteWorkspaceListState {
-  const serverItems = isRecord(input.list) && isOmniRushWorkspaceArray(input.list.items) ? input.list.items : null;
+  const serverItems = isRecord(input.list) && isMarsWorkspaceArray(input.list.items) ? input.list.items : null;
   const workspaces = serverItems
     ? mergeRouteWorkspaces(serverItems, input.desktopWorkspaces)
     : input.previousWorkspaces.length > 0
@@ -470,7 +470,7 @@ export function describeWorkspaceCreateError(error: unknown) {
     lower.includes("os error 60") ||
     lower.includes("etimedout")
   ) {
-    return `${message}\n\nOmniRush could not read the workspace config before the filesystem timed out. This often happens when the folder is still syncing from iCloud Drive or another remote folder. Wait for the folder to finish downloading, move the workspace to a local folder, or try again.`;
+    return `${message}\n\nMars could not read the workspace config before the filesystem timed out. This often happens when the folder is still syncing from iCloud Drive or another remote folder. Wait for the folder to finish downloading, move the workspace to a local folder, or try again.`;
   }
   return message;
 }
@@ -479,7 +479,7 @@ export function mergeRouteWorkspaces(
   serverWorkspaces: unknown,
   desktopWorkspaces: RouteWorkspace[],
 ): RouteWorkspace[] {
-  const serverWorkspaceList = isOmniRushWorkspaceArray(serverWorkspaces) ? serverWorkspaces : [];
+  const serverWorkspaceList = isMarsWorkspaceArray(serverWorkspaces) ? serverWorkspaces : [];
   const desktopById = new Map(desktopWorkspaces.map((workspace) => [workspace.id, workspace]));
   const desktopByPath = new Map(
     desktopWorkspaces.flatMap((workspace) => {
@@ -489,7 +489,7 @@ export function mergeRouteWorkspaces(
   );
 
   // If a server workspace's id matches a desktop workspace marked as remote,
-  // skip the server's view entirely. The local omnirush.ai server may have stale
+  // skip the server's view entirely. The local marsai.click server may have stale
   // registrations from earlier (buggy) activate calls that show up here as
   // `workspaceType: "local"`, which would otherwise clobber the desktop's
   // remote routing fields and send workspace-scoped requests back to the

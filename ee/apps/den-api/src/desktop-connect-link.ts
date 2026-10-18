@@ -5,8 +5,8 @@ import {
   CONNECT_LINK_DEFAULT_TTL_HOURS,
   CONNECT_LINK_VERSION,
   type ConnectLinkClaims,
-} from "@omnirush/connect-link"
-import { signConnectLinkToken } from "@omnirush/connect-link/node"
+} from "@mars/connect-link"
+import { signConnectLinkToken } from "@mars/connect-link/node"
 import { env } from "./env.js"
 
 export type DesktopConnectLinkInput = {

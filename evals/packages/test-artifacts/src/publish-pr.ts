@@ -3,7 +3,7 @@ import { lstat, realpath } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { renderPrMarkdown } from "./render.ts";
 import { readTestRunDirectory } from "./scan.ts";
-import type { uploadReview } from "@omnirush/review/storage";
+import type { uploadReview } from "@mars/review/storage";
 
 const MARKER = "<!-- test-evidence -->";
 const LEGACY_MARKERS = ["<!-- photo-roll -->", "<!-- fraimz -->"];
@@ -175,7 +175,7 @@ export async function publishPr(
   options: PublishPrOptions,
   dependencies: PublishDependencies = {},
 ): Promise<PublishPrResult> {
-  if (process.env.OMNIRUSH_REVIEW_URL && !options.force) {
+  if (process.env.MARS_REVIEW_URL && !options.force) {
     return publishReviewPr({ ...options, testRunDirs: [options.testRunDir] }, dependencies);
   }
   const stored = await readTestRunDirectory(options.testRunDir);
@@ -256,8 +256,8 @@ export async function publishReviewPr(
     throw new Error("Publishing requires --pr <n>.");
   const pr = String(options.pr);
   const exec = dependencies.exec ?? commandRunner;
-  const base = options.reviewUrl ?? process.env.OMNIRUSH_REVIEW_URL;
-  if (!base) throw new Error("Set OMNIRUSH_REVIEW_URL to the review app URL.");
+  const base = options.reviewUrl ?? process.env.MARS_REVIEW_URL;
+  if (!base) throw new Error("Set MARS_REVIEW_URL to the review app URL.");
   const url = new URL(base);
   if (
     url.username ||
@@ -289,7 +289,7 @@ export async function publishReviewPr(
       }
     }
   }
-  const upload = dependencies.upload ?? (await import("@omnirush/review/storage")).uploadReview;
+  const upload = dependencies.upload ?? (await import("@mars/review/storage")).uploadReview;
   const id = await upload(report, assets);
   const reportUrl = new URL(`/r/${id}`, url).href;
   // A push while media was uploading must not replace current evidence with an older report.

@@ -13,17 +13,17 @@ import {
 import os from "node:os";
 import path from "node:path";
 
-/** @typedef {import("@omnirush/types/desktop-ipc").DesktopIntegrationIssue} DesktopIntegrationIssue */
-/** @typedef {import("@omnirush/types/desktop-ipc").DesktopIntegrationResult} DesktopIntegrationResult */
-/** @typedef {import("@omnirush/types/desktop-ipc").DesktopIntegrationStatus} DesktopIntegrationStatus */
+/** @typedef {import("@mars/types/desktop-ipc").DesktopIntegrationIssue} DesktopIntegrationIssue */
+/** @typedef {import("@mars/types/desktop-ipc").DesktopIntegrationResult} DesktopIntegrationResult */
+/** @typedef {import("@mars/types/desktop-ipc").DesktopIntegrationStatus} DesktopIntegrationStatus */
 
-export const OMNIRUSH_DESKTOP_ID = "ai.omnirush.desktop";
-export const OMNIRUSH_DESKTOP_NAME = "ai.omnirush.desktop";
-export const OMNIRUSH_PROTOCOL_MIME = "x-scheme-handler/omnirush";
+export const MARS_DESKTOP_ID = "ai.marsai.desktop";
+export const MARS_DESKTOP_NAME = "ai.marsai.desktop";
+export const MARS_PROTOCOL_MIME = "x-scheme-handler/mars";
 
 const INTEGRATION_STATE_VERSION = 1;
-const OWNERSHIP_MARKER = "X-OmniRush-Managed";
-const MANAGED_VERSION_MARKER = "X-OmniRush-Version";
+const OWNERSHIP_MARKER = "X-Mars-Managed";
+const MANAGED_VERSION_MARKER = "X-Mars-Version";
 const ICON_SIZES = [16, 24, 32, 48, 64, 96, 128, 256, 512];
 
 function defaultCommandRunner(command, args) {
@@ -87,11 +87,11 @@ function entryTargetsAppImage(fields, appImagePath) {
     || exec.includes(`'${appImagePath.replaceAll("'", "'\\''")}'`);
 }
 
-function entryHandlesOmniRush(fields) {
+function entryHandlesMars(fields) {
   return (fields.get("MimeType") ?? "")
     .split(";")
     .map((value) => value.trim())
-    .includes(OMNIRUSH_PROTOCOL_MIME);
+    .includes(MARS_PROTOCOL_MIME);
 }
 
 function entryAcceptsUrl(fields) {
@@ -145,7 +145,7 @@ async function removeDesktopAssociation(filePath, desktopId) {
     }
     if (
       (section !== "[Default Applications]" && section !== "[Added Associations]")
-      || !trimmed.startsWith(`${OMNIRUSH_PROTOCOL_MIME}=`)
+      || !trimmed.startsWith(`${MARS_PROTOCOL_MIME}=`)
     ) {
       return line;
     }
@@ -175,7 +175,7 @@ function unsupportedStatus() {
   };
 }
 
-export function buildOmniRushDesktopEntry({
+export function buildMarsDesktopEntry({
   appImagePath,
   appName,
   appVersion,
@@ -185,20 +185,20 @@ export function buildOmniRushDesktopEntry({
 Type=Application
 Version=1.0
 Name=${cleanDesktopValue(appName)}
-Comment=Run agents, skills, and MCP with OmniRush.ai
+Comment=Run agents, skills, and MCP with MarsAI
 Exec=${quoteDesktopExec(appImagePath)} %U
 TryExec=${cleanDesktopValue(appImagePath)}
-Icon=${OMNIRUSH_DESKTOP_NAME}
-StartupWMClass=${OMNIRUSH_DESKTOP_NAME}
+Icon=${MARS_DESKTOP_NAME}
+StartupWMClass=${MARS_DESKTOP_NAME}
 Terminal=false
 Categories=Development;Utility;
-MimeType=${OMNIRUSH_PROTOCOL_MIME};
+MimeType=${MARS_PROTOCOL_MIME};
 X-AppImage-Name=${cleanDesktopValue(appName)}
 X-AppImage-Version=${cleanDesktopValue(appVersion)}
 ${OWNERSHIP_MARKER}=true
 ${MANAGED_VERSION_MARKER}=${cleanDesktopValue(appVersion)}
-X-OmniRush-Distribution=${cleanDesktopValue(distribution)}
-X-OmniRush-AppImage=${cleanDesktopValue(appImagePath)}
+X-Mars-Distribution=${cleanDesktopValue(distribution)}
+X-Mars-AppImage=${cleanDesktopValue(appImagePath)}
 `;
 }
 
@@ -220,16 +220,16 @@ export function createLinuxDesktopIntegration({
   const supported = platform === "linux" && app.isPackaged && appImagePath != null;
   const dataHome = env.XDG_DATA_HOME?.trim() || path.join(homeDir, ".local", "share");
   const configHome = env.XDG_CONFIG_HOME?.trim() || path.join(homeDir, ".config");
-  const desktopEntryPath = path.join(dataHome, "applications", OMNIRUSH_DESKTOP_ID);
+  const desktopEntryPath = path.join(dataHome, "applications", MARS_DESKTOP_ID);
   const iconPaths = Object.fromEntries(ICON_SIZES.map((size) => [
     size,
-    path.join(dataHome, "icons", "hicolor", `${size}x${size}`, "apps", `${OMNIRUSH_DESKTOP_NAME}.png`),
+    path.join(dataHome, "icons", "hicolor", `${size}x${size}`, "apps", `${MARS_DESKTOP_NAME}.png`),
   ]));
   const iconSources = Object.fromEntries(ICON_SIZES.map((size) => [
     size,
     path.join(resourcesPath ?? "", "icons", "linux", `${size}x${size}.png`),
   ]));
-  const statePath = path.join(configHome, "omnirush", "desktop-integration.json");
+  const statePath = path.join(configHome, "mars", "desktop-integration.json");
 
   async function readState() {
     const raw = await readFile(statePath, "utf8").catch(() => null);
@@ -246,7 +246,7 @@ export function createLinuxDesktopIntegration({
   }
 
   async function queryDefaultHandler() {
-    const result = await runCommand("xdg-mime", ["query", "default", OMNIRUSH_PROTOCOL_MIME]);
+    const result = await runCommand("xdg-mime", ["query", "default", MARS_PROTOCOL_MIME]);
     return result.ok && result.stdout.trim() ? result.stdout.trim() : null;
   }
 
@@ -276,7 +276,7 @@ export function createLinuxDesktopIntegration({
       path: candidate,
       managed: fields.get(OWNERSHIP_MARKER) === "true",
       acceptsUrl: entryAcceptsUrl(fields),
-      handlesProtocol: entryHandlesOmniRush(fields),
+      handlesProtocol: entryHandlesMars(fields),
     };
   }
 
@@ -290,7 +290,7 @@ export function createLinuxDesktopIntegration({
     const applicationsRoot = path.join(dataHome, "applications");
     const entries = await readdir(applicationsRoot, { withFileTypes: true }).catch(() => []);
     for (const entry of entries) {
-      if (!entry.isFile() || !entry.name.endsWith(".desktop") || entry.name === OMNIRUSH_DESKTOP_ID) continue;
+      if (!entry.isFile() || !entry.name.endsWith(".desktop") || entry.name === MARS_DESKTOP_ID) continue;
       const candidate = await inspectDesktopFile(path.join(applicationsRoot, entry.name), entry.name);
       if (candidate && !candidate.managed) return candidate;
     }
@@ -309,17 +309,17 @@ export function createLinuxDesktopIntegration({
       /** @type {DesktopIntegrationIssue[]} */
       const issues = [];
       if (!entryTargetsAppImage(ownFields, appImagePath)) issues.push("appimage-path");
-      if (!entryHandlesOmniRush(ownFields)) issues.push("desktop-entry");
+      if (!entryHandlesMars(ownFields)) issues.push("desktop-entry");
       if (ownFields.get(MANAGED_VERSION_MARKER) !== app.getVersion()) issues.push("version");
       const iconsPresent = await Promise.all(
         ICON_SIZES.map((size) => fileExists(iconPaths[size])),
       );
       if (!iconsPresent.every(Boolean)) issues.push("icon");
-      if (handlerDesktopId !== OMNIRUSH_DESKTOP_ID) issues.push("protocol-handler");
+      if (handlerDesktopId !== MARS_DESKTOP_ID) issues.push("protocol-handler");
       return {
         supported: true,
         state: issues.length ? "needs_repair" : "integrated",
-        ownership: "omnirush",
+        ownership: "mars",
         appImagePath,
         desktopEntryPath,
         handlerDesktopId,
@@ -394,7 +394,7 @@ export function createLinuxDesktopIntegration({
       const registration = await runCommand("xdg-mime", [
         "default",
         path.basename(before.desktopEntryPath),
-        OMNIRUSH_PROTOCOL_MIME,
+        MARS_PROTOCOL_MIME,
       ]);
       if (!registration.ok) {
         return {
@@ -408,17 +408,17 @@ export function createLinuxDesktopIntegration({
       return {
         ok: false,
         status,
-        error: "The external launcher was not selected for omnirush:// callbacks.",
+        error: "The external launcher was not selected for mars:// callbacks.",
       };
     }
     if (
       await fileExists(desktopEntryPath)
-      && before.ownership !== "omnirush"
+      && before.ownership !== "mars"
     ) {
       return {
         ok: false,
         status: before,
-        error: "The canonical OmniRush.ai launcher is externally managed and will not be overwritten.",
+        error: "The canonical MarsAI launcher is externally managed and will not be overwritten.",
       };
     }
 
@@ -427,7 +427,7 @@ export function createLinuxDesktopIntegration({
         await mkdir(path.dirname(iconPaths[size]), { recursive: true });
         await copyFile(iconSources[size], iconPaths[size]);
       }
-      await atomicWrite(desktopEntryPath, buildOmniRushDesktopEntry({
+      await atomicWrite(desktopEntryPath, buildMarsDesktopEntry({
         appImagePath,
         appName,
         appVersion: app.getVersion(),
@@ -435,20 +435,20 @@ export function createLinuxDesktopIntegration({
       }));
 
       const state = await readState();
-      if (before.handlerDesktopId && before.handlerDesktopId !== OMNIRUSH_DESKTOP_ID) {
+      if (before.handlerDesktopId && before.handlerDesktopId !== MARS_DESKTOP_ID) {
         state.previousProtocolHandler = before.handlerDesktopId;
       }
       state.dismissedAppImages = state.dismissedAppImages.filter((candidate) => candidate !== appImagePath);
       await writeState(state);
 
       await refreshDesktopCaches();
-      const registration = await runCommand("xdg-mime", ["default", OMNIRUSH_DESKTOP_ID, OMNIRUSH_PROTOCOL_MIME]);
+      const registration = await runCommand("xdg-mime", ["default", MARS_DESKTOP_ID, MARS_PROTOCOL_MIME]);
       if (!registration.ok) {
-        throw new Error(registration.stderr || "xdg-mime could not register omnirush://.");
+        throw new Error(registration.stderr || "xdg-mime could not register mars://.");
       }
       const status = await getStatus();
       if (status.state !== "integrated") {
-        throw new Error("The desktop entry was installed, but the desktop did not select it as the omnirush:// handler.");
+        throw new Error("The desktop entry was installed, but the desktop did not select it as the mars:// handler.");
       }
       return { ok: true, status };
     } catch (error) {
@@ -466,13 +466,13 @@ export function createLinuxDesktopIntegration({
       return { ok: false, status: unsupportedStatus(), error: "Desktop integration is unavailable." };
     }
     const before = await getStatus();
-    if (before.ownership !== "omnirush") {
+    if (before.ownership !== "mars") {
       return {
         ok: false,
         status: before,
         error: before.ownership === "external"
           ? "Remove this AppImage with the tool that manages it."
-          : "OmniRush.ai does not own a desktop integration to remove.",
+          : "MarsAI does not own a desktop integration to remove.",
       };
     }
 
@@ -481,13 +481,13 @@ export function createLinuxDesktopIntegration({
       await rm(desktopEntryPath, { force: true });
       await Promise.all(Object.values(iconPaths).map((target) => rm(target, { force: true })));
 
-      if (before.handlerDesktopId === OMNIRUSH_DESKTOP_ID) {
+      if (before.handlerDesktopId === MARS_DESKTOP_ID) {
         const previousPath = await locateDesktopEntry(state.previousProtocolHandler);
         if (state.previousProtocolHandler && previousPath) {
-          await runCommand("xdg-mime", ["default", state.previousProtocolHandler, OMNIRUSH_PROTOCOL_MIME]);
+          await runCommand("xdg-mime", ["default", state.previousProtocolHandler, MARS_PROTOCOL_MIME]);
         } else {
-          await removeDesktopAssociation(path.join(configHome, "mimeapps.list"), OMNIRUSH_DESKTOP_ID);
-          await removeDesktopAssociation(path.join(dataHome, "applications", "mimeapps.list"), OMNIRUSH_DESKTOP_ID);
+          await removeDesktopAssociation(path.join(configHome, "mimeapps.list"), MARS_DESKTOP_ID);
+          await removeDesktopAssociation(path.join(dataHome, "applications", "mimeapps.list"), MARS_DESKTOP_ID);
         }
       }
 
@@ -529,11 +529,11 @@ export function createLinuxDesktopIntegration({
       return status;
     }
 
-    // The user already accepted this integration, so drift in the files OmniRush.ai
+    // The user already accepted this integration, so drift in the files MarsAI
     // owns is maintenance rather than a new decision. A self-update lands under a
     // new versioned filename and a moved AppImage changes its path; both stale the
     // launcher. Repair silently instead of prompting after every release.
-    if (status.ownership === "omnirush") {
+    if (status.ownership === "mars") {
       const repaired = await install();
       if (!repaired.ok) {
         console.warn("[desktop-integration] silent repair failed", repaired.error);
@@ -545,9 +545,9 @@ export function createLinuxDesktopIntegration({
 
     const { response, checkboxChecked } = await dialog.showMessageBox(window, {
       type: "question",
-      title: "Add OmniRush.ai to your applications?",
-      message: "Add OmniRush.ai to your application launcher and register browser sign-in callbacks?",
-      detail: `The launcher will use this AppImage in its current location:\n${appImagePath}\n\nIf you move or update it later, OmniRush.ai repairs the launcher automatically. You can change or remove this in Settings → Preferences → AppImage desktop integration.`,
+      title: "Add MarsAI to your applications?",
+      message: "Add MarsAI to your application launcher and register browser sign-in callbacks?",
+      detail: `The launcher will use this AppImage in its current location:\n${appImagePath}\n\nIf you move or update it later, MarsAI repairs the launcher automatically. You can change or remove this in Settings → Preferences → AppImage desktop integration.`,
       buttons: ["Not now", "Integrate"],
       defaultId: 1,
       cancelId: 0,
@@ -565,7 +565,7 @@ export function createLinuxDesktopIntegration({
       await dialog.showMessageBox(window, {
         type: "warning",
         title: "Desktop integration failed",
-        message: "OmniRush.ai could not complete desktop integration.",
+        message: "MarsAI could not complete desktop integration.",
         detail: result.error ?? "Unknown error",
         buttons: ["OK"],
       });

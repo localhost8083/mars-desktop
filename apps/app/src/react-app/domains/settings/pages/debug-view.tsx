@@ -10,11 +10,11 @@ import {
 } from "lucide-react";
 
 import type {
-  OmniRushAuditEntry,
-  OmniRushRuntimeConfigStatus,
-  OmniRushServerCapabilities,
-  OmniRushServerDiagnostics,
-} from "../../../../app/lib/omnirush-server";
+  MarsAuditEntry,
+  MarsRuntimeConfigStatus,
+  MarsServerCapabilities,
+  MarsServerDiagnostics,
+} from "../../../../app/lib/mars-server";
 import type { NukeManifestPreview } from "../../../../app/lib/desktop";
 import type {
   OpencodeConnectStatus,
@@ -43,10 +43,10 @@ import {
 } from "./agent-context-diagnostics-section";
 import { AgentAccessCard } from "@/react-app/domains/settings/cloud/agent-access-card";
 import type {
-  OmniRushCloudMcpHealth,
-  OmniRushCloudMcpProviderModelContext,
-  OmniRushServerClient,
-} from "@/app/lib/omnirush-server";
+  MarsCloudMcpHealth,
+  MarsCloudMcpProviderModelContext,
+  MarsServerClient,
+} from "@/app/lib/mars-server";
 
 const sectionHeaderClass = "flex flex-col gap-1 pb-2";
 const sectionTitleClass = "text-[15px] font-semibold tracking-[-0.2px] text-dls-text";
@@ -65,7 +65,7 @@ type RuntimeSummary = {
   appVersionLabel: string;
   appCommitLabel: string;
   opencodeVersionLabel: string;
-  omnirushServerVersionLabel: string;
+  marsServerVersionLabel: string;
 };
 
 type StatusPill = {
@@ -93,10 +93,10 @@ export type DebugViewProps = {
   developerMode: boolean;
   agentContextDiagnostics: AgentContextDiagnosticsSectionProps;
   agentAccess?: {
-    client: OmniRushServerClient | null;
+    client: MarsServerClient | null;
     workspaceId: string | null;
-    currentModel: OmniRushCloudMcpProviderModelContext | null;
-    onHealthChange?: (health: OmniRushCloudMcpHealth | null) => void;
+    currentModel: MarsCloudMcpProviderModelContext | null;
+    onHealthChange?: (health: MarsCloudMcpHealth | null) => void;
   } | null;
   busy: boolean;
   anyActiveRuns: boolean;
@@ -106,7 +106,7 @@ export type DebugViewProps = {
   runtimeSummary: RuntimeSummary;
   runtimeDebugReportJson: string;
   bootstrapConfigDebugJson: string;
-  runtimeConfigStatus: OmniRushRuntimeConfigStatus | null;
+  runtimeConfigStatus: MarsRuntimeConfigStatus | null;
   runtimeConfigStatusError: string | null;
   runtimeDebugStatus: string | null;
   onCopyRuntimeDebugReport: () => void | Promise<void>;
@@ -151,33 +151,33 @@ export type DebugViewProps = {
   resetModalBusy: boolean;
   resetStatus: string | null;
   opencodeRestarting: boolean;
-  omnirushServerRestarting: boolean;
+  marsServerRestarting: boolean;
   opencodeServiceStatus: ServiceStatus;
-  omnirushServiceStatus: ServiceStatus;
+  marsServiceStatus: ServiceStatus;
   opencodeLogStatus: string | null;
-  omnirushLogStatus: string | null;
+  marsLogStatus: string | null;
   onCopyOpencodeLogs: () => void | Promise<void>;
   onExportOpencodeLogs: () => void | Promise<void>;
-  onCopyOmniRushLogs: () => void | Promise<void>;
-  onExportOmniRushLogs: () => void | Promise<void>;
+  onCopyMarsLogs: () => void | Promise<void>;
+  onExportMarsLogs: () => void | Promise<void>;
   serviceRestartError: string | null;
   onRestartOpencode: () => void | Promise<void>;
-  onRestartOmniRushServer: () => void | Promise<void>;
+  onRestartMarsServer: () => void | Promise<void>;
   engineCard: RuntimeServiceCard;
   opencodeConnectCard: OpenCodeConnectDebugCard;
-  omnirushCard: RuntimeServiceCard;
-  omnirushServerDiagnostics: OmniRushServerDiagnostics | null;
+  marsCard: RuntimeServiceCard;
+  marsServerDiagnostics: MarsServerDiagnostics | null;
   runtimeWorkspaceId: string | null;
-  omnirushServerCapabilities: OmniRushServerCapabilities | null;
+  marsServerCapabilities: MarsServerCapabilities | null;
   pendingPermissions: unknown;
   events: unknown;
   workspaceDebugEvents: unknown;
   workspaceDebugEventsStatus: string | null;
   safeStringify: (value: unknown) => string;
   onClearWorkspaceDebugEvents: () => void | Promise<void>;
-  omnirushAuditEntries: OmniRushAuditEntry[];
-  omnirushAuditStatus: StatusPill;
-  omnirushAuditError: string | null;
+  marsAuditEntries: MarsAuditEntry[];
+  marsAuditStatus: StatusPill;
+  marsAuditError: string | null;
   opencodeConnectStatus: OpencodeConnectStatus | null;
   opencodeDevModeEnabled: boolean;
   nukeConfigBusy: boolean;
@@ -191,10 +191,10 @@ export type DebugViewProps = {
   onCloseNukeDialog: () => void;
   onSetNukeConfirmationText: (value: string) => void;
   onSetNukeDeleteBootstrap: (value: boolean) => void | Promise<void>;
-  onConfirmNukeOmniRushAndOpencodeConfig: () => void | Promise<void>;
+  onConfirmNukeMarsAndOpencodeConfig: () => void | Promise<void>;
 };
 
-function formatActor(entry: OmniRushAuditEntry) {
+function formatActor(entry: MarsAuditEntry) {
   if (entry.actor.type === "host") return t("settings.audit_actor_host");
   if (entry.actor.clientId) return entry.actor.clientId;
   if (entry.actor.tokenHash) return entry.actor.tokenHash;
@@ -260,8 +260,8 @@ function ExecutionDetails(props: { execution: OpencodeExecutionSnapshot }) {
     <div className="rounded-xl border border-blue-6/30 bg-blue-3/20 p-3">
       <div className="mb-2 flex items-center justify-between gap-3">
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-blue-11">omnirush.ai execution</div>
-          <div className="text-[11px] text-dls-secondary">Command, working directory, and omnirush.ai-injected environment.</div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-blue-11">marsai.click execution</div>
+          <div className="text-[11px] text-dls-secondary">Command, working directory, and marsai.click-injected environment.</div>
         </div>
         <div className="shrink-0 rounded-full border border-blue-7/30 bg-blue-7/10 px-2 py-1 text-[10px] font-medium text-blue-11">
           redacted
@@ -301,7 +301,7 @@ function formatManagedFileTime(value: number | null | undefined): string {
 }
 
 function RuntimeConfigOwnershipCard(props: {
-  status: OmniRushRuntimeConfigStatus | null;
+  status: MarsRuntimeConfigStatus | null;
   error: string | null;
 }) {
   return (
@@ -487,8 +487,8 @@ export function DebugView(props: DebugViewProps) {
             {t("settings.debug_opencode_version", { version: props.runtimeSummary.opencodeVersionLabel })}
           </div>
           <div>
-            {t("settings.debug_omnirush_server_version", {
-              version: props.runtimeSummary.omnirushServerVersionLabel,
+            {t("settings.debug_mars_server_version", {
+              version: props.runtimeSummary.marsServerVersionLabel,
             })}
           </div>
         </div>
@@ -522,21 +522,21 @@ export function DebugView(props: DebugViewProps) {
 
         <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">
           <ServiceCard
-            title={t("settings.omnirush_server_label")}
-            description={t("settings.omnirush_config_sidecar_desc")}
-            pill={props.omnirushCard}
-            lines={props.omnirushCard.lines}
-            stdout={props.omnirushCard.stdout ?? null}
-            stderr={props.omnirushCard.stderr ?? null}
-            execution={props.omnirushCard.execution ?? null}
-            error={props.omnirushCard.error ?? null}
-            restarting={props.omnirushServerRestarting}
-            restartLabel={t("settings.restart_omnirush_server")}
-            onRestart={props.onRestartOmniRushServer}
-            serviceStatus={props.omnirushServiceStatus}
-            logStatus={props.omnirushLogStatus}
-            onCopyLogs={props.onCopyOmniRushLogs}
-            onExportLogs={props.onExportOmniRushLogs}
+            title={t("settings.mars_server_label")}
+            description={t("settings.mars_config_sidecar_desc")}
+            pill={props.marsCard}
+            lines={props.marsCard.lines}
+            stdout={props.marsCard.stdout ?? null}
+            stderr={props.marsCard.stderr ?? null}
+            execution={props.marsCard.execution ?? null}
+            error={props.marsCard.error ?? null}
+            restarting={props.marsServerRestarting}
+            restartLabel={t("settings.restart_mars_server")}
+            onRestart={props.onRestartMarsServer}
+            serviceStatus={props.marsServiceStatus}
+            logStatus={props.marsLogStatus}
+            onCopyLogs={props.onCopyMarsLogs}
+            onExportLogs={props.onExportMarsLogs}
             isDesktop={isDesktop}
           />
 
@@ -600,7 +600,7 @@ export function DebugView(props: DebugViewProps) {
           <div className={sectionHeaderClass}>
             <div className={sectionTitleClass}>Agent access</div>
             <div className={sectionDescClass}>
-              Test and repair omnirush.ai Cloud MCP access for this workspace.
+              Test and repair marsai.click Cloud MCP access for this workspace.
             </div>
           </div>
           <AgentAccessCard
@@ -615,52 +615,52 @@ export function DebugView(props: DebugViewProps) {
       {/* Section: Diagnostics */}
       <div className={cardClass}>
         <div className={sectionHeaderClass}>
-          <div className={sectionTitleClass}>{t("settings.omnirush_diagnostics_title")}</div>
+          <div className={sectionTitleClass}>{t("settings.mars_diagnostics_title")}</div>
           <div className={sectionDescClass}>
             <span className="font-mono text-[11px] text-dls-secondary">
-              {props.omnirushServerDiagnostics?.version ?? "—"}
+              {props.marsServerDiagnostics?.version ?? "—"}
             </span>
           </div>
         </div>
 
-        {props.omnirushServerDiagnostics ? (
+        {props.marsServerDiagnostics ? (
           <div className="grid gap-2 text-[12px] text-dls-secondary md:grid-cols-2">
-            <div>{t("settings.diag_started", { time: formatUptime(props.omnirushServerDiagnostics.uptimeMs) })}</div>
+            <div>{t("settings.diag_started", { time: formatUptime(props.marsServerDiagnostics.uptimeMs) })}</div>
             <div>
               {t("settings.diag_read_only", {
-                value: props.omnirushServerDiagnostics.readOnly ? "true" : "false",
+                value: props.marsServerDiagnostics.readOnly ? "true" : "false",
               })}
             </div>
             <div>
               {t("settings.diag_approval", {
-                mode: props.omnirushServerDiagnostics.approval.mode,
-                ms: String(props.omnirushServerDiagnostics.approval.timeoutMs),
+                mode: props.marsServerDiagnostics.approval.mode,
+                ms: String(props.marsServerDiagnostics.approval.timeoutMs),
               })}
             </div>
-            <div>{t("settings.diag_workspaces", { count: String(props.omnirushServerDiagnostics.workspaceCount) })}</div>
+            <div>{t("settings.diag_workspaces", { count: String(props.marsServerDiagnostics.workspaceCount) })}</div>
             <div>
               {t("settings.diag_selected_workspace", {
-                id: props.omnirushServerDiagnostics.selectedWorkspaceId ?? "—",
+                id: props.marsServerDiagnostics.selectedWorkspaceId ?? "—",
               })}
             </div>
             <div>
               {t("settings.diag_runtime_workspace", {
-                id: props.omnirushServerDiagnostics.activeWorkspaceId ?? "—",
+                id: props.marsServerDiagnostics.activeWorkspaceId ?? "—",
               })}
             </div>
             <div>
               {t("settings.diag_config_path", {
-                path: props.omnirushServerDiagnostics.server.configPath ?? t("settings.diag_default"),
+                path: props.marsServerDiagnostics.server.configPath ?? t("settings.diag_default"),
               })}
             </div>
             <div>
               {t("settings.diag_token_source", {
-                source: props.omnirushServerDiagnostics.tokenSource.client,
+                source: props.marsServerDiagnostics.tokenSource.client,
               })}
             </div>
             <div>
               {t("settings.diag_host_token_source", {
-                source: props.omnirushServerDiagnostics.tokenSource.host,
+                source: props.marsServerDiagnostics.tokenSource.host,
               })}
             </div>
           </div>
@@ -679,17 +679,17 @@ export function DebugView(props: DebugViewProps) {
                 : t("settings.worker_unresolved")}
             </div>
           </div>
-          {props.omnirushServerCapabilities ? (
+          {props.marsServerCapabilities ? (
             <div className="grid gap-2 text-[12px] text-dls-secondary md:grid-cols-2">
-              <div>{t("settings.cap_skills", { value: formatCapability(props.omnirushServerCapabilities.skills) })}</div>
-              <div>{t("settings.cap_plugins", { value: formatCapability(props.omnirushServerCapabilities.plugins) })}</div>
-              <div>{t("settings.cap_mcp", { value: formatCapability(props.omnirushServerCapabilities.mcp) })}</div>
-              <div>{t("settings.cap_commands", { value: formatCapability(props.omnirushServerCapabilities.commands) })}</div>
-              <div>{t("settings.cap_config", { value: formatCapability(props.omnirushServerCapabilities.config) })}</div>
+              <div>{t("settings.cap_skills", { value: formatCapability(props.marsServerCapabilities.skills) })}</div>
+              <div>{t("settings.cap_plugins", { value: formatCapability(props.marsServerCapabilities.plugins) })}</div>
+              <div>{t("settings.cap_mcp", { value: formatCapability(props.marsServerCapabilities.mcp) })}</div>
+              <div>{t("settings.cap_commands", { value: formatCapability(props.marsServerCapabilities.commands) })}</div>
+              <div>{t("settings.cap_config", { value: formatCapability(props.marsServerCapabilities.config) })}</div>
               <div>
                 {t("settings.cap_browser_tools", {
                   value: (() => {
-                    const browser = props.omnirushServerCapabilities.toolProviders?.browser;
+                    const browser = props.marsServerCapabilities.toolProviders?.browser;
                     if (!browser?.enabled) return t("settings.disabled");
                     return `${browser.mode} · ${browser.placement}`;
                   })(),
@@ -698,7 +698,7 @@ export function DebugView(props: DebugViewProps) {
               <div>
                 {t("settings.cap_file_tools", {
                   value: (() => {
-                    const files = props.omnirushServerCapabilities.toolProviders?.files;
+                    const files = props.marsServerCapabilities.toolProviders?.files;
                     if (!files) return t("config.unavailable");
                     return [
                       files.injection ? t("settings.cap_inbox_on") : t("settings.cap_inbox_off"),
@@ -709,8 +709,8 @@ export function DebugView(props: DebugViewProps) {
               </div>
               <div>
                 {t("settings.cap_sandbox", {
-                  value: props.omnirushServerCapabilities.sandbox
-                    ? `${props.omnirushServerCapabilities.sandbox.backend} (${props.omnirushServerCapabilities.sandbox.enabled ? t("settings.on") : t("settings.off")})`
+                  value: props.marsServerCapabilities.sandbox
+                    ? `${props.marsServerCapabilities.sandbox.backend} (${props.marsServerCapabilities.sandbox.enabled ? t("settings.on") : t("settings.off")})`
                     : t("config.unavailable"),
                 })}
               </div>
@@ -733,14 +733,14 @@ export function DebugView(props: DebugViewProps) {
             <div className="text-sm font-semibold tracking-[-0.1px] text-dls-text">
               {t("settings.audit_log_title")}
             </div>
-            <div className={`rounded-full border px-2 py-1 text-[11px] font-medium ${props.omnirushAuditStatus.className}`}>
-              {props.omnirushAuditStatus.label}
+            <div className={`rounded-full border px-2 py-1 text-[11px] font-medium ${props.marsAuditStatus.className}`}>
+              {props.marsAuditStatus.label}
             </div>
           </div>
-          {props.omnirushAuditError ? <StatusBanner tone="error" message={props.omnirushAuditError} /> : null}
-          {props.omnirushAuditEntries.length > 0 ? (
+          {props.marsAuditError ? <StatusBanner tone="error" message={props.marsAuditError} /> : null}
+          {props.marsAuditEntries.length > 0 ? (
             <div className="divide-y divide-dls-border/60">
-              {props.omnirushAuditEntries.map((entry) => (
+              {props.marsAuditEntries.map((entry) => (
                 <div key={entry.id} className="flex items-start justify-between gap-4 py-2">
                   <div className="min-w-0">
                     <div className="truncate text-sm text-dls-text">{entry.summary}</div>
@@ -1019,7 +1019,7 @@ export function DebugView(props: DebugViewProps) {
           <div className="rounded-xl border border-green-7/25 bg-green-3/10 px-3 py-2 text-[12px] leading-relaxed text-green-11">
             Safe default: use <strong>Prepare migration data</strong> first. It writes the Electron snapshot only and does
             not replace, quit, or delete the Tauri app. The install handoff keeps rollback backup at{" "}
-            <code className="font-mono">OmniRush.ai.app.migrate-bak</code>.
+            <code className="font-mono">MarsAI.app.migrate-bak</code>.
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -1090,7 +1090,7 @@ export function DebugView(props: DebugViewProps) {
               size="sm"
               onClick={() => void props.onInstallElectronPreviewFromTauri()}
               disabled={props.electronMigrationBusy || !props.electronMigrationUrl.trim()}
-              title="Requires a trusted artifact URL. macOS keeps omnirush.ai.app.migrate-bak for rollback."
+              title="Requires a trusted artifact URL. macOS keeps marsai.click.app.migrate-bak for rollback."
             >
               Start install handoff…
             </Button>
@@ -1179,12 +1179,12 @@ export function DebugView(props: DebugViewProps) {
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-sm font-semibold tracking-[-0.1px] text-dls-text">
-                {t("settings.reset_omnirush_title")}
+                {t("settings.reset_mars_title")}
               </div>
               <div className="text-[12px] text-dls-secondary">
                 {props.opencodeDevModeEnabled
-                  ? t("settings.reset_omnirush_desc_dev")
-                  : t("settings.reset_omnirush_desc_prod")}
+                  ? t("settings.reset_mars_desc_dev")
+                  : t("settings.reset_mars_desc_prod")}
               </div>
             </div>
             <div
@@ -1317,7 +1317,7 @@ export function DebugView(props: DebugViewProps) {
           <AlertDialogCancel disabled={props.nukeConfigBusy}>{t("settings.nuke_cancel")}</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
-            onClick={() => void props.onConfirmNukeOmniRushAndOpencodeConfig()}
+            onClick={() => void props.onConfirmNukeMarsAndOpencodeConfig()}
             disabled={!canConfirmNuke}
           >
             {props.nukeConfigBusy ? t("settings.removing_local_state") : t("settings.nuke_confirm_button")}

@@ -1,5 +1,5 @@
 {
-  "name": "@omnirush/headless-threads",
+  "name": "@mars/headless-threads",
   "version": "0.0.0",
   "private": true,
   "type": "module",

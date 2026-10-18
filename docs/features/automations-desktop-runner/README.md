@@ -19,7 +19,7 @@ activity, and its sleep is capped by the existing 15-second presence keepalive.
 This preserves the resumable SSE and bounded claim protocol while reducing an
 idle runner's steady-state notification queries from 60 to four per minute.
 
-The claimed Automation runs as a normal visible local OmniRush.ai thread in the
+The claimed Automation runs as a normal visible local MarsAI thread in the
 desktop's active workspace. It uses the selected model and the same local
 OpenCode tool and integration experience as a thread started by the user.
 

@@ -7,7 +7,7 @@ import { join } from "node:path";
 function createTestConfig(): ServerConfig {
   const tempDir = join(
     tmpdir(),
-    `omnirush-token-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    `mars-token-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   );
   return {
     host: "127.0.0.1",

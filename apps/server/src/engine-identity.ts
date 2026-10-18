@@ -7,7 +7,7 @@ import constants from "../../../constants.json" with { type: "json" };
  * and `environment.app_version`.
  */
 export type HarnessName = "opencode" | "pi";
-export type HarnessEngine = "omnirush-opencode" | "omnirush-core";
+export type HarnessEngine = "mars-opencode" | "mars-core";
 
 export type Harness = {
   name: HarnessName;
@@ -27,12 +27,12 @@ export function engineBuildVersion(buildTag: string, fallbackVersion: string): s
   return fallbackVersion.trim().replace(/^v/, "");
 }
 
-/** The desktop's engine: OmniRush.ai's opencode build (apps/desktop/scripts/engine-release.json). */
+/** The desktop's engine: MarsAI's opencode build (apps/desktop/scripts/engine-release.json). */
 export function opencodeHarness(buildTag: string, fallbackVersion: string): Harness {
   const version = engineBuildVersion(buildTag, fallbackVersion) || "unknown";
   return {
     name: "opencode",
-    engine: "omnirush-opencode",
+    engine: "mars-opencode",
     version,
     build_tag: buildTag.trim() || `${RELEASE_TAG_PREFIX}${version}`,
   };

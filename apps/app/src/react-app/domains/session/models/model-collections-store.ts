@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 import type { ModelRef } from "@/app/types";
 
-const STORAGE_KEY = "omnirush.modelCollections.v1";
+const STORAGE_KEY = "mars.modelCollections.v1";
 export const MAX_RECENT_MODELS = 5;
 
 type StoredCollections = {

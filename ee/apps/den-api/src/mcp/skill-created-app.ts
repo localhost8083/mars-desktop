@@ -5,15 +5,15 @@ import {
 } from "./mcp-app-v2.js"
 import type { McpUiResourceMeta } from "@modelcontextprotocol/ext-apps"
 import type { McpServer } from "@modelcontextprotocol/server"
-import { skillCreatedAppHtml } from "@omnirush/mcp-apps/skill-created"
+import { skillCreatedAppHtml } from "@mars/mcp-apps/skill-created"
 import {
   skillCreatedAppSchemaVersion,
   skillCreatedPayloadSchema,
   type SkillCreatedPayload,
-} from "@omnirush/types/skill-created-app"
+} from "@mars/types/skill-created-app"
 import { z } from "zod"
 
-export { skillCreatedPayloadSchema } from "@omnirush/types/skill-created-app"
+export { skillCreatedPayloadSchema } from "@mars/types/skill-created-app"
 
 export const SKILL_CREATED_APP_RESOURCE_URI = "ui://omnirush/skill-created/v1/view.html"
 export const CREATE_SKILL_TOOL_NAME = "create_skill"

@@ -8,11 +8,11 @@ import { checkStoreAccess, isElevated, repairStoreAccess, storeFiles } from "./s
 
 async function fixture() {
   const root = await mkdtemp(path.join(os.tmpdir(), "start-store-check-"));
-  const userDataPath = path.join(root, "ai.omnirush.desktop");
-  const configDir = path.join(root, "omnirush");
-  await mkdir(path.join(userDataPath, "engine-data", "omnirush"), { recursive: true });
+  const userDataPath = path.join(root, "ai.marsai.desktop");
+  const configDir = path.join(root, "mars");
+  await mkdir(path.join(userDataPath, "engine-data", "mars"), { recursive: true });
   await mkdir(configDir, { recursive: true });
-  const env = { OMNIRUSH_SERVER_CONFIG: path.join(configDir, "server.json") };
+  const env = { MARS_SERVER_CONFIG: path.join(configDir, "server.json") };
   const files = storeFiles({ userDataPath, env, homedir: root });
   return { root, configDir, userDataPath, files };
 }
@@ -23,7 +23,7 @@ test("store files: the runtime store and the engine's, each with its journal fil
     assert.deepEqual(files.runtime.map((file) => path.relative(configDir, file)), [
       "runtime.sqlite", "runtime.sqlite-journal", "runtime.sqlite-wal", "runtime.sqlite-shm",
     ]);
-    assert.equal(path.relative(userDataPath, files.engine[0]), path.join("engine-data", "omnirush", "opencode.db"));
+    assert.equal(path.relative(userDataPath, files.engine[0]), path.join("engine-data", "mars", "opencode.db"));
     assert.equal(files.engine.length, 4);
   } finally {
     await rm(root, { recursive: true, force: true });

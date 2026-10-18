@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { OmniRushCloudMcpHealth } from "../src/app/lib/omnirush-server";
+import type { MarsCloudMcpHealth } from "../src/app/lib/mars-server";
 import {
   buildCloudMcpSupportBundle,
   cloudMcpAdvancedRows,
@@ -11,7 +11,7 @@ import {
 
 const CHECKED_AT = "2026-07-22T10:00:00.000Z";
 
-function baseHealth(overrides?: Partial<OmniRushCloudMcpHealth>): OmniRushCloudMcpHealth {
+function baseHealth(overrides?: Partial<MarsCloudMcpHealth>): MarsCloudMcpHealth {
   return {
     schemaVersion: 1,
     phase: "engine_failed",
@@ -21,7 +21,7 @@ function baseHealth(overrides?: Partial<OmniRushCloudMcpHealth>): OmniRushCloudM
     workspace: { id: "ws_1", type: "local", directory: "/workspace", path: "/workspace" },
     desired: {
       present: true,
-      name: "omnirush-cloud",
+      name: "mars-cloud",
       revision: "rev_desired_1234567890",
       config: null,
       token: { present: true, metadata: { expiresAt: "2026-07-23T00:00:00.000Z" } },
@@ -42,14 +42,14 @@ function baseHealth(overrides?: Partial<OmniRushCloudMcpHealth>): OmniRushCloudM
       cloudPresent: true,
       serverCount: 2,
       servers: [
-        { name: "omnirush-cloud", status: "failed", error: "fetch failed" },
+        { name: "mars-cloud", status: "failed", error: "fetch failed" },
         { name: "sibling", status: "connected" },
       ],
     },
     tools: {
-      expected: ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
+      expected: ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
       present: [],
-      missing: ["omnirush-cloud_search_capabilities", "omnirush-cloud_execute_capability"],
+      missing: ["mars-cloud_search_capabilities", "mars-cloud_execute_capability"],
       direct: {
         checked: false,
         source: "mcp_tools_list",
@@ -61,7 +61,7 @@ function baseHealth(overrides?: Partial<OmniRushCloudMcpHealth>): OmniRushCloudM
     },
     pluginCanaries: { expected: [], present: [], missing: [] },
     compatibility: {
-      omnirush: { serverVersion: "0.17.36", app: { version: "0.17.36" } },
+      mars: { serverVersion: "0.17.36", app: { version: "0.17.36" } },
       opencode: { expectedVersion: "1.17.11", actualVersion: "1.17.11", probe: "ok" },
       pluginFileHashes: [],
       supportedFeatures: { dynamicMcp: true, directoryScoping: true, toolIds: true, providerToolProjection: false, pluginCanaries: false },
@@ -73,8 +73,8 @@ function baseHealth(overrides?: Partial<OmniRushCloudMcpHealth>): OmniRushCloudM
       code: "opencode_mcp_sync_failed",
       stage: "engine_delivery",
       retryable: true,
-      recommendedAction: "Retry reconcile or reconnect OmniRush.ai Cloud",
-      message: "omnirush-cloud MCP connection failed.",
+      recommendedAction: "Retry reconcile or reconnect MarsAI Cloud",
+      message: "mars-cloud MCP connection failed.",
       details: { error: "fetch failed" },
     },
     checkedAt: CHECKED_AT,
@@ -95,7 +95,7 @@ describe("cloud MCP advanced diagnostics", () => {
     expect(byLabel.get("Failure")?.value).toBe("opencode_mcp_sync_failed · stage engine_delivery · retryable");
     expect(byLabel.get("Engine MCP status")?.value).toBe("failed — fetch failed");
     expect(byLabel.get("Engine MCP status")?.tone).toBe("error");
-    expect(byLabel.get("Engine MCP servers")?.value).toContain("omnirush-cloud failed — fetch failed");
+    expect(byLabel.get("Engine MCP servers")?.value).toContain("mars-cloud failed — fetch failed");
     expect(byLabel.get("Engine MCP servers")?.value).toContain("sibling connected");
     expect(byLabel.get("Delivery")?.value).toBe("failed · desired rev_desired_ · applied none · last attempt 2026-07-22T10:00:00.000Z · trigger desktop-repair");
     expect(byLabel.get("Cloud token")?.value).toBe("present · expires 2026-07-23T00:00:00.000Z");
@@ -128,7 +128,7 @@ describe("cloud MCP advanced diagnostics", () => {
             stage: "tool_registration",
             retryable: true,
             recommendedAction: "Check the network path",
-            message: "The OmniRush.ai server could not reach the Cloud MCP endpoint.",
+            message: "The MarsAI server could not reach the Cloud MCP endpoint.",
             details: {
               transport: {
                 message: "fetch failed",
@@ -137,7 +137,7 @@ describe("cloud MCP advanced diagnostics", () => {
             },
           },
           trace: {
-            endpoint: "https://api.omnirush.test/mcp/agent",
+            endpoint: "https://api.mars.test/mcp/agent",
             startedAt: CHECKED_AT,
             latencyMs: 42,
             protocolVersion: null,
@@ -149,16 +149,16 @@ describe("cloud MCP advanced diagnostics", () => {
     }));
     const cause = rows.find((row) => row.label === "Probe transport cause");
     expect(cause?.value).toContain("SELF_SIGNED_CERT_IN_CHAIN");
-    expect(rows.find((row) => row.label === "Endpoint")?.value).toBe("https://api.omnirush.test/mcp/agent");
+    expect(rows.find((row) => row.label === "Endpoint")?.value).toBe("https://api.mars.test/mcp/agent");
   });
 
   test("formats probe trace and engine refresh step lines", () => {
     expect(cloudMcpProbeTraceLines({
-      endpoint: "https://api.omnirush.test/mcp/agent",
+      endpoint: "https://api.mars.test/mcp/agent",
       startedAt: CHECKED_AT,
       latencyMs: 240,
       protocolVersion: "2025-06-18",
-      serverInfo: { name: "omnirush-cloud", version: "1.0.0" },
+      serverInfo: { name: "mars-cloud", version: "1.0.0" },
       steps: [
         { step: "initialize", ok: true, httpStatus: 200, latencyMs: 120 },
         { step: "tools_list", ok: false, httpStatus: 502, latencyMs: 88, error: { message: "bad gateway" } },
@@ -199,7 +199,7 @@ describe("cloud MCP advanced diagnostics", () => {
           code: "invalid_mcp_token",
           stage: "transport_auth",
           retryable: false,
-          recommendedAction: "Reconnect OmniRush.ai Cloud",
+          recommendedAction: "Reconnect MarsAI Cloud",
           message: "rejected",
           details: { header: "Bearer owt_super_secret_token_value" },
         },
@@ -207,14 +207,14 @@ describe("cloud MCP advanced diagnostics", () => {
       context: {
         workspaceId: "ws_1",
         orgId: "org_1",
-        denBaseUrl: "https://app.omnirush.test",
-        serverBaseUrl: "https://worker.omnirush.test",
+        denBaseUrl: "https://app.mars.test",
+        serverBaseUrl: "https://worker.mars.test",
       },
       capturedAt: CHECKED_AT,
     });
 
     const parsed = JSON.parse(bundle) as Record<string, unknown>;
-    expect(parsed.kind).toBe("omnirush-cloud-mcp-diagnostic");
+    expect(parsed.kind).toBe("mars-cloud-mcp-diagnostic");
     expect(parsed.capturedAt).toBe(CHECKED_AT);
     expect((parsed.context as Record<string, unknown>).workspaceId).toBe("ws_1");
     expect(bundle).not.toContain("owt_super_secret_token_value");

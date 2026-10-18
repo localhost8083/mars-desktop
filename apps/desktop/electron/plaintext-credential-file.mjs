@@ -23,7 +23,7 @@ const loggedKinds = new Set();
 export function logPlaintextCredentialsOnce(kind, log = console.warn) {
   if (loggedKinds.has(kind)) return;
   loggedKinds.add(kind);
-  log(`[omnirush] No usable system keyring: the ${kind} is kept unencrypted at rest in an owner-only (0600) file in the app data folder.`);
+  log(`[mars] No usable system keyring: the ${kind} is kept unencrypted at rest in an owner-only (0600) file in the app data folder.`);
 }
 
 /**
@@ -104,7 +104,7 @@ export async function discardPlaintextCredentialFile(filePath, kind, log) {
     await removePlaintextCredentialFile(filePath);
     return true;
   } catch (error) {
-    log(`[omnirush] Could not delete the private file for the ${kind} (${error?.code ?? "error"}); it will be retried.`);
+    log(`[mars] Could not delete the private file for the ${kind} (${error?.code ?? "error"}); it will be retried.`);
     return false;
   }
 }

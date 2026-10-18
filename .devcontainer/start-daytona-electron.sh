@@ -5,7 +5,7 @@ set -euo pipefail
 # This centralizes the graphics-safe Chromium flags and optional secret-volume
 # env loading used by Daytona evals.
 
-cd "${OMNIRUSH_WORKSPACE_DIR:-/workspace}"
+cd "${MARS_WORKSPACE_DIR:-/workspace}"
 
 if [ "${1:-}" = "--detach" ]; then
   shift
@@ -20,7 +20,7 @@ script_path, log_path, *args = sys.argv[1:]
 log = open(log_path, "ab", buffering=0)
 subprocess.Popen(
     ["bash", script_path, *args],
-    cwd=os.environ.get("OMNIRUSH_WORKSPACE_DIR", "/workspace"),
+    cwd=os.environ.get("MARS_WORKSPACE_DIR", "/workspace"),
     env=os.environ.copy(),
     stdin=subprocess.DEVNULL,
     stdout=log,
@@ -61,26 +61,26 @@ fi
 export DISPLAY="${DISPLAY:-:99}"
 export ELECTRON_DISABLE_SANDBOX="${ELECTRON_DISABLE_SANDBOX:-1}"
 export ELECTRON_EXTRA_LAUNCH_ARGS="${ELECTRON_EXTRA_LAUNCH_ARGS:-$DAYTONA_ELECTRON_EXTRA_LAUNCH_ARGS}"
-export OMNIRUSH_REACT_DEVTOOLS="${OMNIRUSH_REACT_DEVTOOLS:-0}"
-export OMNIRUSH_DEV_MODE="${OMNIRUSH_DEV_MODE:-1}"
-export OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT="${OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT:-9825}"
-export OMNIRUSH_ELECTRON_FAKE_MEDIA="${OMNIRUSH_ELECTRON_FAKE_MEDIA:-0}"
-if [ -n "${OMNIRUSH_ELECTRON_USERDATA:-}" ]; then
-  export OMNIRUSH_ELECTRON_USERDATA
+export MARS_REACT_DEVTOOLS="${MARS_REACT_DEVTOOLS:-0}"
+export MARS_DEV_MODE="${MARS_DEV_MODE:-1}"
+export MARS_ELECTRON_REMOTE_DEBUG_PORT="${MARS_ELECTRON_REMOTE_DEBUG_PORT:-9825}"
+export MARS_ELECTRON_FAKE_MEDIA="${MARS_ELECTRON_FAKE_MEDIA:-0}"
+if [ -n "${MARS_ELECTRON_USERDATA:-}" ]; then
+  export MARS_ELECTRON_USERDATA
 fi
-if [ -n "${OMNIRUSH_ELECTRON_APP_IDENTIFIER:-}" ]; then
-  export OMNIRUSH_ELECTRON_APP_IDENTIFIER
+if [ -n "${MARS_ELECTRON_APP_IDENTIFIER:-}" ]; then
+  export MARS_ELECTRON_APP_IDENTIFIER
 fi
-if [ -n "${OMNIRUSH_ELECTRON_APP_NAME:-}" ]; then
-  export OMNIRUSH_ELECTRON_APP_NAME
+if [ -n "${MARS_ELECTRON_APP_NAME:-}" ]; then
+  export MARS_ELECTRON_APP_NAME
 fi
 
-if [ -n "${OMNIRUSH_EVAL_ELECTRON_BINARY:-}" ]; then
-  if [ ! -x "$OMNIRUSH_EVAL_ELECTRON_BINARY" ]; then
-    echo "OMNIRUSH_EVAL_ELECTRON_BINARY is not an executable file: $OMNIRUSH_EVAL_ELECTRON_BINARY" >&2
+if [ -n "${MARS_EVAL_ELECTRON_BINARY:-}" ]; then
+  if [ ! -x "$MARS_EVAL_ELECTRON_BINARY" ]; then
+    echo "MARS_EVAL_ELECTRON_BINARY is not an executable file: $MARS_EVAL_ELECTRON_BINARY" >&2
     exit 1
   fi
-  exec "$OMNIRUSH_EVAL_ELECTRON_BINARY"
+  exec "$MARS_EVAL_ELECTRON_BINARY"
 fi
 
-exec pnpm --filter @omnirush/desktop dev:electron
+exec pnpm --filter @mars/desktop dev:electron

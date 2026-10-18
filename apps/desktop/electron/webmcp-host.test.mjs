@@ -240,7 +240,7 @@ test("cancellation before dispatch or during execution discovery prevents the ca
     await rejected;
     assert.equal(writes, 0);
     assert.equal(popups, 0);
-    assert.equal(runInContext('window[Symbol.for("omnirush.webmcp.pending-executions")].size', context), 0);
+    assert.equal(runInContext('window[Symbol.for("mars.webmcp.pending-executions")].size', context), 0);
     assert.equal(await executeWebMcpToolInFrame(frame, {
       callId: "next_call", name: tool.name, input: {}, expectedOrigin: "https://site.example", expectedDigest: sanitizeSiteTool(tool, frame).digest,
     }), "{}");

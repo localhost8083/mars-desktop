@@ -1,7 +1,7 @@
 import { expect } from "vitest";
-import { denFetch } from "@omnirush/behaviors";
-import type { DenRef, DenSession } from "@omnirush/behaviors";
-import { server, test } from "@omnirush/testkit";
+import { denFetch } from "@mars/behaviors";
+import type { DenRef, DenSession } from "@mars/behaviors";
+import { server, test } from "@mars/testkit";
 
 const title = "a Google-style SAML response posted to the SP-advertised ACS URL is not rejected as invalid_destination";
 
@@ -60,7 +60,7 @@ async function postToAcs(den: DenRef, acsPath: string, samlResponse: string) {
   return denFetch(den, acsPath, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ SAMLResponse: samlResponse, RelayState: "omnirush-eval" }).toString(),
+    body: new URLSearchParams({ SAMLResponse: samlResponse, RelayState: "mars-eval" }).toString(),
   });
 }
 
@@ -79,7 +79,7 @@ test(title, { timeout: 300_000 }, async ({ evidence, place }) => {
   const ownerCookie = ownerSignIn.response.headers.get("set-cookie")?.split(";")[0]?.trim() ?? "";
   expect(ownerCookie).toBeTruthy();
 
-  const orgHeaders = { ...auth(owner), cookie: ownerCookie, "x-omnirush-org-id": orgId };
+  const orgHeaders = { ...auth(owner), cookie: ownerCookie, "x-mars-org-id": orgId };
   const audience = den.ref.apiUrl;
   const registration = await denFetch(den.ref, "/v1/sso/saml", {
     method: "POST",

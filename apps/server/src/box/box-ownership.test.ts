@@ -1,4 +1,4 @@
-// Ported from the CLI (omnirush-cli #216, #217): a box whose folder was replaced
+// Ported from the CLI (mars-cli #216, #217): a box whose folder was replaced
 // is restarted, and gc removes only this home's own boxes no other live process uses.
 import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
@@ -28,7 +28,7 @@ describe("gcBoxes", () => {
     }
     const removed: string[] = [];
     const run = async (_bin: string, args: string[]) => {
-      if (args[0] === "ps") return { code: 0, stdout: Object.entries(boxes).map(([key, b]) => JSON.stringify({ Names: `omnirush-box-${key}`, Labels: `ai.omnirush.box=1,ai.omnirush.box.key=${key},ai.omnirush.box.root=${b.root}`, Status: "Up 3 hours", Image: "ghcr.io/omnirush-ai/box-base@sha256:x" })).join("\n"), stderr: "" };
+      if (args[0] === "ps") return { code: 0, stdout: Object.entries(boxes).map(([key, b]) => JSON.stringify({ Names: `mars-box-${key}`, Labels: `ai.mars.box=1,ai.mars.box.key=${key},ai.mars.box.root=${b.root}`, Status: "Up 3 hours", Image: "ghcr.io/omnirush-ai/box-base@sha256:x" })).join("\n"), stderr: "" };
       if (args[0] === "rm") { removed.push(String(args.at(-1))); return { code: 0, stdout: "", stderr: "" }; }
       if (args[0] === "images") return { code: 0, stdout: "", stderr: "" };
       return { code: 1, stdout: "", stderr: "unexpected" };
@@ -36,8 +36,8 @@ describe("gcBoxes", () => {
     const exists = (p: string) => !["/home/me/deleted", "/home/me/gone-mine", "/home/alice/proj", "/home/bob/same-key"].includes(p);
     // The desktop's own records carry its own pid: a folder of its own that is gone is still collected.
     const out = await gcBoxes({ name: "docker", backend: "docker", bin: "docker" } as never, { home, run: run as never, exists, now, pins: { images: {} } as never });
-    expect(removed.sort()).toEqual(["omnirush-box-gone", "omnirush-box-idle", "omnirush-box-mine"]);
-    expect(out.map((r) => `${r.name}:${r.reason}`).sort()).toEqual(["omnirush-box-gone:folder gone", "omnirush-box-idle:unused", "omnirush-box-mine:folder gone"]);
+    expect(removed.sort()).toEqual(["mars-box-gone", "mars-box-idle", "mars-box-mine"]);
+    expect(out.map((r) => `${r.name}:${r.reason}`).sort()).toEqual(["mars-box-gone:folder gone", "mars-box-idle:unused", "mars-box-mine:folder gone"]);
   });
 });
 

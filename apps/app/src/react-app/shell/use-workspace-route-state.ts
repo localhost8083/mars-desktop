@@ -19,13 +19,13 @@ import {
   workspaceBootstrap,
   workspaceSetRuntimeActive,
   workspaceSetSelected,
-  type OmniRushServerInfo,
+  type MarsServerInfo,
   type WorkspaceList,
 } from "@/app/lib/desktop";
 import { createClient, unwrap } from "@/app/lib/opencode";
 import { createClientV2 } from "@/app/lib/opencode-v2-adapter";
 import { getNativeSession, isMissingSessionError } from "@/app/lib/opencode-session-native";
-import { createOmniRushServerClient, OmniRushServerError, type OmniRushServerClient } from "@/app/lib/omnirush-server";
+import { createMarsServerClient, MarsServerError, type MarsServerClient } from "@/app/lib/mars-server";
 import { isDesktopRuntime } from "@/app/lib/runtime-env";
 import { toast } from "@/components/ui/sonner";
 import { forgetMissingChatMemory } from "./missing-chat";
@@ -46,10 +46,10 @@ import { useLocal } from "@/react-app/kernel/local-provider";
 import { useDenAuth } from "@/react-app/domains/cloud/den-auth-provider";
 import { useBootState } from "./boot-state";
 import {
-  ensureDesktopLocalOmniRushConnection,
+  ensureDesktopLocalMarsConnection,
   shouldAttemptDesktopLocalReconnect,
-} from "./desktop-local-omnirush";
-import { resolveOmniRushConnection } from "./omnirush-connection";
+} from "./desktop-local-mars";
+import { resolveMarsConnection } from "./mars-connection";
 import {
   commitRouteWorkspaceSelection,
   createRouteRefreshLifecycle,
@@ -101,10 +101,10 @@ import {
 export type UseWorkspaceRouteStateInput = {
   developerMode: boolean;
   workspaceRoute?: "session" | "automations" | "dashboard" | "apps";
-  /** Invoked when the omnirush-server settings-changed event fires (the route bumps its settings version). */
+  /** Invoked when the mars-server settings-changed event fires (the route bumps its settings version). */
   onServerSettingsChanged: () => void;
-  /** Receives the local omnirush-server host info discovered during refresh. */
-  onHostInfo: (info: OmniRushServerInfo | null) => void;
+  /** Receives the local mars-server host info discovered during refresh. */
+  onHostInfo: (info: MarsServerInfo | null) => void;
 };
 
 type ModernRouteSessionResolution =
@@ -195,7 +195,7 @@ export function useWorkspaceRouteState(input: UseWorkspaceRouteStateInput) {
     routeReady: bootRouteReady,
   } = useBootState();
   const [loading, setLoading] = useState(true);
-  const [client, setClient] = useState<OmniRushServerClient | null>(null);
+  const [client, setClient] = useState<MarsServerClient | null>(null);
   const [baseUrl, setBaseUrl] = useState("");
   const [token, setToken] = useState("");
   const [engineV2ChatRouting, setEngineV2ChatRouting] = useState(false);
@@ -396,7 +396,7 @@ export function useWorkspaceRouteState(input: UseWorkspaceRouteStateInput) {
       };
 
       const fetchWithRetries = async (workspace: RouteWorkspace, attempt: number): Promise<void> => {
-        const isRemoteOmniRushWorkspace = workspace.workspaceType === "remote" && workspace.remoteType !== "opencode";
+        const isRemoteMarsWorkspace = workspace.workspaceType === "remote" && workspace.remoteType !== "opencode";
         const endpoint = endpointForWorkspace(workspace);
         if (!endpoint) {
           if (workspace.workspaceType === "remote") {
@@ -419,7 +419,7 @@ export function useWorkspaceRouteState(input: UseWorkspaceRouteStateInput) {
           }
           return;
         }
-        if (isRemoteOmniRushWorkspace) {
+        if (isRemoteMarsWorkspace) {
           setWorkspaceConnectionOverrides((current) => ({
             ...current,
             [workspace.id]: {
@@ -440,7 +440,7 @@ export function useWorkspaceRouteState(input: UseWorkspaceRouteStateInput) {
           // under its real path (symlink, junction, subst drive), which this
           // string compare would drop. Other lists still need the filter.
           const serverScoped = workspace.workspaceType !== "remote" && !usesV2List;
-          const items = workspaceRoot && !isRemoteOmniRushWorkspace && !serverScoped
+          const items = workspaceRoot && !isRemoteMarsWorkspace && !serverScoped
             ? fetchedItems.filter((session) =>
                 normalizeDirectoryPath(session?.directory ?? "") === workspaceRoot,
               )
@@ -506,7 +506,7 @@ export function useWorkspaceRouteState(input: UseWorkspaceRouteStateInput) {
           });
           setErrorsByWorkspaceId((current) => ({ ...current, [workspace.id]: null }));
           setWorkspaceConnectionOverrides((current) => {
-            if (isRemoteOmniRushWorkspace) {
+            if (isRemoteMarsWorkspace) {
               return {
                 ...current,
                 [workspace.id]: {
@@ -666,8 +666,8 @@ export function useWorkspaceRouteState(input: UseWorkspaceRouteStateInput) {
       if (!attempt.isCurrent()) return;
 
       const { normalizedBaseUrl, resolvedToken, resolvedHostToken, hostInfo } = await withRouteRefreshTimeout(
-        resolveOmniRushConnection(),
-        "omnirush.ai server connection",
+        resolveMarsConnection(),
+        "marsai.click server connection",
       );
       if (!attempt.isCurrent()) return;
       if (!normalizedBaseUrl || !resolvedToken) {
@@ -727,13 +727,13 @@ export function useWorkspaceRouteState(input: UseWorkspaceRouteStateInput) {
       // local workspaces => sidebar gets stuck in "loading" forever.
       updateLocalServer({ baseUrl: normalizedBaseUrl, token: resolvedToken });
 
-      const omnirushClient = createOmniRushServerClient({
+      const marsClient = createMarsServerClient({
         baseUrl: normalizedBaseUrl,
         token: resolvedToken,
         hostToken: resolvedHostToken || undefined,
       });
       const workspaceListState = await refreshRouteWorkspaceListState({
-        load: () => withRouteRefreshTimeout(omnirushClient.listWorkspaces(), "Workspace list"),
+        load: () => withRouteRefreshTimeout(marsClient.listWorkspaces(), "Workspace list"),
         desktopWorkspaces,
         previousWorkspaces: workspacesRef.current,
         orderIds: workspaceOrderIdsRef.current,
@@ -813,7 +813,7 @@ export function useWorkspaceRouteState(input: UseWorkspaceRouteStateInput) {
       updateLocalServer({ baseUrl: normalizedBaseUrl, token: resolvedToken });
 
       setConnectionPending(false);
-      setClient(omnirushClient);
+      setClient(marsClient);
       setBaseUrl(normalizedBaseUrl);
       setToken(resolvedToken);
       setWorkspaces(nextWorkspaces);
@@ -1067,7 +1067,7 @@ export function useWorkspaceRouteState(input: UseWorkspaceRouteStateInput) {
       // so its stale resolution cannot overwrite the new connection state.
       void refreshRouteState({ supersede: true });
     };
-    window.addEventListener("omnirush-server-settings-changed", handleSettingsChange);
+    window.addEventListener("mars-server-settings-changed", handleSettingsChange);
 
     // Also retry on visibility flip independently — even when nobody else
     // dispatches the settings event.
@@ -1086,7 +1086,7 @@ export function useWorkspaceRouteState(input: UseWorkspaceRouteStateInput) {
         window.clearTimeout(startupRetryTimerRef.current);
         startupRetryTimerRef.current = null;
       }
-      window.removeEventListener("omnirush-server-settings-changed", handleSettingsChange);
+      window.removeEventListener("mars-server-settings-changed", handleSettingsChange);
       if (typeof document !== "undefined") {
         document.removeEventListener("visibilitychange", handleVisibility);
       }
@@ -1095,7 +1095,7 @@ export function useWorkspaceRouteState(input: UseWorkspaceRouteStateInput) {
 
   // Inspector wiring: publish the route's current state so an external
   // operator (or an AI driver using browser tools) can call
-  // `window.__omnirush.snapshot()` or `window.__omnirush.slice("route")` and
+  // `window.__mars.snapshot()` or `window.__mars.slice("route")` and
   // see workspaces / sessions / connection info without walking the DOM.
   useEffect(() => {
     const dispose = publishInspectorSlice("route", () => ({
@@ -1216,7 +1216,7 @@ export function useWorkspaceRouteState(input: UseWorkspaceRouteStateInput) {
     if (!workspaceId || reconnectAttemptedWorkspaceIdRef.current === workspaceId) return;
     reconnectAttemptedWorkspaceIdRef.current = workspaceId;
 
-    void ensureDesktopLocalOmniRushConnection({
+    void ensureDesktopLocalMarsConnection({
       route: "session",
       workspace: selectedWorkspace,
       allWorkspaces: workspaces,
@@ -1233,7 +1233,7 @@ export function useWorkspaceRouteState(input: UseWorkspaceRouteStateInput) {
   const selectedWorkspaceRoot = selectedWorkspace?.path?.trim() || "";
   // Single source of truth for the selected workspace's server URL/token/id.
   // For remote workspaces this is the worker that owns the workspace; for
-  // local workspaces it's the user's local omnirush.ai server.
+  // local workspaces it's the user's local marsai.click server.
   const selectedWorkspaceEndpoint = useWorkspaceServerClient(selectedWorkspace, { baseUrl, token });
   const selectedWorkspaceServerToken = selectedWorkspaceEndpoint?.token ?? "";
   const defaultOpencodeBaseUrl = selectedWorkspaceEndpoint?.opencodeBaseUrl ?? "";
@@ -1245,11 +1245,11 @@ export function useWorkspaceRouteState(input: UseWorkspaceRouteStateInput) {
       setEngineV2ChatRouting(false);
       return;
     }
-    const omnirushClient = createOmniRushServerClient({ baseUrl: routingServerUrl, token: routingServerToken });
+    const marsClient = createMarsServerClient({ baseUrl: routingServerUrl, token: routingServerToken });
     let cancelled = false;
     const refresh = async () => {
       try {
-        const status = await omnirushClient.getEngineV2PreviewStatus();
+        const status = await marsClient.getEngineV2PreviewStatus();
         if (!cancelled) {
           setEngineV2ChatRouting(status.enabled && status.chatRouting);
           setEngineRoutingReady(true);
@@ -1257,19 +1257,19 @@ export function useWorkspaceRouteState(input: UseWorkspaceRouteStateInput) {
       } catch (error) {
         if (cancelled) return;
         // Older servers do not expose the preview endpoint and use v1.
-        if (error instanceof OmniRushServerError && error.status === 404) setEngineRoutingReady(true);
+        if (error instanceof MarsServerError && error.status === 404) setEngineRoutingReady(true);
         console.warn("[opencode-v2] failed to read chat routing status; retaining the current engine", error);
       }
     };
     setEngineV2ChatRouting(false);
     setEngineRoutingReady(false);
     void refresh();
-    window.addEventListener("omnirush-server-settings-changed", refresh);
+    window.addEventListener("mars-server-settings-changed", refresh);
     const interval = window.setInterval(() => { void refresh(); }, 15_000);
     return () => {
       cancelled = true;
       window.clearInterval(interval);
-      window.removeEventListener("omnirush-server-settings-changed", refresh);
+      window.removeEventListener("mars-server-settings-changed", refresh);
     };
   }, [routingServerUrl, routingServerToken]);
   useEffect(() => {
@@ -1416,7 +1416,7 @@ export function useWorkspaceRouteState(input: UseWorkspaceRouteStateInput) {
             })
           : createClient(opencodeBaseUrl, selectedWorkspaceRoot || undefined, {
               token: selectedWorkspaceServerToken,
-              mode: "omnirush",
+              mode: "mars",
             })
         : null,
     [engineRoutingReady, engineV2ChatRouting, opencodeBaseUrl, selectedWorkspaceError, selectedWorkspaceRoot, selectedWorkspaceServerToken],

@@ -1,1 +1,1 @@
-export const LOCAL_PREFERENCES_KEY = "omnirush.preferences";
+export const LOCAL_PREFERENCES_KEY = "mars.preferences";

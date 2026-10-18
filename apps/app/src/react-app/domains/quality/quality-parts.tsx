@@ -2,9 +2,8 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-import { compactTokenCount } from "../../../app/lib/omnirush-usage";
-import { goodSessionWording } from "../../../app/lib/good-session";
-import { qualityBadgeText, qualityBadgeTitle, type AccountQuality } from "../../../app/lib/quality";
+import { compactTokenCount } from "../../../app/lib/mars-usage";
+import { goodSessionWording, qualityBadgeText, qualityBadgeTitle, type AccountQuality } from "../../../app/lib/quality";
 
 /** The tier, as a small neutral badge. Dashed in preview (spins pay nothing). */
 export function QualityTierBadge({ quality, className }: { quality: AccountQuality | null; className?: string }) {

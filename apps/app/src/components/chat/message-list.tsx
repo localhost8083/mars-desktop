@@ -43,9 +43,9 @@ import { GrepTool } from "@/components/tools/grep"
 import { LspTool } from "@/components/tools/lsp"
 import {
   isAutomationProposalToolPart,
-  OmniRushAutomationProposalTool,
-} from "@/components/tools/omnirush-automation-proposal"
-import { OmniRushSessionCreateTool } from "@/components/tools/omnirush-session-create"
+  MarsAutomationProposalTool,
+} from "@/components/tools/mars-automation-proposal"
+import { MarsSessionCreateTool } from "@/components/tools/mars-session-create"
 import { QuestionTool } from "@/components/tools/question"
 import { SkillTool } from "@/components/tools/skill"
 import { TodoWriteTool } from "@/components/tools/todowrite"
@@ -241,7 +241,7 @@ const ToolMessageInner = ({ part }: ToolMessageProps) => {
     )
   }
 
-  if (part.type === "dynamic-tool" && part.toolName === "omnirush_visualization") {
+  if (part.type === "dynamic-tool" && part.toolName === "mars_visualization") {
     return <VisualizationTool part={part} />
   }
 
@@ -301,12 +301,12 @@ const ToolMessageInner = ({ part }: ToolMessageProps) => {
     return <EnvVarRequestTool part={part} />
   }
 
-  if (part.type === "dynamic-tool" && part.toolName === "omnirush_session_create") {
-    return <OmniRushSessionCreateTool part={part} />
+  if (part.type === "dynamic-tool" && part.toolName === "mars_session_create") {
+    return <MarsSessionCreateTool part={part} />
   }
 
   if (part.type === "dynamic-tool" && isAutomationProposalToolPart(part)) {
-    return <OmniRushAutomationProposalTool part={part} />
+    return <MarsAutomationProposalTool part={part} />
   }
 
   // Failed calls use the same sentence line with the "failures are
@@ -1143,7 +1143,7 @@ const RetryMessage = React.memo(({ status }: RetryMessageProps) => {
               </p>
               <p className="text-xs text-amber-12/80">
                 {freeModelLimit
-                  ? "omnirush.ai will keep retrying. To keep working now, connect your own model provider."
+                  ? "marsai.click will keep retrying. To keep working now, connect your own model provider."
                   : action.message}
               </p>
               {freeModelLimit ? (

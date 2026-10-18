@@ -1,9 +1,9 @@
-import { browserScript } from "@omnirush/cdp";
-import type { Seed } from "@omnirush/env";
-import { go, runWorkflow, saveWorkflow } from "@omnirush/behaviors";
-import { connect, debuggerUrlFor, evaluate, listTargets } from "@omnirush/cdp";
+import { browserScript } from "@mars/cdp";
+import type { Seed } from "@mars/env";
+import { go, runWorkflow, saveWorkflow } from "@mars/behaviors";
+import { connect, debuggerUrlFor, evaluate, listTargets } from "@mars/cdp";
 import { configureProvider } from "./chat.ts";
-import { defaultDaytonaExec, execInSandbox } from "@omnirush/hosts";
+import { defaultDaytonaExec, execInSandbox } from "@mars/hosts";
 
 export const creationPrompt = "Create a reusable app for my dashboard that shows a weekly briefing using my existing Weekly briefing workflow.";
 export const creationReply = "Your briefing app draft is ready. Try the preview, then choose Save.";
@@ -51,13 +51,13 @@ export async function savedAppCreation(seed: Seed) {
   const org = await seed.api(den.admin, "/v1/org");
   const orgId = field(record(org.body).organization, "id");
   const tokenResponse = await seed.api(den.admin, "/v1/mcp/token", {
-    method: "POST", headers: { "x-omnirush-org-id": orgId }, body: JSON.stringify({ scopes: ["mcp:read", "mcp:write"] }),
+    method: "POST", headers: { "x-mars-org-id": orgId }, body: JSON.stringify({ scopes: ["mcp:read", "mcp:write"] }),
   });
   const token = field(tokenResponse.body, "token");
   let requestId = 0;
   const rpc = async (name: string, args: Record<string, unknown>, session = den.admin, method = "tools/call") => {
     const sessionToken = session === den.admin ? token : field((await seed.api(session, "/v1/mcp/token", {
-      method: "POST", headers: { "x-omnirush-org-id": orgId }, body: JSON.stringify({ scopes: ["mcp:read", "mcp:write"] }),
+      method: "POST", headers: { "x-mars-org-id": orgId }, body: JSON.stringify({ scopes: ["mcp:read", "mcp:write"] }),
     })).body, "token");
     const response = await fetch(`${den.ref.apiUrl}/mcp/agent`, {
       method: "POST", headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
@@ -119,7 +119,7 @@ export async function savedAppCreation(seed: Seed) {
       options: { baseURL: `${den.mocks.tracker.url}/v1`, apiKey: "sk-app-fixture" },
       models: { [modelId]: { name: "App creation model fixture", tool_call: true } },
     } },
-    mcp: { "omnirush-cloud": { type: "remote", url: `${den.ref.apiUrl}/mcp/agent`, enabled: true, oauth: false, headers: { Authorization: `Bearer ${token}` } } },
+    mcp: { "mars-cloud": { type: "remote", url: `${den.ref.apiUrl}/mcp/agent`, enabled: true, oauth: false, headers: { Authorization: `Bearer ${token}` } } },
   });
   const inPreview = async (action: "read" | "details") => {
     const targets = await listTargets(app.handle.cdpUrl);
@@ -161,7 +161,7 @@ export async function savedAppCreation(seed: Seed) {
       // link in an Electron browser tab, exercising main-process interception,
       // native IPC, preload forwarding, and the renderer's startup bridge.
       const opened = await evaluate(app.client, browserScript(async () => {
-        const browser = window.__OMNIRUSH_ELECTRON__.browser;
+        const browser = window.__MARS_ELECTRON__.browser;
         const result: unknown = await Reflect.apply(browser.openUrl, browser, ["about:blank", "builtin"]);
         return result;
       }, []));
@@ -175,7 +175,7 @@ export async function savedAppCreation(seed: Seed) {
       } finally {
         browser.close();
         await evaluate(app.client, browserScript(async (tabId) => {
-          const closeTab = window.__OMNIRUSH_ELECTRON__.browser.closeTab;
+          const closeTab = window.__MARS_ELECTRON__.browser.closeTab;
           if (typeof closeTab !== "function") throw new Error("The native browser cannot close its return tab");
           await closeTab(tabId);
         }, [tabId]));

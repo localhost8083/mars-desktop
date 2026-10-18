@@ -63,7 +63,7 @@ bounded at 64 MiB, and governed by collector concurrency.
 ## Data preservation and disk recovery
 
 Actual staging API checks in the
-[backend companion PR](https://github.com/omnirush-ai/omnirush-backend/pull/90)
+[backend companion PR](https://github.com/mars-ai/mars-backend/pull/90)
 preserve all six completed viewer turns, twelve ordered export records,
 exact files/manifests, same-ID duplicate retry and owner isolation. Its
 repeated-file fixture uses 66.0% less local storage with opt-in compaction and
@@ -76,8 +76,8 @@ concurrent packing under one pending budget. Restored binary bytes match.
 
 Defaults are a 2 GiB pending archive budget (raw file sizes) and a free disk
 floor of 512 MiB or the archive's size, whichever is larger,
-configurable with OMNIRUSH_ARCHIVE_PENDING_BYTE_BUDGET and
-OMNIRUSH_ARCHIVE_MIN_FREE_DISK_BYTES. Reservation estimates are conservative;
+configurable with MARS_ARCHIVE_PENDING_BYTE_BUDGET and
+MARS_ARCHIVE_MIN_FREE_DISK_BYTES. Reservation estimates are conservative;
 large bases can pause until the budget or available space increases.
 Encrypted archive and restore formats are preserved.
 

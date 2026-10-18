@@ -2,8 +2,8 @@
   {
     "type": "dependency",
     "from": "specs/active-session-workspace-storm.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -15,8 +15,8 @@
   {
     "type": "dependency",
     "from": "specs/active-session-workspace-storm.e2e.test.ts",
-    "to": "@omnirush/test-evidence",
-    "unresolvedTo": "@omnirush/test-evidence",
+    "to": "@mars/test-evidence",
+    "unresolvedTo": "@mars/test-evidence",
     "dependencyTypes": [
       "unknown"
     ],
@@ -28,8 +28,8 @@
   {
     "type": "dependency",
     "from": "specs/automation-revision-revert.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -41,8 +41,8 @@
   {
     "type": "dependency",
     "from": "specs/cloud-provider-local-credential-fallback.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -54,8 +54,8 @@
   {
     "type": "dependency",
     "from": "specs/cloud-provider-sync-contract.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -67,8 +67,8 @@
   {
     "type": "dependency",
     "from": "specs/cloud-provider-sync-contract.e2e.test.ts",
-    "to": "@omnirush/test-evidence",
-    "unresolvedTo": "@omnirush/test-evidence",
+    "to": "@mars/test-evidence",
+    "unresolvedTo": "@mars/test-evidence",
     "dependencyTypes": [
       "unknown"
     ],
@@ -80,8 +80,8 @@
   {
     "type": "dependency",
     "from": "specs/config-object-large-skill.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -93,8 +93,8 @@
   {
     "type": "dependency",
     "from": "specs/cross-server-handoff-atomic-commit.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -106,8 +106,8 @@
   {
     "type": "dependency",
     "from": "specs/cross-server-handoff-atomic-commit.e2e.test.ts",
-    "to": "@omnirush/hosts",
-    "unresolvedTo": "@omnirush/hosts",
+    "to": "@mars/hosts",
+    "unresolvedTo": "@mars/hosts",
     "dependencyTypes": [
       "unknown"
     ],
@@ -119,8 +119,8 @@
   {
     "type": "dependency",
     "from": "specs/cross-workspace-split-view.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -132,8 +132,8 @@
   {
     "type": "dependency",
     "from": "specs/cross-workspace-split-view.e2e.test.ts",
-    "to": "@omnirush/test-evidence",
-    "unresolvedTo": "@omnirush/test-evidence",
+    "to": "@mars/test-evidence",
+    "unresolvedTo": "@mars/test-evidence",
     "dependencyTypes": [
       "unknown"
     ],
@@ -145,8 +145,8 @@
   {
     "type": "dependency",
     "from": "specs/library-add-connector-discovery.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -158,8 +158,8 @@
   {
     "type": "dependency",
     "from": "specs/library-add-connector-discovery.e2e.test.ts",
-    "to": "@omnirush/test-evidence",
-    "unresolvedTo": "@omnirush/test-evidence",
+    "to": "@mars/test-evidence",
+    "unresolvedTo": "@mars/test-evidence",
     "dependencyTypes": [
       "unknown"
     ],
@@ -171,8 +171,8 @@
   {
     "type": "dependency",
     "from": "specs/library-signed-in-render-stability.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -184,8 +184,8 @@
   {
     "type": "dependency",
     "from": "specs/live-tool-visible-after-session-switch.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -197,8 +197,8 @@
   {
     "type": "dependency",
     "from": "specs/live-tool-visible-after-session-switch.e2e.test.ts",
-    "to": "@omnirush/test-evidence",
-    "unresolvedTo": "@omnirush/test-evidence",
+    "to": "@mars/test-evidence",
+    "unresolvedTo": "@mars/test-evidence",
     "dependencyTypes": [
       "unknown"
     ],
@@ -210,8 +210,8 @@
   {
     "type": "dependency",
     "from": "specs/llm-provider-access-parity.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -223,8 +223,8 @@
   {
     "type": "dependency",
     "from": "specs/org-api-key-authenticates.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -236,8 +236,8 @@
   {
     "type": "dependency",
     "from": "specs/org-model-analytics.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -249,8 +249,8 @@
   {
     "type": "dependency",
     "from": "specs/org-team-lifecycle-critical-path.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -262,8 +262,8 @@
   {
     "type": "dependency",
     "from": "specs/org-team-lifecycle-critical-path.e2e.test.ts",
-    "to": "@omnirush/test-evidence",
-    "unresolvedTo": "@omnirush/test-evidence",
+    "to": "@mars/test-evidence",
+    "unresolvedTo": "@mars/test-evidence",
     "dependencyTypes": [
       "unknown"
     ],
@@ -275,8 +275,8 @@
   {
     "type": "dependency",
     "from": "specs/responsive-session-layout.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -288,8 +288,8 @@
   {
     "type": "dependency",
     "from": "specs/responsive-session-layout.e2e.test.ts",
-    "to": "@omnirush/cdp",
-    "unresolvedTo": "@omnirush/cdp",
+    "to": "@mars/cdp",
+    "unresolvedTo": "@mars/cdp",
     "dependencyTypes": [
       "unknown"
     ],
@@ -301,8 +301,8 @@
   {
     "type": "dependency",
     "from": "specs/saved-script-automations.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -314,8 +314,8 @@
   {
     "type": "dependency",
     "from": "specs/workspace-storm-auth-coherence.e2e.test.ts",
-    "to": "@omnirush/behaviors",
-    "unresolvedTo": "@omnirush/behaviors",
+    "to": "@mars/behaviors",
+    "unresolvedTo": "@mars/behaviors",
     "dependencyTypes": [
       "unknown"
     ],
@@ -327,8 +327,8 @@
   {
     "type": "dependency",
     "from": "specs/workspace-storm-auth-coherence.e2e.test.ts",
-    "to": "@omnirush/test-evidence",
-    "unresolvedTo": "@omnirush/test-evidence",
+    "to": "@mars/test-evidence",
+    "unresolvedTo": "@mars/test-evidence",
     "dependencyTypes": [
       "unknown"
     ],

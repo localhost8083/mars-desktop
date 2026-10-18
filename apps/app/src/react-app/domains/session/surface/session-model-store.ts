@@ -18,7 +18,7 @@ export type SessionModelSelection = {
   variant: string | null;
 };
 
-const STORAGE_KEY = "omnirush.sessionModels.v1";
+const STORAGE_KEY = "mars.sessionModels.v1";
 const MAX_REMEMBERED_SESSIONS = 200;
 
 function readStoredSelections(): Record<string, SessionModelSelection> {

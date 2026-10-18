@@ -7,7 +7,7 @@ metadata:
 data:
   CI: "true"
   NODE_ENV: "production"
-  OMNIRUSH_DEV_MODE: {{ .Values.config.omnirushDevMode | quote }}
+  MARS_DEV_MODE: {{ .Values.config.marsDevMode | quote }}
   DEN_API_NODE_OPTIONS: {{ .Values.config.denApiNodeOptions | quote }}
   # SECURITY: Enables non-local redis:// DATABASE_REDIS_URL values only for
   # trusted private networks. Keep false for public or cross-network Redis;
@@ -49,7 +49,7 @@ data:
   DEN_INSTALL_LINKS_GATING_ENABLED: {{ .Values.config.public.installLinksGatingEnabled | quote }}
   DEN_AUTOMATIONS_ENABLED: {{ .Values.config.public.automationsEnabled | quote }}
   DEN_DASHBOARDS_ENABLED: {{ .Values.config.public.dashboardsEnabled | quote }}
-  DEN_OMNIRUSH_WEB_ENABLED: {{ .Values.config.public.omnirushWebEnabled | quote }}
+  DEN_MARS_WEB_ENABLED: {{ .Values.config.public.marsWebEnabled | quote }}
   DEN_AUTOMATIONS_RUNTIME_ENABLED: {{ .Values.config.public.automationsRuntimeEnabled | quote }}
   DEN_GENERATED_ARTIFACT_VIEWS_ENABLED: {{ .Values.config.public.generatedArtifactViewsEnabled | quote }}
   DEN_CONNECT_LINK_MODE: {{ .Values.config.public.connectLinkMode | quote }}
@@ -67,10 +67,10 @@ data:
   DEN_DESKTOP_DEN_BASE_URL: {{ .Values.config.public.desktopDenBaseUrl | quote }}
   {{ end }}
   {{ if .Values.config.public.installerReleaseTag }}
-  OMNIRUSH_INSTALLER_RELEASE_TAG: {{ .Values.config.public.installerReleaseTag | quote }}
+  MARS_INSTALLER_RELEASE_TAG: {{ .Values.config.public.installerReleaseTag | quote }}
   {{ end }}
   {{ if .Values.config.public.installerReleaseRepo }}
-  OMNIRUSH_INSTALLER_RELEASE_REPO: {{ .Values.config.public.installerReleaseRepo | quote }}
+  MARS_INSTALLER_RELEASE_REPO: {{ .Values.config.public.installerReleaseRepo | quote }}
   {{ end }}
   PROVISIONER_MODE: {{ .Values.config.provisioner.mode | quote }}
   WORKER_PROVISIONING_RECONCILE_INTERVAL_MS: {{ .Values.config.provisioner.reconcileIntervalMs | quote }}
@@ -86,7 +86,7 @@ data:
   DEN_AUTH_FALLBACK_BASE: {{ include "omnirush-ee.authFallbackInternalUrl" . | quote }}
   DEN_AUTH_ORIGIN: {{ .Values.config.public.webOrigin | quote }}
   DEN_WEB_PUBLIC_ORIGIN: {{ .Values.config.public.webOrigin | quote }}
-  DEN_WEB_OMNIRUSH_AUTH_CALLBACK_URL: {{ .Values.config.public.authCallbackUrl | quote }}
+  DEN_WEB_MARS_AUTH_CALLBACK_URL: {{ .Values.config.public.authCallbackUrl | quote }}
   {{ with .Values.config.polar.apiBase }}
   POLAR_API_BASE: {{ . | quote }}
   {{ end }}
@@ -159,8 +159,8 @@ data:
   {{ with .Values.config.daytona.sidecarDir }}
   DAYTONA_SIDECAR_DIR: {{ . | quote }}
   {{ end }}
-  {{ with .Values.config.daytona.omnirushPort }}
-  DAYTONA_OMNIRUSH_PORT: {{ . | quote }}
+  {{ with .Values.config.daytona.marsPort }}
+  DAYTONA_MARS_PORT: {{ . | quote }}
   {{ end }}
   {{ with .Values.config.daytona.opencodePort }}
   DAYTONA_OPENCODE_PORT: {{ . | quote }}
@@ -186,11 +186,11 @@ data:
   {{ with .Values.config.inference.creditsPerDollar }}
   INFERENCE_CREDITS_PER_DOLLAR: {{ . | quote }}
   {{ end }}
-  {{ with .Values.config.public.omnirushAppConnectUrl }}
-  DEN_WEB_OMNIRUSH_APP_CONNECT_URL: {{ . | quote }}
+  {{ with .Values.config.public.marsAppConnectUrl }}
+  DEN_WEB_MARS_APP_CONNECT_URL: {{ . | quote }}
   {{ end }}
-  {{ with .Values.config.public.omnirushWebUrl }}
-  DEN_WEB_OMNIRUSH_WEB_URL: {{ . | quote }}
+  {{ with .Values.config.public.marsWebUrl }}
+  DEN_WEB_MARS_WEB_URL: {{ . | quote }}
   {{ end }}
   {{ with .Values.config.web.posthogKey }}
   DEN_WEB_POSTHOG_KEY: {{ . | quote }}

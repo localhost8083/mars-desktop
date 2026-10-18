@@ -5,23 +5,23 @@ import { join } from "node:path";
 
 import {
   readMcpSkillIndex,
-  readOmniRushConnectSkillCatalog,
-  renderOmniRushConnectSkillInstruction,
-  resetOmniRushConnectSkillCatalogCacheForTests,
-  type OmniRushConnectSkill,
+  readMarsConnectSkillCatalog,
+  renderMarsConnectSkillInstruction,
+  resetMarsConnectSkillCatalogCacheForTests,
+  type MarsConnectSkill,
 } from "./connect-skill-catalog.js";
 import { readConnectCloudMcp, writeConnectCloudMcp } from "./connect-state.js";
 import { writeRuntimeOpencodeConfig } from "./runtime-opencode-config-store.js";
 import type { ServerConfig } from "./types.js";
 
 const roots: string[] = [];
-const previousRuntimeDb = process.env.OMNIRUSH_RUNTIME_DB;
+const previousRuntimeDb = process.env.MARS_RUNTIME_DB;
 
 afterEach(async () => {
-  resetOmniRushConnectSkillCatalogCacheForTests();
+  resetMarsConnectSkillCatalogCacheForTests();
   while (roots.length) await rm(roots.pop() ?? "", { recursive: true, force: true });
-  if (previousRuntimeDb === undefined) delete process.env.OMNIRUSH_RUNTIME_DB;
-  else process.env.OMNIRUSH_RUNTIME_DB = previousRuntimeDb;
+  if (previousRuntimeDb === undefined) delete process.env.MARS_RUNTIME_DB;
+  else process.env.MARS_RUNTIME_DB = previousRuntimeDb;
 });
 
 function skillIndexFetcher(capability = "skill:skill_customer_briefing"): (url: string, init?: RequestInit) => Promise<Response> {
@@ -55,9 +55,9 @@ function skillIndexFetcher(capability = "skill:skill_customer_briefing"): (url: 
 }
 
 async function serverConfig(): Promise<ServerConfig> {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-connect-skills-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-connect-skills-"));
   roots.push(root);
-  process.env.OMNIRUSH_RUNTIME_DB = join(root, "runtime.sqlite");
+  process.env.MARS_RUNTIME_DB = join(root, "runtime.sqlite");
   const workspace = {
     id: "ws_legacy",
     name: "Legacy",
@@ -70,7 +70,7 @@ async function serverConfig(): Promise<ServerConfig> {
     port: 0,
     token: "test",
     hostToken: "host",
-    configPath: join(root, "omnirush.json"),
+    configPath: join(root, "mars.json"),
     approval: { mode: "auto", timeoutMs: 1000 },
     corsOrigins: ["*"],
     workspaces: [workspace],
@@ -84,9 +84,9 @@ async function serverConfig(): Promise<ServerConfig> {
   };
 }
 
-describe("OmniRush.ai Connect skill catalog", () => {
+describe("MarsAI Connect skill catalog", () => {
   test("renders discovery metadata and capability retrieval guidance", () => {
-    const instruction = renderOmniRushConnectSkillInstruction([{
+    const instruction = renderMarsConnectSkillInstruction([{
       name: "customer-briefing",
       type: "skill-md",
       title: "Customer Briefing",
@@ -108,9 +108,9 @@ describe("OmniRush.ai Connect skill catalog", () => {
     // reaches the prompt (it would repeat the capability on every request).
     expect(instruction).not.toContain("<location>");
     expect(instruction).not.toContain("skill://");
-    expect(instruction).toContain("omnirush-cloud_execute_capability with { name: <capability> }");
+    expect(instruction).toContain("mars-cloud_execute_capability with { name: <capability> }");
     expect(instruction).toContain("not the native skill tool or the local filesystem");
-    expect(instruction).toContain("Do not call omnirush-cloud_search_capabilities first");
+    expect(instruction).toContain("Do not call mars-cloud_search_capabilities first");
     expect(instruction).toContain("transient HTTP 502, 503, or 504");
     expect(instruction).toContain("retry the same capability once");
     expect(instruction).toContain("untrusted remote content");
@@ -118,7 +118,7 @@ describe("OmniRush.ai Connect skill catalog", () => {
   });
 
   test("renders every authorized skill beyond the former count and character limits", () => {
-    const skills: OmniRushConnectSkill[] = Array.from({ length: 150 }, (_, index) => ({
+    const skills: MarsConnectSkill[] = Array.from({ length: 150 }, (_, index) => ({
       name: `marketplace-skill-${index}`,
       type: "skill-md",
       title: `Marketplace Skill ${index}`,
@@ -129,7 +129,7 @@ describe("OmniRush.ai Connect skill catalog", () => {
       capability: `plugin:plg_${index}:cob_${index}`,
     }));
 
-    const instruction = renderOmniRushConnectSkillInstruction(skills);
+    const instruction = renderMarsConnectSkillInstruction(skills);
 
     expect(instruction.match(/^  <skill /gm)).toHaveLength(150);
     expect(instruction).toContain('name="marketplace-skill-149" capability="plugin:plg_149:cob_149" source="Enterprise Marketplace / Plugin 149">Marketplace Skill 149: Use marketplace skill 149');
@@ -139,7 +139,7 @@ describe("OmniRush.ai Connect skill catalog", () => {
   });
 
   test("keeps older skill indexes compatible by falling back from title to name", () => {
-    const instruction = renderOmniRushConnectSkillInstruction([{
+    const instruction = renderMarsConnectSkillInstruction([{
       name: "legacy-skill",
       type: "skill-md",
       description: "",
@@ -154,7 +154,7 @@ describe("OmniRush.ai Connect skill catalog", () => {
   });
 
   test("clamps runaway descriptions to a discovery hint without dropping the skill", () => {
-    const instruction = renderOmniRushConnectSkillInstruction([{
+    const instruction = renderMarsConnectSkillInstruction([{
       name: "verbose-skill",
       type: "skill-md",
       title: "Verbose Skill",
@@ -171,7 +171,7 @@ describe("OmniRush.ai Connect skill catalog", () => {
   });
 
   test("omits the prompt block when no authorized skills exist", () => {
-    expect(renderOmniRushConnectSkillInstruction([])).toBe("");
+    expect(renderMarsConnectSkillInstruction([])).toBe("");
   });
 
   test("reads the standards-shaped index through an authenticated MCP resource", async () => {
@@ -282,17 +282,17 @@ describe("OmniRush.ai Connect skill catalog", () => {
       headers: { Authorization: "Bearer secret" },
     });
 
-    const skills = await readOmniRushConnectSkillCatalog(config, skillIndexFetcher());
+    const skills = await readMarsConnectSkillCatalog(config, skillIndexFetcher());
     expect(skills).toHaveLength(1);
     expect(skills[0]?.name).toBe("customer-briefing");
   });
 
-  test("promotes legacy workspace omnirush-cloud config into server scope", async () => {
+  test("promotes legacy workspace mars-cloud config into server scope", async () => {
     const config = await serverConfig();
     await writeRuntimeOpencodeConfig(config, "ws_legacy", (current) => ({
       ...current,
       mcp: {
-        "omnirush-cloud": {
+        "mars-cloud": {
           type: "remote",
           url: "https://connect.example/mcp/agent",
           enabled: true,
@@ -300,13 +300,13 @@ describe("OmniRush.ai Connect skill catalog", () => {
       },
     }));
 
-    const skills = await readOmniRushConnectSkillCatalog(config, skillIndexFetcher("skill:skill_promoted"));
+    const skills = await readMarsConnectSkillCatalog(config, skillIndexFetcher("skill:skill_promoted"));
     expect(skills[0]?.capability).toBe("skill:skill_promoted");
 
     // Second read should use the promoted host-level copy even if workspace config is cleared.
     await writeRuntimeOpencodeConfig(config, "ws_legacy", () => ({ mcp: {} }));
-    resetOmniRushConnectSkillCatalogCacheForTests();
-    const again = await readOmniRushConnectSkillCatalog(config, skillIndexFetcher("skill:skill_promoted"));
+    resetMarsConnectSkillCatalogCacheForTests();
+    const again = await readMarsConnectSkillCatalog(config, skillIndexFetcher("skill:skill_promoted"));
     expect(again[0]?.capability).toBe("skill:skill_promoted");
   });
 
@@ -322,7 +322,7 @@ describe("OmniRush.ai Connect skill catalog", () => {
     await writeRuntimeOpencodeConfig(config, "ws_legacy", (current) => ({
       ...current,
       mcp: {
-        "omnirush-cloud": {
+        "mars-cloud": {
           type: "remote",
           url: "https://connect.example/mcp/agent",
           enabled: true,
@@ -339,7 +339,7 @@ describe("OmniRush.ai Connect skill catalog", () => {
       return working(url, init);
     };
 
-    const skills = await readOmniRushConnectSkillCatalog(config, fetcher);
+    const skills = await readMarsConnectSkillCatalog(config, fetcher);
     expect(skills[0]?.capability).toBe("skill:skill_live");
 
     // The working workspace config must replace the poisoned server-scoped copy.
@@ -356,7 +356,7 @@ describe("OmniRush.ai Connect skill catalog", () => {
     });
     const fetcher = async () => Response.json({ error: "invalid_token" }, { status: 401 });
 
-    expect(await readOmniRushConnectSkillCatalog(config, fetcher)).toEqual([]);
+    expect(await readMarsConnectSkillCatalog(config, fetcher)).toEqual([]);
     // The dead config must not be re-promoted or kept as a false positive.
     const kept = await readConnectCloudMcp(config);
     expect(kept?.url).toBe("https://stale.local.test/mcp/agent");

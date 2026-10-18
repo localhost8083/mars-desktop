@@ -92,7 +92,7 @@ export const automationNeedsAttentionReasonSchema = z.object({
     "model_access_lost",
     "provider_unavailable",
     "connect_access_unavailable",
-    "omnirush_web_access_required",
+    "mars_web_access_required",
     "execution_runtime_unavailable",
   ]),
   message: z.string().trim().min(1).max(2_000),
@@ -150,7 +150,7 @@ export const automationErrorSchema = z.object({
     "model_access_lost",
     "provider_unavailable",
     "connect_access_unavailable",
-    "omnirush_web_access_required",
+    "mars_web_access_required",
     "execution_runtime_unavailable",
     "execution_failed",
     "execution_timed_out",
@@ -190,7 +190,7 @@ export type AutomationExecutionTarget = z.infer<typeof automationExecutionTarget
 
 export const AUTOMATION_MODEL_ATTENTION_CAPABILITY = "model_attention_v1" as const
 export const REMOTE_SESSION_DESKTOP_RUNNER_CAPABILITY = "remote_session_v1"
-export const AUTOMATION_MODEL_ATTENTION_CAPABILITY_HEADER = "x-omnirush-automation-model-attention" as const
+export const AUTOMATION_MODEL_ATTENTION_CAPABILITY_HEADER = "x-mars-automation-model-attention" as const
 export const automationDesktopRunnerCapabilitySchema = z.enum([
   AUTOMATION_MODEL_ATTENTION_CAPABILITY,
   REMOTE_SESSION_DESKTOP_RUNNER_CAPABILITY,
@@ -406,7 +406,7 @@ const actionCreateAutomationSchema = z.object({
   if (!validPair) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Action-based Automations are created by Web and run in OmniRush.ai Cloud.",
+      message: "Action-based Automations are created by Web and run in MarsAI Cloud.",
       path: ["executionTarget"],
     })
   }

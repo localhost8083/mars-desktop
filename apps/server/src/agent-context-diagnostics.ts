@@ -8,7 +8,7 @@ import type {
   AgentContextDiagnosticsRequest,
   AgentContextMcpEvidence,
   AgentContextToolPermission,
-} from "@omnirush/types/agent-context-diagnostics";
+} from "@mars/types/agent-context-diagnostics";
 
 import {
   AGENT_CONTEXT_DIAGNOSTICS_SCHEMA_VERSION,
@@ -25,7 +25,7 @@ import {
 } from "./agent-context-engine-inspection.js";
 import {
   differentialCloudVerdict,
-  probeOmniRushCloudCatalog,
+  probeMarsCloudCatalog,
   type CloudCatalogProbe,
 } from "./agent-context-cloud-probe.js";
 import { readActivatedEnterpriseDenOrigin } from "./enterprise-den-origin.js";
@@ -50,7 +50,7 @@ import {
   type McpInventoryInspection,
 } from "./mcp.js";
 import { resolveWorkspaceOpencodeConnection } from "./opencode-connection.js";
-import { buildOmniRushRuntimeConfigObjectFromSnapshot } from "./omnirush-runtime-config.js";
+import { buildMarsRuntimeConfigObjectFromSnapshot } from "./mars-runtime-config.js";
 import {
   ENGINE_GLOBAL_RUNTIME_CONFIG_ID,
   inspectRuntimeOpencodeConfigState,
@@ -63,11 +63,11 @@ import type { McpItem, ServerConfig, WorkspaceInfo } from "./types.js";
 import { exists } from "./utils.js";
 import { opencodeConfigPath } from "./workspace-files.js";
 
-const OMNIRUSH_CLOUD_MCP_NAME = "omnirush-cloud";
+const MARS_CLOUD_MCP_NAME = "mars-cloud";
 const CLOUD_MCP_TERMINAL_PATH = "/mcp/agent";
 const REQUIRED_CLOUD_TOOL_IDS = ["search_capabilities", "execute_capability"] as const;
 const REQUIRED_CLOUD_AGENT_TOOL_IDS = REQUIRED_CLOUD_TOOL_IDS.map(
-  (toolId) => `${OMNIRUSH_CLOUD_MCP_NAME}_${toolId}`,
+  (toolId) => `${MARS_CLOUD_MCP_NAME}_${toolId}`,
 );
 
 export type McpRegistrationStatus =
@@ -154,30 +154,30 @@ function assessEffectiveToolPolicy(
       unavailableReasons: ["effective_engine_snapshot_unavailable"],
     };
   }
-  const omnirushAgent = snapshot.agents.find((agent) => agent.name === "omnirush");
-  if (!omnirushAgent) {
+  const marsAgent = snapshot.agents.find((agent) => agent.name === "mars");
+  if (!marsAgent) {
     return {
       status: "unavailable",
       decisions: {},
       deniedToolIds: [],
-      unavailableReasons: ["effective_omnirush_agent_missing"],
+      unavailableReasons: ["effective_mars_agent_missing"],
     };
   }
   if (
-    snapshot.defaultAgent !== "omnirush"
-    || omnirushAgent.hidden
-    || (omnirushAgent.mode !== "primary" && omnirushAgent.mode !== "all")
+    snapshot.defaultAgent !== "mars"
+    || marsAgent.hidden
+    || (marsAgent.mode !== "primary" && marsAgent.mode !== "all")
   ) {
     return {
       status: "unavailable",
       decisions: {},
       deniedToolIds: [],
-      unavailableReasons: ["effective_omnirush_agent_unusable_as_default"],
+      unavailableReasons: ["effective_mars_agent_unusable_as_default"],
     };
   }
   const decisions: Record<string, EffectiveToolPolicyDecision> = {};
   for (const toolId of REQUIRED_CLOUD_AGENT_TOOL_IDS) {
-    decisions[toolId] = effectiveToolDecision(omnirushAgent.permission, toolId);
+    decisions[toolId] = effectiveToolDecision(marsAgent.permission, toolId);
   }
 
   const deniedToolIds = REQUIRED_CLOUD_AGENT_TOOL_IDS.filter(
@@ -338,7 +338,7 @@ function promptEvidence(configuredAgent: Record<string, unknown> | null) {
     markers: {
       searchCapabilities: prompt.includes("search_capabilities"),
       executeCapability: prompt.includes("execute_capability"),
-      artifacts: prompt.includes("## OmniRush.ai Artifacts"),
+      artifacts: prompt.includes("## MarsAI Artifacts"),
     },
   };
 }
@@ -375,10 +375,10 @@ async function inspectProjectAgent(workspace: WorkspaceInfo, signal?: AbortSigna
     return {
       available: true,
       defaultAgentOverride: typeof data.default_agent === "string",
-      agentConfigOverride: Object.hasOwn(agents, "omnirush"),
+      agentConfigOverride: Object.hasOwn(agents, "mars"),
       agentFileOverride: await Promise.all([
-        exists(join(workspace.path, ".opencode", "agent", "omnirush.md")),
-        exists(join(workspace.path, ".opencode", "agents", "omnirush.md")),
+        exists(join(workspace.path, ".opencode", "agent", "mars.md")),
+        exists(join(workspace.path, ".opencode", "agents", "mars.md")),
       ]).then((values) => values.some(Boolean)),
     };
   } catch {
@@ -423,8 +423,8 @@ async function inspectMcpInventory(
       inventory: await inspectMcpLayersFromRuntimeSnapshot(workspace.path, runtime, {
         signal,
         toolPolicy: {
-          agentName: "omnirush",
-          mcpName: OMNIRUSH_CLOUD_MCP_NAME,
+          agentName: "mars",
+          mcpName: MARS_CLOUD_MCP_NAME,
           toolIds: [...REQUIRED_CLOUD_AGENT_TOOL_IDS],
         },
       }),
@@ -458,7 +458,7 @@ function cloudEndpointEvidenceUrl(
   config: Record<string, unknown>,
 ): URL | null {
   if (
-    name !== OMNIRUSH_CLOUD_MCP_NAME
+    name !== MARS_CLOUD_MCP_NAME
     || (source !== "config.remote" && source !== "engine.config")
     || typeof config.url !== "string"
   ) return null;
@@ -571,24 +571,24 @@ export function cloudCatalogCheck(probe: CloudCatalogProbe): AgentContextDiagnos
         ? "cloud_catalog_recovered_after_transient_401"
         : exact ? "cloud_catalog_exact_match" : "cloud_catalog_mismatch",
       message: transientUnauthorizedRecovered
-        ? "The OmniRush.ai runtime saw a transient HTTP 401 during the independent Cloud MCP initialize request and recovered on retry; this points to a proxy or auth-gateway blip, not a revoked OmniRush.ai Cloud credential."
+        ? "The MarsAI runtime saw a transient HTTP 401 during the independent Cloud MCP initialize request and recovered on retry; this points to a proxy or auth-gateway blip, not a revoked MarsAI Cloud credential."
         : exact
-        ? "The canonical OmniRush.ai Cloud catalog exposes exactly the two required capability tools."
-        : "The OmniRush.ai Cloud catalog does not match the required two-tool contract.",
-      owner: transientUnauthorizedRecovered ? "network-admin" : exact ? "omnirush-server" : "omnirush-support",
+        ? "The canonical MarsAI Cloud catalog exposes exactly the two required capability tools."
+        : "The MarsAI Cloud catalog does not match the required two-tool contract.",
+      owner: transientUnauthorizedRecovered ? "network-admin" : exact ? "mars-server" : "mars-support",
       action: transientUnauthorizedRecovered
         ? "Treat the first 401 as transient unless it repeats or carries a Den revoked-session envelope; inspect proxy and auth-gateway logs for one-off challenges."
         : exact
         ? "No action is required."
-        : "Review the OmniRush.ai Cloud deployment and restore the canonical capability catalog.",
+        : "Review the MarsAI Cloud deployment and restore the canonical capability catalog.",
     });
   }
 
   let status: AgentContextDiagnosticCheck["status"] = "failed";
   let evidenceKind: AgentContextDiagnosticCheck["evidenceKind"] = probe.performed ? "observed" : "derived";
-  let message = "The selected workspace does not have a usable managed OmniRush.ai Cloud MCP configuration.";
-  let owner: AgentContextDiagnosticCheck["owner"] = "omnirush-server";
-  let action = "Reconnect OmniRush.ai Cloud from Settings > Connect and rerun diagnostics.";
+  let message = "The selected workspace does not have a usable managed MarsAI Cloud MCP configuration.";
+  let owner: AgentContextDiagnosticCheck["owner"] = "mars-server";
+  let action = "Reconnect MarsAI Cloud from Settings > Connect and rerun diagnostics.";
 
   switch (probe.code) {
     case "runtime_config_unavailable":
@@ -601,51 +601,51 @@ export function cloudCatalogCheck(probe: CloudCatalogProbe): AgentContextDiagnos
       status = "warning";
       evidenceKind = "unavailable";
       message = "A local runtime credential was not inspected or used for this remote workspace shell.";
-      action = "Run diagnostics on the OmniRush.ai server that owns the workspace.";
+      action = "Run diagnostics on the MarsAI server that owns the workspace.";
       break;
     case "cloud_mcp_missing":
-      owner = "omnirush-client";
-      message = "The selected client workspace has no synced OmniRush.ai Cloud MCP entry.";
+      owner = "mars-client";
+      message = "The selected client workspace has no synced MarsAI Cloud MCP entry.";
       break;
     case "cloud_mcp_disabled":
-      owner = "omnirush-client";
-      message = "The selected workspace OmniRush.ai Cloud MCP entry is disabled.";
-      action = "Enable or reconnect OmniRush.ai Cloud from Settings > Connect, then rerun diagnostics.";
+      owner = "mars-client";
+      message = "The selected workspace MarsAI Cloud MCP entry is disabled.";
+      action = "Enable or reconnect MarsAI Cloud from Settings > Connect, then rerun diagnostics.";
       break;
     case "cloud_mcp_not_remote":
-      message = "The managed OmniRush.ai Cloud entry is not configured as a remote MCP.";
-      action = "Reconnect OmniRush.ai Cloud to restore its managed remote configuration.";
+      message = "The managed MarsAI Cloud entry is not configured as a remote MCP.";
+      action = "Reconnect MarsAI Cloud to restore its managed remote configuration.";
       break;
     case "invalid_endpoint":
-      message = "The managed OmniRush.ai Cloud endpoint is not credential-safe or does not end at the required /mcp/agent route.";
-      action = "Reconnect OmniRush.ai Cloud to restore its managed endpoint, then rerun diagnostics.";
+      message = "The managed MarsAI Cloud endpoint is not credential-safe or does not end at the required /mcp/agent route.";
+      action = "Reconnect MarsAI Cloud to restore its managed endpoint, then rerun diagnostics.";
       break;
     case "untrusted_endpoint":
       status = "warning";
       evidenceKind = "unavailable";
       message = probe.enterpriseActivationPresent
-        ? "The runtime endpoint probe was not performed: this installation is enterprise activated, but against a different control-plane origin than the configured OmniRush.ai Cloud MCP. No request was sent, so this is a configuration mismatch, not a network, TLS, or MCP failure."
+        ? "The runtime endpoint probe was not performed: this installation is enterprise activated, but against a different control-plane origin than the configured MarsAI Cloud MCP. No request was sent, so this is a configuration mismatch, not a network, TLS, or MCP failure."
         : "The runtime endpoint probe was not performed because the configured origin is not in the diagnostics trust list; no request was sent, so this is a trust-configuration state, not a network, TLS, or MCP failure.";
       action = probe.enterpriseActivationPresent
-        ? "Reconcile the enterprise activation origin with the configured OmniRush.ai Cloud MCP origin, or have an administrator add the exact endpoint origin to OMNIRUSH_AGENT_DIAGNOSTICS_TRUSTED_ORIGINS, then rerun diagnostics."
-        : "Activate this installation against your on-prem Den, or have an administrator set OMNIRUSH_AGENT_DIAGNOSTICS_TRUSTED_ORIGINS on the OmniRush.ai desktop/server process to the exact endpoint origin, then rerun diagnostics.";
+        ? "Reconcile the enterprise activation origin with the configured MarsAI Cloud MCP origin, or have an administrator add the exact endpoint origin to MARS_AGENT_DIAGNOSTICS_TRUSTED_ORIGINS, then rerun diagnostics."
+        : "Activate this installation against your on-prem Den, or have an administrator set MARS_AGENT_DIAGNOSTICS_TRUSTED_ORIGINS on the MarsAI desktop/server process to the exact endpoint origin, then rerun diagnostics.";
       break;
     case "credential_missing":
     case "duplicate_authorization":
-      owner = "omnirush-client";
-      message = "The managed OmniRush.ai Cloud entry does not contain one unambiguous authentication value.";
-      action = "Reconnect OmniRush.ai Cloud so the client can replace the managed credential, then rerun diagnostics.";
+      owner = "mars-client";
+      message = "The managed MarsAI Cloud entry does not contain one unambiguous authentication value.";
+      action = "Reconnect MarsAI Cloud so the client can replace the managed credential, then rerun diagnostics.";
       break;
     case "timeout":
     case "network_error":
     case "http_error":
       owner = "network-admin";
       if (probe.httpStatus === 451) {
-        message = "The independent runtime endpoint probe received HTTP 451, which indicates an egress proxy, firewall, or allowlist deny rather than an OmniRush.ai Cloud catalog shape problem.";
-        action = "Add the configured OmniRush.ai Cloud MCP host and its documented redirect targets to the corporate allowlist, then rerun diagnostics.";
+        message = "The independent runtime endpoint probe received HTTP 451, which indicates an egress proxy, firewall, or allowlist deny rather than an MarsAI Cloud catalog shape problem.";
+        action = "Add the configured MarsAI Cloud MCP host and its documented redirect targets to the corporate allowlist, then rerun diagnostics.";
       } else {
         message = "The independent runtime endpoint probe could not be completed through the configured network path.";
-        action = "Verify server egress, DNS, TLS, proxy policy, and the configured OmniRush.ai Cloud service, then rerun diagnostics.";
+        action = "Verify server egress, DNS, TLS, proxy policy, and the configured MarsAI Cloud service, then rerun diagnostics.";
       }
       break;
     case "redirect_rejected":
@@ -656,11 +656,11 @@ export function cloudCatalogCheck(probe: CloudCatalogProbe): AgentContextDiagnos
     case "dns_error":
       owner = "network-admin";
       message = "The independent runtime endpoint probe could not resolve the configured service hostname.";
-      action = "Verify DNS resolution from the OmniRush.ai server, then rerun diagnostics.";
+      action = "Verify DNS resolution from the MarsAI server, then rerun diagnostics.";
       break;
     case "connection_refused":
       owner = "network-admin";
-      message = "The configured OmniRush.ai Cloud service refused the independent runtime probe connection.";
+      message = "The configured MarsAI Cloud service refused the independent runtime probe connection.";
       action = "Verify the service listener, firewall, and egress route, then rerun diagnostics.";
       break;
     case "connection_reset":
@@ -670,49 +670,49 @@ export function cloudCatalogCheck(probe: CloudCatalogProbe): AgentContextDiagnos
       break;
     case "tls_error":
       owner = "network-admin";
-      message = "The independent runtime endpoint probe failed TLS certificate validation or negotiation on the OmniRush.ai runtime trust store.";
+      message = "The independent runtime endpoint probe failed TLS certificate validation or negotiation on the MarsAI runtime trust store.";
       action = "Verify the server trust store, enterprise certificates, TLS inspection, and service certificate, then rerun diagnostics.";
       break;
     case "proxy_error":
       owner = "network-admin";
       if (probe.httpStatus === 451) {
-        message = "The independent runtime endpoint probe received HTTP 451, which indicates an egress proxy, firewall, or allowlist deny rather than an OmniRush.ai Cloud catalog shape problem.";
-        action = "Add the configured OmniRush.ai Cloud MCP host and its documented redirect targets to the corporate allowlist, then rerun diagnostics.";
+        message = "The independent runtime endpoint probe received HTTP 451, which indicates an egress proxy, firewall, or allowlist deny rather than an MarsAI Cloud catalog shape problem.";
+        action = "Add the configured MarsAI Cloud MCP host and its documented redirect targets to the corporate allowlist, then rerun diagnostics.";
       } else {
         message = "The configured proxy could not complete the independent runtime endpoint probe.";
         action = "Verify proxy reachability, authentication, and bypass policy, then rerun diagnostics.";
       }
       break;
     case "unauthorized":
-      owner = "omnirush-client";
-      message = "OmniRush.ai Cloud rejected the configured credential during the independent runtime probe.";
-      action = "Reconnect OmniRush.ai Cloud so the client can replace the managed credential, then rerun diagnostics.";
+      owner = "mars-client";
+      message = "MarsAI Cloud rejected the configured credential during the independent runtime probe.";
+      action = "Reconnect MarsAI Cloud so the client can replace the managed credential, then rerun diagnostics.";
       break;
     case "forbidden":
       owner = "organization-admin";
-      message = "OmniRush.ai Cloud rejected the probe for membership, scope, or policy reasons rather than credential validity.";
+      message = "MarsAI Cloud rejected the probe for membership, scope, or policy reasons rather than credential validity.";
       action = "Verify organization membership, workspace scope, and Cloud policy for this credential, then rerun diagnostics.";
       break;
     case "mcp_route_not_found":
-      owner = "omnirush-support";
+      owner = "mars-support";
       message = "The configured service answered, but the MCP agent route was not found; the deployment version or route configuration is implicated.";
-      action = "Verify the OmniRush.ai Cloud or on-prem Den deployment version exposes the /mcp/agent route, then rerun diagnostics.";
+      action = "Verify the MarsAI Cloud or on-prem Den deployment version exposes the /mcp/agent route, then rerun diagnostics.";
       break;
     case "rate_limited":
       status = "warning";
-      owner = "omnirush-support";
-      message = "OmniRush.ai Cloud rate-limited the independent runtime probe.";
-      action = "Wait before rerunning diagnostics; contact OmniRush.ai support if rate limiting persists.";
+      owner = "mars-support";
+      message = "MarsAI Cloud rate-limited the independent runtime probe.";
+      action = "Wait before rerunning diagnostics; contact MarsAI support if rate limiting persists.";
       break;
     case "gateway_unavailable":
       owner = "network-admin";
-      message = "A gateway or upstream in front of the OmniRush.ai Cloud service reported it unavailable during the independent runtime probe.";
+      message = "A gateway or upstream in front of the MarsAI Cloud service reported it unavailable during the independent runtime probe.";
       action = "Check service status and gateway health, wait briefly, then rerun diagnostics.";
       break;
     case "probe_busy":
       status = "warning";
       evidenceKind = "unavailable";
-      owner = "omnirush-server";
+      owner = "mars-server";
       message = "The server's bounded diagnostics probe capacity was busy, so no new egress was started.";
       action = "Wait briefly and rerun diagnostics.";
       break;
@@ -727,14 +727,14 @@ export function cloudCatalogCheck(probe: CloudCatalogProbe): AgentContextDiagnos
     case "invalid_session_header":
     case "pagination_unsupported":
     case "invalid_catalog":
-      owner = "omnirush-support";
-      message = "OmniRush.ai Cloud returned a response that does not satisfy the bounded MCP handshake protocol contract.";
-      action = "Review the OmniRush.ai Cloud deployment and restore a conformant MCP handshake response.";
+      owner = "mars-support";
+      message = "MarsAI Cloud returned a response that does not satisfy the bounded MCP handshake protocol contract.";
+      action = "Review the MarsAI Cloud deployment and restore a conformant MCP handshake response.";
       break;
     case "required_tools_missing":
-      owner = "omnirush-support";
-      message = "The OmniRush.ai Cloud catalog handshake succeeded, but the catalog does not contain both required capability tools.";
-      action = "Review the OmniRush.ai Cloud deployment and restore the canonical capability catalog.";
+      owner = "mars-support";
+      message = "The MarsAI Cloud catalog handshake succeeded, but the catalog does not contain both required capability tools.";
+      action = "Review the MarsAI Cloud deployment and restore the canonical capability catalog.";
       break;
   }
   return diagnosticCheck({
@@ -771,8 +771,8 @@ export function cloudDifferentialCheck(probe: CloudCatalogProbe, engineReachable
       ...common,
       status: "passed",
       evidenceKind: "derived",
-      message: "The independent OmniRush.ai runtime probe and the engine registration evidence both report the OmniRush.ai Cloud endpoint as reachable.",
-      owner: "omnirush-server",
+      message: "The independent MarsAI runtime probe and the engine registration evidence both report the MarsAI Cloud endpoint as reachable.",
+      owner: "mars-server",
       action: "No action is required.",
     });
   }
@@ -781,9 +781,9 @@ export function cloudDifferentialCheck(probe: CloudCatalogProbe, engineReachable
       ...common,
       status: "failed",
       evidenceKind: "derived",
-      message: "The OmniRush.ai runtime reached the Cloud endpoint directly, but the engine registration evidence reports a failure; the engine-side connection path or registration lifecycle is implicated, not the endpoint.",
+      message: "The MarsAI runtime reached the Cloud endpoint directly, but the engine registration evidence reports a failure; the engine-side connection path or registration lifecycle is implicated, not the endpoint.",
       owner: "opencode-engine",
-      action: "Reconnect OmniRush.ai Cloud or restart the selected workspace engine, then rerun diagnostics; the endpoint itself is reachable from this machine.",
+      action: "Reconnect MarsAI Cloud or restart the selected workspace engine, then rerun diagnostics; the endpoint itself is reachable from this machine.",
     });
   }
   if (verdict === "runtime_failed_engine_connected") {
@@ -791,9 +791,9 @@ export function cloudDifferentialCheck(probe: CloudCatalogProbe, engineReachable
       ...common,
       status: "warning",
       evidenceKind: "derived",
-      message: "The engine registration evidence reports a live connection, but the independent runtime probe failed; the OmniRush.ai runtime network path is implicated rather than the endpoint or the engine.",
+      message: "The engine registration evidence reports a live connection, but the independent runtime probe failed; the MarsAI runtime network path is implicated rather than the endpoint or the engine.",
       owner: "network-admin",
-      action: "Compare proxy, DNS, and trust-store configuration between the OmniRush.ai runtime and the engine process, then rerun diagnostics.",
+      action: "Compare proxy, DNS, and trust-store configuration between the MarsAI runtime and the engine process, then rerun diagnostics.",
     });
   }
   if (verdict === "runtime_and_engine_failed") {
@@ -811,7 +811,7 @@ export function cloudDifferentialCheck(probe: CloudCatalogProbe, engineReachable
       ...common,
       status: "warning",
       evidenceKind: "derived",
-      message: "The engine registration evidence for OmniRush.ai Cloud is stale or was never recorded, so only the independent runtime observation is current.",
+      message: "The engine registration evidence for MarsAI Cloud is stale or was never recorded, so only the independent runtime observation is current.",
       owner: "opencode-engine",
       action: "Start or reconnect the selected workspace engine to refresh its registration evidence, then rerun diagnostics.",
     });
@@ -821,7 +821,7 @@ export function cloudDifferentialCheck(probe: CloudCatalogProbe, engineReachable
     status: "skipped",
     evidenceKind: "unavailable",
     message: "The independent runtime probe was not performed, so endpoint availability cannot be compared with the engine registration evidence.",
-    owner: "omnirush-server",
+    owner: "mars-server",
     action: "Address the probe eligibility code reported by the cloud catalog check, then rerun diagnostics.",
   });
 }
@@ -858,8 +858,8 @@ export function cloudEndpointTransportCheck(
       status: "skipped",
       evidenceKind: "derived",
       code: "transport_probe_not_required",
-      message: "The managed OmniRush.ai Cloud MCP registration is connected; the differential check compares runtime and engine reachability, so a separate TLS-layer probe was not needed.",
-      owner: "omnirush-server",
+      message: "The managed MarsAI Cloud MCP registration is connected; the differential check compares runtime and engine reachability, so a separate TLS-layer probe was not needed.",
+      owner: "mars-server",
       action: "No action is required.",
       details,
     });
@@ -870,8 +870,8 @@ export function cloudEndpointTransportCheck(
       status: "passed",
       evidenceKind: "observed",
       code: "endpoint_tls_handshake_verified",
-      message: "The OmniRush.ai Cloud endpoint completed a credential-free TLS handshake; use the differential check for authentication, MCP protocol, and engine-registration attribution.",
-      owner: "omnirush-server",
+      message: "The MarsAI Cloud endpoint completed a credential-free TLS handshake; use the differential check for authentication, MCP protocol, and engine-registration attribution.",
+      owner: "mars-server",
       action: "Review the cloud-endpoint-differential verdict and catalog evidence for the next failure layer.",
       details,
     });
@@ -889,7 +889,7 @@ export function cloudEndpointTransportCheck(
       code: "endpoint_tls_version_handshake_fault",
       message: "The credential-free transport probe reproduced a TLS version fault: TLS 1.3 timed out while TLS 1.2 completed, which points to an egress proxy or firewall stalling TLS 1.3 handshakes rather than a ServiceNow, credential, or allowlist issue.",
       owner: "network-admin",
-      action: "Fix or bypass the egress device that stalls TLS 1.3 ClientHello traffic for OmniRush.ai Cloud hosts, or temporarily force TLS 1.2 where your policy permits it, then rerun diagnostics.",
+      action: "Fix or bypass the egress device that stalls TLS 1.3 ClientHello traffic for MarsAI Cloud hosts, or temporarily force TLS 1.2 where your policy permits it, then rerun diagnostics.",
       details,
     });
   }
@@ -907,7 +907,7 @@ export function cloudEndpointTransportCheck(
         code: "endpoint_tls_handshake_timeout_tls12_comparison_failed",
         message: "The credential-free TLS handshake timed out before any HTTP response, and the explicit TLS 1.3 probe also timed out; the runtime TLS 1.2 comparison timed out too, so this still points to an egress TLS ClientHello stall but this runtime could not prove the TLS 1.2 workaround.",
         owner: "network-admin",
-        action: "Verify the egress proxy and firewall pass TLS ClientHello traffic to OmniRush.ai Cloud hosts, then compare with a known Node or openssl TLS 1.2-only probe and confirm every OmniRush.ai runtime honors any temporary TLS-version pinning policy.",
+        action: "Verify the egress proxy and firewall pass TLS ClientHello traffic to MarsAI Cloud hosts, then compare with a known Node or openssl TLS 1.2-only probe and confirm every MarsAI runtime honors any temporary TLS-version pinning policy.",
         details,
       });
     }
@@ -918,7 +918,7 @@ export function cloudEndpointTransportCheck(
       code: "endpoint_tls_handshake_timeout",
       message: "The credential-free TLS handshake timed out before any HTTP response; this points to a TLS handshake or egress proxy fault consistent with a TLS 1.3 ClientHello stall, not an application credential or ServiceNow problem.",
       owner: "network-admin",
-      action: "Verify that the egress proxy and firewall pass TLS 1.3 ClientHello traffic to OmniRush.ai Cloud hosts; compare with a TLS 1.2-only probe or temporarily force TLS 1.2 where policy permits, then rerun diagnostics.",
+      action: "Verify that the egress proxy and firewall pass TLS 1.3 ClientHello traffic to MarsAI Cloud hosts; compare with a TLS 1.2-only probe or temporarily force TLS 1.2 where policy permits, then rerun diagnostics.",
       details,
     });
   }
@@ -930,9 +930,9 @@ export function cloudEndpointTransportCheck(
         status: "failed",
         evidenceKind: "observed",
         code: "endpoint_tls_interception_detected",
-        message: "The OmniRush.ai Cloud endpoint appears to be TLS-inspected or re-signed by a corporate proxy; the runtime does not trust that inspecting issuer.",
+        message: "The MarsAI Cloud endpoint appears to be TLS-inspected or re-signed by a corporate proxy; the runtime does not trust that inspecting issuer.",
         owner: "network-admin",
-        action: "Install the corporate inspection root for the OmniRush.ai runtime with NODE_EXTRA_CA_CERTS, or bypass TLS inspection for OmniRush.ai Cloud hosts, then rerun diagnostics.",
+        action: "Install the corporate inspection root for the MarsAI runtime with NODE_EXTRA_CA_CERTS, or bypass TLS inspection for MarsAI Cloud hosts, then rerun diagnostics.",
         details,
       });
     }
@@ -942,9 +942,9 @@ export function cloudEndpointTransportCheck(
         status: "failed",
         evidenceKind: "observed",
         code: "endpoint_tls_incomplete_chain",
-        message: "The OmniRush.ai Cloud endpoint served a leaf-only TLS chain and verification failed with UNABLE_TO_VERIFY_LEAF_SIGNATURE; the missing intermediate/fullchain must be repaired before blaming credentials or application logic.",
+        message: "The MarsAI Cloud endpoint served a leaf-only TLS chain and verification failed with UNABLE_TO_VERIFY_LEAF_SIGNATURE; the missing intermediate/fullchain must be repaired before blaming credentials or application logic.",
         owner: "network-admin",
-        action: "Serve the complete certificate chain from the endpoint or let the OmniRush.ai runtime add the AIA intermediate to NODE_EXTRA_CA_CERTS, then rerun diagnostics.",
+        action: "Serve the complete certificate chain from the endpoint or let the MarsAI runtime add the AIA intermediate to NODE_EXTRA_CA_CERTS, then rerun diagnostics.",
         details,
       });
     }
@@ -953,9 +953,9 @@ export function cloudEndpointTransportCheck(
       status: "failed",
       evidenceKind: "observed",
       code: "endpoint_tls_untrusted",
-      message: `The OmniRush.ai Cloud endpoint TLS handshake failed with ${probe.verifyErrorCode ?? "a certificate verification error"}; the OS or corporate CA chain is not visible to this runtime.`,
+      message: `The MarsAI Cloud endpoint TLS handshake failed with ${probe.verifyErrorCode ?? "a certificate verification error"}; the OS or corporate CA chain is not visible to this runtime.`,
       owner: "network-admin",
-      action: "Provide the corporate CA chain to OmniRush.ai with NODE_EXTRA_CA_CERTS or fix the server to present its full certificate chain; the served-chain evidence below shows what the endpoint sent.",
+      action: "Provide the corporate CA chain to MarsAI with NODE_EXTRA_CA_CERTS or fix the server to present its full certificate chain; the served-chain evidence below shows what the endpoint sent.",
       details,
     });
   }
@@ -965,7 +965,7 @@ export function cloudEndpointTransportCheck(
       status: "failed",
       evidenceKind: "observed",
       code: "endpoint_unreachable",
-      message: "The OmniRush.ai Cloud endpoint could not be reached with a credential-free TCP/TLS handshake.",
+      message: "The MarsAI Cloud endpoint could not be reached with a credential-free TCP/TLS handshake.",
       owner: "network-admin",
       action: "Verify DNS, firewall, VPN, proxy, and endpoint availability from this machine, then rerun diagnostics.",
       details,
@@ -977,8 +977,8 @@ export function cloudEndpointTransportCheck(
     evidenceKind: probe.skipReason === "invalid_endpoint" || probe.skipReason === "missing_endpoint" ? "unavailable" : "derived",
     code: "transport_probe_not_applicable",
     message: "A credential-free TLS-layer probe was not applicable to this workspace or endpoint configuration; the differential check reports runtime probe eligibility.",
-    owner: "omnirush-server",
-    action: "Review the managed OmniRush.ai Cloud MCP configuration if transport evidence is needed.",
+    owner: "mars-server",
+    action: "Review the managed MarsAI Cloud MCP configuration if transport evidence is needed.",
     details,
   });
 }
@@ -991,7 +991,7 @@ function organizationCheck(request: AgentContextDiagnosticsRequest): AgentContex
       evidenceKind: "client-observed",
       code: "organization_connections_unavailable",
       message: "The client could not observe organization connection readiness.",
-      owner: "omnirush-client",
+      owner: "mars-client",
       action: "Verify the Den session and organization access, then rerun diagnostics.",
       details: { connectionCount: 0, reportedConnectionCount: 0, truncated: false, notReadyCount: 0 },
     });
@@ -1004,9 +1004,9 @@ function organizationCheck(request: AgentContextDiagnosticsRequest): AgentContex
       evidenceKind: "client-observed",
       code: request.organizationConnectionsProbe.code ?? "organization_connections_skipped",
       message: remotePrivacy
-        ? "Local Den organization topology was intentionally omitted from the remote OmniRush.ai diagnostics request."
+        ? "Local Den organization topology was intentionally omitted from the remote MarsAI diagnostics request."
         : "Organization connection readiness was not observed for this run.",
-      owner: remotePrivacy ? "omnirush-client" : "member",
+      owner: remotePrivacy ? "mars-client" : "member",
       action: remotePrivacy
         ? "No action is required; run diagnostics against a local workspace to include local Den organization readiness."
         : "Sign in to Den and select an organization to include organization readiness.",
@@ -1047,14 +1047,14 @@ function organizationCheck(request: AgentContextDiagnosticsRequest): AgentContex
           ? "One or more shared organization connections need organization administrator setup or repair."
           : "The client-observed organization connections are ready.",
     owner: truncated
-      ? "omnirush-client"
+      ? "mars-client"
       : memberAndAdminAction
       ? "member-and-organization-admin"
       : memberActionCount > 0
         ? "member"
         : organizationAdminActionCount > 0
           ? "organization-admin"
-          : "omnirush-client",
+          : "mars-client",
     action: truncated
       ? "Review organization connection readiness in Den for the complete inventory."
       : memberAndAdminAction
@@ -1154,24 +1154,24 @@ function engineAgentCheck(
       durationMs,
     );
   }
-  const agent = snapshot.agents.find((candidate) => candidate.name === "omnirush");
+  const agent = snapshot.agents.find((candidate) => candidate.name === "mars");
   return diagnosticCheck({
     id: "engine-agent",
     status: agent ? "passed" : "failed",
     evidenceKind: "observed",
-    code: agent ? "effective_omnirush_agent_observed" : "effective_omnirush_agent_missing",
+    code: agent ? "effective_mars_agent_observed" : "effective_mars_agent_missing",
     message: agent
-      ? "The selected engine resolved the OmniRush.ai agent."
-      : "The selected engine did not resolve an OmniRush.ai agent.",
-    owner: agent ? "opencode-engine" : "omnirush-server",
+      ? "The selected engine resolved the MarsAI agent."
+      : "The selected engine did not resolve an MarsAI agent.",
+    owner: agent ? "opencode-engine" : "mars-server",
     action: agent
       ? "No action is required."
-      : "Restore the OmniRush.ai runtime agent injection and restart the selected workspace engine.",
+      : "Restore the MarsAI runtime agent injection and restart the selected workspace engine.",
     details: {
       engineApiReadPerformed: true,
       effectiveAgentCount: snapshot.agents.length,
-      omnirushAgentPresent: Boolean(agent),
-      omnirushAgentHidden: agent?.hidden ?? null,
+      marsAgentPresent: Boolean(agent),
+      marsAgentHidden: agent?.hidden ?? null,
       permissionRuleCount: agent?.permission.length ?? null,
       rawPromptIncluded: false,
     },
@@ -1205,7 +1205,7 @@ function runtimeHealthCheck(
   const message = corrupt
     ? "The selected workspace runtime configuration could not be safely decoded."
     : !engineConfigured
-      ? "The selected workspace does not have an OmniRush runtime endpoint configured."
+      ? "The selected workspace does not have an Mars runtime endpoint configured."
       : absent
         ? "The runtime configuration database or selected workspace row has not been initialized."
         : remote
@@ -1217,13 +1217,13 @@ function runtimeHealthCheck(
     evidenceKind: corrupt ? "unavailable" : "derived",
     code,
     message,
-    owner: corrupt ? "omnirush-server" : engineConfigured ? "omnirush-server" : "member",
+    owner: corrupt ? "mars-server" : engineConfigured ? "mars-server" : "member",
     action: status === "passed"
       ? "No action is required."
       : corrupt
-        ? "Repair the OmniRush.ai runtime state before relying on injected configuration."
+        ? "Repair the MarsAI runtime state before relying on injected configuration."
         : remote
-          ? "Run diagnostics on the OmniRush.ai server that owns the workspace."
+          ? "Run diagnostics on the MarsAI server that owns the workspace."
           : "Start or configure the selected workspace runtime, then rerun diagnostics.",
     details: {
       workspaceType: workspace.workspaceType,
@@ -1304,22 +1304,22 @@ export async function runAgentContextDiagnostics(input: {
   // The injected engine config file is rendered from the ENGINE_GLOBAL row
   // only; the merged per-workspace runtime row informs MCP inventory below
   // but is not part of the injected file.
-  const expectedRuntimeConfig = buildOmniRushRuntimeConfigObjectFromSnapshot(globalRuntimeInspection.config);
+  const expectedRuntimeConfig = buildMarsRuntimeConfigObjectFromSnapshot(globalRuntimeInspection.config);
   const expectedAgents = isRecord(expectedRuntimeConfig.agent) ? expectedRuntimeConfig.agent : {};
-  const expectedAgent = isRecord(expectedAgents.omnirush) ? expectedAgents.omnirush : null;
-  const effectiveOmniRushAgent = effectiveEngine?.agents.find((agent) => agent.name === "omnirush") ?? null;
-  const effectiveAgentModeUsable = effectiveOmniRushAgent?.mode === "primary"
-    || effectiveOmniRushAgent?.mode === "all";
+  const expectedAgent = isRecord(expectedAgents.mars) ? expectedAgents.mars : null;
+  const effectiveMarsAgent = effectiveEngine?.agents.find((agent) => agent.name === "mars") ?? null;
+  const effectiveAgentModeUsable = effectiveMarsAgent?.mode === "primary"
+    || effectiveMarsAgent?.mode === "all";
   const effectiveAgentUsable = Boolean(
-    effectiveOmniRushAgent
-    && effectiveEngine?.defaultAgent === "omnirush"
-    && !effectiveOmniRushAgent.hidden
+    effectiveMarsAgent
+    && effectiveEngine?.defaultAgent === "mars"
+    && !effectiveMarsAgent.hidden
     && effectiveAgentModeUsable,
   );
   const agentEvidenceSource = effectiveEngine ? "effective-engine" as const : "configured-intent" as const;
   const reportedAgent = effectiveEngine
-    ? effectiveOmniRushAgent
-      ? { prompt: effectiveOmniRushAgent.prompt }
+    ? effectiveMarsAgent
+      ? { prompt: effectiveMarsAgent.prompt }
       : null
     : expectedAgent;
   const prompt = promptEvidence(reportedAgent);
@@ -1340,7 +1340,7 @@ export async function runAgentContextDiagnostics(input: {
     return label ? [label] : [];
   }))].slice(0, 100);
   const canonicalConnectPluginSpec = expectedPlugins.find(
-    (spec) => pluginLabel(spec) === "omnirush-extensions-preview",
+    (spec) => pluginLabel(spec) === "mars-extensions-preview",
   ) ?? null;
   const canonicalPluginSpecMatched = canonicalConnectPluginSpec !== null
     && reportedPlugins.some(
@@ -1387,7 +1387,7 @@ export async function runAgentContextDiagnostics(input: {
       googleWorkspace: { legacyConfigured: false },
     };
   }
-  const selectedCloudMcpPresent = Object.hasOwn(runtimeMcpMap(runtime), OMNIRUSH_CLOUD_MCP_NAME);
+  const selectedCloudMcpPresent = Object.hasOwn(runtimeMcpMap(runtime), MARS_CLOUD_MCP_NAME);
   const branch = expectedConnectBranch(connectSnapshot);
   const crossWorkspaceSteeringDrift = connectSnapshot.cloudMcpPresent && !selectedCloudMcpPresent;
 
@@ -1401,7 +1401,7 @@ export async function runAgentContextDiagnostics(input: {
   const engineConfigItems = effectiveEngine?.mcps.map((item) => ({
     ...item,
     source: "engine.config" as const,
-    disabledByTools: item.name === OMNIRUSH_CLOUD_MCP_NAME
+    disabledByTools: item.name === MARS_CLOUD_MCP_NAME
       ? assessEffectiveToolPolicy(effectiveEngine).status === "denied" || undefined
       : undefined,
   }));
@@ -1409,7 +1409,7 @@ export async function runAgentContextDiagnostics(input: {
   const combinedInventoryItems = [...inventory.items, ...(engineConfigItems ?? [])];
   const inventoryItems = combinedInventoryItems.slice(0, 200);
   const runtimeCloudItem = combinedInventoryItems.find((item) =>
-    item.source === "config.remote" && item.name === OMNIRUSH_CLOUD_MCP_NAME,
+    item.source === "config.remote" && item.name === MARS_CLOUD_MCP_NAME,
   );
   if (
     runtimeCloudItem
@@ -1430,7 +1430,7 @@ export async function runAgentContextDiagnostics(input: {
     return inspection;
   };
   const mcps = inventoryItems.map((item) => mcpEvidence(item, registrationForItem(item).status, managedMcpNames));
-  const runtimeCloudConfig = runtimeMcpMap(runtime)[OMNIRUSH_CLOUD_MCP_NAME] ?? null;
+  const runtimeCloudConfig = runtimeMcpMap(runtime)[MARS_CLOUD_MCP_NAME] ?? null;
   const runtimeCloudRegistration = runtimeCloudItem && runtimeCloudConfig ? registrationForItem(runtimeCloudItem) : null;
   const staticallyDeniedCloudAgentToolIds = new Set(inventory.toolPolicy.deniedToolIds);
   const effectiveToolPolicy = assessEffectiveToolPolicy(effectiveEngine);
@@ -1475,7 +1475,7 @@ export async function runAgentContextDiagnostics(input: {
   // Cached engine registration and agent tool policy are comparison inputs
   // for the differential verdict, never eligibility gates: the independent
   // runtime probe exists precisely to diagnose engine-side failures.
-  const cloudProbe = await probeOmniRushCloudCatalog({
+  const cloudProbe = await probeMarsCloudCatalog({
     workspaceId: input.workspace.id,
     workspaceType: input.workspace.workspaceType,
     runtimeConfigAvailable: runtimeInspection.status === "available",
@@ -1564,7 +1564,7 @@ export async function runAgentContextDiagnostics(input: {
       evidenceKind: "observed",
       code: "strict_request_validated",
       message: "The request matched the strict diagnostics schema and contained only safe organization summaries.",
-      owner: "omnirush-server",
+      owner: "mars-server",
       action: "No action is required.",
       details: {
         organizationProbeStatus: request.organizationConnectionsProbe.status,
@@ -1586,13 +1586,13 @@ export async function runAgentContextDiagnostics(input: {
       message: !connectSnapshotAvailable
         ? "The passive Connect steering state could not be inspected."
         : crossWorkspaceSteeringDrift
-          ? "Global Connect steering sees OmniRush.ai Cloud, but the selected workspace does not contain that managed MCP."
+          ? "Global Connect steering sees MarsAI Cloud, but the selected workspace does not contain that managed MCP."
           : "The expected Connect steering branch is internally consistent for the selected workspace.",
-      owner: !connectSnapshotAvailable || crossWorkspaceSteeringDrift ? "omnirush-server" : "omnirush-client",
+      owner: !connectSnapshotAvailable || crossWorkspaceSteeringDrift ? "mars-server" : "mars-client",
       action: !connectSnapshotAvailable
-        ? "Verify the OmniRush.ai server runtime state and rerun diagnostics."
+        ? "Verify the MarsAI server runtime state and rerun diagnostics."
         : crossWorkspaceSteeringDrift
-          ? "Reconnect or sync OmniRush.ai Cloud for the selected workspace."
+          ? "Reconnect or sync MarsAI Cloud for the selected workspace."
           : "No action is required.",
       details: {
         expectedBranch: branch,
@@ -1612,43 +1612,43 @@ export async function runAgentContextDiagnostics(input: {
         ? "observed"
         : runtimeInspection.status === "available" ? "expected" : "unavailable",
       code: effectiveEngine
-        ? !effectiveOmniRushAgent
-          ? "effective_omnirush_agent_missing"
-          : effectiveEngine.defaultAgent !== "omnirush"
+        ? !effectiveMarsAgent
+          ? "effective_mars_agent_missing"
+          : effectiveEngine.defaultAgent !== "mars"
             ? "effective_default_agent_mismatch"
-            : effectiveOmniRushAgent.hidden
-              ? "effective_omnirush_agent_hidden"
+            : effectiveMarsAgent.hidden
+              ? "effective_mars_agent_hidden"
               : !effectiveAgentModeUsable
-                ? "effective_omnirush_agent_not_primary"
-            : "effective_omnirush_agent_selected"
+                ? "effective_mars_agent_not_primary"
+            : "effective_mars_agent_selected"
         : projectOverrideDetected
           ? "configured_agent_has_override_layers"
           : "runtime_agent_intent_only",
       message: effectiveEngine
-        ? !effectiveOmniRushAgent
-          ? "The effective engine configuration does not contain the OmniRush.ai agent."
-          : effectiveEngine.defaultAgent !== "omnirush"
-            ? "The effective engine default does not select the OmniRush.ai agent."
-            : effectiveOmniRushAgent.hidden
-              ? "The effective OmniRush.ai agent is hidden and cannot be used as the default agent."
+        ? !effectiveMarsAgent
+          ? "The effective engine configuration does not contain the MarsAI agent."
+          : effectiveEngine.defaultAgent !== "mars"
+            ? "The effective engine default does not select the MarsAI agent."
+            : effectiveMarsAgent.hidden
+              ? "The effective MarsAI agent is hidden and cannot be used as the default agent."
               : !effectiveAgentModeUsable
-                ? "The effective OmniRush.ai agent is subagent-only and cannot be used as the default agent."
-            : "The effective engine default selects the resolved OmniRush.ai agent."
+                ? "The effective MarsAI agent is subagent-only and cannot be used as the default agent."
+            : "The effective engine default selects the resolved MarsAI agent."
         : projectOverrideDetected
-          ? "The configured OmniRush.ai agent intent has project override layers and could not be confirmed live."
-          : "Only the configured OmniRush.ai agent intent was available; effective resolution was not observed.",
+          ? "The configured MarsAI agent intent has project override layers and could not be confirmed live."
+          : "Only the configured MarsAI agent intent was available; effective resolution was not observed.",
       owner: effectiveEngine ? "opencode-engine" : projectOverrideDetected ? "member" : "opencode-engine",
       action: effectiveEngine && effectiveAgentUsable
         ? "No action is required."
         : effectiveEngine
-          ? "Restore the OmniRush.ai agent and default-agent injection, then restart the selected workspace engine."
+          ? "Restore the MarsAI agent and default-agent injection, then restart the selected workspace engine."
           : "Check the selected workspace engine health and rerun diagnostics.",
       details: {
         configuredAgentPresent: Boolean(expectedAgent),
-        effectiveAgentPresent: effectiveEngine ? Boolean(effectiveOmniRushAgent) : null,
-        effectiveDefaultAgentIsOmniRush: effectiveEngine ? effectiveEngine.defaultAgent === "omnirush" : null,
-        effectiveAgentHidden: effectiveOmniRushAgent?.hidden ?? null,
-        effectiveAgentMode: effectiveOmniRushAgent?.mode ?? null,
+        effectiveAgentPresent: effectiveEngine ? Boolean(effectiveMarsAgent) : null,
+        effectiveDefaultAgentIsMars: effectiveEngine ? effectiveEngine.defaultAgent === "mars" : null,
+        effectiveAgentHidden: effectiveMarsAgent?.hidden ?? null,
+        effectiveAgentMode: effectiveMarsAgent?.mode ?? null,
         effectiveAgentUsableAsDefault: effectiveEngine ? effectiveAgentUsable : null,
         projectLayersAvailable: projectAgent.available,
         projectDefaultAgentOverride: projectAgent.defaultAgentOverride,
@@ -1668,19 +1668,19 @@ export async function runAgentContextDiagnostics(input: {
           : effectiveEngine ? "effective_prompt_digest_mismatch" : "configured_prompt_digest_mismatch",
       message: promptMatchesCanonicalIntent
         ? effectiveEngine
-          ? "The effective OmniRush.ai base prompt exactly matches the canonical configured injection and contains every required marker."
-          : "The configured OmniRush.ai base prompt intent matches its canonical generated injection and contains every required marker."
+          ? "The effective MarsAI base prompt exactly matches the canonical configured injection and contains every required marker."
+          : "The configured MarsAI base prompt intent matches its canonical generated injection and contains every required marker."
         : !promptMarkersPresent
           ? effectiveEngine
-            ? "The effective OmniRush.ai base prompt is missing one or more required markers."
-            : "The configured OmniRush.ai base prompt intent is missing one or more required markers."
+            ? "The effective MarsAI base prompt is missing one or more required markers."
+            : "The configured MarsAI base prompt intent is missing one or more required markers."
           : effectiveEngine
-            ? "The effective OmniRush.ai base prompt contains the markers but does not match the canonical configured injection."
-            : "The configured OmniRush.ai base prompt markers are present, but its digest does not match the canonical generated injection.",
-      owner: effectiveEngine ? "opencode-engine" : "omnirush-server",
+            ? "The effective MarsAI base prompt contains the markers but does not match the canonical configured injection."
+            : "The configured MarsAI base prompt markers are present, but its digest does not match the canonical generated injection.",
+      owner: effectiveEngine ? "opencode-engine" : "mars-server",
       action: promptMatchesCanonicalIntent
         ? "No action is required."
-        : "Restore the canonical OmniRush.ai runtime agent definition.",
+        : "Restore the canonical MarsAI runtime agent definition.",
       details: {
         ...prompt.markers,
         promptLength: prompt.length,
@@ -1707,24 +1707,24 @@ export async function runAgentContextDiagnostics(input: {
           : "required_connect_tool_ids_not_denied_by_effective_policy",
       message: cloudToolPolicyStatus === "denied"
         ? !effectiveEngine && staticallyDeniedCloudAgentToolIds.size > 0
-          ? "A passively inspected static OmniRush policy denies one or more required OmniRush.ai Cloud capability tools."
-          : "The effective OmniRush agent policy hides one or more required OmniRush.ai Cloud capability tools."
+          ? "A passively inspected static Mars policy denies one or more required MarsAI Cloud capability tools."
+          : "The effective Mars agent policy hides one or more required MarsAI Cloud capability tools."
         : cloudToolPolicyStatus === "unavailable"
-          ? "Required OmniRush.ai Cloud tool visibility could not be verified from the effective selected-engine agent."
-          : "The effective OmniRush agent policy does not deny either required OmniRush.ai Cloud candidate tool ID; the live engine tool registry was not read.",
+          ? "Required MarsAI Cloud tool visibility could not be verified from the effective selected-engine agent."
+          : "The effective Mars agent policy does not deny either required MarsAI Cloud candidate tool ID; the live engine tool registry was not read.",
       owner: cloudToolPolicyStatus === "available"
-        ? "omnirush-server"
+        ? "mars-server"
         : cloudToolPolicyStatus === "unavailable"
           ? "opencode-engine"
           : "member",
       action: cloudToolPolicyStatus === "denied"
-        ? "Allow the denied omnirush-cloud capability tool IDs in top-level or OmniRush.ai agent permission policy, then rerun diagnostics."
+        ? "Allow the denied mars-cloud capability tool IDs in top-level or MarsAI agent permission policy, then rerun diagnostics."
         : cloudToolPolicyStatus === "unavailable"
           ? "Check the selected workspace engine health and rerun diagnostics."
           : "No policy change is required; confirm catalog and registration evidence because this policy check alone does not prove live tool presence.",
       details: {
-        searchCapabilities: reportedToolPermission(`${OMNIRUSH_CLOUD_MCP_NAME}_search_capabilities`),
-        executeCapability: reportedToolPermission(`${OMNIRUSH_CLOUD_MCP_NAME}_execute_capability`),
+        searchCapabilities: reportedToolPermission(`${MARS_CLOUD_MCP_NAME}_search_capabilities`),
+        executeCapability: reportedToolPermission(`${MARS_CLOUD_MCP_NAME}_execute_capability`),
         deniedRelevantToolCount: cloudToolPolicyStatus === "unavailable" ? null : deniedCloudAgentToolIds.size,
         staticPolicyScope: inventory.toolPolicy.scope,
         staticPolicyLayerStatus: inventory.toolPolicy.status,
@@ -1748,10 +1748,10 @@ export async function runAgentContextDiagnostics(input: {
         : effectiveEngine
           ? "The Connect steering plugin is missing from the effective engine configuration."
           : "The Connect steering plugin is missing from the configured runtime injection intent.",
-      owner: effectiveEngine ? "opencode-engine" : "omnirush-server",
+      owner: effectiveEngine ? "opencode-engine" : "mars-server",
       action: canonicalPluginSpecMatched
         ? "No action is required."
-        : "Restore the canonical OmniRush.ai runtime plugin bundle.",
+        : "Restore the canonical MarsAI runtime plugin bundle.",
       details: {
         configuredPluginLabels: pluginLabels,
         canonicalPluginSpecMatched,
@@ -1786,7 +1786,7 @@ export async function runAgentContextDiagnostics(input: {
       message: effectiveEngine
         ? inventoryTotal > 200
           ? "The combined engine-configuration and runtime-managed MCP evidence exceeded the report limit and was truncated."
-          : "The selected engine's merged MCP configuration and OmniRush.ai-managed dynamic injection intent were inventoried as separate evidence sources."
+          : "The selected engine's merged MCP configuration and MarsAI-managed dynamic injection intent were inventoried as separate evidence sources."
         : layerHealthProblem
         ? "One or more static MCP configuration layers are invalid or unreadable."
         : inventoryTotal > 200
@@ -1795,16 +1795,16 @@ export async function runAgentContextDiagnostics(input: {
             ? "Multiple configuration layers define one or more MCP names; no effective winner is claimed."
             : !passiveLocalLayersAvailable
               ? "Only server-managed runtime MCP layers were available for this workspace."
-              : "The server-managed runtime and selected project/global MCP sources were inventoried without claiming complete OmniRush resolution.",
+              : "The server-managed runtime and selected project/global MCP sources were inventoried without claiming complete Mars resolution.",
       owner: effectiveEngine
         ? "opencode-engine"
-        : layerHealthProblem ? "member" : inventory.collisions.length > 0 ? "member" : "omnirush-server",
+        : layerHealthProblem ? "member" : inventory.collisions.length > 0 ? "member" : "mars-server",
       action: effectiveEngine
         ? inventoryTotal > 200
-          ? "Reduce the configured MCP count or inspect the engine and OmniRush.ai runtime sources directly."
+          ? "Reduce the configured MCP count or inspect the engine and MarsAI runtime sources directly."
           : "No action is required; review registration evidence for runtime-managed dynamic MCP connection state."
         : layerHealthProblem
-        ? "Repair the invalid or unreadable OmniRush configuration layer, then rerun diagnostics."
+        ? "Repair the invalid or unreadable Mars configuration layer, then rerun diagnostics."
         : inventory.collisions.length > 0
           ? "Review the listed MCP layer collisions and remove unintended duplicate definitions."
           : inventoryTotal > 200
@@ -1819,7 +1819,7 @@ export async function runAgentContextDiagnostics(input: {
         globalLayerStatus: inventory.layerStatus.global,
         inventoryScope: effectiveEngine
           ? "engine-merged-config-plus-runtime-managed-injection"
-          : "bounded-omnirush-sources",
+          : "bounded-mars-sources",
         completeDynamicMcpStateClaimed: false,
         engineConfigMcpCount: engineConfigItems?.length ?? 0,
         runtimeManagedMcpCount: inventory.items.filter((item) => item.source === "config.remote").length,
@@ -1867,9 +1867,9 @@ export async function runAgentContextDiagnostics(input: {
         : missingRegistrationCount > 0
           ? "One or more enabled managed MCPs do not have a current engine registration record."
           : remoteMcps.length > 0
-            ? "Every enabled OmniRush.ai-managed MCP has a current connected registration result; configured-disabled entries are not treated as injected tools."
+            ? "Every enabled MarsAI-managed MCP has a current connected registration result; configured-disabled entries are not treated as injected tools."
             : "No server-managed MCP registration was available to inspect.",
-      owner: failedRegistrationCount > 0 || missingRegistrationCount > 0 ? "opencode-engine" : "omnirush-server",
+      owner: failedRegistrationCount > 0 || missingRegistrationCount > 0 ? "opencode-engine" : "mars-server",
       action: failedRegistrationCount > 0 || missingRegistrationCount > 0
         ? staleRegistrationFailure
           ? "The engine is reachable and this evidence is stale; rerun diagnostics. No repair is needed unless it persists."
@@ -1900,7 +1900,7 @@ export async function runAgentContextDiagnostics(input: {
       code: "live_mcp_status_intentionally_not_queried",
       message: "Live MCP status was not queried because that endpoint can connect every enabled MCP.",
       owner: "opencode-engine",
-      action: "Review the bounded OmniRush.ai Cloud catalog probe and exact managed registration response evidence instead.",
+      action: "Review the bounded MarsAI Cloud catalog probe and exact managed registration response evidence instead.",
       details: {
         effectiveMcpConfigurationObserved: Boolean(effectiveEngine),
         mcpStatusApiReadPerformed: false,
@@ -1919,7 +1919,7 @@ export async function runAgentContextDiagnostics(input: {
       evidenceKind: "derived",
       code: "sanitized_allowlist_report",
       message: "The report contains only allowlisted evidence, bounded sanitized engine error summaries, and credential-free transport metadata; diagnostics did not directly request mutations, provider operations, or capability calls.",
-      owner: "omnirush-server",
+      owner: "mars-server",
       action: engineApiReadPerformed
         ? "Be aware that reading a cold engine may initialize configured bootstrap or plugin hooks whose side effects this report does not inspect."
         : "No action is required.",
@@ -1965,23 +1965,23 @@ export async function runAgentContextDiagnostics(input: {
         effectiveEngine ? effectiveEngine.defaultAgent : expectedRuntimeConfig.default_agent,
         160,
       ) || null,
-      configuredOmniRushAgent: {
+      configuredMarsAgent: {
         state: effectiveEngine
-          ? effectiveOmniRushAgent ? "present" : "missing"
+          ? effectiveMarsAgent ? "present" : "missing"
           : expectedAgent?.disable === true
             ? "configured-disabled"
             : expectedAgent
               ? "present"
               : "missing",
-        mode: effectiveOmniRushAgent
-          ? effectiveOmniRushAgent.mode
+        mode: effectiveMarsAgent
+          ? effectiveMarsAgent.mode
           : expectedAgent?.mode === "subagent" || expectedAgent?.mode === "primary" || expectedAgent?.mode === "all"
             ? expectedAgent.mode
             : null,
         prompt,
         connectToolPermissions: {
-          searchCapabilities: reportedToolPermission(`${OMNIRUSH_CLOUD_MCP_NAME}_search_capabilities`),
-          executeCapability: reportedToolPermission(`${OMNIRUSH_CLOUD_MCP_NAME}_execute_capability`),
+          searchCapabilities: reportedToolPermission(`${MARS_CLOUD_MCP_NAME}_search_capabilities`),
+          executeCapability: reportedToolPermission(`${MARS_CLOUD_MCP_NAME}_execute_capability`),
           deniedRelevantToolCount: cloudToolPolicyStatus === "unavailable" ? null : deniedCloudAgentToolIds.size,
         },
       },

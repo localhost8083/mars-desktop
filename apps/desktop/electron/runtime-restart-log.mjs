@@ -6,9 +6,9 @@ import path from "node:path";
  * Restart record and restart policy for the built-in server and its engine.
  *
  * Every stop of a running server ends every live run, so each one is written
- * with its reason and trigger to omnirush-server.log and to a small JSON-lines
+ * with its reason and trigger to mars-server.log and to a small JSON-lines
  * history next to it (runtime-restarts.jsonl, also appended by the server for
- * engine recoveries it performs itself). omnirushServerInfo returns the tail
+ * engine recoveries it performs itself). marsServerInfo returns the tail
  * of that history for the diagnostics bundle.
  */
 
@@ -60,7 +60,7 @@ export function appendRuntimeRestartRecord({ serverLogFile, record, now = () => 
     severityText: record.action === "deferred" || record.action === "skipped" ? "INFO" : "WARN",
     body: `Built-in ${record.kind === "engine" ? "engine" : "server"} ${record.action}: ${record.reason} (${record.source})`,
     attributes,
-    resource: { "service.name": "omnirush-desktop-runtime" },
+    resource: { "service.name": "mars-desktop-runtime" },
   };
   try {
     mkdirSync(path.dirname(serverLogFile), { recursive: true });

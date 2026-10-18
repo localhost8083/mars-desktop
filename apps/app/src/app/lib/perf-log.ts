@@ -10,10 +10,10 @@ export type PerfLogRecord = {
 };
 
 type PerfRoot = typeof globalThis & {
-  __omnirushPerfSeq?: number;
-  __omnirushPerfLogs?: PerfLogRecord[];
-  __omnirushPerfConsoleAt?: Record<string, number>;
-  __omnirushPerfConsoleSuppressed?: Record<string, number>;
+  __marsPerfSeq?: number;
+  __marsPerfLogs?: PerfLogRecord[];
+  __marsPerfConsoleAt?: Record<string, number>;
+  __marsPerfConsoleSuppressed?: Record<string, number>;
 };
 
 const PERF_LOG_LIMIT = 500;
@@ -50,8 +50,8 @@ export const recordPerfLog = (
   if (!enabled) return;
 
   const root = globalThis as PerfRoot;
-  const id = (root.__omnirushPerfSeq ?? 0) + 1;
-  root.__omnirushPerfSeq = id;
+  const id = (root.__marsPerfSeq ?? 0) + 1;
+  root.__marsPerfSeq = id;
 
   const entry: PerfLogRecord = {
     id,
@@ -62,12 +62,12 @@ export const recordPerfLog = (
     payload,
   };
 
-  const logs = root.__omnirushPerfLogs ?? [];
+  const logs = root.__marsPerfLogs ?? [];
   logs.push(entry);
   if (logs.length > PERF_LOG_LIMIT) {
     logs.splice(0, logs.length - PERF_LOG_LIMIT);
   }
-  root.__omnirushPerfLogs = logs;
+  root.__marsPerfLogs = logs;
   recordDevLog(enabled, {
     level: "perf",
     source: scope,
@@ -78,9 +78,9 @@ export const recordPerfLog = (
   try {
     const key = `${scope}:${event}`;
     const now = Date.now();
-    const lastByKey = root.__omnirushPerfConsoleAt ?? (root.__omnirushPerfConsoleAt = {});
+    const lastByKey = root.__marsPerfConsoleAt ?? (root.__marsPerfConsoleAt = {});
     const suppressedByKey =
-      root.__omnirushPerfConsoleSuppressed ?? (root.__omnirushPerfConsoleSuppressed = {});
+      root.__marsPerfConsoleSuppressed ?? (root.__marsPerfConsoleSuppressed = {});
     if (HOT_EVENT_KEYS.has(key)) {
       const last = lastByKey[key] ?? 0;
       if (now - last < HOT_EVENT_MIN_INTERVAL_MS) {
@@ -117,7 +117,7 @@ export const recordPerfLog = (
 
 export const readPerfLogs = (limit = 120) => {
   const root = globalThis as PerfRoot;
-  const logs = root.__omnirushPerfLogs ?? [];
+  const logs = root.__marsPerfLogs ?? [];
   if (limit <= 0) return [];
   if (logs.length <= limit) return logs.slice();
   return logs.slice(logs.length - limit);
@@ -125,8 +125,8 @@ export const readPerfLogs = (limit = 120) => {
 
 export const clearPerfLogs = () => {
   const root = globalThis as PerfRoot;
-  root.__omnirushPerfLogs = [];
-  root.__omnirushPerfSeq = 0;
+  root.__marsPerfLogs = [];
+  root.__marsPerfSeq = 0;
 };
 
 export const finishPerf = (

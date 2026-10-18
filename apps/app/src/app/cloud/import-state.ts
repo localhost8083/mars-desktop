@@ -26,7 +26,7 @@ export type CloudImportedPluginFile = {
   path: string;
   updatedAt: string | null;
   skillName?: string;
-  skillOrigin?: "omnirush-connect";
+  skillOrigin?: "mars-connect";
   marketplaceName?: string;
   pluginName?: string;
   connectCapabilityName?: string;

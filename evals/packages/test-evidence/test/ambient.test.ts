@@ -32,7 +32,7 @@ async function hashes(dir: string): Promise<unknown[]> {
 }
 
 test("concurrent withTestEvidence scopes do not cross-record", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-ambient-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-ambient-"));
   const firstDir = join(root, "first");
   const secondDir = join(root, "second");
   try {

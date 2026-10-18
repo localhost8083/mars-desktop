@@ -1,6 +1,6 @@
-import { browserScript } from "@omnirush/testkit";
+import { browserScript } from "@mars/testkit";
 import { expect } from "vitest";
-import { spec } from "@omnirush/testkit";
+import { spec } from "@mars/testkit";
 import { connectionsMenu } from "../worlds/chat.ts";
 
 const test = spec.world(connectionsMenu);

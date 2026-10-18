@@ -10,7 +10,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@omnirush/types": "workspace:*",
+    "@mars/types": "workspace:*",
     "next": "16.2.11",
     "react": "catalog:",
     "react-dom": "catalog:"

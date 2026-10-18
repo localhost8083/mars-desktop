@@ -1,14 +1,14 @@
 // Engine reload wiring for the session route: UI-triggered engine reload,
 // reload-coordinator registration, the post-org-onboarding reload latch,
 // server reload-event polling, and desktop engine info. Extracted verbatim
-// from session-route.tsx; reload events are now typed (OmniRushReloadEvent)
+// from session-route.tsx; reload events are now typed (MarsReloadEvent)
 // instead of `any`.
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { engineInfo } from "@/app/lib/desktop";
 import type { EngineInfo } from "@/app/lib/desktop-types";
 import { isDesktopRuntime } from "@/app/lib/runtime-env";
-import type { OmniRushServerClient } from "@/app/lib/omnirush-server";
+import type { MarsServerClient } from "@/app/lib/mars-server";
 import type { ResolvedWorkspaceEndpoint } from "@/app/lib/workspace-endpoint";
 import { t } from "@/i18n";
 import { reloadEngineWithDesktopFallback } from "./engine-reload-escalation";
@@ -18,14 +18,14 @@ import { getReactQueryClient } from "@/react-app/infra/query-client";
 import type { RouteWorkspace } from "./route-workspaces";
 import { toast } from "@/components/ui/sonner";
 
-const reloadAfterOrgOnboardingKey = "omnirush.reloadAfterOrgOnboarding";
+const reloadAfterOrgOnboardingKey = "mars.reloadAfterOrgOnboarding";
 
 function taskCreateUnavailableToastId(workspaceId: string) {
   return `opencode-unavailable:${workspaceId}`;
 }
 
 export type UseEngineReloadInput = {
-  client: OmniRushServerClient | null;
+  client: MarsServerClient | null;
   workspaceId: string;
   workspace: RouteWorkspace | null | undefined;
   endpointForWorkspace: (
@@ -93,7 +93,7 @@ export function useEngineReload(input: UseEngineReloadInput) {
     }
     setEngineReloadVersion((v) => v + 1);
     try {
-      window.dispatchEvent(new CustomEvent("omnirush-server-settings-changed"));
+      window.dispatchEvent(new CustomEvent("mars-server-settings-changed"));
     } catch {
       // ignore browser event dispatch failures
     }

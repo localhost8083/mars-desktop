@@ -5,9 +5,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
-import { assembleReview } from "@omnirush/test-artifacts/review";
-import { uploadReview } from "@omnirush/review/storage";
-import type { TestRunRecord } from "@omnirush/test-artifacts";
+import { assembleReview } from "@mars/test-artifacts/review";
+import { uploadReview } from "@mars/review/storage";
+import type { TestRunRecord } from "@mars/test-artifacts";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -15,7 +15,7 @@ const root = fileURLToPath(new URL("../../", import.meta.url));
 export async function reviewWorld(
   environment: "preview" | "production" = "preview",
 ) {
-  const directory = await mkdtemp(join(tmpdir(), "omnirush-review-world-"));
+  const directory = await mkdtemp(join(tmpdir(), "mars-review-world-"));
   const storage = join(directory, "reports");
   await mkdir(storage);
   const git = spawnSync("git", ["rev-parse", "HEAD"], {
@@ -198,7 +198,7 @@ export async function reviewWorld(
       cwd: join(root, "apps/review"),
       env: {
         ...process.env,
-        OMNIRUSH_REVIEW_LOCAL_DIR: storage,
+        MARS_REVIEW_LOCAL_DIR: storage,
         VERCEL: "1",
         VERCEL_ENV: environment,
       },

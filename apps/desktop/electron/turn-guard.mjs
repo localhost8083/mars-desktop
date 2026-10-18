@@ -26,7 +26,7 @@ export const FINISH_GUARD_DETAIL = Object.freeze({
 });
 export const FINISH_GUARD_BUTTONS = Object.freeze(["Finish it", "Quit anyway"]);
 /** Main → renderer: the user picked "Finish it" ({ sessionId, kind }). */
-export const FINISH_GUARD_EVENT = "omnirush:finish-guard:finish";
+export const FINISH_GUARD_EVENT = "mars:finish-guard:finish";
 const FINISH = 0;
 
 /** `{ sessionId, kind }` from the renderer, or null when it names no session or no known state. */
@@ -160,7 +160,7 @@ export function createTurnGuard(deps) {
     open = controller;
     void deps.showMessageBox(deps.getWindow() ?? null, {
       type: "warning",
-      title: deps.appName ?? "OmniRush.ai",
+      title: deps.appName ?? "MarsAI",
       message: asking ? FINISH_GUARD_TITLE : TURN_GUARD_TITLE,
       detail: asking ? FINISH_GUARD_DETAIL[asking.kind] : TURN_GUARD_DETAIL,
       buttons: asking ? [...FINISH_GUARD_BUTTONS] : [...TURN_GUARD_BUTTONS],

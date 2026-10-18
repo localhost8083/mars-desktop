@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Writes the sandbox image pins (images.json, wsl.json) from a published box release
-// (the same file in omnirush-cli and omnirush-gui, scripts/box/pins.mjs). The pins come
-// from the `box-<version>` release of the public omnirush-gui repository (asset
+// (the same file in mars-cli and mars-gui, scripts/box/pins.mjs). The pins come
+// from the `box-<version>` release of the public mars-gui repository (asset
 // box-pins.json, written by its box-images workflow), so both repositories get
 // byte-identical files without any token.
 //
@@ -13,7 +13,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-export const RELEASES = "https://github.com/omnirush-ai/omnirush-gui/releases/download";
+export const RELEASES = "https://github.com/mars-ai/mars-gui/releases/download";
 
 const line = (value) => `{ ${Object.entries(value).map(([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(", ")} }`;
 

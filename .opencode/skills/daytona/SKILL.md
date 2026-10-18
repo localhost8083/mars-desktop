@@ -58,8 +58,8 @@ Electron sandboxes mount the reusable secrets volume at `/daytona-secrets`.
 ## Snapshot refresh
 
 ```bash
-bash .devcontainer/create-daytona-omnirush-snapshot.sh
-bash .devcontainer/create-daytona-omnirush-server-snapshot.sh
+bash .devcontainer/create-daytona-mars-snapshot.sh
+bash .devcontainer/create-daytona-mars-server-snapshot.sh
 ```
 
 ## Teardown

@@ -5,7 +5,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const UI_MCP_RESOURCE_DIR = "omnirush-ui-mcp";
+const UI_MCP_RESOURCE_DIR = "mars-ui-mcp";
 const UI_MCP_ENTRY = "index.mjs";
 
 /** Module specifiers the bundle imports statically or dynamically. */

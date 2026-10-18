@@ -7,7 +7,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-export const PERSISTED_NOTIFICATION_STORE_KEY = "omnirush:notifications:v1";
+export const PERSISTED_NOTIFICATION_STORE_KEY = "mars:notifications:v1";
 /** Dedupe key of the "N new providers & M new models available" summary. */
 export const NEW_PROVIDERS_DEDUPE_KEY = "new-providers";
 /**

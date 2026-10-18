@@ -5,7 +5,7 @@ import {
   resolveDesktopPolicyDocumentWrite,
   selectEffectiveOnboardingPromptConfig,
   selectEffectiveOnboardingPrompts,
-} from "@omnirush/types/den/desktop-policies";
+} from "@mars/types/den/desktop-policies";
 import { createDenClient, normalizeDenDesktopConfig } from "../src/app/lib/den";
 import { resolveConnectStateToPush } from "../src/react-app/domains/cloud/desktop-config-provider";
 
@@ -42,7 +42,7 @@ describe("Den desktop config client", () => {
 
     await createDenClient({ baseUrl: "https://den.test", token: "tok_test" }).getDesktopConfig("org_test");
 
-    expect(headers[0]?.get("x-omnirush-legacy-org-id")).toBe("org_test");
+    expect(headers[0]?.get("x-mars-legacy-org-id")).toBe("org_test");
   });
 
   test("falls back to latestAppVersion for older Den version metadata", async () => {

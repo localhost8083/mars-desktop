@@ -17,7 +17,7 @@ function absent(path: string): Promise<boolean> {
 }
 
 test("appendLedgerEntry creates a private JSONL ledger", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-world-ledger-append-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-world-ledger-append-"));
   try {
     const path = join(root, "nested", "world.ledger.jsonl");
     await appendLedgerEntry(path, { kind: "docker", id: "container", label: "app" });
@@ -37,7 +37,7 @@ test("appendLedgerEntry creates a private JSONL ledger", async () => {
 });
 
 test("readLedger skips invalid lines and keeps the last kind/id occurrence", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-world-ledger-read-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-world-ledger-read-"));
   try {
     const path = join(root, "world.ledger.jsonl");
     await writeFile(path, [
@@ -60,7 +60,7 @@ test("readLedger skips invalid lines and keeps the last kind/id occurrence", asy
 });
 
 test("rewriteLedger unlinks an empty ledger", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-world-ledger-rewrite-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-world-ledger-rewrite-"));
   try {
     const path = join(root, "world.ledger.jsonl");
     await writeFile(path, "content\n", "utf8");
@@ -72,7 +72,7 @@ test("rewriteLedger unlinks an empty ledger", async () => {
 });
 
 test("trackResource is inert without its env var and appends when configured", async () => {
-  const root = await mkdtemp(join(tmpdir(), "omnirush-world-ledger-track-"));
+  const root = await mkdtemp(join(tmpdir(), "mars-world-ledger-track-"));
   const path = join(root, "world.ledger.jsonl");
   const eventPath = join(root, "world.events.jsonl");
   const previous = process.env[LEDGER_ENV];

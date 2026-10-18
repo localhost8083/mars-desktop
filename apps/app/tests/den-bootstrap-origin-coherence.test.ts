@@ -127,7 +127,7 @@ describe("den bootstrap and retained session origin coherence", () => {
       value: {
         localStorage: storage,
         dispatchEvent: () => true,
-        __OMNIRUSH_ELECTRON__: {
+        __MARS_ELECTRON__: {
           ...(options.preloadBootstrap !== undefined
             ? { meta: { desktopBootstrap: options.preloadBootstrap } }
             : {}),
@@ -188,10 +188,10 @@ describe("den bootstrap and retained session origin coherence", () => {
   }
 
   function seedRetainedSession(storage: Storage, sessionOrigin: string | null) {
-    storage.setItem("omnirush.den.authToken", RETAINED_TOKEN);
-    storage.setItem("omnirush.den.activeOrgId", RETAINED_ORG_ID);
-    storage.setItem("omnirush.den.activeOrgSlug", "self-hosted");
-    storage.setItem("omnirush.den.activeOrgName", "Self Hosted");
+    storage.setItem("mars.den.authToken", RETAINED_TOKEN);
+    storage.setItem("mars.den.activeOrgId", RETAINED_ORG_ID);
+    storage.setItem("mars.den.activeOrgSlug", "self-hosted");
+    storage.setItem("mars.den.activeOrgName", "Self Hosted");
     if (sessionOrigin) {
       storage.setItem(STORAGE_SESSION_ORIGIN, sessionOrigin);
     }
@@ -266,8 +266,8 @@ describe("den bootstrap and retained session origin coherence", () => {
     expect(den.credentialed()).toEqual([]);
 
     // The retained session survives quarantine instead of being destroyed.
-    expect(storage.getItem("omnirush.den.authToken")).toBe(RETAINED_TOKEN);
-    expect(storage.getItem("omnirush.den.activeOrgId")).toBe(RETAINED_ORG_ID);
+    expect(storage.getItem("mars.den.authToken")).toBe(RETAINED_TOKEN);
+    expect(storage.getItem("mars.den.activeOrgId")).toBe(RETAINED_ORG_ID);
   });
 
   test("a legacy untagged session is also quarantined while the bootstrap is unresolved", async () => {
@@ -298,9 +298,9 @@ describe("den bootstrap and retained session origin coherence", () => {
     writeDenSettings({ ...gated, authToken: null, activeOrgId: null, activeOrgSlug: null, activeOrgName: null });
 
     expect(shellWrites).toEqual([]);
-    expect(storage.getItem("omnirush.den.baseUrl")).toBeNull();
-    expect(storage.getItem("omnirush.den.authToken")).toBe(RETAINED_TOKEN);
-    expect(storage.getItem("omnirush.den.activeOrgId")).toBe(RETAINED_ORG_ID);
+    expect(storage.getItem("mars.den.baseUrl")).toBeNull();
+    expect(storage.getItem("mars.den.authToken")).toBe(RETAINED_TOKEN);
+    expect(storage.getItem("mars.den.activeOrgId")).toBe(RETAINED_ORG_ID);
     expect(storage.getItem(STORAGE_SESSION_ORIGIN)).toBe(den.origin);
   });
 
@@ -387,7 +387,7 @@ describe("den bootstrap and retained session origin coherence", () => {
     expect(credentialedFetches()).toEqual([]);
 
     // Quarantined, not destroyed: the session revives if its own origin returns.
-    expect(storage.getItem("omnirush.den.authToken")).toBe(RETAINED_TOKEN);
+    expect(storage.getItem("mars.den.authToken")).toBe(RETAINED_TOKEN);
     expect(storage.getItem(STORAGE_SESSION_ORIGIN)).toBe(originalDen.origin);
   });
 
@@ -415,18 +415,18 @@ describe("den bootstrap and retained session origin coherence", () => {
   test("an explicitly configured hosted session keeps working", async () => {
     const storage = installWindow({
       shell: {
-        reads: [{ kind: "config", config: { baseUrl: "https://app.omnirush.example.com", requireSignin: false, fromFile: true } }],
+        reads: [{ kind: "config", config: { baseUrl: "https://app.mars.example.com", requireSignin: false, fromFile: true } }],
       },
     });
-    storage.setItem("omnirush.den.authToken", "hosted-token-1");
-    storage.setItem("omnirush.den.activeOrgId", "org_hosted_1");
-    storage.setItem(STORAGE_SESSION_ORIGIN, "https://app.omnirush.example.com");
+    storage.setItem("mars.den.authToken", "hosted-token-1");
+    storage.setItem("mars.den.activeOrgId", "org_hosted_1");
+    storage.setItem(STORAGE_SESSION_ORIGIN, "https://app.mars.example.com");
 
     await initializeDenBootstrapConfig();
 
     expect(getDenBootstrapResolution()).toBe("resolved");
     const settings = readDenSettings();
-    expect(settings.baseUrl).toBe("https://app.omnirush.example.com");
+    expect(settings.baseUrl).toBe("https://app.mars.example.com");
     expect(settings.authToken).toBe("hosted-token-1");
     expect(settings.activeOrgId).toBe("org_hosted_1");
   });
@@ -475,7 +475,7 @@ describe("den bootstrap and retained session origin coherence", () => {
 
     clearDenSession();
 
-    expect(storage.getItem("omnirush.den.authToken")).toBeNull();
+    expect(storage.getItem("mars.den.authToken")).toBeNull();
     expect(storage.getItem(STORAGE_SESSION_ORIGIN)).toBeNull();
   });
 

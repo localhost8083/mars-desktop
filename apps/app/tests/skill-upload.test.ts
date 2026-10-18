@@ -235,7 +235,7 @@ describe("Library wiring", () => {
   });
 
   test("installed workspace skills show their files (not Connect skills)", () => {
-    expect(mcpView).toMatch(/detailSkill\.origin !== "omnirush-connect" && props\.listSkillFiles[\s\S]*<SkillFilesPanel/);
+    expect(mcpView).toMatch(/detailSkill\.origin !== "mars-connect" && props\.listSkillFiles[\s\S]*<SkillFilesPanel/);
     for (const prop of ["previewSkillBundle", "installSkillBundle", "listSkillFiles", "updateSkillFiles", "saveSkillContent"]) {
       expect(route).toContain(`${prop}={extensionsStore.${prop}}`);
     }

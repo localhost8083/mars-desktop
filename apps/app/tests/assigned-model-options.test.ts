@@ -59,10 +59,10 @@ describe("assigned model options", () => {
         models: [{ id: "claude-sonnet", name: "Claude Sonnet", config: {}, createdAt: null }],
       }),
       provider({
-        id: "lpr_omnirush_subscription",
-        source: "omnirush",
-        providerId: "omnirush",
-        name: "OmniRush.ai Models",
+        id: "lpr_mars_subscription",
+        source: "mars",
+        providerId: "mars",
+        name: "MarsAI Models",
         hasApiKey: false,
         models: [{ id: "gpt-5", name: "GPT-5", config: {}, createdAt: null }],
       }),
@@ -77,10 +77,10 @@ describe("assigned model options", () => {
         source: "cloud",
       },
       {
-        providerID: "omnirush",
+        providerID: "mars",
         modelID: "gpt-5",
         title: "GPT-5",
-        description: "OmniRush.ai Models",
+        description: "MarsAI Models",
         source: "cloud",
       },
     ]);

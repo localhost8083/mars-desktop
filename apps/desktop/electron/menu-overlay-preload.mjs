@@ -3,19 +3,19 @@ import { contextBridge, ipcRenderer } from "electron";
 let latestRequest = null;
 let showCallback = null;
 
-ipcRenderer.on("omnirush:menu-overlay:show", (_event, request) => {
+ipcRenderer.on("mars:menu-overlay:show", (_event, request) => {
   latestRequest = request;
   showCallback?.(request);
 });
 
-ipcRenderer.on("omnirush:menu-overlay:hide", () => {
+ipcRenderer.on("mars:menu-overlay:hide", () => {
   latestRequest = null;
   showCallback?.(null);
 });
 
-contextBridge.exposeInMainWorld("__OMNIRUSH_MENU_OVERLAY__", {
+contextBridge.exposeInMainWorld("__MARS_MENU_OVERLAY__", {
   ready() {
-    ipcRenderer.send("omnirush:menu-overlay:ready");
+    ipcRenderer.send("mars:menu-overlay:ready");
   },
   onShow(callback) {
     showCallback = callback;
@@ -29,9 +29,9 @@ contextBridge.exposeInMainWorld("__OMNIRUSH_MENU_OVERLAY__", {
     };
   },
   choose(requestId, itemId) {
-    ipcRenderer.send("omnirush:menu-overlay:choose", { requestId, itemId });
+    ipcRenderer.send("mars:menu-overlay:choose", { requestId, itemId });
   },
   close(requestId) {
-    ipcRenderer.send("omnirush:menu-overlay:close", { requestId });
+    ipcRenderer.send("mars:menu-overlay:close", { requestId });
   },
 });

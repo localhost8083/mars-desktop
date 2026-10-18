@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
-import { timed } from "@omnirush/timeline";
-import { attachSurface, describeAppState, dumpScreenState, isInteractive, probeAppStateOnSurface } from "@omnirush/cdp";
+import { timed } from "@mars/timeline";
+import { attachSurface, describeAppState, dumpScreenState, isInteractive, probeAppStateOnSurface } from "@mars/cdp";
 import { resolveHost } from "./resolve.ts";
-import type { AppStateProbe, AppSurfaceState, AttachedSurface, Surface, SurfaceHandle } from "@omnirush/cdp";
+import type { AppStateProbe, AppSurfaceState, AttachedSurface, Surface, SurfaceHandle } from "@mars/cdp";
 import type { Host } from "./types.ts";
 
 const DEFAULT_TIMEOUT_MS = 180_000;
@@ -15,7 +15,7 @@ function messageText(error: unknown): string {
 }
 
 function logCleanupError(name: string, error: unknown): void {
-  console.warn(`[omnirush/evals] Desktop ${name} cleanup failed: ${messageText(error)}`);
+  console.warn(`[mars/evals] Desktop ${name} cleanup failed: ${messageText(error)}`);
 }
 
 async function appendDesktopLog(error: unknown, handle: SurfaceHandle): Promise<unknown> {
@@ -34,7 +34,7 @@ async function appendDesktopLog(error: unknown, handle: SurfaceHandle): Promise<
 export interface DesktopOptions {
   name?: string;
   mode?: "spawn" | "attach";
-  /** Explicit CDP endpoint for attach mode; falls back to OMNIRUSH_EVAL_CDP_URL. */
+  /** Explicit CDP endpoint for attach mode; falls back to MARS_EVAL_CDP_URL. */
   cdpUrl?: string;
   /**
    * Where this desktop runs. Defaults to the ambient host (`resolveHost()`).
@@ -95,7 +95,7 @@ async function waitForReadiness(app: Surface, timeoutMs: number): Promise<AppRea
     await sleep(Math.min(POLL_INTERVAL_MS, Math.max(0, deadline - Date.now())));
   }
   throw new Error(
-    `OmniRush.ai desktop did not become ready after ${timeoutMs}ms: ${describeAppState(last)} On screen: ${await dumpScreenState(app)}.`,
+    `MarsAI desktop did not become ready after ${timeoutMs}ms: ${describeAppState(last)} On screen: ${await dumpScreenState(app)}.`,
   );
 }
 
@@ -118,9 +118,9 @@ export async function desktop(opts: DesktopOptions = {}): Promise<DesktopHandle>
   let handle: SurfaceHandle;
 
   if (mode === "attach") {
-    const cdpUrl = opts.cdpUrl?.trim() || process.env.OMNIRUSH_EVAL_CDP_URL?.trim();
+    const cdpUrl = opts.cdpUrl?.trim() || process.env.MARS_EVAL_CDP_URL?.trim();
     if (!cdpUrl) {
-      throw new Error('desktop({ mode: "attach" }) requires cdpUrl or OMNIRUSH_EVAL_CDP_URL to point at a running Electron app.');
+      throw new Error('desktop({ mode: "attach" }) requires cdpUrl or MARS_EVAL_CDP_URL to point at a running Electron app.');
     }
     handle = {
       name: opts.name ?? "attached-app",

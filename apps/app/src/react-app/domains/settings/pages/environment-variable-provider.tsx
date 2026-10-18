@@ -2,18 +2,18 @@ import { createContext, use, useCallback, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient, type UseMutateFunction } from "@tanstack/react-query";
 import { toast } from "@/components/ui/sonner";
 
-import type { OmniRushServerClient } from "@/app/lib/omnirush-server";
+import type { MarsServerClient } from "@/app/lib/mars-server";
 import { t } from "@/i18n";
-import { clearOmniRushEnvSystemContextCache } from "@/react-app/domains/session/sync/env-context";
+import { clearMarsEnvSystemContextCache } from "@/react-app/domains/session/sync/env-context";
 import type { EnvironmentVariableItem } from "./environment-variable-table";
 
 const KEY_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
-const RESERVED_PREFIXES = ["OMNIRUSH_", "OPENCODE_"] as const;
+const RESERVED_PREFIXES = ["MARS_", "OPENCODE_"] as const;
 const PERSISTABLE_INTERNAL_KEYS = new Set([
-  "OMNIRUSH_API_KEY",
-  "OMNIRUSH_MODELS_API_KEY",
-  "OMNIRUSH_INFERENCE_BASE_URL",
-  "OMNIRUSH_MODELS_BASE_URL",
+  "MARS_API_KEY",
+  "MARS_MODELS_API_KEY",
+  "MARS_INFERENCE_BASE_URL",
+  "MARS_MODELS_BASE_URL",
 ]);
 
 export type ApplyEnvironmentChangesResult = { statusMessage?: string } | void;
@@ -39,7 +39,7 @@ function validateKey(key: string): string | null {
 }
 
 type UseEnvironmentVariableListOptions = {
-  client: OmniRushServerClient | null;
+  client: MarsServerClient | null;
   isRemoteWorkspace: boolean;
   runtimeKey?: string | null;
 };
@@ -94,7 +94,7 @@ const EnvironmentVariableContext = createContext<EnvironmentVariableContextValue
 
 interface EnvironmentVariableProviderProps {
   children: React.ReactNode;
-  client: OmniRushServerClient | null;
+  client: MarsServerClient | null;
   runtimeKey?: string | null;
   onApplyChanges?: () => Promise<ApplyEnvironmentChangesResult>;
 }
@@ -115,7 +115,7 @@ export function EnvironmentVariableProvider({ children, client, runtimeKey, onAp
   const { mutate: applyAsync, isPending: isApplying, reset: resetApply, error: applyError } = useMutation({
     mutationFn: async () => onApplyChanges?.(),
     onSuccess: (result) => {
-      clearOmniRushEnvSystemContextCache();
+      clearMarsEnvSystemContextCache();
       queryClient.setQueryData(["settings", "environment", "pending-changes", runtimeKey], false);
       client?.setUserEnvPendingChanges(false, runtimeKey).catch(() => undefined);
       toast.success(result?.statusMessage ?? t("settings.environment.apply_success"));
@@ -126,7 +126,7 @@ export function EnvironmentVariableProvider({ children, client, runtimeKey, onAp
   });
 
   const markChangesPending = useCallback(() => {
-    clearOmniRushEnvSystemContextCache();
+    clearMarsEnvSystemContextCache();
     queryClient.setQueryData(["settings", "environment", "pending-changes", runtimeKey], true);
     resetApply();
     client?.setUserEnvPendingChanges(true, runtimeKey).catch(() => undefined);

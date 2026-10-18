@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { connect } from "node:net";
-import { provisionDesktopSandbox, deleteSandboxes, daytonaSandbox } from "@omnirush/hosts";
+import { provisionDesktopSandbox, deleteSandboxes, daytonaSandbox } from "@mars/hosts";
 import { createConnection } from "mysql2/promise";
 import type { RowDataPacket } from "mysql2";
 import type {
@@ -8,7 +8,7 @@ import type {
   ElectronSurfaceOptions,
   Host,
   SurfaceHandle,
-} from "@omnirush/hosts";
+} from "@mars/hosts";
 
 export const DEFAULT_MYSQL_URL = "mysql://root:password@127.0.0.1:3306";
 
@@ -63,7 +63,7 @@ async function databaseExists(mysqlUrl: URL, name: string): Promise<boolean> {
   }
 }
 
-export function ephemeralDatabaseName(prefix = "omnirush_eval"): string {
+export function ephemeralDatabaseName(prefix = "mars_eval"): string {
   const timestamp = Date.now().toString(36);
   const nonce = randomBytes(6).toString("hex");
   return `${prefix}_${process.pid}_${timestamp}_${nonce}`.toLowerCase();
@@ -86,9 +86,9 @@ async function canConnect(port: number, host: string): Promise<boolean> {
 }
 
 export async function localMysqlIsRunning(): Promise<boolean> {
-  // Probe the same MySQL the run will actually use: OMNIRUSH_EVAL_MYSQL_URL
+  // Probe the same MySQL the run will actually use: MARS_EVAL_MYSQL_URL
   // overrides the default, so the probe must honor it too.
-  const url = new URL(process.env.OMNIRUSH_EVAL_MYSQL_URL?.trim() || DEFAULT_MYSQL_URL);
+  const url = new URL(process.env.MARS_EVAL_MYSQL_URL?.trim() || DEFAULT_MYSQL_URL);
   const port = url.port ? Number(url.port) : 3306;
   return canConnect(port, url.hostname || "127.0.0.1");
 }
@@ -186,7 +186,7 @@ class DaytonaPlacementHost implements Host {
     const provisioned = await provisionDesktopSandbox({
       ref: this.#ref,
       name,
-      log: (line) => console.error(`[omnirush/testkit] ${line}`),
+      log: (line) => console.error(`[mars/testkit] ${line}`),
     });
     return {
       host: daytonaSandbox(provisioned.sandbox),
@@ -204,7 +204,7 @@ class DaytonaPlacementHost implements Host {
     } catch (error) {
       if (placed.created) {
         await deleteSandboxes([placed.sandbox]).catch((cleanupError: unknown) => {
-          console.error(`[omnirush/testkit] Daytona cleanup failed: ${messageText(cleanupError)}`);
+          console.error(`[mars/testkit] Daytona cleanup failed: ${messageText(cleanupError)}`);
         });
       }
       throw error;
@@ -220,7 +220,7 @@ class DaytonaPlacementHost implements Host {
     } catch (error) {
       if (placed.created) {
         await deleteSandboxes([placed.sandbox]).catch((cleanupError: unknown) => {
-          console.error(`[omnirush/testkit] Daytona cleanup failed: ${messageText(cleanupError)}`);
+          console.error(`[mars/testkit] Daytona cleanup failed: ${messageText(cleanupError)}`);
         });
       }
       throw error;
@@ -272,15 +272,15 @@ class DaytonaPlace implements Place {
 
 /** Resolve placement once; resources never inspect placement environment again. */
 export function resolvePlace(env: NodeJS.ProcessEnv = process.env): Place {
-  const worldPlace = env.OMNIRUSH_WORLD_PLACE?.trim() || undefined;
+  const worldPlace = env.MARS_WORLD_PLACE?.trim() || undefined;
   const useDaytona = worldPlace === "daytona"
-    || (worldPlace === undefined && env.OMNIRUSH_EVAL_DAYTONA?.trim() === "1");
+    || (worldPlace === undefined && env.MARS_EVAL_DAYTONA?.trim() === "1");
   if (useDaytona) {
-    const ref = env.OMNIRUSH_EVAL_REF?.trim() || env.GITHUB_SHA?.trim() || "dev";
+    const ref = env.MARS_EVAL_REF?.trim() || env.GITHUB_SHA?.trim() || "dev";
     return new DaytonaPlace(
       ref,
-      env.OMNIRUSH_EVAL_DAYTONA_DESKTOP_SANDBOX?.trim(),
+      env.MARS_EVAL_DAYTONA_DESKTOP_SANDBOX?.trim(),
     );
   }
-  return new LocalPlace(env.OMNIRUSH_EVAL_MYSQL_URL?.trim() || DEFAULT_MYSQL_URL);
+  return new LocalPlace(env.MARS_EVAL_MYSQL_URL?.trim() || DEFAULT_MYSQL_URL);
 }

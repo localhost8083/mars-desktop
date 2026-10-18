@@ -39,7 +39,7 @@ registerExtensionConfig("computer-use", (ctx) => (
 ));
 
 function hasDesktopBridge() {
-  return typeof window !== "undefined" && Boolean(window.__OMNIRUSH_ELECTRON__?.invokeDesktop);
+  return typeof window !== "undefined" && Boolean(window.__MARS_ELECTRON__?.invokeDesktop);
 }
 
 function parsePermissionResult(value: unknown): PermissionResult {
@@ -130,7 +130,7 @@ export function ComputerUseConfig({ connected, connecting, onConnect, onRefresh,
       <CardHeader>
         <CardTitle>Work in an app you choose</CardTitle>
         <CardDescription>
-          Approve one app, choose its window, and decide how omnirush.ai can help. Your input interrupts control; Stop in the preview ends access.
+          Approve one app, choose its window, and decide how marsai.click can help. Your input interrupts control; Stop in the preview ends access.
         </CardDescription>
         <CardAction>
           <Button variant="ghost" size="icon-sm" aria-label="Refresh Computer Use status" onClick={() => void refresh()} disabled={busy}>
@@ -172,11 +172,11 @@ export function ComputerUseConfig({ connected, connecting, onConnect, onRefresh,
         </div>
         {permissionsReady ? <div className="space-y-2 border-t border-border pt-4">
           <Button variant="outline" disabled={copyCli.isPending} onClick={() => copyCli.mutate()}><Copy className="size-4" />{copyCli.isSuccess ? "CLI connection copied" : "Copy CLI connection"}</Button>
-          <p className="text-xs leading-relaxed text-muted-foreground">Keep OmniRush.ai open. Add the copied server to ~/.omnirush/mcp.json, then run /mcp reconnect in the CLI. Window approval stays in this app.</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">Keep MarsAI open. Add the copied server to ~/.mars/mcp.json, then run /mcp reconnect in the CLI. Window approval stays in this app.</p>
         </div> : null}
         <p className="text-xs leading-relaxed text-muted-foreground">
           {!mac ? "Keep the target app visible on an unlocked desktop. Computer Use moves the mouse and types in the foreground; choose Continue after taking over. Choose a model that accepts images. For background Blender work, ask for a Blender Python script or use an app connector. " : null}
-          Hide the preview if it covers app controls; Stop stays available in the OmniRush.ai window. Sessions end after 15 minutes and pause when idle. Window content is processed by your selected model provider. Enter passwords yourself. For websites, use the built-in browser.
+          Hide the preview if it covers app controls; Stop stays available in the MarsAI window. Sessions end after 15 minutes and pause when idle. Window content is processed by your selected model provider. Enter passwords yourself. For websites, use the built-in browser.
         </p>
       </CardContent>
       <CardFooter className="flex flex-wrap items-center justify-between gap-3 border-t border-border">

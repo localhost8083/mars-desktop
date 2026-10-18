@@ -11,7 +11,7 @@
  *   node scripts/release/windows-updater-e2e.mjs --from 3.3.8 --expect none --feed <dir with 3.3.8's latest.yml>
  *
  * --feed serves a directory (latest.yml + installer) on a loopback port and
- * points the app at it with OMNIRUSH_UPDATER_DEV_FEED_URL, which every
+ * points the app at it with MARS_UPDATER_DEV_FEED_URL, which every
  * release since the updater rewrite honors for loopback URLs only.
  * --expect none: the check must report no update, and nothing may install.
  */
@@ -20,7 +20,7 @@ import { createReadStream, existsSync, mkdirSync, openSync, readdirSync, readFil
 import { createServer } from "node:http";
 import path from "node:path";
 
-const REPO = "omnirush-ai/omnirush-gui";
+const REPO = "mars-ai/mars-gui";
 const CDP_PORT = 9339;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -44,7 +44,7 @@ function log(message, data) {
 }
 
 function installs() {
-  const script = "Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -match 'omnirush' } | Select-Object DisplayName,DisplayVersion,UninstallString | ConvertTo-Json -Compress";
+  const script = "Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -match 'mars' } | Select-Object DisplayName,DisplayVersion,UninstallString | ConvertTo-Json -Compress";
   const out = execFileSync("powershell", ["-NoProfile", "-Command", script], { encoding: "utf8" }).trim();
   if (!out) return [];
   const value = JSON.parse(out);
@@ -128,7 +128,7 @@ async function bridgePage(deadlineMs) {
     for (const target of (await cdpTargets()).filter((entry) => entry.type === "page" && entry.webSocketDebuggerUrl)) {
       try {
         const page = await connect(target.webSocketDebuggerUrl);
-        const ready = await page.evaluate("typeof window.__OMNIRUSH_ELECTRON__?.updater?.check === 'function'", 10_000);
+        const ready = await page.evaluate("typeof window.__MARS_ELECTRON__?.updater?.check === 'function'", 10_000);
         if (ready) {
           log(`bridge on ${target.url}`);
           return page;
@@ -145,8 +145,8 @@ async function bridgePage(deadlineMs) {
 
 function appProcesses() {
   try {
-    const out = execFileSync("tasklist", ["/FI", "IMAGENAME eq OmniRush.ai.exe", "/FO", "CSV", "/NH"], { encoding: "utf8" });
-    return out.split(/\r?\n/).filter((line) => line.startsWith('"OmniRush.ai.exe"')).length;
+    const out = execFileSync("tasklist", ["/FI", "IMAGENAME eq MarsAI.exe", "/FO", "CSV", "/NH"], { encoding: "utf8" });
+    return out.split(/\r?\n/).filter((line) => line.startsWith('"MarsAI.exe"')).length;
   } catch {
     return 0;
   }
@@ -163,15 +163,15 @@ async function waitForProcess(timeoutMs) {
 
 function stopApp() {
   try {
-    execFileSync("taskkill", ["/F", "/T", "/IM", "OmniRush.ai.exe"], { stdio: "ignore" });
+    execFileSync("taskkill", ["/F", "/T", "/IM", "MarsAI.exe"], { stdio: "ignore" });
   } catch {
     // Not running.
   }
 }
 
 async function main() {
-  const installer = path.join(workDir, `omnirush-win-x64-${from}.exe`);
-  await download(`https://github.com/${REPO}/releases/download/v${from}/omnirush-win-x64-${from}.exe`, installer);
+  const installer = path.join(workDir, `mars-win-x64-${from}.exe`);
+  await download(`https://github.com/${REPO}/releases/download/v${from}/mars-win-x64-${from}.exe`, installer);
   execFileSync(installer, ["/S"], { stdio: "inherit" });
   const before = installs();
   log("installed", before);
@@ -180,23 +180,23 @@ async function main() {
   const exe = readdirSync(folder).find((name) => name.endsWith(".exe") && !/^Uninstall/i.test(name));
   log("app", { folder, exe });
 
-  // Data the update must keep: a marker in userData (%APPDATA%\ai.omnirush.desktop).
-  const userData = path.join(process.env.APPDATA, "ai.omnirush.desktop");
+  // Data the update must keep: a marker in userData (%APPDATA%\ai.marsai.desktop).
+  const userData = path.join(process.env.APPDATA, "ai.marsai.desktop");
   mkdirSync(userData, { recursive: true });
   writeFileSync(path.join(userData, "updater-e2e-marker.txt"), "kept");
 
   const feed = feedDir ? await serveFeed(path.resolve(feedDir)) : null;
   const env = {
     ...process.env,
-    OMNIRUSH_ELECTRON_REMOTE_DEBUG_PORT: String(CDP_PORT),
-    ...(feed ? { OMNIRUSH_UPDATER_DEV_FEED_URL: feed.url } : {}),
+    MARS_ELECTRON_REMOTE_DEBUG_PORT: String(CDP_PORT),
+    ...(feed ? { MARS_UPDATER_DEV_FEED_URL: feed.url } : {}),
   };
   const output = openSync(path.join(workDir, `app-${from}.log`), "a");
   const child = spawn(path.join(folder, exe), [], { env, detached: true, stdio: ["ignore", output, output] });
   child.unref();
 
   const page = await bridgePage(240_000);
-  const run = (call) => page.evaluate(`window.__OMNIRUSH_ELECTRON__.updater.${call}`);
+  const run = (call) => page.evaluate(`window.__MARS_ELECTRON__.updater.${call}`);
   log("getChannel", await run("getChannel()"));
   const checked = await run("check('stable')");
   log("check", checked);
@@ -219,7 +219,7 @@ async function main() {
   log("download", downloaded);
   if (!downloaded?.ok) throw new Error(`download failed: ${downloaded?.reason}`);
   // The app quits into the installer; the answer may never arrive.
-  void page.evaluate("window.__OMNIRUSH_ELECTRON__.updater.installAndRestart()", 180_000)
+  void page.evaluate("window.__MARS_ELECTRON__.updater.installAndRestart()", 180_000)
     .then((result) => log("installAndRestart", result))
     .catch((error) => log(`installAndRestart: ${error.message}`));
 

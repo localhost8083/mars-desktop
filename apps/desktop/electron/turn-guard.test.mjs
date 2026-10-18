@@ -290,5 +290,5 @@ test("finish guard: by default, Finish it shows the window and tells the rendere
   await settle();
   assert.equal(win.focused, true);
   assert.deepEqual(sent, [[FINISH_GUARD_EVENT, { sessionId: "ses_a", kind: "awaiting" }]]);
-  assert.equal(FINISH_GUARD_EVENT, "omnirush:finish-guard:finish");
+  assert.equal(FINISH_GUARD_EVENT, "mars:finish-guard:finish");
 });

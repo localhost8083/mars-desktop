@@ -1,6 +1,6 @@
 import { beforeAll, expect, test } from "bun:test"
 
-import { HeadlessThreadError } from "@omnirush/headless-threads"
+import { HeadlessThreadError } from "@mars/headless-threads"
 import { createDenTypeId } from "@omnirush-ee/utils/typeid"
 import type {
   RemoteSessionExecuteDeps,

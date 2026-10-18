@@ -1,4 +1,4 @@
-# OmniRush box: base image (build tools, Python, Node). The other stacks
+# Mars box: base image (build tools, Python, Node). The other stacks
 # build FROM this. Published as ghcr.io/omnirush-ai/box-base by
 # .github/workflows/box-images.yml; the CLI pins it by digest (src/box/images.json).
 #
@@ -53,11 +53,11 @@ RUN set -eux; \
     tar -xzf /tmp/uv.tgz -C /usr/local/bin --strip-components=1 --no-same-owner; \
     rm /tmp/uv.tgz; \
     rm -rf /usr/share/doc/* /usr/share/man/* /usr/share/info/* /var/cache/debconf/*-old; \
-    mkdir -p /opt/omnirush/bin /root/.local/bin; \
+    mkdir -p /opt/mars/bin /root/.local/bin; \
     node --version; npm --version; python --version; uv --version; git --version
 
-LABEL ai.omnirush.box.image="1" ai.omnirush.box.stack="base" \
-      org.opencontainers.image.source="https://github.com/omnirush-ai/omnirush-cli" \
-      org.opencontainers.image.description="OmniRush box base: build tools, Python 3, Node 22"
+LABEL ai.mars.box.image="1" ai.mars.box.stack="base" \
+      org.opencontainers.image.source="https://github.com/mars-ai/mars-cli" \
+      org.opencontainers.image.description="Mars box base: build tools, Python 3, Node 22"
 WORKDIR /root
 CMD ["/bin/bash"]

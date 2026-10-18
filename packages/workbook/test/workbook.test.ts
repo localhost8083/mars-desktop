@@ -19,7 +19,7 @@ function patchUint32(bytes: Uint8Array, offset: number, value: number): void {
   new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).setUint32(offset, value, true);
 }
 
-describe("@omnirush/workbook", () => {
+describe("@mars/workbook", () => {
   test("zips and unzips through the Web Streams compression API without Node buffers", async () => {
     const text = Array.from({ length: 4_000 }, (_line, index) => `row ${index},${(index * 7919) % 1000},${(index * 104_729) % 97}`).join("\n");
     const archive = await buildZip([

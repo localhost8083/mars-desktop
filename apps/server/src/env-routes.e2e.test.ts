@@ -14,11 +14,11 @@ type Served = {
 const HOST_TOKEN = "owt_env_host_token";
 const stops: Array<() => void | Promise<void>> = [];
 const dirs: string[] = [];
-const priorEnvStore = process.env.OMNIRUSH_ENV_STORE;
-const priorTokenStore = process.env.OMNIRUSH_TOKEN_STORE;
+const priorEnvStore = process.env.MARS_ENV_STORE;
+const priorTokenStore = process.env.MARS_TOKEN_STORE;
 const priorOpenAiApiKey = process.env.OPENAI_API_KEY;
-const priorOmniRushApiKey = process.env.OMNIRUSH_API_KEY;
-const priorOmniRushInferenceBaseUrl = process.env.OMNIRUSH_INFERENCE_BASE_URL;
+const priorMarsApiKey = process.env.MARS_API_KEY;
+const priorMarsInferenceBaseUrl = process.env.MARS_INFERENCE_BASE_URL;
 const nativeFetch = globalThis.fetch;
 
 function baseConfig(): ServerConfig {
@@ -50,16 +50,16 @@ async function boot() {
 }
 
 function hostAuth() {
-  return { "x-omnirush-host-token": HOST_TOKEN, "content-type": "application/json" };
+  return { "x-mars-host-token": HOST_TOKEN, "content-type": "application/json" };
 }
 
 beforeEach(() => {
-  const dir = mkdtempSync(join(tmpdir(), "omnirush-env-routes-"));
+  const dir = mkdtempSync(join(tmpdir(), "mars-env-routes-"));
   dirs.push(dir);
   // Redirect the shared env.json path into a throwaway dir so the test never
-  // touches the developer's real ~/.config/omnirush/env.json.
-  process.env.OMNIRUSH_ENV_STORE = join(dir, "env.json");
-  process.env.OMNIRUSH_TOKEN_STORE = join(dir, "tokens.json");
+  // touches the developer's real ~/.config/mars/env.json.
+  process.env.MARS_ENV_STORE = join(dir, "env.json");
+  process.env.MARS_TOKEN_STORE = join(dir, "tokens.json");
 });
 
 afterEach(async () => {
@@ -70,29 +70,29 @@ afterEach(async () => {
     rmSync(dirs.pop()!, { recursive: true, force: true });
   }
   if (priorEnvStore === undefined) {
-    delete process.env.OMNIRUSH_ENV_STORE;
+    delete process.env.MARS_ENV_STORE;
   } else {
-    process.env.OMNIRUSH_ENV_STORE = priorEnvStore;
+    process.env.MARS_ENV_STORE = priorEnvStore;
   }
   if (priorTokenStore === undefined) {
-    delete process.env.OMNIRUSH_TOKEN_STORE;
+    delete process.env.MARS_TOKEN_STORE;
   } else {
-    process.env.OMNIRUSH_TOKEN_STORE = priorTokenStore;
+    process.env.MARS_TOKEN_STORE = priorTokenStore;
   }
   if (priorOpenAiApiKey === undefined) {
     delete process.env.OPENAI_API_KEY;
   } else {
     process.env.OPENAI_API_KEY = priorOpenAiApiKey;
   }
-  if (priorOmniRushApiKey === undefined) {
-    delete process.env.OMNIRUSH_API_KEY;
+  if (priorMarsApiKey === undefined) {
+    delete process.env.MARS_API_KEY;
   } else {
-    process.env.OMNIRUSH_API_KEY = priorOmniRushApiKey;
+    process.env.MARS_API_KEY = priorMarsApiKey;
   }
-  if (priorOmniRushInferenceBaseUrl === undefined) {
-    delete process.env.OMNIRUSH_INFERENCE_BASE_URL;
+  if (priorMarsInferenceBaseUrl === undefined) {
+    delete process.env.MARS_INFERENCE_BASE_URL;
   } else {
-    process.env.OMNIRUSH_INFERENCE_BASE_URL = priorOmniRushInferenceBaseUrl;
+    process.env.MARS_INFERENCE_BASE_URL = priorMarsInferenceBaseUrl;
   }
   globalThis.fetch = nativeFetch;
 });
@@ -235,7 +235,7 @@ describe("env routes", () => {
   });
 
   test("invalid env store returns 409 instead of overwriting on PUT", async () => {
-    writeFileSync(process.env.OMNIRUSH_ENV_STORE!, "{ this is not json");
+    writeFileSync(process.env.MARS_ENV_STORE!, "{ this is not json");
     const { base } = await boot();
 
     const put = await fetch(`${base}/env`, {
@@ -289,13 +289,13 @@ describe("env routes", () => {
     const put = await fetch(`${base}/env`, {
       method: "PUT",
       headers: hostAuth(),
-      body: JSON.stringify({ key: "OMNIRUSH_TOKEN", value: "x" }),
+      body: JSON.stringify({ key: "MARS_TOKEN", value: "x" }),
     });
     expect(put.status).toBe(400);
     const body = (await put.json()) as { code: string; message: string };
     expect(body.code).toBe("reserved_env_key");
-    expect(body.message).toBe("Environment variable name is reserved for OmniRush.ai internals");
-    expect(body.message).not.toContain("OMNIRUSH_TOKEN");
+    expect(body.message).toBe("Environment variable name is reserved for MarsAI internals");
+    expect(body.message).not.toContain("MARS_TOKEN");
   });
 
   test("PUT with no entries returns 400", async () => {
