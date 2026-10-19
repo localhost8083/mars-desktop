@@ -63,3 +63,10 @@ jobs:
           # the mac app so Gatekeeper reports "unidentified developer" instead
           # of "damaged". Notarization stays off (MACOS_NOTARIZE unset).
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Title the release MarsAI <version>
+        if: runner.os == 'Windows'
+        shell: bash
+        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "MarsAI ${GITHUB_REF_NAME#v}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
