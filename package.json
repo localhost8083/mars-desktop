@@ -67,7 +67,7 @@
     "evals:check-browser": "pnpm --dir evals check:browser"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.6.5",
     "turbo": "^2.10.7",
     "typescript": "^5.9.0"
   },
