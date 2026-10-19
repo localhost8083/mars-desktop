@@ -21,6 +21,7 @@ export declare function marsConfigDir(opts?: PathOptions): string;
 export declare function marsServerConfigPath(opts?: PathOptions): string;
 export declare function marsEnvStorePath(opts?: PathOptions): string;
 export declare function globalOpencodeConfigDir(opts?: PathOptions): string;
+export declare function engineConfigHomeDir(opts?: PathOptions): string | null;
 export declare function resolveGlobalOpencodeConfigPath(opts?: PathOptions): string;
 export declare function workspaceOpencodeConfigCandidates(workspaceRoot: string): string[];
 export declare function resolveWorkspaceOpencodeConfigPath(workspaceRoot: string): string;

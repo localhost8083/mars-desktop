@@ -5,6 +5,7 @@ import path from "node:path";
 
 import {
   desktopBootstrapPath,
+  engineConfigHomeDir,
   globalOpencodeConfigDir,
   legacyDesktopBootstrapPath,
   MAX_CONFIG_ROOT_LENGTH,
@@ -233,6 +234,34 @@ describe("global OpenCode config paths", () => {
       platform: "linux",
     };
     expect(globalOpencodeConfigDir(opts)).toBe("/tmp/xdg/opencode");
+  });
+
+  test("the desktop engine reads its own config home, not the CLI's", () => {
+    const dataHome = path.join("/", "home", "ada", "engine-data");
+    const opts = {
+      env: { MARS_ENGINE_DATA_HOME: dataHome },
+      homeDir: "/home/ada",
+      platform: "win32",
+    };
+    expect(engineConfigHomeDir(opts)).toBe(path.join(dataHome, "config", "opencode"));
+    expect(globalOpencodeConfigDir(opts)).toBe(path.join(dataHome, "config", "opencode"));
+
+    const userDataOpts = {
+      env: { MARS_DESKTOP_USER_DATA_DIR: "/home/ada/MarsAI" },
+      homeDir: "/home/ada",
+      platform: "win32",
+    };
+    expect(engineConfigHomeDir(userDataOpts))
+      .toBe(path.join("/home/ada", "MarsAI", "engine-data", "config", "opencode"));
+
+    // A safe OPENCODE_CONFIG_DIR still wins over the engine config home.
+    const explicitDirOpts = { env: { ...opts.env, OPENCODE_CONFIG_DIR: "/chosen/opencode" } };
+    expect(globalOpencodeConfigDir({ ...opts, env: explicitDirOpts.env })).toBe("/chosen/opencode");
+
+    // Without the desktop's data home the CLI's XDG directory is kept.
+    expect(engineConfigHomeDir(null)).toBeNull();
+    expect(globalOpencodeConfigDir({ env: { XDG_CONFIG_HOME: "/tmp/xdg" }, homeDir: "/home/ada", platform: "linux" }))
+      .toBe("/tmp/xdg/opencode");
   });
 });
 

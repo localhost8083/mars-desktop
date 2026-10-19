@@ -3,7 +3,7 @@ import { realpathSync } from "node:fs";
 import net from "node:net";
 import { randomUUID } from "node:crypto";
 import { globalOpencodeConfigDir } from "@mars/paths";
-import { engineDataEnv } from "./engine-data-home.js";
+import { engineDataEnv, engineConfigHomeEnv } from "./engine-data-home.js";
 import { repairEngineStoreBeforeStart } from "./engine-store-repair.js";
 import { engineInstallLogEnv } from "./install-log-host.js";
 
@@ -217,18 +217,30 @@ async function startManagedOpencodeServer(
   // @npmcli/config reads npm_config_* settings from the environment.
   // The question tool is the engine's way to ask the user; the app answers it.
   const engineEnvDefaults: Record<string, string> = { npm_config_audit: "false", OPENCODE_ENABLE_QUESTION_TOOL: "1" };
-  // MarsAI's engine build keeps its own global config in
-  // ~/.config/mars; the app's global skills, agents and config live in
-  // the opencode global config directory, so the engine reads that one too.
+  // MarsAI's engine keeps its config in an app-owned directory; see below.
   const baseEnv = { ...process.env, ...options.env };
-  if (!baseEnv.OPENCODE_CONFIG_DIR?.trim()) engineEnvDefaults.OPENCODE_CONFIG_DIR = globalOpencodeConfigDir({ env: baseEnv });
   // The desktop's engine keeps its sessions apart from the CLI's (engine-data-home.ts).
   const dataEnv = engineDataEnv(baseEnv) ?? {};
+  // ...and its configuration apart (engineConfigHomeEnv): the CLI's own
+  // config's `model` must not become the engine's default model.
+  const configEnv = engineConfigHomeEnv(baseEnv) ?? {};
+  // The engine merges `OPENCODE_CONFIG_DIR`'s opencode.json(c) files AFTER
+  // the app's OPENCODE_CONFIG file, so pointing it at the CLI's config
+  // directory (~/.config/opencode) had the user's own `model` key win and
+  // break anything started with the app's default — `/init` answered
+  // "Model not found: 9router/glm/…". The engine reads its own config home
+  // instead; the app's global config UI writes the same directory
+  // (resolveOpencodeConfigFilePath, globalOpencodeRoot). A standalone
+  // server run by hand keeps the shared CLI directory.
+  if (!baseEnv.OPENCODE_CONFIG_DIR?.trim()) {
+    engineEnvDefaults.OPENCODE_CONFIG_DIR = globalOpencodeConfigDir({ env: baseEnv });
+  }
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     ...engineEnvDefaults,
     ...options.env,
     ...dataEnv,
+    ...configEnv,
     // The install log's wrappers, first on PATH for the engine's tool shells only (install-log-host.ts).
     ...engineInstallLogEnv(baseEnv),
     OPENCODE_SERVER_USERNAME: username,
@@ -244,6 +256,7 @@ async function startManagedOpencodeServer(
     ...engineEnvDefaults,
     ...(options.env ?? {}),
     ...dataEnv,
+    ...configEnv,
     OPENCODE_SERVER_USERNAME: username,
     OPENCODE_SERVER_PASSWORD: password,
   })

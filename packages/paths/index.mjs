@@ -136,12 +136,34 @@ function safeConfigRoot(value, paths) {
     && !FORBIDDEN_CONFIG_ROOT_CHARS.test(value);
 }
 
+/**
+ * The desktop engine's global config directory: a MarsAI-owned `config/`
+ * folder inside the engine's data home, which the app also gives the engine
+ * as XDG_CONFIG_HOME. The CLI's own config directory must never be the one
+ * the embedded engine merges LAST (its `model` key would win the app's).
+ * Returns null when the process is not running with the desktop's data home
+ * (a standalone server started by hand keeps the shared CLI directory).
+ */
+export function engineConfigHomeDir(opts) {
+  const env = optionEnv(opts);
+  const platform = optionPlatform(opts);
+  const paths = pathApi(platform);
+  const explicit = envValue(env, "MARS_ENGINE_DATA_HOME");
+  if (explicit) return paths.join(explicit, "config", "opencode");
+  const userDataDir = envValue(env, "MARS_DESKTOP_USER_DATA_DIR");
+  if (userDataDir) return paths.join(userDataDir, "engine-data", "config", "opencode");
+  return null;
+}
+
 export function globalOpencodeConfigDir(opts) {
   const env = optionEnv(opts);
   const platform = optionPlatform(opts);
   const paths = pathApi(platform);
   const configuredDirectory = envRawValue(env, "OPENCODE_CONFIG_DIR");
   if (safeConfigRoot(configuredDirectory, paths)) return configuredDirectory;
+
+  const engineDir = engineConfigHomeDir(opts);
+  if (engineDir) return engineDir;
 
   const configuredRoot = envRawValue(env, "XDG_CONFIG_HOME");
   const configRoot = safeConfigRoot(configuredRoot, paths)

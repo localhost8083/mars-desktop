@@ -26,6 +26,10 @@ export default async function managedPolicy(input?: { directory?: string }) {
       // commands the agent runs get the user's back.
       const userDataHome = process.env.MARS_USER_XDG_DATA_HOME?.trim();
       if (userDataHome) output.env.XDG_DATA_HOME = userDataHome;
+      // Same for the config home: the engine reads a MarsAI-owned config
+      // directory, the agent's commands (git, gh, …) read the user's.
+      const userConfigHome = process.env.MARS_USER_XDG_CONFIG_HOME?.trim();
+      if (userConfigHome) output.env.XDG_CONFIG_HOME = userConfigHome;
     },
     "chat.params": async (input: { model: { providerID: string; id: string } }) => { await check("model", input.model); },
   };

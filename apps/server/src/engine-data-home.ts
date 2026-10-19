@@ -47,3 +47,33 @@ export function engineDataEnv(env: NodeJS.ProcessEnv): Record<string, string> | 
   if (!home) return null;
   return { XDG_DATA_HOME: home, [USER_XDG_DATA_HOME_ENV]: userDataHome(env) };
 }
+
+export const USER_XDG_CONFIG_HOME_ENV = "MARS_USER_XDG_CONFIG_HOME";
+
+/** The user's XDG config home (the engine's default when nothing overrides it). */
+export function userConfigHome(env: NodeJS.ProcessEnv): string {
+  const xdg = env.XDG_CONFIG_HOME?.trim();
+  if (xdg) return xdg;
+  return join(env.HOME?.trim() || homedir(), ".config");
+}
+
+/**
+ * The environment that gives the engine a XDG config home of its own, or null
+ * when the engine keeps the user's (the standalone server run by hand).
+ *
+ * Without this the engine reads the user's own opencode CLI configuration
+ * (`~/.config/opencode`), whose `model` key wins the merged default and breaks
+ * anything that runs with the compiled default — `/init` in a fresh workspace
+ * answered "Model not found: 9router/glm/…", the user's personal relay. The
+ * app's engine config (OPENCODE_CONFIG) is the only user-level config the
+ * engine should see. Agent-run shells get the user's home back
+ * (MARS_USER_XDG_CONFIG_HOME, applied by managed-policy.ts `shell.env`).
+ */
+export function engineConfigHomeEnv(env: NodeJS.ProcessEnv): Record<string, string> | null {
+  const data = engineDataHome(env);
+  if (!data) return null;
+  return {
+    XDG_CONFIG_HOME: join(data, "config"),
+    [USER_XDG_CONFIG_HOME_ENV]: userConfigHome(env),
+  };
+}
