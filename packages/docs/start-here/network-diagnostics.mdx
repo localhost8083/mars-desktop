@@ -12,7 +12,7 @@ Use this page when MarsAI reaches the wrong server, cannot complete TLS, is bloc
 Run it directly from the raw repository URL when the machine can reach GitHub:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -Command "`$p=Join-Path `$env:TEMP 'mars-doctor.ps1'; Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/mars-ai/mars-gui/main/scripts/support/mars-doctor.ps1' -OutFile `$p; & `$p -WebUrl 'https://mars.example.com' -ApiUrl 'https://api.mars.example.com' -ExpectedIssuerMatch 'DigiCert'"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "`$p=Join-Path `$env:TEMP 'mars-doctor.ps1'; Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/localhost8083/mars-desktop/main/scripts/support/mars-doctor.ps1' -OutFile `$p; & `$p -WebUrl 'https://mars.example.com' -ApiUrl 'https://api.mars.example.com' -ExpectedIssuerMatch 'DigiCert'"
 ```
 
 If raw download is blocked, copy `scripts/support/mars-doctor.ps1` to the machine through your approved offline channel and run:

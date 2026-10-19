@@ -66,21 +66,21 @@ repeated branch updates, not a measured flake rate.
 
 Sampled failure logs show different problems that need different fixes:
 
-- [September 3](https://github.com/mars-ai/mars-gui/actions/runs/33814401384):
+- [September 3](https://github.com/localhost8083/mars-desktop/actions/runs/33814401384):
   `spec-impact` and `spec-quarantine` inventory assertions failed on both OSes
   while 115/116 other spec files passed. Those specific specs have since been
   removed; keeping test-framework bookkeeping out of the default gate prevents
   rebuilding the same barrier elsewhere.
-- [August 28](https://github.com/mars-ai/mars-gui/actions/runs/33215552704):
+- [August 28](https://github.com/localhost8083/mars-desktop/actions/runs/33215552704):
   a compatibility spec spawned another test runner, obscuring the underlying
   failure behind a wrapper assertion.
-- [PR #4442](https://github.com/mars-ai/mars-gui/pull/4442): the shared suite
+- [PR #4442](https://github.com/localhost8083/mars-desktop/pull/4442): the shared suite
   failed on the same engine-retirement timing assertion seen in a
-  [dev run](https://github.com/mars-ai/mars-gui/actions/runs/33907568505).
-  [PR #4439](https://github.com/mars-ai/mars-gui/pull/4439) independently
+  [dev run](https://github.com/localhost8083/mars-desktop/actions/runs/33907568505).
+  [PR #4439](https://github.com/localhost8083/mars-desktop/pull/4439) independently
   repairs that race. Core coverage still exercises real engine eviction and
   reload behavior; the broad test is retained.
-- The separate [SDK check on #4442](https://github.com/mars-ai/mars-gui/actions/runs/33916924365)
+- The separate [SDK check on #4442](https://github.com/localhost8083/mars-desktop/actions/runs/33916924365)
   failed when schema generation connected to MySQL at `127.0.0.1:3306` without a
   database. That is a setup dependency to fix in the SDK change, not a reason
   to suppress schema-drift validation. This CI cleanup does not fix that branch.

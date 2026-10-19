@@ -2,7 +2,7 @@
 
 This document describes how a user adds a skill and an MCP server in the desktop app, where the files live, how they reach the bundled engine (the OpenCode sidecar that serves the marsai.click models and any external provider), and how to troubleshoot when something does not show up.
 
-The same flows apply to every model: the marsai.click models (GPT 6 Astra, GPT-5.6 Sol and any other model the account's catalog lists, such as Meta Muse, via the local gateway broker) and external providers (OpenAI, Anthropic, and others) all run in the same engine and see the same skills and MCP tools.
+The same flows apply to every model: the marsai.click models (the account's catalog — Claude, DeepSeek, Qwen, MiniMax, GLM Flash and free variants — via the local gateway broker) and external providers (OpenAI, Anthropic, and others) all run in the same engine and see the same skills and MCP tools.
 
 ## Moving parts
 
@@ -117,7 +117,7 @@ The engine-visible config file is rendered from the engine-global runtime row pl
 - `provider.mars` (the marsai.click models, `baseURL` pointing at the local gateway broker) is added after any runtime `provider` entries, so a runtime provider with the same id cannot shadow it.
 - `mcp` holds only the engine-global entries (for example `mars-cloud`); workspace MCP entries are pushed dynamically and never collide with it.
 - `disabled_providers` is copied through untouched.
-- `model` defaults to the account catalog's default model (`mars/gpt-6-astra`) when the account is signed in. The `mars` provider's models come from the catalog the server syncs from `GET /mars/v1/models` (ids, names, efforts, limits and input types only); its package, base URL and credentials never do.
+- `model` defaults to the account catalog's default model (for example `marsai/claude-opus-5-5`) when the account is signed in. The `mars` provider's models come from the catalog the server syncs from `GET /mars/v1/models` (ids, names, efforts, limits and input types only); its package, base URL and credentials never do.
 
 Adding skills or MCP servers never modifies the provider block.
 

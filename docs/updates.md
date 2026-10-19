@@ -18,8 +18,8 @@ Failures are shown verbatim on the page, minus the `Error invoking remote method
 
 | Channel | Feed directory | Manifest read by the app |
 | --- | --- | --- |
-| Stable (the only public channel) | `https://github.com/mars-ai/mars-gui/releases/latest/download` | `latest-mac.yml`, `latest.yml` (Windows), `latest-linux.yml` |
-| Targeted recovery/rollback | `https://github.com/mars-ai/mars-gui/releases/download/v<version>` | same names |
+| Stable (the only public channel) | `https://github.com/localhost8083/mars-desktop/releases/latest/download` | `latest-mac.yml`, `latest.yml` (Windows), `latest-linux.yml` |
+| Targeted recovery/rollback | `https://github.com/localhost8083/mars-desktop/releases/download/v<version>` | same names |
 
 There is no public Alpha feed. A persisted or requested "alpha" channel is normalized back to "stable" and the channel selector stays hidden. A custom distribution can enable an Alpha channel by shipping an https feed directory in its electron-builder `extraMetadata` as `marsAlphaUpdateFeedUrl` (development runs may set `MARS_DESKTOP_ALPHA_UPDATE_FEED_URL`); the Cloud and Enterprise flavors keep their parallel `cloud*.yml` / `enterprise*.yml` manifests on the stable feed.
 
