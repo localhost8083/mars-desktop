@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import type { ProviderListItem } from "../src/app/types";
 import { DEFAULT_MODEL, MODEL_PREF_KEY, MARS_REASONING_EFFORTS } from "../src/app/constants";
 import { readStoredDefaultModel } from "../src/react-app/kernel/model-config";
+import { formatModelRef } from "../src/app/utils";
 import {
   getModelBehaviorOptions,
   getModelBehaviorSummary,
@@ -292,21 +293,25 @@ describe("stored default model", () => {
     return items;
   }
 
-  test("keeps a Meta Muse default instead of resetting it to Astra", () => {
+  test("resets a retired launch-era default to the current default", () => {
     const items = storeDefault("mars/meta-muse-spark");
-    expect(readStoredDefaultModel()).toEqual({ providerID: "mars", modelID: "meta-muse-spark" });
-    expect(items.get(MODEL_PREF_KEY)).toBe("mars/meta-muse-spark");
+    expect(readStoredDefaultModel()).toEqual(DEFAULT_MODEL);
+    expect(items.get(MODEL_PREF_KEY)).toBe(formatModelRef(DEFAULT_MODEL));
   });
 
-  test("keeps valid slash routes and resets an invalid one to the default, Astra", () => {
-    // z-ai/glm-5.2 is a live catalog id (slash ids are canonical), so it stays.
-    const kept = storeDefault("mars/z-ai/glm-5.2");
-    expect(readStoredDefaultModel()).toEqual({ providerID: "mars", modelID: "z-ai/glm-5.2" });
-    expect(kept.get(MODEL_PREF_KEY)).toBe("mars/z-ai/glm-5.2");
+  test("resets retired routes to the default and keeps genuinely invalid ids migrating too", () => {
+    // gpt-6-astra and z-ai/glm-5.2 are launch-era routes the catalog no
+    // longer serves; a stored choice of either migrates to the default.
+    const retired = storeDefault("mars/z-ai/glm-5.2");
+    expect(readStoredDefaultModel()).toEqual(DEFAULT_MODEL);
+    expect(retired.get(MODEL_PREF_KEY)).toBe(formatModelRef(DEFAULT_MODEL));
+    const astra = storeDefault("mars/gpt-6-astra");
+    expect(readStoredDefaultModel()).toEqual(DEFAULT_MODEL);
+    expect(astra.get(MODEL_PREF_KEY)).toBe(formatModelRef(DEFAULT_MODEL));
     // An id that cannot name a catalog model migrates to the default.
     const items = storeDefault("mars/!!not-a-model!!");
     expect(readStoredDefaultModel()).toEqual(DEFAULT_MODEL);
-    expect(DEFAULT_MODEL).toEqual({ providerID: "mars", modelID: "gpt-6-astra" });
-    expect(items.get(MODEL_PREF_KEY)).toBe("mars/gpt-6-astra");
+    expect(DEFAULT_MODEL).toEqual({ providerID: "mars", modelID: "claude-opus-5-5" });
+    expect(items.get(MODEL_PREF_KEY)).toBe("mars/claude-opus-5-5");
   });
 });

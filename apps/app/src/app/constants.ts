@@ -23,11 +23,10 @@ export const HIDE_TITLEBAR_PREF_KEY = "mars.hideTitlebar";
 
 /**
  * The models the engine serves before the account's catalog first syncs (and
- * offline); the first entry is the default. Mirrors the server's
- * builtinMarsModelCatalog (the backend's list at 2026-10-04). Only a
- * fallback: the picker lists whatever the account's catalog lists.
+ * offline); the first entry is the default. Only a fallback: the picker lists
+ * whatever the account's catalog lists.
  */
-export const BUILTIN_MARS_MODEL_IDS = ["gpt-6-astra", "gpt-6.1-sol", "gpt-6-sol"] as const;
+export const BUILTIN_MARS_MODEL_IDS = ["claude-opus-5-5", "claude-sonnet-5"] as const;
 
 export const DEFAULT_MODEL: ModelRef = {
   providerID: "mars",
@@ -35,7 +34,18 @@ export const DEFAULT_MODEL: ModelRef = {
 };
 
 /** marsai.click model ids the catalog no longer serves; a stored choice of one resets to the default. */
-export const RETIRED_MARS_MODEL_IDS: readonly string[] = [];
+export const RETIRED_MARS_MODEL_IDS: readonly string[] = [
+  "gpt-6-astra",
+  "gpt-6.1-sol",
+  "gpt-6-sol",
+  "gpt-5.6-sol",
+  "gpt-5.6-terra",
+  "meta-muse-spark",
+  "muse-spark-1.3",
+  "muse-spark-1.2",
+  "muse-spark-1.1",
+  "z-ai/glm-5.2",
+];
 
 /** The id syntax of the marsai.click model catalog. */
 const MARS_CATALOG_MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/;

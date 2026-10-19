@@ -30,6 +30,7 @@ import { MarsWebAccessGate } from "../domains/cloud/mars-web-access-gate";
 import { OrgOnboardingPage } from "../domains/cloud/org-onboarding-page";
 import { NewProvidersListener } from "./new-providers-listener";
 import { BudgetWrapConsent } from "./budget-wrap-consent";
+import { ApiKeyGate } from "./api-key-gate";
 import { AutoCompactNotice } from "./auto-compact-notice";
 import { useDesktopFontZoomBehavior } from "./font-zoom";
 import { LoadingOverlay } from "./loading-overlay";
@@ -396,6 +397,7 @@ export function AppRoot() {
           <MarsRouteControlActions />
           <MarsContextPublisher />
           <BudgetWrapConsent />
+          <ApiKeyGate />
           <AutoCompactNotice />
           <DenAuthControlActions />
           <BrandThemeControlActions />

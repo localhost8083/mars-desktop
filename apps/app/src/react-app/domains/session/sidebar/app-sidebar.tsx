@@ -42,6 +42,7 @@ import { marsAccountStatus, type WorkspaceInfo } from "../../../../app/lib/deskt
 import { marsUsageSummary } from "../../../../app/lib/mars-usage";
 import { isDesktopRuntime } from "../../../../app/lib/runtime-env";
 import { refreshAccountStatus, setQualitySessionId, useAccountStatusStore, useQualityUiStore, type AccountQuality } from "../../../../app/lib/quality";
+import { openApiKeyGate } from "../../../shell/api-key-gate";
 import { goodSessionWording } from "../../../../app/lib/quality";
 import { ProgressRing, QualityTierBadge, SpinCounts, spinRowTitle } from "../../quality/quality-parts";
 import { buildathonProjects, useBuildathonStore } from "../../../../app/lib/buildathon";
@@ -1041,11 +1042,11 @@ function NativeAccountFooter({ onOpenAccountSettings }: { onOpenAccountSettings:
   const connected = status?.connected === true;
   const accountLabel = connected
     ? status?.displayName?.trim() || status?.email?.trim() || "Your account"
-    : "sign in to marsai.click";
+    : "Add your MarsAI API key";
   const usage = connected && status?.usage ? marsUsageSummary(status.usage) : null;
   const quality = connected ? status?.quality ?? null : null;
   // The account server label ("marsai.click", "localhost:8090 (local API)")
-  // only matters while connected; a signed-out footer keeps the sign-in hint.
+  // only matters while connected; a signed-out footer keeps the key hint.
   const serverHost = connected ? status?.gatewayHost?.trim() || null : null;
   const accountDetail = usage
     ? `${usage.short}${serverHost ? ` · ${serverHost}` : ""}`
@@ -1055,12 +1056,20 @@ function NativeAccountFooter({ onOpenAccountSettings }: { onOpenAccountSettings:
         : "marsai.click models ready"
       : status?.reauthorizationRequired
         ? "Sign in again to continue"
-        : "Use marsai.click models with your account";
+        : "Paste a key from marsai.click/app/keys";
   const accountTooltip = connected
     ? serverHost
       ? `${accountLabel} · ${serverHost}`
       : accountLabel
-    : "Sign in to marsai.click";
+    : "Add your MarsAI API key";
+
+  function onAccountClick() {
+    if (connected) {
+      onOpenAccountSettings();
+      return;
+    }
+    openApiKeyGate();
+  }
 
   return (
     <SidebarFooter className="border-t border-sidebar-border/60 p-1.5 pe-0">
@@ -1069,9 +1078,9 @@ function NativeAccountFooter({ onOpenAccountSettings }: { onOpenAccountSettings:
           <SidebarMenuButton
             type="button"
             className="h-auto min-h-12 py-1.5"
-            onClick={onOpenAccountSettings}
+            onClick={onAccountClick}
             tooltip={accountTooltip}
-            aria-label={connected ? `${accountLabel} account` : "Sign in to marsai.click"}
+            aria-label={connected ? `${accountLabel} account` : "Add your MarsAI API key"}
             data-testid="native-account-profile"
             data-account-server={serverHost ?? undefined}
           >
