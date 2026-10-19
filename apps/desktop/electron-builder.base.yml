@@ -46,6 +46,7 @@ publish:
     owner: localhost8083
     repo: mars-desktop
     releaseType: release
+    releaseName: MarsAI ${version}
 mac:
   icon: resources/icons/icon.icns
   category: public.app-category.developer-tools
